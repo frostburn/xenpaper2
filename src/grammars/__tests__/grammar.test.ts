@@ -213,7 +213,7 @@ describe('grammar', () => {
                 ]);
             });
 
-            it.skip('should parse sequence with hold separated notes', () => {
+            it('should parse sequence with hold separated notes', () => {
                 expect(strip(parser('2-34---56')).sequence.items).toEqual([
                     {
                         type: 'Note',
