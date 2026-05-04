@@ -501,7 +501,30 @@ describe('grammar', () => {
             });
 
             it('should parse sequence with a hold after a bar line', () => {
-                expect(() => parser('2---|----|')).toThrow();
+                expect(strip(parser('2---|----|')).sequence.items).toEqual([
+                    {
+                        type: 'Note',
+                        pitch: {
+                            type: 'Pitch',
+                            value: {
+                                type: 'PitchDegree',
+                                degree: 2,
+                                len: 1
+                            },
+                            len: 1
+                        },
+                        tail: {
+                            type: 'Hold',
+                            length: 7,
+                            len: 8
+                        },
+                        len: 9
+                    },
+                    {
+                        type: 'BarLine',
+                        len: 1
+                    }
+                ]);
             });
         });
 

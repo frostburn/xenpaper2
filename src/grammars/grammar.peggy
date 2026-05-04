@@ -6,7 +6,16 @@ Start = seq:Sequence _ { return node('XenpaperGrammar', { sequence: seq }); }
 Sequence = items:ItemList { return node('Sequence', { items }); }
 ItemList = head:Item tail:(_ Item)* { return [head, ...tail.map(([,i]) => i)]; } / '' { return []; }
 Item = Note / Rest / BarLine / Whitespace
-Note = pitch:Pitch tail:Hold? { const noteTail = tail ?? undefined; const tlen = noteTail ? noteTail.len : 0; return node('Note', { pitch, tail: noteTail, len: pitch.len + tlen }); }
+Note = pitch:Pitch tail:Hold? cont:($("|" "-"+))* {
+  const extraText = cont.join('');
+  const extraLen = extraText.length;
+  const extraHolds = extraText.replace(/[|]+/g, '').length;
+  const baseTail = tail ?? undefined;
+  const totalLen = (baseTail?.len ?? 0) + extraLen;
+  const totalHolds = (baseTail?.length ?? 0) + extraHolds;
+  const noteTail = totalLen > 0 ? node('Hold', { length: totalHolds, len: totalLen }) : undefined;
+  return node('Note', { pitch, tail: noteTail, len: pitch.len + totalLen });
+}
 Pitch = oct:OctaveModifier? val:(PitchCents / PitchHz / PitchOctaveDivision / PitchRatio / PitchDegree) {
   if (oct) return node('Pitch', { octave: oct, value: val, len: oct.len + val.len });
   return node('Pitch', { value: val, len: val.len });
