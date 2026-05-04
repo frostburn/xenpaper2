@@ -7,6 +7,32 @@ function parser(input: string): any {
 
 import GRAMMAR_SOURCE from '../grammar.peggy?raw'
 
+
+const expectParserErrorMessage = (
+  input: string,
+  expectedMessage: string,
+): void => {
+  expect(() => parser(input)).toThrow(expectedMessage)
+}
+
+const expectParserFormattedErrorMessage = (input: string, expectedMessage: string): void => {
+  try {
+    parser(input)
+    throw new Error(`Expected parser to throw for input: ${input}`)
+  } catch (error) {
+    if (typeof (error as { format?: unknown }).format === 'function') {
+      const message = (error as { format: (sources: Array<{ source: string; text: string }>) => string }).format([
+        { source: 'grammar.peggy', text: GRAMMAR_SOURCE },
+        { source: 'test-input', text: input },
+      ])
+      expect(message).toBe(expectedMessage)
+      return
+    }
+
+    throw error
+  }
+}
+
 const strip = <T>(data: T): T => {
   if (Array.isArray(data)) {
     return data.map((value) => strip(value)) as unknown as T
@@ -500,22 +526,14 @@ describe('grammar', () => {
       })
 
       it('should error if hold is attempted after a rest', () => {
-        const text = '2-.-'
-        const expectedMessage =
-          'Error: Expected "(", ".", "[", "{", "{r", "|", [ \\t\\n\\r], [\'"`], [,\\n\\r\\t ], [0-9], or end of input but "-" found.\n --> test-input:1:4\n  |\n1 | 2-.-\n  |    ^'
-        try {
-          parser(text)
-        } catch (e) {
-          if (typeof e.format === 'function') {
-            const message = e.format([
-              { source: 'grammar.peggy', text: GRAMMAR_SOURCE },
-              { source: 'test-input', text },
-            ])
-            expect(message).toBe(expectedMessage)
-          } else {
-            throw e
-          }
-        }
+        expectParserFormattedErrorMessage(
+          '2-.-',
+          `Error: Expected "(", ".", "[", "{", "{r", "|", [ \\t\\n\\r], [\'"\`], [,\\n\\r\\t ], [0-9], or end of input but "-" found.
+ --> test-input:1:4
+  |
+1 | 2-.-
+  |    ^`,
+        )
       })
 
       it('should parse sequence with a hold after a bar line', () => {
@@ -948,7 +966,7 @@ describe('grammar', () => {
       })
 
       it('should error if chord is empty or not delimited properly', () => {
-        expect(() => parser('[]')).toThrow()
+        expectParserErrorMessage('[]', `Unexpected token at 1:2. Remainder: ]`)
       })
 
       it('should parse sequence with a ratio chord', () => {
@@ -1722,10 +1740,10 @@ describe('grammar', () => {
       })
 
       it('should error if setter is empty or not delimited properly', () => {
-        expect(() => parser('()')).toThrow()
-        expect(() => parser('(div:16;)')).toThrow()
-        expect(() => parser('(div:16;;div:16)')).toThrow()
-        expect(() => parser('(env:123)')).toThrow()
+        expectParserErrorMessage('()', `Unexpected token at 1:2. Remainder: )`)
+        expectParserErrorMessage('(div:16;)', `Unexpected token at 1:9. Remainder: )`)
+        expectParserErrorMessage('(div:16;;div:16)', `Unexpected token at 1:9. Remainder: ;div:16)`)
+        expectParserErrorMessage('(env:123)', `Unexpected token at 1:6. Remainder: 123)`)
       })
     })
   })
@@ -1763,8 +1781,8 @@ describe('grammar', () => {
     })
 
     it('should not allow unknown params', () => {
-      expect(() => strip(parser(':2'))).toThrow()
-      expect(() => strip(parser('foo:2'))).toThrow()
+      expectParserErrorMessage(':2', `Unexpected token at 1:1. Remainder: :2`)
+      expectParserErrorMessage('foo:2', `Unexpected token at 1:1. Remainder: foo:2`)
     })
   })
 })
