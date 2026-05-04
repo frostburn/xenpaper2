@@ -23,9 +23,9 @@ Pitch = oct:OctaveModifier? val:(PitchCents / PitchHz / PitchOctaveDivision / Pi
 OctaveModifier = s:$([\'"`]+) { const octave = (s.split("'").length - 1) + ((s.split('"').length - 1) * 2) - (s.split('`').length - 1); return node('OctaveModifier', { octave, len: s.length }); }
 PitchCents = n:Number [cC] { const s=n.toString(); return node('PitchCents',{cents:n,len:s.length+1}); }
 PitchHz = n:Number [hH][zZ] { const s=n.toString(); return node('PitchHz',{hz:n,len:s.length+2}); }
-PitchOctaveDivision = n:Int [\\/] d:Int [oO] os:Int? ("/" od:Int)? {
-  const ns=n.toString(), ds=d.toString(), oss=os?os.toString():'', ods=od?od.toString():'';
-  return node('PitchOctaveDivision',{numerator:n,denominator:d,octaveSize:(os||2)/(od||1),len:ns.length+ds.length+oss.length+2+(od?2+ods.length:0)});
+PitchOctaveDivision = n:Int [\\/] d:Int [oO] os:Int? divPart:("/" od:Int)? {
+  const octaveDenom = divPart ? divPart[1] : 1;
+  return node('PitchOctaveDivision',{numerator:n,denominator:d,octaveSize:(os||2)/octaveDenom,len:text().length});
 } / n:Int "\\" d:Int { const ns=n.toString(), ds=d.toString(); return node('PitchOctaveDivision',{numerator:n,denominator:d,octaveSize:2,len:ns.length+ds.length+1}); }
 PitchRatio = n:Int "/" d:Int { const ns=n.toString(), ds=d.toString(); return node('PitchRatio',{numerator:n,denominator:d,len:ns.length+ds.length+1}); }
 PitchDegree = n:Int { const s=n.toString(); return node('PitchDegree',{degree:n,len:s.length}); }

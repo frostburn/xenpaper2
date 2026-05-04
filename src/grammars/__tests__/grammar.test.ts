@@ -530,7 +530,7 @@ describe('grammar', () => {
 
         describe('notes', () => {
 
-            it.skip('should parse sequence with octave modifiers on notes', () => {
+            it('should parse sequence with octave modifiers on notes', () => {
                 expect(strip(parser('\'0,"0,\'"0,`0,``0')).sequence.items).toEqual([
                     {
                         type: 'Note',
@@ -646,7 +646,7 @@ describe('grammar', () => {
                 ]);
             });
 
-            it.skip('should parse sequence with fraction notes', () => {
+            it('should parse sequence with fraction notes', () => {
                 expect(strip(parser('2/3,3/4')).sequence.items).toEqual([
                     {
                         type: 'Note',
@@ -685,7 +685,7 @@ describe('grammar', () => {
                 ]);
             });
 
-            it.skip('should parse sequence with octave fraction notes', () => {
+            it('should parse sequence with octave fraction notes', () => {
                 expect(strip(parser('2/3o,3/4o3,3/4o3/2')).sequence.items).toEqual([
                     {
                         type: 'Note',
@@ -746,7 +746,7 @@ describe('grammar', () => {
                 ]);
             });
 
-            it.skip('should parse sequence with octave fraction notes (type 2)', () => {
+            it('should parse sequence with octave fraction notes (type 2)', () => {
                 expect(strip(parser('2\\3')).sequence.items).toEqual([
                     {
                         type: 'Note',
@@ -767,7 +767,7 @@ describe('grammar', () => {
                 ]);
             });
 
-            it.skip('should parse sequence with cents notes', () => {
+            it('should parse sequence with cents notes', () => {
                 expect(strip(parser('2c,2.c,2.2c')).sequence.items).toEqual([
                     {
                         type: 'Note',
@@ -794,12 +794,12 @@ describe('grammar', () => {
                             value: {
                                 type: 'PitchCents',
                                 cents: 2,
-                                len: 3
+                                len: 2
                             },
-                            len: 3
+                            len: 2
                         },
                         tail: undefined,
-                        len: 3
+                        len: 2
                     },
                     {
                         type: 'Whitespace',
@@ -822,7 +822,7 @@ describe('grammar', () => {
                 ]);
             });
 
-            it.skip('should parse sequence with hz notes', () => {
+            it('should parse sequence with hz notes', () => {
                 expect(strip(parser('2hz,2.Hz,2.2HZ')).sequence.items).toEqual([
                     {
                         type: 'Note',
@@ -849,12 +849,12 @@ describe('grammar', () => {
                             value: {
                                 type: 'PitchHz',
                                 hz: 2,
-                                len: 4
+                                len: 3
                             },
-                            len: 4
+                            len: 3
                         },
                         tail: undefined,
-                        len: 4
+                        len: 3
                     },
                     {
                         type: 'Whitespace',
