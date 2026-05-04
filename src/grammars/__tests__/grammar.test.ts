@@ -1212,6 +1212,47 @@ describe('grammar', () => {
                         len: 8
                     }
                 ]);
+
+                expect(strip(parser('{4:6::8}')).sequence.items).toEqual([
+                    {
+                        type: 'SetScale',
+                        scale: {
+                            type: 'RatioChordScale',
+                            pitches: [
+                                {
+                                    type: 'RatioChordPitch',
+                                    pitch: 4,
+                                    len: 1
+                                },
+                                {
+                                    type: 'Colon',
+                                    len: 1
+                                },
+                                {
+                                    type: 'RatioChordPitch',
+                                    pitch: 6,
+                                    len: 1
+                                },
+                                {
+                                    type: 'Colon',
+                                    len: 1
+                                },
+                                {
+                                    type: 'Colon',
+                                    len: 1
+                                },
+                                {
+                                    type: 'RatioChordPitch',
+                                    pitch: 8,
+                                    len: 1
+                                }
+                            ],
+                            scaleOctaveMarker: undefined,
+                            len: 6
+                        },
+                        len: 8
+                    }
+                ]);
             });
 
             it('should parse sequence with pitch set scale setter', () => {

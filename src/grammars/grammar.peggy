@@ -101,8 +101,7 @@ EdoScale = div:Int [eE][dD] [oO]? os:Int? frac:("/" den:Int)? {
   return node('EdoScale', { divisions: div, octaveSize, len: text().length });
 }
 ScaleOctaveMarker = "'" { return node('ScaleOctaveMarker', { len: 1 }); }
-RatioChordScale = first:RatioChordPitch colons:(Colon)+ rest:(RatioChordPitch (Colon RatioChordPitch)*) som:ScaleOctaveMarker? {
-  const pitches = [first, ...colons, rest[0], ...rest[1].flat()];
+RatioChordScale = &([0-9]+ ":") pitches:RatioChordPitches som:ScaleOctaveMarker? {
   const scaleOctaveMarker = som ?? undefined;
   const baseLen = pitches.reduce((sum, p) => sum + p.len, 0);
   return node('RatioChordScale', { pitches, scaleOctaveMarker, len: baseLen + (scaleOctaveMarker?.len ?? 0) });
