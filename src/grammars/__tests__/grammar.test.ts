@@ -1,7 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import * as parserModule from '../grammar.generated.js';
 
-const parser = parserModule.parse as (input: string) => any;
+function parser(input: string): any {
+    return parserModule.parse(input, {grammarSource: 'test-input'})
+}
+
+import GRAMMAR_SOURCE from '../grammar.peggy?raw'
 
 const strip = <T>(data: T): T => {
     if(Array.isArray(data)) {
@@ -497,7 +501,21 @@ describe('grammar', () => {
             });
 
             it('should error if hold is attempted after a rest', () => {
-                expect(() => parser('2-.-')).toThrow();
+                const text = '2-.-';
+                const expectedMessage = "Error: Expected \"(\", \".\", \"[\", \"{\", \"{r\", \"|\", [ \\t\\n\\r], ['\"`], [,\\n\\r\\t ], [0-9], or end of input but \"-\" found.\n --> test-input:1:4\n  |\n1 | 2-.-\n  |    ^"
+                try {
+                    parser(text);
+                } catch(e) {
+                    if (typeof e.format === 'function') {
+                        const message = e.format([
+                            {source: 'grammar.peggy', text: GRAMMAR_SOURCE},
+                            {source: 'test-input', text}
+                        ])
+                        expect(message).toBe(expectedMessage)
+                    } else {
+                        throw e;
+                    }
+                }
             });
 
             it('should parse sequence with a hold after a bar line', () => {
