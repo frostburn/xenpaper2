@@ -1077,6 +1077,34 @@ describe('grammar', () => {
                 ]);
             });
 
+            it('should parse sequence with ed0 and ed1 setters', () => {
+                expect(strip(parser('{5ed0}')).sequence.items).toEqual([
+                    {
+                        type: 'SetScale',
+                        scale: {
+                            type: 'EdoScale',
+                            divisions: 5,
+                            octaveSize: 0,
+                            len: 4
+                        },
+                        len: 6
+                    }
+                ]);
+
+                expect(strip(parser('{5ed1}')).sequence.items).toEqual([
+                    {
+                        type: 'SetScale',
+                        scale: {
+                            type: 'EdoScale',
+                            divisions: 5,
+                            octaveSize: 1,
+                            len: 4
+                        },
+                        len: 6
+                    }
+                ]);
+            });
+
             it('should parse sequence with ed3 setter', () => {
                 expect(strip(parser('{12ed3}')).sequence.items).toEqual([
                     {
