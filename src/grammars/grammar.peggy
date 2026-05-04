@@ -2,7 +2,16 @@
   const node = (type, extra = {}) => ({ type, delimiter: false, ...extra, location: location() });
 }
 
-Start = seq:Sequence _ { return node('XenpaperGrammar', { sequence: seq }); }
+Start = pg:ParamGroup? seq:Sequence? _ {
+  return node('XenpaperGrammar', { paramGroup: pg ?? undefined, sequence: seq ?? node('Sequence', { items: [], len: 0 }) });
+}
+ParamGroup = first:Param rest:(Semicolon Param)* ":" {
+  const params = [first, ...rest.map(([, p]) => p)];
+  const len = params.reduce((sum, p) => sum + p.len, 0) + rest.reduce((sum, [s]) => sum + s.len, 0) + 1;
+  return node('ParamGroup', { params, len });
+}
+Param = ParamEmbed
+ParamEmbed = [eE][mM][bB][eE][dD] { return node('ParamEmbed', { len: 5 }); }
 Sequence = items:ItemList { return node('Sequence', { items }); }
 ItemList = head:Item tail:(_ Item)* { return [head, ...tail.map(([,i]) => i)]; } / '' { return []; }
 Item = SetterGroup / SetRoot / SetScale / RatioChordItem / Note / Rest / Chord / BarLine / Whitespace

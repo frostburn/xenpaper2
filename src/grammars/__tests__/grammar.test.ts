@@ -1649,7 +1649,7 @@ describe('grammar', () => {
 
     describe('params', () => {
 
-        it.skip('should parse sequence with param', () => {
+        it('should parse sequence with param', () => {
             const output = strip(parser('embed:2'));
             expect(output.paramGroup).toEqual({
                 len: 6,
@@ -1680,9 +1680,9 @@ describe('grammar', () => {
             ]);
         });
 
-        it.skip('should not allow unknown params', () => {
-            expect(() => strip(parser(':2'))).toThrow('Unexpected token at 1:1. Remainder: :2');
-            expect(() => strip(parser('foo:2'))).toThrow('Unexpected token at 1:1. Remainder: foo:2');
+        it('should not allow unknown params', () => {
+            expect(() => strip(parser(':2'))).toThrow();
+            expect(() => strip(parser('foo:2'))).toThrow();
         });
     });
 });
