@@ -6,7 +6,7 @@ Start = seq:Sequence _ { return node('XenpaperGrammar', { sequence: seq }); }
 Sequence = items:ItemList { return node('Sequence', { items }); }
 ItemList = head:Item tail:(_ Item)* { return [head, ...tail.map(([,i]) => i)]; } / '' { return []; }
 Item = Note / BarLine / Whitespace
-Note = pitch:Pitch tail:Hold? { const tlen = tail ? tail.len : 0; return node('Note', { pitch, tail, len: pitch.len + tlen }); }
+Note = pitch:Pitch tail:Hold? { const noteTail = tail ?? undefined; const tlen = noteTail ? noteTail.len : 0; return node('Note', { pitch, tail: noteTail, len: pitch.len + tlen }); }
 Pitch = oct:OctaveModifier? val:(PitchCents / PitchHz / PitchOctaveDivision / PitchRatio / PitchDegree) {
   if (oct) return node('Pitch', { octave: oct, value: val, len: oct.len + val.len });
   return node('Pitch', { value: val, len: val.len });

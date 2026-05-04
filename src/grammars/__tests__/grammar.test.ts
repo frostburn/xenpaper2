@@ -41,6 +41,7 @@ describe('grammar', () => {
                         },
                     },
                 });
+                expect(ast.sequence.items[0].tail).toBeUndefined();
             });
 
             it.skip('should parse sequence with comma separated notes', () => {
