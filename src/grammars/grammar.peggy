@@ -5,7 +5,7 @@
 Start = seq:Sequence _ { return node('XenpaperGrammar', { sequence: seq }); }
 Sequence = items:ItemList { return node('Sequence', { items }); }
 ItemList = head:Item tail:(_ Item)* { return [head, ...tail.map(([,i]) => i)]; } / '' { return []; }
-Item = Note / Rest / BarLine / Whitespace
+Item = Note / Rest / Chord / BarLine / Whitespace
 Note = pitch:Pitch tail:Hold? cont:($("|" "-"+))* {
   const extraText = cont.join('');
   const extraLen = extraText.length;
@@ -31,6 +31,19 @@ PitchRatio = n:Int "/" d:Int { const ns=n.toString(), ds=d.toString(); return no
 PitchDegree = n:Int { const s=n.toString(); return node('PitchDegree',{degree:n,len:s.length}); }
 Hold = s:$("|"? "-"+) { return node('Hold',{length:s.replace(/[|]+/g,'').length,len:s.length}); }
 Rest = "." { return node('Rest', { length: 1, len: 1 }); }
+PitchGroup = first:Pitch rest:(Whitespace Pitch)* {
+  const result = [first];
+  for (const pair of rest) {
+    result.push(pair[0], pair[1]);
+  }
+  return result;
+}
+Chord = "[" pitches:PitchGroup "]" tail:Hold? {
+  const noteTail = tail ?? undefined;
+  const pitchLen = pitches.reduce((sum, p) => sum + p.len, 0);
+  const tlen = noteTail ? noteTail.len : 0;
+  return node('Chord', { pitches, tail: noteTail, len: 2 + pitchLen + tlen });
+}
 BarLine = "|" { return node('BarLine',{delimiter:true,len:1}); }
 Whitespace = s:$([,\n\r\t ]+) { return node('Whitespace',{delimiter:true,len:s.length}); }
 Number = n:$([0-9]+ ("." [0-9]*)?) { return Number(n); }

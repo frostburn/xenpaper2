@@ -881,7 +881,54 @@ describe('grammar', () => {
         describe('chord', () => {
 
             it('should parse sequence with a chord', () => {
-                expect(() => parser('[0c,100c, 200c]--')).toThrow();
+                expect(strip(parser('[0c,100c, 200c]--')).sequence.items).toEqual([
+                    {
+                        type: 'Chord',
+                        pitches: [
+                            {
+                                type: 'Pitch',
+                                value: {
+                                    type: 'PitchCents',
+                                    cents: 0,
+                                    len: 2
+                                },
+                                len: 2
+                            },
+                            {
+                                type: 'Whitespace',
+                                len: 1
+                            },
+                            {
+                                type: 'Pitch',
+                                value: {
+                                    type: 'PitchCents',
+                                    cents: 100,
+                                    len: 4
+                                },
+                                len: 4
+                            },
+                            {
+                                type: 'Whitespace',
+                                len: 2
+                            },
+                            {
+                                type: 'Pitch',
+                                value: {
+                                    type: 'PitchCents',
+                                    cents: 200,
+                                    len: 4
+                                },
+                                len: 4
+                            }
+                        ],
+                        tail: {
+                            type: 'Hold',
+                            length: 2,
+                            len: 2
+                        },
+                        len: 17
+                    }
+                ]);
             });
 
             it('should error if chord is empty or not delimited properly', () => {
@@ -901,7 +948,55 @@ describe('grammar', () => {
             });
 
             it('should parse sequence with a chord with octave modifiers', () => {
-                expect(() => parser('[0,7,\'0]')).toThrow();
+                expect(strip(parser('[0,7,\'0]')).sequence.items).toEqual([
+                    {
+                        type: 'Chord',
+                        pitches: [
+                            {
+                                type: 'Pitch',
+                                value: {
+                                    type: 'PitchDegree',
+                                    degree: 0,
+                                    len: 1
+                                },
+                                len: 1
+                            },
+                            {
+                                type: 'Whitespace',
+                                len: 1
+                            },
+                            {
+                                type: 'Pitch',
+                                value: {
+                                    type: 'PitchDegree',
+                                    degree: 7,
+                                    len: 1
+                                },
+                                len: 1
+                            },
+                            {
+                                type: 'Whitespace',
+                                len: 1
+                            },
+                            {
+                                type: 'Pitch',
+                                value: {
+                                    type: 'PitchDegree',
+                                    degree: 0,
+                                    len: 1
+                                },
+                                octave: {
+                                    type: 'OctaveModifier',
+                                    octave: 1,
+                                    len: 1
+                                },
+                                len: 2
+                            }
+                        ],
+                        tail: undefined,
+                        len: 8
+                    }
+                ]);
             });
         });
 
