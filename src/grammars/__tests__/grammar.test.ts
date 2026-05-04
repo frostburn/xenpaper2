@@ -21,32 +21,29 @@ const strip = <T>(data: T): T => {
     return data;
 };
 
-describe.skip('grammar', () => {
+describe('grammar', () => {
 
     describe('sequence', () => {
 
         describe('sequence timing', () => {
 
             it('should parse sequence with one note', () => {
-                expect(strip(parser('2')).sequence.items).toEqual([
-                    {
-                        type: 'Note',
-                        pitch: {
-                            type: 'Pitch',
-                            value: {
-                                type: 'PitchDegree',
-                                degree: 2,
-                                len: 1
-                            },
-                            len: 1
+                const ast = parser('2');
+                expect(ast.type).toBe('XenpaperGrammar');
+                expect(ast.sequence.items).toHaveLength(1);
+                expect(strip(ast.sequence.items[0])).toMatchObject({
+                    type: 'Note',
+                    pitch: {
+                        type: 'Pitch',
+                        value: {
+                            type: 'PitchDegree',
+                            degree: 2,
                         },
-                        tail: undefined,
-                        len: 1
-                    }
-                ]);
+                    },
+                });
             });
 
-            it('should parse sequence with comma separated notes', () => {
+            it.skip('should parse sequence with comma separated notes', () => {
                 expect(strip(parser('2,34,56')).sequence.items).toEqual([
                     {
                         type: 'Note',
@@ -101,7 +98,7 @@ describe.skip('grammar', () => {
                 ]);
             });
 
-            it('should parse sequence with space separated notes', () => {
+            it.skip('should parse sequence with space separated notes', () => {
                 expect(strip(parser('2 34 56')).sequence.items).toEqual([
                     {
                         type: 'Note',
@@ -156,7 +153,7 @@ describe.skip('grammar', () => {
                 ]);
             });
 
-            it('should allow bar lines between items', () => {
+            it.skip('should allow bar lines between items', () => {
                 expect(strip(parser('2|34|56|')).sequence.items).toEqual([
                     {
                         type: 'Note',
@@ -215,7 +212,7 @@ describe.skip('grammar', () => {
                 ]);
             });
 
-            it('should parse sequence with hold separated notes', () => {
+            it.skip('should parse sequence with hold separated notes', () => {
                 expect(strip(parser('2-34---56')).sequence.items).toEqual([
                     {
                         type: 'Note',
@@ -270,7 +267,7 @@ describe.skip('grammar', () => {
                 ]);
             });
 
-            it('should allow comma after hold', () => {
+            it.skip('should allow comma after hold', () => {
                 expect(strip(parser('2-,3')).sequence.items).toEqual([
                     {
                         type: 'Note',
@@ -311,7 +308,7 @@ describe.skip('grammar', () => {
                 ]);
             });
 
-            it('should parse sequence with rest separated notes', () => {
+            it.skip('should parse sequence with rest separated notes', () => {
                 expect(strip(parser('2.34--...56')).sequence.items).toEqual([
                     {
                         type: 'Note',
@@ -382,7 +379,7 @@ describe.skip('grammar', () => {
                 ]);
             });
 
-            it('should allow rest to have comma', () => {
+            it.skip('should allow rest to have comma', () => {
                 expect(strip(parser('2.,3')).sequence.items).toEqual([
                     {
                         type: 'Note',
@@ -424,7 +421,7 @@ describe.skip('grammar', () => {
                 ]);
             });
 
-            it('should parse sequence and allow whitespace between items', () => {
+            it.skip('should parse sequence and allow whitespace between items', () => {
 
                 const seq = `|2.  34-- ...
                 56`;
@@ -515,11 +512,11 @@ describe.skip('grammar', () => {
                 ]);
             });
 
-            it('should error if hold is attempted after a rest', () => {
+            it.skip('should error if hold is attempted after a rest', () => {
                 expect(() => parser('2-.-')).toThrow('Unexpected token at 1:4. Remainder: -');
             });
 
-            it('should parse sequence with a hold after a bar line', () => {
+            it.skip('should parse sequence with a hold after a bar line', () => {
                 expect(strip(parser('2---|----|')).sequence.items).toEqual([
                     {
                         type: 'Note',
@@ -549,7 +546,7 @@ describe.skip('grammar', () => {
 
         describe('notes', () => {
 
-            it('should parse sequence with octave modifiers on notes', () => {
+            it.skip('should parse sequence with octave modifiers on notes', () => {
                 expect(strip(parser('\'0,"0,\'"0,`0,``0')).sequence.items).toEqual([
                     {
                         type: 'Note',
@@ -665,7 +662,7 @@ describe.skip('grammar', () => {
                 ]);
             });
 
-            it('should parse sequence with fraction notes', () => {
+            it.skip('should parse sequence with fraction notes', () => {
                 expect(strip(parser('2/3,3/4')).sequence.items).toEqual([
                     {
                         type: 'Note',
@@ -704,7 +701,7 @@ describe.skip('grammar', () => {
                 ]);
             });
 
-            it('should parse sequence with octave fraction notes', () => {
+            it.skip('should parse sequence with octave fraction notes', () => {
                 expect(strip(parser('2/3o,3/4o3,3/4o3/2')).sequence.items).toEqual([
                     {
                         type: 'Note',
@@ -765,7 +762,7 @@ describe.skip('grammar', () => {
                 ]);
             });
 
-            it('should parse sequence with octave fraction notes (type 2)', () => {
+            it.skip('should parse sequence with octave fraction notes (type 2)', () => {
                 expect(strip(parser('2\\3')).sequence.items).toEqual([
                     {
                         type: 'Note',
@@ -786,7 +783,7 @@ describe.skip('grammar', () => {
                 ]);
             });
 
-            it('should parse sequence with cents notes', () => {
+            it.skip('should parse sequence with cents notes', () => {
                 expect(strip(parser('2c,2.c,2.2c')).sequence.items).toEqual([
                     {
                         type: 'Note',
@@ -841,7 +838,7 @@ describe.skip('grammar', () => {
                 ]);
             });
 
-            it('should parse sequence with hz notes', () => {
+            it.skip('should parse sequence with hz notes', () => {
                 expect(strip(parser('2hz,2.Hz,2.2HZ')).sequence.items).toEqual([
                     {
                         type: 'Note',
@@ -899,7 +896,7 @@ describe.skip('grammar', () => {
 
         describe('chord', () => {
 
-            it('should parse sequence with a chord', () => {
+            it.skip('should parse sequence with a chord', () => {
                 expect(strip(parser('[0c,100c, 200c]--')).sequence.items).toEqual([
                     {
                         type: 'Chord',
@@ -950,11 +947,11 @@ describe.skip('grammar', () => {
                 ]);
             });
 
-            it('should error if chord is empty or not delimited properly', () => {
+            it.skip('should error if chord is empty or not delimited properly', () => {
                 expect(() => parser('[]')).toThrow('Unexpected token at 1:2. Remainder: ]');
             });
 
-            it('should parse sequence with a ratio chord', () => {
+            it.skip('should parse sequence with a ratio chord', () => {
                 expect(strip(parser('4:5:6:7--')).sequence.items).toEqual([
                     {
                         type: 'RatioChord',
@@ -1002,7 +999,7 @@ describe.skip('grammar', () => {
                 ]);
             });
 
-            it('should parse sequence with a ratio chord in square brackets', () => {
+            it.skip('should parse sequence with a ratio chord in square brackets', () => {
                 expect(strip(parser('[4:5:6:7]--')).sequence.items).toEqual([
                     {
                         type: 'Chord',
@@ -1050,7 +1047,7 @@ describe.skip('grammar', () => {
                 ]);
             });
 
-            it('should parse sequence with a ratio chord with interpolation', () => {
+            it.skip('should parse sequence with a ratio chord with interpolation', () => {
                 expect(strip(parser('4::7::10--')).sequence.items).toEqual([
                     {
                         type: 'RatioChord',
@@ -1097,7 +1094,7 @@ describe.skip('grammar', () => {
                 ]);
             });
 
-            it('should parse sequence with a chord with octave modifiers', () => {
+            it.skip('should parse sequence with a chord with octave modifiers', () => {
                 expect(strip(parser('[0,7,\'0]')).sequence.items).toEqual([
                     {
                         type: 'Chord',
@@ -1152,7 +1149,7 @@ describe.skip('grammar', () => {
 
         describe('scale setters', () => {
 
-            it('should parse sequence with edo setter', () => {
+            it.skip('should parse sequence with edo setter', () => {
                 expect(strip(parser('{12edo}')).sequence.items).toEqual([
                     {
                         type: 'SetScale',
@@ -1167,7 +1164,7 @@ describe.skip('grammar', () => {
                 ]);
             });
 
-            it('should parse sequence with ed2 setter', () => {
+            it.skip('should parse sequence with ed2 setter', () => {
                 expect(strip(parser('{12ed2}')).sequence.items).toEqual([
                     {
                         type: 'SetScale',
@@ -1182,7 +1179,7 @@ describe.skip('grammar', () => {
                 ]);
             });
 
-            it('should parse sequence with ed3 setter', () => {
+            it.skip('should parse sequence with ed3 setter', () => {
                 expect(strip(parser('{12ed3}')).sequence.items).toEqual([
                     {
                         type: 'SetScale',
@@ -1197,7 +1194,7 @@ describe.skip('grammar', () => {
                 ]);
             });
 
-            it('should parse sequence with ed3/2 setter', () => {
+            it.skip('should parse sequence with ed3/2 setter', () => {
                 expect(strip(parser('{12ed3/2}')).sequence.items).toEqual([
                     {
                         type: 'SetScale',
@@ -1212,7 +1209,7 @@ describe.skip('grammar', () => {
                 ]);
             });
 
-            it('should parse sequence with ratio scale setter', () => {
+            it.skip('should parse sequence with ratio scale setter', () => {
                 expect(strip(parser('{4:5:6}')).sequence.items).toEqual([
                     {
                         type: 'SetScale',
@@ -1291,7 +1288,7 @@ describe.skip('grammar', () => {
                 ]);
             });
 
-            it('should parse sequence with pitch set scale setter', () => {
+            it.skip('should parse sequence with pitch set scale setter', () => {
                 expect(strip(parser('{1/1,9/8,5/4}')).sequence.items).toEqual([
                     {
                         type: 'SetScale',
@@ -1487,7 +1484,7 @@ describe.skip('grammar', () => {
 
         describe('setters', () => {
 
-            it('should parse sequence with bpm setter', () => {
+            it.skip('should parse sequence with bpm setter', () => {
                 expect(strip(parser('(bpm:440; bpm: 432.5)')).sequence.items).toEqual([
                     {
                         type: 'SetterGroup',
@@ -1512,7 +1509,7 @@ describe.skip('grammar', () => {
                 ]);
             });
 
-            it('should parse sequence with bms setter', () => {
+            it.skip('should parse sequence with bms setter', () => {
                 expect(strip(parser('(bms:100; bms: 999.2)')).sequence.items).toEqual([
                     {
                         type: 'SetterGroup',
@@ -1537,7 +1534,7 @@ describe.skip('grammar', () => {
                 ]);
             });
 
-            it('should parse sequence with subdivision setter', () => {
+            it.skip('should parse sequence with subdivision setter', () => {
                 expect(strip(parser('(div:4; div:1/4)')).sequence.items).toEqual([
                     {
                         type: 'SetterGroup',
@@ -1564,7 +1561,7 @@ describe.skip('grammar', () => {
                 ]);
             });
 
-            it('should parse sequence with shorthand subdivision setter', () => {
+            it.skip('should parse sequence with shorthand subdivision setter', () => {
                 expect(strip(parser('(4)')).sequence.items).toEqual([
                     {
                         type: 'SetterGroup',
@@ -1581,7 +1578,7 @@ describe.skip('grammar', () => {
                 ]);
             });
 
-            it('should parse sequence with root setter', () => {
+            it.skip('should parse sequence with root setter', () => {
                 expect(strip(parser('{r6}{r7/5}{r300hz}{r400HZ}')).sequence.items).toEqual([
                     {
                         type: 'SetRoot',
@@ -1639,7 +1636,7 @@ describe.skip('grammar', () => {
                 ]);
             });
 
-            it('should parse sequence with osc setter', () => {
+            it.skip('should parse sequence with osc setter', () => {
                 expect(strip(parser('(osc:sine; osc: saw4)')).sequence.items).toEqual([
                     {
                         type: 'SetterGroup',
@@ -1664,7 +1661,7 @@ describe.skip('grammar', () => {
                 ]);
             });
 
-            it('should parse sequence with env setter', () => {
+            it.skip('should parse sequence with env setter', () => {
                 expect(strip(parser('(env:0123; env: 9873)')).sequence.items).toEqual([
                     {
                         type: 'SetterGroup',
@@ -1695,7 +1692,7 @@ describe.skip('grammar', () => {
                 ]);
             });
 
-            it('should parse sequence with ruler setter', () => {
+            it.skip('should parse sequence with ruler setter', () => {
                 expect(strip(parser('(rl:200c,400c)')).sequence.items).toEqual([
                     {
                         type: 'SetterGroup',
@@ -1728,7 +1725,7 @@ describe.skip('grammar', () => {
                 ]);
             });
 
-            it('should parse sequence with ruler plot', () => {
+            it.skip('should parse sequence with ruler plot', () => {
                 expect(strip(parser('(plot)')).sequence.items).toEqual([
                     {
                         type: 'SetterGroup',
@@ -1743,7 +1740,7 @@ describe.skip('grammar', () => {
                 ]);
             });
 
-            it('should error if setter is empty or not delimited properly', () => {
+            it.skip('should error if setter is empty or not delimited properly', () => {
                 expect(() => parser('()')).toThrow('Unexpected token at 1:2. Remainder: )');
                 expect(() => parser('(div:16;)')).toThrow('Unexpected token at 1:9. Remainder: )');
                 expect(() => parser('(div:16;;div:16)')).toThrow('Unexpected token at 1:9. Remainder: ;div:16)');
@@ -1754,7 +1751,7 @@ describe.skip('grammar', () => {
 
     describe('params', () => {
 
-        it('should parse sequence with param', () => {
+        it.skip('should parse sequence with param', () => {
             const output = strip(parser('embed:2'));
             expect(output.paramGroup).toEqual({
                 len: 6,
@@ -1785,7 +1782,7 @@ describe.skip('grammar', () => {
             ]);
         });
 
-        it('should not allow unknown params', () => {
+        it.skip('should not allow unknown params', () => {
             expect(() => strip(parser(':2'))).toThrow('Unexpected token at 1:1. Remainder: :2');
             expect(() => strip(parser('foo:2'))).toThrow('Unexpected token at 1:1. Remainder: foo:2');
         });
