@@ -9,7 +9,7 @@ const strip = <T>(data: T): T => {
     }
     if(data instanceof Object) {
         const result = Object.keys(data).reduce((obj, key) => {
-            if(key !== 'pos' && key !== 'delimiter') {
+            if(key !== 'pos' && key !== 'location' && key !== 'delimiter') {
                 // @ts-ignore
                 obj[key] = strip(data[key]);
             }
@@ -30,6 +30,7 @@ describe('grammar', () => {
             it('should parse sequence with one note', () => {
                 const ast = parser('2');
                 expect(ast.type).toBe('XenpaperGrammar');
+                expect(ast.location).toBeDefined();
                 expect(ast.sequence.items).toHaveLength(1);
                 expect(strip(ast.sequence.items[0])).toMatchObject({
                     type: 'Note',
@@ -214,7 +215,9 @@ describe('grammar', () => {
             });
 
             it('should parse sequence with hold separated notes', () => {
-                expect(strip(parser('2-34---56')).sequence.items).toEqual([
+                const held = parser('2-34---56');
+                expect(held.location).toBeDefined();
+                expect(strip(held).sequence.items).toEqual([
                     {
                         type: 'Note',
                         pitch: {

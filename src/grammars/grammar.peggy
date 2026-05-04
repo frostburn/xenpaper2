@@ -1,5 +1,5 @@
 {
-  const node = (type, extra = {}) => ({ type, delimiter: false, ...extra, pos: location().start.offset });
+  const node = (type, extra = {}) => ({ type, delimiter: false, ...extra, location: location() });
 }
 
 Start = seq:Sequence _ { return node('XenpaperGrammar', { sequence: seq }); }
