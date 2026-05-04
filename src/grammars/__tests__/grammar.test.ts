@@ -45,7 +45,7 @@ describe('grammar', () => {
                 expect(ast.sequence.items[0].tail).toBeUndefined();
             });
 
-            it.skip('should parse sequence with comma separated notes', () => {
+            it('should parse sequence with comma separated notes', () => {
                 expect(strip(parser('2,34,56')).sequence.items).toEqual([
                     {
                         type: 'Note',
@@ -100,7 +100,7 @@ describe('grammar', () => {
                 ]);
             });
 
-            it.skip('should parse sequence with space separated notes', () => {
+            it('should parse sequence with space separated notes', () => {
                 expect(strip(parser('2 34 56')).sequence.items).toEqual([
                     {
                         type: 'Note',
@@ -117,10 +117,6 @@ describe('grammar', () => {
                         len: 1
                     },
                     {
-                        type: 'Whitespace',
-                        len: 1
-                    },
-                    {
                         type: 'Note',
                         pitch: {
                             type: 'Pitch',
@@ -133,10 +129,6 @@ describe('grammar', () => {
                         },
                         tail: undefined,
                         len: 2
-                    },
-                    {
-                        type: 'Whitespace',
-                        len: 1
                     },
                     {
                         type: 'Note',
@@ -155,7 +147,7 @@ describe('grammar', () => {
                 ]);
             });
 
-            it.skip('should allow bar lines between items', () => {
+            it('should allow bar lines between items', () => {
                 expect(strip(parser('2|34|56|')).sequence.items).toEqual([
                     {
                         type: 'Note',
