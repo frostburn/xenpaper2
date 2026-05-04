@@ -5,7 +5,7 @@
 Start = seq:Sequence _ { return node('XenpaperGrammar', { sequence: seq }); }
 Sequence = items:ItemList { return node('Sequence', { items }); }
 ItemList = head:Item tail:(_ Item)* { return [head, ...tail.map(([,i]) => i)]; } / '' { return []; }
-Item = Note / BarLine / Whitespace
+Item = Note / Rest / BarLine / Whitespace
 Note = pitch:Pitch tail:Hold? { const noteTail = tail ?? undefined; const tlen = noteTail ? noteTail.len : 0; return node('Note', { pitch, tail: noteTail, len: pitch.len + tlen }); }
 Pitch = oct:OctaveModifier? val:(PitchCents / PitchHz / PitchOctaveDivision / PitchRatio / PitchDegree) {
   if (oct) return node('Pitch', { octave: oct, value: val, len: oct.len + val.len });
@@ -21,6 +21,7 @@ PitchOctaveDivision = n:Int [\\/] d:Int [oO] os:Int? ("/" od:Int)? {
 PitchRatio = n:Int "/" d:Int { const ns=n.toString(), ds=d.toString(); return node('PitchRatio',{numerator:n,denominator:d,len:ns.length+ds.length+1}); }
 PitchDegree = n:Int { const s=n.toString(); return node('PitchDegree',{degree:n,len:s.length}); }
 Hold = s:$("|"? "-"+) { return node('Hold',{length:s.replace(/[|]+/g,'').length,len:s.length}); }
+Rest = "." { return node('Rest', { length: 1, len: 1 }); }
 BarLine = "|" { return node('BarLine',{delimiter:true,len:1}); }
 Whitespace = s:$([,\n\r\t ]+) { return node('Whitespace',{delimiter:true,len:s.length}); }
 Number = n:$([0-9]+ ("." [0-9]*)?) { return Number(n); }

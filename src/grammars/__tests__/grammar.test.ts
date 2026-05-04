@@ -305,9 +305,6 @@ describe('grammar', () => {
             });
 
             it('should parse sequence with rest separated notes', () => {
-                expect(() => parser('2.34--...56')).toThrow();
-                // Rest syntax is not implemented in the current Peggy grammar yet.
-                return;
                 expect(strip(parser('2.34--...56')).sequence.items).toEqual([
                     {
                         type: 'Note',
@@ -379,9 +376,6 @@ describe('grammar', () => {
             });
 
             it('should allow rest to have comma', () => {
-                expect(() => parser('2.,3')).toThrow();
-                // Rest syntax is not implemented in the current Peggy grammar yet.
-                return;
                 expect(strip(parser('2.,3')).sequence.items).toEqual([
                     {
                         type: 'Note',
@@ -428,9 +422,6 @@ describe('grammar', () => {
                 const seq = `|2.  34-- ...
                 56`;
 
-                expect(() => parser(seq)).toThrow();
-                // Rest syntax is not implemented in the current Peggy grammar yet.
-                return;
                 expect(strip(parser(seq)).sequence.items).toEqual([
                     {
                         type: 'BarLine',
@@ -456,10 +447,6 @@ describe('grammar', () => {
                         len: 1
                     },
                     {
-                        type: 'Whitespace',
-                        len: 2
-                    },
-                    {
                         type: 'Note',
                         pitch: {
                             type: 'Pitch',
@@ -478,10 +465,6 @@ describe('grammar', () => {
                         len: 4
                     },
                     {
-                        type: 'Whitespace',
-                        len: 1
-                    },
-                    {
                         type: 'Rest',
                         length: 1,
                         len: 1
@@ -495,10 +478,6 @@ describe('grammar', () => {
                         type: 'Rest',
                         length: 1,
                         len: 1
-                    },
-                    {
-                        type: 'Whitespace',
-                        len: 17
                     },
                     {
                         type: 'Note',
