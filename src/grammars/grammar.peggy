@@ -5,7 +5,7 @@
 Start = seq:Sequence _ { return node('XenpaperGrammar', { sequence: seq }); }
 Sequence = items:ItemList { return node('Sequence', { items }); }
 ItemList = head:Item tail:(_ Item)* { return [head, ...tail.map(([,i]) => i)]; } / '' { return []; }
-Item = RatioChordItem / Note / Rest / Chord / BarLine / Whitespace
+Item = SetScale / RatioChordItem / Note / Rest / Chord / BarLine / Whitespace
 Note = pitch:Pitch tail:Hold? cont:($("|" "-"+))* {
   const extraText = cont.join('');
   const extraLen = extraText.length;
@@ -63,6 +63,36 @@ Chord = "[" pitches:((&([0-9]+ ":") rp:RatioChordPitches { return rp; }) / Pitch
   return node('Chord', { pitches, tail: noteTail, len: 2 + pitchLen + tlen });
 }
 BarLine = "|" { return node('BarLine',{delimiter:true,len:1}); }
+SetScale = "{" scale:(EdoScale / RatioChordScale / PitchGroupScale) "}" {
+  return node('SetScale', { scale, len: scale.len + 2 });
+}
+EdoScale = div:Int [eE][dD] [oO0]? os:Int? frac:("/" den:Int)? {
+  const den = frac ? frac[1] : 1;
+  const octaveSize = (os ?? 2) / den;
+  return node('EdoScale', { divisions: div, octaveSize, len: text().length });
+}
+ScaleOctaveMarker = "'" { return node('ScaleOctaveMarker', { len: 1 }); }
+RatioChordScale = first:RatioChordPitch colons:(Colon)+ rest:(RatioChordPitch (Colon RatioChordPitch)*) som:ScaleOctaveMarker? {
+  const pitches = [first, ...colons, rest[0], ...rest[1].flat()];
+  const scaleOctaveMarker = som ?? undefined;
+  const baseLen = pitches.reduce((sum, p) => sum + p.len, 0);
+  return node('RatioChordScale', { pitches, scaleOctaveMarker, len: baseLen + (scaleOctaveMarker?.len ?? 0) });
+}
+PitchGroupScalePrefix = p:[mM] ws:Whitespace? {
+  const w = ws ?? undefined;
+  return node('PitchGroupScalePrefix', { prefix: p.toLowerCase(), len: 1 + (w?.len ?? 0) });
+}
+PitchGroupScale = pref:PitchGroupScalePrefix? pitches:PitchGroup som:ScaleOctaveMarker? {
+  const pitchGroupScalePrefix = pref ?? undefined;
+  const scaleOctaveMarker = som ?? undefined;
+  const pitchLen = pitches.reduce((sum, p) => sum + p.len, 0);
+  return node('PitchGroupScale', {
+    pitchGroupScalePrefix,
+    pitches,
+    scaleOctaveMarker,
+    len: (pitchGroupScalePrefix?.len ?? 0) + pitchLen + (scaleOctaveMarker?.len ?? 0)
+  });
+}
 Whitespace = s:$([,\n\r\t ]+) { return node('Whitespace',{delimiter:true,len:s.length}); }
 Number = n:$([0-9]+ ("." [0-9]*)?) { return Number(n); }
 Int = n:$([0-9]+) { return Number(n); }

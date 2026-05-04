@@ -1047,7 +1047,7 @@ describe('grammar', () => {
 
         describe('scale setters', () => {
 
-            it.skip('should parse sequence with edo setter', () => {
+            it('should parse sequence with edo setter', () => {
                 expect(strip(parser('{12edo}')).sequence.items).toEqual([
                     {
                         type: 'SetScale',
@@ -1062,7 +1062,7 @@ describe('grammar', () => {
                 ]);
             });
 
-            it.skip('should parse sequence with ed2 setter', () => {
+            it('should parse sequence with ed2 setter', () => {
                 expect(strip(parser('{12ed2}')).sequence.items).toEqual([
                     {
                         type: 'SetScale',
@@ -1077,7 +1077,7 @@ describe('grammar', () => {
                 ]);
             });
 
-            it.skip('should parse sequence with ed3 setter', () => {
+            it('should parse sequence with ed3 setter', () => {
                 expect(strip(parser('{12ed3}')).sequence.items).toEqual([
                     {
                         type: 'SetScale',
@@ -1092,7 +1092,7 @@ describe('grammar', () => {
                 ]);
             });
 
-            it.skip('should parse sequence with ed3/2 setter', () => {
+            it('should parse sequence with ed3/2 setter', () => {
                 expect(strip(parser('{12ed3/2}')).sequence.items).toEqual([
                     {
                         type: 'SetScale',
@@ -1107,7 +1107,7 @@ describe('grammar', () => {
                 ]);
             });
 
-            it.skip('should parse sequence with ratio scale setter', () => {
+            it('should parse sequence with ratio scale setter', () => {
                 expect(strip(parser('{4:5:6}')).sequence.items).toEqual([
                     {
                         type: 'SetScale',
@@ -1186,7 +1186,7 @@ describe('grammar', () => {
                 ]);
             });
 
-            it.skip('should parse sequence with pitch set scale setter', () => {
+            it('should parse sequence with pitch set scale setter', () => {
                 expect(strip(parser('{1/1,9/8,5/4}')).sequence.items).toEqual([
                     {
                         type: 'SetScale',
