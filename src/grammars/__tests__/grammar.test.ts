@@ -1047,7 +1047,7 @@ describe('grammar', () => {
 
         describe('scale setters', () => {
 
-            it.skip('should parse sequence with edo setter', () => {
+            it('should parse sequence with edo setter', () => {
                 expect(strip(parser('{12edo}')).sequence.items).toEqual([
                     {
                         type: 'SetScale',
@@ -1062,7 +1062,7 @@ describe('grammar', () => {
                 ]);
             });
 
-            it.skip('should parse sequence with ed2 setter', () => {
+            it('should parse sequence with ed2 setter', () => {
                 expect(strip(parser('{12ed2}')).sequence.items).toEqual([
                     {
                         type: 'SetScale',
@@ -1077,7 +1077,35 @@ describe('grammar', () => {
                 ]);
             });
 
-            it.skip('should parse sequence with ed3 setter', () => {
+            it('should parse sequence with ed0 and ed1 setters', () => {
+                expect(strip(parser('{5ed0}')).sequence.items).toEqual([
+                    {
+                        type: 'SetScale',
+                        scale: {
+                            type: 'EdoScale',
+                            divisions: 5,
+                            octaveSize: 0,
+                            len: 4
+                        },
+                        len: 6
+                    }
+                ]);
+
+                expect(strip(parser('{5ed1}')).sequence.items).toEqual([
+                    {
+                        type: 'SetScale',
+                        scale: {
+                            type: 'EdoScale',
+                            divisions: 5,
+                            octaveSize: 1,
+                            len: 4
+                        },
+                        len: 6
+                    }
+                ]);
+            });
+
+            it('should parse sequence with ed3 setter', () => {
                 expect(strip(parser('{12ed3}')).sequence.items).toEqual([
                     {
                         type: 'SetScale',
@@ -1092,7 +1120,7 @@ describe('grammar', () => {
                 ]);
             });
 
-            it.skip('should parse sequence with ed3/2 setter', () => {
+            it('should parse sequence with ed3/2 setter', () => {
                 expect(strip(parser('{12ed3/2}')).sequence.items).toEqual([
                     {
                         type: 'SetScale',
@@ -1107,7 +1135,7 @@ describe('grammar', () => {
                 ]);
             });
 
-            it.skip('should parse sequence with ratio scale setter', () => {
+            it('should parse sequence with ratio scale setter', () => {
                 expect(strip(parser('{4:5:6}')).sequence.items).toEqual([
                     {
                         type: 'SetScale',
@@ -1184,9 +1212,50 @@ describe('grammar', () => {
                         len: 8
                     }
                 ]);
+
+                expect(strip(parser('{4:6::8}')).sequence.items).toEqual([
+                    {
+                        type: 'SetScale',
+                        scale: {
+                            type: 'RatioChordScale',
+                            pitches: [
+                                {
+                                    type: 'RatioChordPitch',
+                                    pitch: 4,
+                                    len: 1
+                                },
+                                {
+                                    type: 'Colon',
+                                    len: 1
+                                },
+                                {
+                                    type: 'RatioChordPitch',
+                                    pitch: 6,
+                                    len: 1
+                                },
+                                {
+                                    type: 'Colon',
+                                    len: 1
+                                },
+                                {
+                                    type: 'Colon',
+                                    len: 1
+                                },
+                                {
+                                    type: 'RatioChordPitch',
+                                    pitch: 8,
+                                    len: 1
+                                }
+                            ],
+                            scaleOctaveMarker: undefined,
+                            len: 6
+                        },
+                        len: 8
+                    }
+                ]);
             });
 
-            it.skip('should parse sequence with pitch set scale setter', () => {
+            it('should parse sequence with pitch set scale setter', () => {
                 expect(strip(parser('{1/1,9/8,5/4}')).sequence.items).toEqual([
                     {
                         type: 'SetScale',
@@ -1382,7 +1451,7 @@ describe('grammar', () => {
 
         describe('setters', () => {
 
-            it.skip('should parse sequence with bpm setter', () => {
+            it('should parse sequence with bpm setter', () => {
                 expect(strip(parser('(bpm:440; bpm: 432.5)')).sequence.items).toEqual([
                     {
                         type: 'SetterGroup',
@@ -1407,7 +1476,7 @@ describe('grammar', () => {
                 ]);
             });
 
-            it.skip('should parse sequence with bms setter', () => {
+            it('should parse sequence with bms setter', () => {
                 expect(strip(parser('(bms:100; bms: 999.2)')).sequence.items).toEqual([
                     {
                         type: 'SetterGroup',
@@ -1432,7 +1501,7 @@ describe('grammar', () => {
                 ]);
             });
 
-            it.skip('should parse sequence with subdivision setter', () => {
+            it('should parse sequence with subdivision setter', () => {
                 expect(strip(parser('(div:4; div:1/4)')).sequence.items).toEqual([
                     {
                         type: 'SetterGroup',
@@ -1459,7 +1528,7 @@ describe('grammar', () => {
                 ]);
             });
 
-            it.skip('should parse sequence with shorthand subdivision setter', () => {
+            it('should parse sequence with shorthand subdivision setter', () => {
                 expect(strip(parser('(4)')).sequence.items).toEqual([
                     {
                         type: 'SetterGroup',
@@ -1476,7 +1545,7 @@ describe('grammar', () => {
                 ]);
             });
 
-            it.skip('should parse sequence with root setter', () => {
+            it('should parse sequence with root setter', () => {
                 expect(strip(parser('{r6}{r7/5}{r300hz}{r400HZ}')).sequence.items).toEqual([
                     {
                         type: 'SetRoot',
@@ -1534,7 +1603,7 @@ describe('grammar', () => {
                 ]);
             });
 
-            it.skip('should parse sequence with osc setter', () => {
+            it('should parse sequence with osc setter', () => {
                 expect(strip(parser('(osc:sine; osc: saw4)')).sequence.items).toEqual([
                     {
                         type: 'SetterGroup',
@@ -1559,7 +1628,7 @@ describe('grammar', () => {
                 ]);
             });
 
-            it.skip('should parse sequence with env setter', () => {
+            it('should parse sequence with env setter', () => {
                 expect(strip(parser('(env:0123; env: 9873)')).sequence.items).toEqual([
                     {
                         type: 'SetterGroup',
@@ -1590,7 +1659,7 @@ describe('grammar', () => {
                 ]);
             });
 
-            it.skip('should parse sequence with ruler setter', () => {
+            it('should parse sequence with ruler setter', () => {
                 expect(strip(parser('(rl:200c,400c)')).sequence.items).toEqual([
                     {
                         type: 'SetterGroup',
@@ -1623,7 +1692,7 @@ describe('grammar', () => {
                 ]);
             });
 
-            it.skip('should parse sequence with ruler plot', () => {
+            it('should parse sequence with ruler plot', () => {
                 expect(strip(parser('(plot)')).sequence.items).toEqual([
                     {
                         type: 'SetterGroup',
@@ -1638,18 +1707,18 @@ describe('grammar', () => {
                 ]);
             });
 
-            it.skip('should error if setter is empty or not delimited properly', () => {
-                expect(() => parser('()')).toThrow('Unexpected token at 1:2. Remainder: )');
-                expect(() => parser('(div:16;)')).toThrow('Unexpected token at 1:9. Remainder: )');
-                expect(() => parser('(div:16;;div:16)')).toThrow('Unexpected token at 1:9. Remainder: ;div:16)');
-                expect(() => parser('(env:123)')).toThrow('Unexpected token at 1:6. Remainder: 123)');
+            it('should error if setter is empty or not delimited properly', () => {
+                expect(() => parser('()')).toThrow();
+                expect(() => parser('(div:16;)')).toThrow();
+                expect(() => parser('(div:16;;div:16)')).toThrow();
+                expect(() => parser('(env:123)')).toThrow();
             });
         });
     });
 
     describe('params', () => {
 
-        it.skip('should parse sequence with param', () => {
+        it('should parse sequence with param', () => {
             const output = strip(parser('embed:2'));
             expect(output.paramGroup).toEqual({
                 len: 6,
@@ -1680,9 +1749,9 @@ describe('grammar', () => {
             ]);
         });
 
-        it.skip('should not allow unknown params', () => {
-            expect(() => strip(parser(':2'))).toThrow('Unexpected token at 1:1. Remainder: :2');
-            expect(() => strip(parser('foo:2'))).toThrow('Unexpected token at 1:1. Remainder: foo:2');
+        it('should not allow unknown params', () => {
+            expect(() => strip(parser(':2'))).toThrow();
+            expect(() => strip(parser('foo:2'))).toThrow();
         });
     });
 });

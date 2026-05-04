@@ -2,10 +2,19 @@
   const node = (type, extra = {}) => ({ type, delimiter: false, ...extra, location: location() });
 }
 
-Start = seq:Sequence _ { return node('XenpaperGrammar', { sequence: seq }); }
+Start = pg:ParamGroup? seq:Sequence? _ {
+  return node('XenpaperGrammar', { paramGroup: pg ?? undefined, sequence: seq ?? node('Sequence', { items: [], len: 0 }) });
+}
+ParamGroup = first:Param rest:(Semicolon Param)* ":" {
+  const params = [first, ...rest.map(([, p]) => p)];
+  const len = params.reduce((sum, p) => sum + p.len, 0) + rest.reduce((sum, [s]) => sum + s.len, 0) + 1;
+  return node('ParamGroup', { params, len });
+}
+Param = ParamEmbed
+ParamEmbed = [eE][mM][bB][eE][dD] { return node('ParamEmbed', { len: 5 }); }
 Sequence = items:ItemList { return node('Sequence', { items }); }
 ItemList = head:Item tail:(_ Item)* { return [head, ...tail.map(([,i]) => i)]; } / '' { return []; }
-Item = RatioChordItem / Note / Rest / Chord / BarLine / Whitespace
+Item = SetterGroup / SetRoot / SetScale / RatioChordItem / Note / Rest / Chord / BarLine / Whitespace
 Note = pitch:Pitch tail:Hold? cont:($("|" "-"+))* {
   const extraText = cont.join('');
   const extraLen = extraText.length;
@@ -63,6 +72,55 @@ Chord = "[" pitches:((&([0-9]+ ":") rp:RatioChordPitches { return rp; }) / Pitch
   return node('Chord', { pitches, tail: noteTail, len: 2 + pitchLen + tlen });
 }
 BarLine = "|" { return node('BarLine',{delimiter:true,len:1}); }
+Semicolon = ";" ws:Whitespace? { return node('Semicolon', { delimiter: true, len: 1 + (ws?.len ?? 0) }); }
+SetterGroup = "(" first:Setter rest:(Semicolon Setter)* ")" {
+  const setters = [first];
+  for (const part of rest) setters.push(part[0], part[1]);
+  const contentLen = setters.reduce((sum, s) => sum + s.len, 0);
+  return node('SetterGroup', { setters, len: contentLen + 2 });
+}
+Setter = SetBpm / SetBms / SetSubdivision / SetOsc / SetEnv / SetRulerRange / SetRulerPlot
+SetBpm = [bB][pP][mM] ":" ws:Whitespace? bpm:Number { return node('SetBpm', { bpm, len: 4 + (ws?.len ?? 0) + bpm.toString().length }); }
+SetBms = [bB][mM][sS] ":" ws:Whitespace? bms:Number { return node('SetBms', { bms, len: 4 + (ws?.len ?? 0) + bms.toString().length }); }
+SetSubdivision = ([dD][iI][vV] ":" ws:Whitespace? n:Int frac:("/" d:Int)? {
+  return node('SetSubdivision', { subdivision: n, denominator: frac ? frac[1] : undefined, len: 4 + (ws?.len ?? 0) + n.toString().length + (frac ? (1 + frac[1].toString().length) : 0) });
+}) / (n:Int { return node('SetSubdivision', { subdivision: n, denominator: undefined, len: n.toString().length }); })
+SetOsc = [oO][sS][cC] ":" ws:Whitespace? osc:$([a-zA-Z0-9]+) { return node('SetOsc', { osc: osc.toLowerCase(), len: 4 + (ws?.len ?? 0) + osc.length }); }
+SetEnv = [eE][nN][vV] ":" ws:Whitespace? vals:$([0-9][0-9][0-9][0-9]) {
+  return node('SetEnv', { a: Number(vals[0]), d: Number(vals[1]), s: Number(vals[2]), r: Number(vals[3]), len: 4 + (ws?.len ?? 0) + 4 });
+}
+SetRulerRange = [rR][lL] ":" low:Pitch "," high:Pitch { return node('SetRulerRange', { low, high, len: 3 + low.len + 1 + high.len }); }
+SetRulerPlot = [pP][lL][oO][tT] { return node('SetRulerPlot', { len: 4 }); }
+SetRoot = "{r" p:Pitch "}" { return node('SetRoot', { pitch: p, len: p.len + 3 }); }
+SetScale = "{" scale:(EdoScale / RatioChordScale / PitchGroupScale) "}" {
+  return node('SetScale', { scale, len: scale.len + 2 });
+}
+EdoScale = div:Int [eE][dD] [oO]? os:Int? frac:("/" den:Int)? {
+  const den = frac ? frac[1] : 1;
+  const octaveSize = (os ?? 2) / den;
+  return node('EdoScale', { divisions: div, octaveSize, len: text().length });
+}
+ScaleOctaveMarker = "'" { return node('ScaleOctaveMarker', { len: 1 }); }
+RatioChordScale = &([0-9]+ ":") pitches:RatioChordPitches som:ScaleOctaveMarker? {
+  const scaleOctaveMarker = som ?? undefined;
+  const baseLen = pitches.reduce((sum, p) => sum + p.len, 0);
+  return node('RatioChordScale', { pitches, scaleOctaveMarker, len: baseLen + (scaleOctaveMarker?.len ?? 0) });
+}
+PitchGroupScalePrefix = p:[mM] ws:Whitespace? {
+  const w = ws ?? undefined;
+  return node('PitchGroupScalePrefix', { prefix: p.toLowerCase(), len: 1 + (w?.len ?? 0) });
+}
+PitchGroupScale = pref:PitchGroupScalePrefix? pitches:PitchGroup som:ScaleOctaveMarker? {
+  const pitchGroupScalePrefix = pref ?? undefined;
+  const scaleOctaveMarker = som ?? undefined;
+  const pitchLen = pitches.reduce((sum, p) => sum + p.len, 0);
+  return node('PitchGroupScale', {
+    pitchGroupScalePrefix,
+    pitches,
+    scaleOctaveMarker,
+    len: (pitchGroupScalePrefix?.len ?? 0) + pitchLen + (scaleOctaveMarker?.len ?? 0)
+  });
+}
 Whitespace = s:$([,\n\r\t ]+) { return node('Whitespace',{delimiter:true,len:s.length}); }
 Number = n:$([0-9]+ ("." [0-9]*)?) { return Number(n); }
 Int = n:$([0-9]+) { return Number(n); }
