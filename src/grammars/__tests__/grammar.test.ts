@@ -936,15 +936,60 @@ describe('grammar', () => {
             });
 
             it('should parse sequence with a ratio chord', () => {
-                expect(() => parser('4:5:6:7--')).toThrow();
+                expect(strip(parser('4:5:6:7--')).sequence.items).toEqual([
+                    {
+                        type: 'RatioChord',
+                        pitches: [
+                            { type: 'RatioChordPitch', pitch: 4, len: 1 },
+                            { type: 'Colon', len: 1 },
+                            { type: 'RatioChordPitch', pitch: 5, len: 1 },
+                            { type: 'Colon', len: 1 },
+                            { type: 'RatioChordPitch', pitch: 6, len: 1 },
+                            { type: 'Colon', len: 1 },
+                            { type: 'RatioChordPitch', pitch: 7, len: 1 }
+                        ],
+                        tail: { type: 'Hold', length: 2, len: 2 },
+                        len: 9
+                    }
+                ]);
             });
 
             it('should parse sequence with a ratio chord in square brackets', () => {
-                expect(() => parser('[4:5:6:7]--')).toThrow();
+                expect(strip(parser('[4:5:6:7]--')).sequence.items).toEqual([
+                    {
+                        type: 'Chord',
+                        pitches: [
+                            { type: 'RatioChordPitch', pitch: 4, len: 1 },
+                            { type: 'Colon', len: 1 },
+                            { type: 'RatioChordPitch', pitch: 5, len: 1 },
+                            { type: 'Colon', len: 1 },
+                            { type: 'RatioChordPitch', pitch: 6, len: 1 },
+                            { type: 'Colon', len: 1 },
+                            { type: 'RatioChordPitch', pitch: 7, len: 1 }
+                        ],
+                        tail: { type: 'Hold', length: 2, len: 2 },
+                        len: 11
+                    }
+                ]);
             });
 
             it('should parse sequence with a ratio chord with interpolation', () => {
-                expect(() => parser('4::7::10--')).toThrow();
+                expect(strip(parser('4::7::10--')).sequence.items).toEqual([
+                    {
+                        type: 'RatioChord',
+                        pitches: [
+                            { type: 'RatioChordPitch', pitch: 4, len: 1 },
+                            { type: 'Colon', len: 1 },
+                            { type: 'Colon', len: 1 },
+                            { type: 'RatioChordPitch', pitch: 7, len: 1 },
+                            { type: 'Colon', len: 1 },
+                            { type: 'Colon', len: 1 },
+                            { type: 'RatioChordPitch', pitch: 10, len: 2 }
+                        ],
+                        tail: { type: 'Hold', length: 2, len: 2 },
+                        len: 10
+                    }
+                ]);
             });
 
             it('should parse sequence with a chord with octave modifiers', () => {

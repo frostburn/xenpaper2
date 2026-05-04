@@ -5,7 +5,7 @@
 Start = seq:Sequence _ { return node('XenpaperGrammar', { sequence: seq }); }
 Sequence = items:ItemList { return node('Sequence', { items }); }
 ItemList = head:Item tail:(_ Item)* { return [head, ...tail.map(([,i]) => i)]; } / '' { return []; }
-Item = Note / Rest / Chord / BarLine / Whitespace
+Item = RatioChordItem / Note / Rest / Chord / BarLine / Whitespace
 Note = pitch:Pitch tail:Hold? cont:($("|" "-"+))* {
   const extraText = cont.join('');
   const extraLen = extraText.length;
@@ -38,7 +38,25 @@ PitchGroup = first:Pitch rest:(Whitespace Pitch)* {
   }
   return result;
 }
-Chord = "[" pitches:PitchGroup "]" tail:Hold? {
+RatioChordPitch = n:Int { return node('RatioChordPitch', { pitch: n, len: text().length }); }
+Colon = ":" { return node('Colon', { delimiter: true, len: 1 }); }
+RatioChordPitches = first:RatioChordPitch rest:((Colon)+ RatioChordPitch)* {
+  const result = [first];
+  for (const part of rest) {
+    const colons = part[0];
+    const pitch = part[1];
+    result.push(...colons, pitch);
+  }
+  return result;
+}
+RatioChord = pitches:RatioChordPitches tail:Hold? {
+  const noteTail = tail ?? undefined;
+  const pitchLen = pitches.reduce((sum, p) => sum + p.len, 0);
+  const tlen = noteTail ? noteTail.len : 0;
+  return node('RatioChord', { pitches, tail: noteTail, len: pitchLen + tlen });
+}
+RatioChordItem = &([0-9]+ ":") rc:RatioChord { return rc; }
+Chord = "[" pitches:((&([0-9]+ ":") rp:RatioChordPitches { return rp; }) / PitchGroup) "]" tail:Hold? {
   const noteTail = tail ?? undefined;
   const pitchLen = pitches.reduce((sum, p) => sum + p.len, 0);
   const tlen = noteTail ? noteTail.len : 0;
