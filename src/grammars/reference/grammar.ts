@@ -1,4 +1,4 @@
-import * as parser from './grammar.generated.js';
+import * as parser from '../grammar.generated.js';
 
 export type XenpaperAST = any;
 

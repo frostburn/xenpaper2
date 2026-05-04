@@ -14,7 +14,7 @@
     "lint:oxlint": "oxlint . --fix",
     "lint:eslint": "eslint . --fix --cache",
     "format": "oxfmt src/",
-    "compile:grammar": "node scripts/compile-reference-grammar.mjs"
+    "compile:grammar": "peggy --format es src/grammars/grammar.peggy -o src/grammars/grammar.generated.js"
   },
   "dependencies": {
     "peggy": "^5.1.0",
