@@ -2,13 +2,30 @@
 import { ref } from 'vue'
 
 import { parse } from './grammars/grammar.generated.js'
+import { processGrammar } from './grammars/process-grammar'
+import { scoreToMs } from './mosc'
+import { SoundEngineTonejs } from './sound-engine-tonejs'
 import type { XenpaperAST } from './grammars/grammar.generated'
 
+const soundEngine = new SoundEngineTonejs()
 const sourceCode = ref('')
 
+const parseSourceCode = (): XenpaperAST => parse(sourceCode.value, { grammarSource: 'source-code' })
+
 const logParsedAst = (): void => {
-  const ast: XenpaperAST = parse(sourceCode.value, { grammarSource: 'source-code' })
-  console.log('Parsed XenpaperAST:', ast)
+  console.log('Parsed XenpaperAST:', parseSourceCode())
+}
+
+const playParsedScore = async (): Promise<void> => {
+  const { score } = processGrammar(parseSourceCode())
+
+  if (!score) {
+    return
+  }
+
+  await soundEngine.setScore(scoreToMs(score))
+  await soundEngine.gotoMs(0)
+  await soundEngine.play()
 }
 </script>
 
@@ -22,7 +39,12 @@ const logParsedAst = (): void => {
       placeholder="Enter Xenpaper source code..."
       spellcheck="false"
     />
-    <button class="parse-button" type="button" @click="logParsedAst">Log parsed XenpaperAST</button>
+    <div class="actions">
+      <button class="action-button" type="button" @click="logParsedAst">
+        Log parsed XenpaperAST
+      </button>
+      <button class="action-button" type="button" @click="playParsedScore">Play with Tone.js</button>
+    </div>
   </main>
 </template>
 
@@ -51,8 +73,13 @@ const logParsedAst = (): void => {
   resize: vertical;
 }
 
-.parse-button {
-  align-self: flex-start;
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.action-button {
   padding: 0.75rem 1rem;
   border: 1px solid var(--color-border);
   border-radius: 0.5rem;
@@ -61,7 +88,7 @@ const logParsedAst = (): void => {
   cursor: pointer;
 }
 
-.parse-button:hover {
+.action-button:hover {
   border-color: hsla(160, 100%, 37%, 1);
 }
 </style>
