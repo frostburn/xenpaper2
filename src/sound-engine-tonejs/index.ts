@@ -1,7 +1,7 @@
 import type { MoscScoreMs, MoscNoteMs } from '../mosc'
 import { SoundEngine } from '../mosc'
 import * as Tone from 'tone'
-import type { SynthOptions, ToneOscillatorType } from 'tone'
+import type { PolySynth, Synth, SynthOptions, ToneOscillatorType } from 'tone'
 
 //
 // utils
@@ -92,18 +92,24 @@ export class SoundEngineTonejs extends SoundEngine {
   _loopEndMs = 0
   _activeNoteEvents = new Set<MoscNoteMs>()
 
-  synth = new Tone.PolySynth(Tone.Synth, {
-    oscillator: {
-      type: 'sine',
-      volume: OSC_VOLUME,
-    },
-    envelope: {
-      attack: 0.01,
-      sustain: 0.5,
-      decay: 0.25,
-      release: 0.5,
-    },
-  }).chain(Tone.Destination)
+  _synth: PolySynth<Synth> | undefined
+
+  getSynth(): PolySynth<Synth> {
+    this._synth ??= new Tone.PolySynth(Tone.Synth, {
+      oscillator: {
+        type: 'sine',
+        volume: OSC_VOLUME,
+      },
+      envelope: {
+        attack: 0.01,
+        sustain: 0.5,
+        decay: 0.25,
+        release: 0.5,
+      },
+    }).chain(Tone.Destination)
+
+    return this._synth
+  }
 
   playing(): boolean {
     return Tone.Transport.state === 'started'
@@ -124,10 +130,11 @@ export class SoundEngineTonejs extends SoundEngine {
   async start(): Promise<void> {
     if (!this._started) {
       await Tone.start()
+      this.getSynth()
       this._started = true
 
       const onEnd = (time: number) => {
-        this.synth.releaseAll(time)
+        this.getSynth().releaseAll(time)
         this._activeNoteEvents.forEach((noteMs) => {
           this._triggerEvent('note', noteMs, false)
         })
@@ -184,7 +191,7 @@ export class SoundEngineTonejs extends SoundEngine {
         const noteMs = item
         Tone.Transport.schedule(
           (time: number) => {
-            this.synth.triggerAttackRelease(
+            this.getSynth().triggerAttackRelease(
               noteMs.hz,
               noteMs.msEnd * 0.001 - noteMs.ms * 0.001,
               time,
@@ -215,7 +222,7 @@ export class SoundEngineTonejs extends SoundEngine {
           // to schedule correctly, but param changes cannot accept
           // the time argument
           if (isOscParam(paramMs.value)) {
-            this.synth.set({
+            this.getSynth().set({
               oscillator: {
                 type: paramMs.value.osc,
                 volume: OSC_VOLUME,
@@ -223,7 +230,7 @@ export class SoundEngineTonejs extends SoundEngine {
             })
           }
           if (isEnvParam(paramMs.value)) {
-            this.synth.set({
+            this.getSynth().set({
               envelope: {
                 attack: paramMs.value.a,
                 decay: paramMs.value.d,
