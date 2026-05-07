@@ -343,6 +343,7 @@ watch(
     rulerState.rootHz = initialState?.rootHz
     rulerState.octaveSize = initialState?.octaveSize
     rulerState.plots = initialState?.plots ?? []
+    rulerState.notesActive.clear()
 
     if (!colourModeOptions.value.some(({ value }) => value === rulerState.colourMode)) {
       rulerState.colourMode = 'gradient'
