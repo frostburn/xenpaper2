@@ -230,6 +230,16 @@ type Context = {
 
 const times: [number, number][] = []
 
+type ChordPitchType = PitchType | RatioChordPitchType | DelimiterType
+
+const isPitchType = (pitch: ChordPitchType): pitch is PitchType => {
+  return pitch.type === 'Pitch' && 'value' in pitch
+}
+
+const isRatioChordPitchType = (pitch: ChordPitchType): pitch is RatioChordPitchType => {
+  return pitch.type === 'RatioChordPitch' && 'pitch' in pitch
+}
+
 const noteToMosc = (note: NoteType, context: Context): MoscNote[] => {
   const timeProps = tailToTime(note.tail, context)
 
@@ -253,6 +263,7 @@ const noteToMosc = (note: NoteType, context: Context): MoscNote[] => {
 
 const chordToMosc = (chord: ChordType | RatioChordType, context: Context): MoscNote[] => {
   const { tail, pitches } = chord
+  const chordPitches: ChordPitchType[] = pitches
   const timeProps = tailToTime(tail, context)
 
   // mutate ast node to add time
@@ -260,11 +271,11 @@ const chordToMosc = (chord: ChordType | RatioChordType, context: Context): MoscN
   times.push(arr)
   chord.time = arr
 
-  const pitchTypes: MoscNote[] = pitches
-    .filter((pitch): pitch is PitchType => pitch.type === 'Pitch')
-    .map((pitch: unknown) => {
-      const hz = pitchToHz(pitch as PitchType, context)
-      const label = pitchToLabel(pitch as PitchType, context)
+  const pitchTypes: MoscNote[] = chordPitches
+    .filter(isPitchType)
+    .map((pitch) => {
+      const hz = pitchToHz(pitch, context)
+      const label = pitchToLabel(pitch, context)
 
       return {
         type: 'NOTE_TIME',
@@ -274,11 +285,12 @@ const chordToMosc = (chord: ChordType | RatioChordType, context: Context): MoscN
       }
     })
 
-  const firstRatioPitch = pitches.find((pitch: PitchType | RatioChordPitchType | DelimiterType) => {
-    return pitch.type === 'RatioChordPitch'
-  }) as RatioChordPitchType | undefined
+  const firstRatioPitch = chordPitches.find(isRatioChordPitchType)
+  const firstDenominator = firstRatioPitch?.pitch
 
-  const firstDenominator = (firstRatioPitch as RatioChordPitchType)?.pitch
+  if (firstDenominator === undefined) {
+    return pitchTypes
+  }
 
   if (firstDenominator <= 0) {
     throw new Error(`Chords cannot contain a ratio of ${firstDenominator}`)
@@ -299,9 +311,9 @@ const chordToMosc = (chord: ChordType | RatioChordType, context: Context): MoscN
 
   let colons = 0
   let lastNumerator = 1
-  pitches.forEach((pitch: unknown) => {
-    if (pitch.type === 'RatioChordPitch') {
-      const numerator = (pitch as RatioChordPitchType).pitch
+  chordPitches.forEach((pitch) => {
+    if (isRatioChordPitchType(pitch)) {
+      const numerator = pitch.pitch
       if (numerator <= 0) {
         throw new Error(`Chords cannot contain a ratio of ${numerator}`)
       }
