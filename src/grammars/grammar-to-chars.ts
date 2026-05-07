@@ -1,3 +1,5 @@
+import type { XenpaperAST } from './grammar.generated'
+
 export type HighlightColor =
   | 'delimiter'
   | 'pitch'
@@ -29,12 +31,6 @@ type GrammarNode = {
   time?: [number, number]
   location?: GrammarLocation
   [key: string]: unknown
-}
-
-export type XenpaperAST = {
-  sequence?: {
-    items?: unknown[]
-  }
 }
 
 const colorMap = new Map<string, HighlightColor>([

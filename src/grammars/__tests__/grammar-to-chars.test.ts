@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { grammarToChars, type CharData, type XenpaperAST } from '../grammar-to-chars'
+import { grammarToChars, type CharData } from '../grammar-to-chars'
+import type { XenpaperAST } from '../grammar.generated'
 import * as parserModule from '../grammar.generated.js'
 
 const parser = (
@@ -80,12 +81,12 @@ describe('grammarToChars', () => {
           },
         ],
       },
-    })
+    } as unknown as XenpaperAST)
 
     expect(chars[0]).toEqual({ color: 'pitch', playTime: [1, 2] })
   })
 
   it('returns no character data when the AST has no sequence', () => {
-    expect(grammarToChars({})).toEqual([])
+    expect(grammarToChars({} as unknown as XenpaperAST)).toEqual([])
   })
 })
