@@ -243,10 +243,10 @@ export class SoundEngineTonejs extends SoundEngine {
           this.setLoopEnd(0)
         }
 
-        Tone.Transport.schedule(() => {
+        Tone.Transport.schedule((time: number) => {
           if (Tone.Transport.loop) return
 
-          Tone.Transport.stop()
+          Tone.Transport.stop(time)
           this._triggerEvent('end')
         }, this._endMs * 0.001)
 
