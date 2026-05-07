@@ -262,9 +262,19 @@ export class SoundEngine {
     note: new Set<SoundEngineNoteEventCallback>(),
   }
 
-  _triggerEvent(type: 'end' | 'note', ...params: any) {
-    // @ts-ignore
-    this.events[type].forEach((cb) => cb(...params))
+  _triggerEvent(type: 'end'): void
+  _triggerEvent(type: 'note', noteMs: MoscNoteMs, on: boolean): void
+  _triggerEvent(type: 'end' | 'note', noteMs?: MoscNoteMs, on?: boolean): void {
+    if (type === 'end') {
+      this.events.end.forEach((cb) => cb())
+      return
+    }
+
+    if (!noteMs || typeof on !== 'boolean') {
+      throw new Error('Note event requires a note and on/off state.')
+    }
+
+    this.events.note.forEach((cb) => cb(noteMs, on))
   }
 
   onEnd(callback: SoundEngineEndEventCallback): SoundEngineEventCallbackCancel {

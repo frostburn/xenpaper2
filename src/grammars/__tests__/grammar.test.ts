@@ -1,8 +1,16 @@
 import { describe, it, expect } from 'vitest'
 import * as parserModule from '../grammar.generated.js'
+type LooseParserResult = {
+  type: unknown
+  location: unknown
+  sequence: LooseParserResult
+  items: [LooseParserResult, ...LooseParserResult[]]
+  paramGroup: LooseParserResult
+  tail: unknown
+}
 
-function parser(input: string): any {
-  return parserModule.parse(input, { grammarSource: 'test-input' })
+function parser(input: string): LooseParserResult {
+  return parserModule.parse(input, { grammarSource: 'test-input' }) as unknown as LooseParserResult
 }
 
 import GRAMMAR_SOURCE from '../grammar.peggy?raw'
@@ -35,12 +43,12 @@ const strip = <T>(data: T): T => {
   if (Array.isArray(data)) {
     return data.map((value) => strip(value)) as unknown as T
   }
-  if (data instanceof Object) {
-    const result = Object.keys(data).reduce(
+  if (data && typeof data === 'object') {
+    const record = data as Record<string, unknown>
+    const result = Object.keys(record).reduce(
       (obj, key) => {
         if (key !== 'pos' && key !== 'location' && key !== 'delimiter') {
-          // @ts-ignore
-          obj[key] = strip(data[key])
+          obj[key] = strip(record[key])
         }
         return obj
       },
