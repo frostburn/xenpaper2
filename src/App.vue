@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
+import TutorialSidebar from './components/TutorialSidebar.vue'
 import { parse } from './grammars/grammar.generated.js'
 import { processGrammar } from './grammars/process-grammar'
 import { scoreToMs } from './mosc'
@@ -11,6 +12,10 @@ const soundEngine = new SoundEngineTonejs()
 const sourceCode = ref('')
 
 const parseSourceCode = (): XenpaperAST => parse(sourceCode.value, { grammarSource: 'source-code' })
+
+const setSourceCode = (tune: string): void => {
+  sourceCode.value = tune
+}
 
 const logParsedAst = (): void => {
   console.log('Parsed XenpaperAST:', parseSourceCode())
@@ -30,31 +35,44 @@ const playParsedScore = async (): Promise<void> => {
 </script>
 
 <template>
-  <main class="xenpaper-app">
-    <label class="source-label" for="source-code">Source code</label>
-    <textarea
-      id="source-code"
-      v-model="sourceCode"
-      class="source-input"
-      placeholder="Enter Xenpaper source code..."
-      spellcheck="false"
-    />
-    <div class="actions">
-      <button class="action-button" type="button" @click="logParsedAst">
-        Log parsed XenpaperAST
-      </button>
-      <button class="action-button" type="button" @click="playParsedScore">Play with Tone.js</button>
-    </div>
-  </main>
+  <div class="app-layout">
+    <TutorialSidebar @set-tune="setSourceCode" />
+
+    <main class="xenpaper-app">
+      <label class="source-label" for="source-code">Source code</label>
+      <textarea
+        id="source-code"
+        v-model="sourceCode"
+        class="source-input"
+        placeholder="Enter Xenpaper source code..."
+        spellcheck="false"
+      />
+      <div class="actions">
+        <button class="action-button" type="button" @click="logParsedAst">
+          Log parsed XenpaperAST
+        </button>
+        <button class="action-button" type="button" @click="playParsedScore">
+          Play with Tone.js
+        </button>
+      </div>
+    </main>
+  </div>
 </template>
 
 <style scoped>
+.app-layout {
+  display: grid;
+  grid-template-columns: minmax(20rem, 28rem) minmax(0, 1fr);
+  min-height: 100vh;
+}
+
 .xenpaper-app {
   display: flex;
   flex-direction: column;
   gap: 1rem;
   width: min(100%, 48rem);
   margin: 0 auto;
+  padding: 2rem;
 }
 
 .source-label {
@@ -90,5 +108,11 @@ const playParsedScore = async (): Promise<void> => {
 
 .action-button:hover {
   border-color: hsla(160, 100%, 37%, 1);
+}
+
+@media (max-width: 900px) {
+  .app-layout {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
