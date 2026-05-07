@@ -348,13 +348,17 @@ onUnmounted(() => {
 }
 
 .source-character {
-  transition: color 0.2s ease-out, background-color 0.2s ease-out;
+  transition:
+    color 0.2s ease-out,
+    background-color 0.2s ease-out;
 }
 
 .source-character.active {
   color: #fff;
   background: hsla(160, 100%, 37%, 0.6);
-  transition: color 0s linear, background-color 0s linear;
+  transition:
+    color 0s linear,
+    background-color 0s linear;
 }
 
 .highlight-delimiter {
