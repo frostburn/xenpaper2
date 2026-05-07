@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 
-import { centsToRatio, type MoscNoteMs } from '../mosc'
+import { centsToRatio, ratioToCents, type MoscNoteMs } from '../mosc'
 import type { InitialRulerState } from '../grammars/process-grammar'
 
 export type RulerColourMode = 'gradient' | 'proxnotes' | `proxplot${number}`
@@ -217,17 +217,20 @@ const centsGridLines = computed(() => {
   if (!rulerState.rootHz || !rulerState.octaveSize) return []
 
   const lines: Array<{ key: string; label: string; y: number; stroke: string; fill: string }> = []
+  const equaveCents = ratioToCents(rulerState.octaveSize)
 
-  CENT_GRID_POSITIONS.forEach((octave) => {
-    for (let cents = 100; cents < rulerState.octaveSize! * 600; cents += 100) {
-      const hz = rulerState.rootHz! * centsToRatio(cents, octave)
+  CENT_GRID_POSITIONS.forEach((equave) => {
+    const equaveRatio = Math.pow(rulerState.octaveSize!, equave)
+
+    for (let cents = 100; cents < equaveCents; cents += 100) {
+      const hz = rulerState.rootHz! * equaveRatio * centsToRatio(cents)
       if (hzInRange(hz, visibleRange.value)) {
         lines.push({
-          key: `cents-${octave}-${cents}`,
+          key: `cents-${equave}-${cents}`,
           label: `${cents}c`,
           y: getY(hz),
-          stroke: hsl(208, 32, (2 - Math.abs(octave)) * 12),
-          fill: hsl(208, 32, (2 - Math.abs(octave)) * 24),
+          stroke: hsl(208, 32, (2 - Math.abs(equave)) * 12),
+          fill: hsl(208, 32, (2 - Math.abs(equave)) * 24),
         })
       }
     }
