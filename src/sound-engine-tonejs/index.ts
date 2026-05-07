@@ -94,6 +94,14 @@ export class SoundEngineTonejs extends SoundEngine {
 
   _synth: PolySynth<Synth> | undefined
 
+  _releaseActiveNotes(time?: number): void {
+    this.getSynth().releaseAll(time)
+    this._activeNoteEvents.forEach((noteMs) => {
+      this._triggerEvent('note', noteMs, false)
+    })
+    this._activeNoteEvents.clear()
+  }
+
   getSynth(): PolySynth<Synth> {
     this._synth ??= new Tone.PolySynth(Tone.Synth, {
       oscillator: {
@@ -134,11 +142,7 @@ export class SoundEngineTonejs extends SoundEngine {
       this._started = true
 
       const onEnd = (time: number) => {
-        this.getSynth().releaseAll(time)
-        this._activeNoteEvents.forEach((noteMs) => {
-          this._triggerEvent('note', noteMs, false)
-        })
-        this._activeNoteEvents.clear()
+        this._releaseActiveNotes(time)
       }
 
       Tone.Transport.on('stop', onEnd)
@@ -153,7 +157,8 @@ export class SoundEngineTonejs extends SoundEngine {
 
   async pause(): Promise<void> {
     await this.start()
-    Tone.Transport.stop()
+    Tone.Transport.pause()
+    this._releaseActiveNotes()
   }
 
   async gotoMs(ms: number): Promise<void> {
