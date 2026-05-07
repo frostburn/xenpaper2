@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, onUnmounted, ref, watch } from 'vue'
+import { onUnmounted, ref, watch } from 'vue'
 
+import PlayPauseButton from './components/PlayPauseButton.vue'
 import TutorialSidebar from './components/TutorialSidebar.vue'
 import { parse } from './grammars/grammar.generated.js'
 import { processGrammar } from './grammars/process-grammar'
@@ -8,21 +9,12 @@ import { scoreToMs } from './mosc'
 import { SoundEngineTonejs } from './sound-engine-tonejs'
 import type { XenpaperAST } from './grammars/grammar.generated'
 
-const PLAY_PATHS = {
-  paused: ['M 0 0 L 12 6 L 0 12 Z'],
-  playing: ['M 0 0 L 4 0 L 4 12 L 0 12 Z', 'M 8 0 L 12 0 L 12 12 L 8 12 Z'],
-} as const
-
 const soundEngine = new SoundEngineTonejs()
 const sourceCode = ref('')
 const isPlaying = ref(false)
 const isLooping = ref(false)
 const scoreLoaded = ref(false)
 const lastError = ref('')
-
-const playbackState = computed(() => (isPlaying.value ? 'playing' : 'paused'))
-const playbackLabel = computed(() => (isPlaying.value ? 'Pause' : 'Play'))
-const playbackPaths = computed(() => PLAY_PATHS[playbackState.value])
 
 const parseSourceCode = (): XenpaperAST => parse(sourceCode.value, { grammarSource: 'source-code' })
 
@@ -107,12 +99,7 @@ onUnmounted(() => {
         spellcheck="false"
       />
       <div class="actions" aria-label="Playback controls">
-        <button class="icon-toggle playback-button" type="button" @click="togglePlayback">
-          <span class="visually-hidden">{{ playbackLabel }}</span>
-          <svg aria-hidden="true" class="playback-icon" viewBox="0 0 12 12">
-            <path v-for="path in playbackPaths" :key="path" :d="path" />
-          </svg>
-        </button>
+        <PlayPauseButton :playing="isPlaying" @toggle="togglePlayback" />
         <button
           class="action-button loop-button"
           :class="{ active: isLooping }"
@@ -170,45 +157,22 @@ onUnmounted(() => {
   gap: 0.75rem;
 }
 
-.icon-toggle,
 .action-button {
   border: 1px solid var(--color-border);
   border-radius: 0.5rem;
   color: var(--color-text);
   background: var(--color-background-mute);
   cursor: pointer;
+  padding: 0.75rem 1rem;
 }
 
-.icon-toggle:hover,
 .action-button:hover {
   border-color: hsla(160, 100%, 37%, 1);
 }
 
-.icon-toggle:focus-visible,
 .action-button:focus-visible {
   outline: 2px solid hsla(160, 100%, 37%, 1);
   outline-offset: 2px;
-}
-
-.playback-button {
-  display: inline-grid;
-  place-items: center;
-  width: 3rem;
-  height: 3rem;
-  padding: 0.85rem;
-}
-
-.playback-icon {
-  width: 100%;
-  height: 100%;
-}
-
-.playback-icon path {
-  fill: currentColor;
-}
-
-.action-button {
-  padding: 0.75rem 1rem;
 }
 
 .loop-button.active {
@@ -221,19 +185,6 @@ onUnmounted(() => {
   margin: 0;
   color: #d14343;
 }
-
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
 @media (max-width: 900px) {
   .app-layout {
     grid-template-columns: 1fr;
