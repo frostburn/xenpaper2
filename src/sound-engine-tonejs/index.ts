@@ -1,5 +1,5 @@
-import type { MoscScoreMs, MoscNoteMs, MoscItemMs, MoscParamMs, MoscEndMs } from '../mosc'
-import { SoundEngine, scoreToMs } from '../mosc'
+import type { MoscScoreMs, MoscNoteMs } from '../mosc'
+import { SoundEngine } from '../mosc'
 import * as Tone from 'tone'
 
 //
@@ -18,9 +18,41 @@ function flatMap<I, O>(arr: I[], mapper: (item: I) => O[]): O[] {
 
 const OSC_VOLUME = -18
 
+type SoundEngineOscParam = {
+  type: 'osc'
+  osc: string
+}
+
+type SoundEngineEnvParam = {
+  type: 'env'
+  a: number
+  d: number
+  s: number
+  r: number
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === 'object' && value !== null
+}
+
+const isOscParam = (value: unknown): value is SoundEngineOscParam => {
+  return isRecord(value) && value.type === 'osc' && typeof value.osc === 'string'
+}
+
+const isEnvParam = (value: unknown): value is SoundEngineEnvParam => {
+  return (
+    isRecord(value) &&
+    value.type === 'env' &&
+    typeof value.a === 'number' &&
+    typeof value.d === 'number' &&
+    typeof value.s === 'number' &&
+    typeof value.r === 'number'
+  )
+}
+
 export const OSC_BASE_TYPES = ['sine', 'sawtooth', 'square', 'triangle']
 
-export let OSC_PARTIAL_SUFFIXES: string[] = []
+export const OSC_PARTIAL_SUFFIXES: string[] = []
 for (let i = 1; i < 33; i++) {
   OSC_PARTIAL_SUFFIXES.push(`${i}`)
 }
@@ -41,7 +73,7 @@ export class SoundEngineTonejs extends SoundEngine {
   _started = false
   _endMs = 0
   _loopEndMs = 0
-  _activeNoteEvents = new Set<MoscItemMs>()
+  _activeNoteEvents = new Set<MoscNoteMs>()
 
   synth = new Tone.PolySynth(Tone.Synth, {
     oscillator: {
@@ -130,9 +162,9 @@ export class SoundEngineTonejs extends SoundEngine {
     Tone.Transport.cancel()
 
     // add all new notes to tone transport
-    this.scoreMs.sequence.forEach((item: MoscItemMs): void => {
+    this.scoreMs.sequence.forEach((item): void => {
       if (item.type === 'NOTE_MS') {
-        const noteMs = item as MoscNoteMs
+        const noteMs = item
         Tone.Transport.schedule(
           (time: number) => {
             this.synth.triggerAttackRelease(
@@ -147,7 +179,7 @@ export class SoundEngineTonejs extends SoundEngine {
         ) // schedule in the future slightly to avoid double note playing at end
 
         Tone.Transport.schedule(
-          (time: number) => {
+          () => {
             this._activeNoteEvents.delete(noteMs)
             this._triggerEvent('note', noteMs, false)
           },
@@ -158,14 +190,14 @@ export class SoundEngineTonejs extends SoundEngine {
       }
 
       if (item.type === 'PARAM_MS') {
-        const paramMs = item as MoscParamMs
+        const paramMs = item
         Tone.Transport.schedule(() => {
           // this is inaccurate
           // as tonejs calls these callbacks several ms ahead of schedule
           // and relies on scheduled events to pass the provided time
           // to schedule correctly, but param changes cannot accept
           // the time argument
-          if (paramMs.value.type === 'osc' && OSC_TYPES.includes(paramMs.value.osc)) {
+          if (isOscParam(paramMs.value) && OSC_TYPES.includes(paramMs.value.osc)) {
             this.synth.set({
               oscillator: {
                 type: paramMs.value.osc,
@@ -173,7 +205,7 @@ export class SoundEngineTonejs extends SoundEngine {
               },
             })
           }
-          if (paramMs.value.type === 'env') {
+          if (isEnvParam(paramMs.value)) {
             this.synth.set({
               envelope: {
                 attack: paramMs.value.a,
@@ -189,23 +221,20 @@ export class SoundEngineTonejs extends SoundEngine {
       }
 
       if (item.type === 'END_MS') {
-        this._endMs = (item as MoscEndMs).ms
+        this._endMs = item.ms
         if (this._loopEndMs === 0) {
           this.setLoopEnd(0)
         }
 
-        Tone.Transport.schedule(async () => {
+        Tone.Transport.schedule(() => {
           if (Tone.Transport.loop) return
 
           Tone.Transport.stop()
-          this._triggerEvent('end', undefined)
+          this._triggerEvent('end')
         }, this._endMs * 0.001)
 
         return
       }
-
-      // @ts-ignore
-      throw new Error(`Unexpected item type ${item.type} encountered`)
     })
   }
 }
