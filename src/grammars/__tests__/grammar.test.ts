@@ -81,6 +81,52 @@ describe('grammar', () => {
         expect(ast.sequence.items[0].tail).toBeUndefined()
       })
 
+      it('should parse hash comments as sequence items', () => {
+        expect(
+          strip(parser('# a 7th chord\n[0,4,7,10]--..\n\n# a harmonic 7th chord\n4:5:6:7--..'))
+            .sequence.items,
+        ).toMatchObject([
+          {
+            type: 'Comment',
+            comment: ' a 7th chord',
+            len: 13,
+          },
+          {
+            type: 'Chord',
+            tail: { type: 'Hold', length: 2, len: 2 },
+          },
+          {
+            type: 'Rest',
+            length: 1,
+            len: 1,
+          },
+          {
+            type: 'Rest',
+            length: 1,
+            len: 1,
+          },
+          {
+            type: 'Comment',
+            comment: ' a harmonic 7th chord',
+            len: 22,
+          },
+          {
+            type: 'RatioChord',
+            tail: { type: 'Hold', length: 2, len: 2 },
+          },
+          {
+            type: 'Rest',
+            length: 1,
+            len: 1,
+          },
+          {
+            type: 'Rest',
+            length: 1,
+            len: 1,
+          },
+        ])
+      })
+
       it('should parse sequence with comma separated notes', () => {
         expect(strip(parser('2,34,56')).sequence.items).toEqual([
           {
@@ -534,7 +580,7 @@ describe('grammar', () => {
       it('should error if hold is attempted after a rest', () => {
         expectParserFormattedErrorMessage(
           '2-.-',
-          `Error: Expected "(", ".", "[", "{", "{r", "|", [ \\t\\n\\r], ['"\`], [,\\n\\r\\t ], [0-9], or end of input but "-" found.
+          `Error: Expected "#", "(", ".", "[", "{", "{r", "|", [ \\t\\n\\r], ['"\`], [,\\n\\r\\t ], [0-9], or end of input but "-" found.
  --> test-input:1:4
   |
 1 | 2-.-
@@ -1579,6 +1625,44 @@ describe('grammar', () => {
               },
             ],
             len: 3,
+          },
+        ])
+      })
+
+      it('should parse sequence with fraction shorthand subdivision setter', () => {
+        expect(strip(parser('(1/2)')).sequence.items).toEqual([
+          {
+            type: 'SetterGroup',
+            setters: [
+              {
+                type: 'SetSubdivision',
+                subdivision: 1,
+                denominator: 2,
+                len: 3,
+              },
+            ],
+            len: 5,
+          },
+        ])
+      })
+
+      it('should parse tutorial sequence with inline subdivision changes', () => {
+        const ast = strip(parser('0 2 3 7(3)0 2 3 7(4)0 2 3 7(1/2)0 2 3 7'))
+        expect(ast.sequence.items.filter((item) => item.type === 'SetterGroup')).toEqual([
+          {
+            type: 'SetterGroup',
+            setters: [{ type: 'SetSubdivision', subdivision: 3, denominator: undefined, len: 1 }],
+            len: 3,
+          },
+          {
+            type: 'SetterGroup',
+            setters: [{ type: 'SetSubdivision', subdivision: 4, denominator: undefined, len: 1 }],
+            len: 3,
+          },
+          {
+            type: 'SetterGroup',
+            setters: [{ type: 'SetSubdivision', subdivision: 1, denominator: 2, len: 3 }],
+            len: 5,
           },
         ])
       })

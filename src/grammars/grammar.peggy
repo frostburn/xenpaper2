@@ -14,7 +14,7 @@ Param = ParamEmbed
 ParamEmbed = [eE][mM][bB][eE][dD] { return node('ParamEmbed', { len: 5 }); }
 Sequence = items:ItemList { return node('Sequence', { items }); }
 ItemList = head:Item tail:(_ Item)* { return [head, ...tail.map(([,i]) => i)]; } / '' { return []; }
-Item = SetterGroup / SetRoot / SetScale / RatioChordItem / Note / Rest / Chord / BarLine / Whitespace
+Item = Comment / SetterGroup / SetRoot / SetScale / RatioChordItem / Note / Rest / Chord / BarLine / Whitespace
 Note = pitch:Pitch tail:Hold? cont:($("|" "-"+))* {
   const extraText = cont.join('');
   const extraLen = extraText.length;
@@ -82,9 +82,13 @@ SetterGroup = "(" first:Setter rest:(Semicolon Setter)* ")" {
 Setter = SetBpm / SetBms / SetSubdivision / SetOsc / SetEnv / SetRulerRange / SetRulerPlot
 SetBpm = [bB][pP][mM] ":" ws:Whitespace? bpm:Number { return node('SetBpm', { bpm, len: 4 + (ws?.len ?? 0) + bpm.toString().length }); }
 SetBms = [bB][mM][sS] ":" ws:Whitespace? bms:Number { return node('SetBms', { bms, len: 4 + (ws?.len ?? 0) + bms.toString().length }); }
-SetSubdivision = ([dD][iI][vV] ":" ws:Whitespace? n:Int frac:("/" d:Int)? {
-  return node('SetSubdivision', { subdivision: n, denominator: frac ? frac[1] : undefined, len: 4 + (ws?.len ?? 0) + n.toString().length + (frac ? (1 + frac[1].toString().length) : 0) });
-}) / (n:Int { return node('SetSubdivision', { subdivision: n, denominator: undefined, len: n.toString().length }); })
+SetSubdivision = prefix:([dD][iI][vV] ":" ws:Whitespace? { return 4 + (ws?.len ?? 0); })? n:Int frac:("/" d:Int)? {
+  return node('SetSubdivision', {
+    subdivision: n,
+    denominator: frac ? frac[1] : undefined,
+    len: (prefix ?? 0) + n.toString().length + (frac ? (1 + frac[1].toString().length) : 0),
+  });
+}
 SetOsc = [oO][sS][cC] ":" ws:Whitespace? osc:$([a-zA-Z0-9]+) { return node('SetOsc', { osc: osc.toLowerCase(), len: 4 + (ws?.len ?? 0) + osc.length }); }
 SetEnv = [eE][nN][vV] ":" ws:Whitespace? vals:$([0-9][0-9][0-9][0-9]) {
   return node('SetEnv', { a: Number(vals[0]), d: Number(vals[1]), s: Number(vals[2]), r: Number(vals[3]), len: 4 + (ws?.len ?? 0) + 4 });
@@ -120,6 +124,9 @@ PitchGroupScale = pref:PitchGroupScalePrefix? pitches:PitchGroup som:ScaleOctave
     scaleOctaveMarker,
     len: (pitchGroupScalePrefix?.len ?? 0) + pitchLen + (scaleOctaveMarker?.len ?? 0)
   });
+}
+Comment = "#" comment:$([^\n\r]*) {
+  return node('Comment', { comment, len: comment.length + 1 });
 }
 Whitespace = s:$([,\n\r\t ]+) { return node('Whitespace',{delimiter:true,len:s.length}); }
 Number = n:$([0-9]+ ("." [0-9]*)?) { return Number(n); }
