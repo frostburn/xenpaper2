@@ -1,5 +1,15 @@
 # xenpaper2
 
+## Original Project
+
+Xenpaper 2 has was forked from [Xenpaper](https://github.com/dxinteractive/xenpaper) by Lumi Pakkanen on May 2026.
+
+## AI Agent Disclosure
+
+Portions of this project were developed with the assistance of [OpenAI Codex](https://openai.com/index/introducing-codex/) and ChatGPT. AI tools were used for tasks such as brainstorming, refactoring, debugging, and documentation, but all generated code and changes were reviewed, tested, and curated by human maintainers before inclusion in the project.
+
+## The Vue 3 boilerplate
+
 This template should help get you started developing with Vue 3 in Vite.
 
 ## Recommended IDE Setup
