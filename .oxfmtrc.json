@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/oxfmt/configuration_schema.json",
-  "ignorePatterns": ["src/grammars/reference/**"],
+  "ignorePatterns": ["reference/**"],
   "semi": false,
   "singleQuote": true
 }
