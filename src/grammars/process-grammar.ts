@@ -271,19 +271,17 @@ const chordToMosc = (chord: ChordType | RatioChordType, context: Context): MoscN
   times.push(arr)
   chord.time = arr
 
-  const pitchTypes: MoscNote[] = chordPitches
-    .filter(isPitchType)
-    .map((pitch) => {
-      const hz = pitchToHz(pitch, context)
-      const label = pitchToLabel(pitch, context)
+  const pitchTypes: MoscNote[] = chordPitches.filter(isPitchType).map((pitch) => {
+    const hz = pitchToHz(pitch, context)
+    const label = pitchToLabel(pitch, context)
 
-      return {
-        type: 'NOTE_TIME',
-        hz,
-        label,
-        ...timeProps,
-      }
-    })
+    return {
+      type: 'NOTE_TIME',
+      hz,
+      label,
+      ...timeProps,
+    }
+  })
 
   const firstRatioPitch = chordPitches.find(isRatioChordPitchType)
   const firstDenominator = firstRatioPitch?.pitch
