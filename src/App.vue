@@ -10,6 +10,12 @@ import { processGrammar, type InitialRulerState } from './grammars/process-gramm
 import { scoreToMs, type MoscNoteMs, type MoscScoreMs } from './mosc'
 import { SoundEngineTonejs } from './sound-engine-tonejs'
 import type { XenpaperAST } from './grammars/grammar.generated'
+import {
+  getSavedSourceCode,
+  getShareUrl,
+  getSharedSourceFromLocation,
+  replaceShareHash,
+} from './share-link'
 
 type ParsedSource = {
   ast?: XenpaperAST
@@ -33,7 +39,7 @@ type ParseError = Error & {
 }
 
 const soundEngine = new SoundEngineTonejs()
-const sourceCode = ref('')
+const sourceCode = ref(getSavedSourceCode())
 const isPlaying = ref(false)
 const isLooping = ref(false)
 const scoreLoaded = ref(false)
@@ -42,10 +48,12 @@ const chars = ref<CharData[]>([])
 const initialRulerState = ref<InitialRulerState>()
 const pitchRuler = ref<InstanceType<typeof PitchRuler>>()
 const playbackPositionMs = ref(-1)
+const copiedShareLink = ref(false)
 let parseVersion = 0
 let playbackAnimationFrame: number | undefined
 
 const sourceCharacters = computed(() => sourceCode.value.split(''))
+const shareUrl = computed(() => getShareUrl(sourceCode.value))
 
 const parseSourceCode = (): XenpaperAST => parse(sourceCode.value, { grammarSource: 'source-code' })
 
@@ -148,8 +156,39 @@ const setSourceCode = (tune: string): void => {
 }
 
 watch(sourceCode, () => {
+  copiedShareLink.value = false
+  replaceShareHash(sourceCode.value)
   void updateParsedSourceCode()
 })
+
+const copyShareLink = async (): Promise<void> => {
+  if (!shareUrl.value) return
+
+  try {
+    await navigator.clipboard?.writeText(shareUrl.value)
+    copiedShareLink.value = true
+    return
+  } catch {
+    // Fall back for browsers that do not expose Clipboard API outside secure contexts.
+  }
+
+  const textArea = document.createElement('textarea')
+  textArea.value = shareUrl.value
+  textArea.style.position = 'fixed'
+  textArea.style.opacity = '0'
+  document.body.append(textArea)
+  textArea.select()
+  copiedShareLink.value = document.execCommand('copy')
+  textArea.remove()
+}
+
+const syncSourceCodeFromHash = (): void => {
+  const sharedSourceCode = getSharedSourceFromLocation()
+
+  if (sharedSourceCode !== sourceCode.value) {
+    sourceCode.value = sharedSourceCode
+  }
+}
 
 const logParsedAst = (): void => {
   console.log('Parsed XenpaperAST:', parseSourceCode())
@@ -223,10 +262,13 @@ const cancelOnNote = soundEngine.onNote((note: MoscNoteMs, on: boolean) => {
 })
 
 onMounted(() => {
+  window.addEventListener('hashchange', syncSourceCodeFromHash)
+  replaceShareHash(sourceCode.value)
   void updateParsedSourceCode()
 })
 
 onUnmounted(() => {
+  window.removeEventListener('hashchange', syncSourceCodeFromHash)
   cancelOnEnd()
   cancelOnNote()
   stopPlaybackAnimation()
@@ -274,13 +316,29 @@ onUnmounted(() => {
         <button class="action-button" type="button" @click="logParsedAst">
           Log parsed XenpaperAST
         </button>
+        <label class="share-link">
+          <span>Share link</span>
+          <input
+            class="share-link-input"
+            :value="shareUrl"
+            type="text"
+            readonly
+            @focus="($event.target as HTMLInputElement).select()"
+          />
+        </label>
+        <button class="action-button" type="button" @click="copyShareLink">
+          {{ copiedShareLink ? 'Copied' : 'Copy share link' }}
+        </button>
       </div>
       <p v-if="lastError" class="playback-error" role="alert">{{ lastError }}</p>
 
       <section class="ruler-panel" aria-labelledby="pitch-ruler-title">
         <div class="ruler-heading">
           <h2 id="pitch-ruler-title">Pitch ruler</h2>
-          <p>Click and drag to pan, use the mouse wheel to zoom. Plot scales with <code>(plot)</code>.</p>
+          <p>
+            Click and drag to pan, use the mouse wheel to zoom. Plot scales with
+            <code>(plot)</code>.
+          </p>
         </div>
         <PitchRuler ref="pitchRuler" :initial-state="initialRulerState" />
       </section>
@@ -429,6 +487,34 @@ onUnmounted(() => {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.75rem;
+}
+
+.share-link {
+  display: flex;
+  flex: 1 1 20rem;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: min(100%, 20rem);
+}
+
+.share-link span {
+  flex: 0 0 auto;
+  font-weight: 600;
+}
+
+.share-link-input {
+  min-width: 0;
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  color: var(--color-text);
+  background: var(--color-background-mute);
+  padding: 0.75rem 1rem;
+}
+
+.share-link-input:focus-visible {
+  outline: 2px solid hsla(160, 100%, 37%, 1);
+  outline-offset: 2px;
 }
 
 .action-button {
