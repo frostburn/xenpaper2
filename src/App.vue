@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 import PlayPauseButton from './components/PlayPauseButton.vue'
 import PitchRuler from './components/PitchRuler.vue'
@@ -11,10 +12,12 @@ import { scoreToMs, type MoscNoteMs, type MoscScoreMs } from './mosc'
 import { SoundEngineTonejs } from './sound-engine-tonejs'
 import type { XenpaperAST } from './grammars/grammar.generated'
 import {
+  encodeSharedSource,
   getSavedSourceCode,
-  getShareUrl,
-  getSharedSourceFromLocation,
-  replaceShareHash,
+  getSharedSourceCode,
+  hasSharedSourceCode,
+  saveSourceCode,
+  SHARE_QUERY_KEY,
 } from './share-link'
 
 type ParsedSource = {
@@ -38,8 +41,10 @@ type ParseError = Error & {
   location?: ParseErrorLocation
 }
 
+const router = useRouter()
+const route = useRoute()
 const soundEngine = new SoundEngineTonejs()
-const sourceCode = ref(getSavedSourceCode())
+const sourceCode = ref(getSavedSourceCode(route.query[SHARE_QUERY_KEY]))
 const isPlaying = ref(false)
 const isLooping = ref(false)
 const scoreLoaded = ref(false)
@@ -53,7 +58,14 @@ let parseVersion = 0
 let playbackAnimationFrame: number | undefined
 
 const sourceCharacters = computed(() => sourceCode.value.split(''))
-const shareUrl = computed(() => getShareUrl(sourceCode.value))
+const shareRoute = computed(() =>
+  router.resolve({
+    path: route.path,
+    query: { ...route.query, [SHARE_QUERY_KEY]: encodeSharedSource(sourceCode.value) },
+    hash: route.hash,
+  }),
+)
+const shareUrl = computed(() => new URL(shareRoute.value.href, window.location.href).toString())
 
 const parseSourceCode = (): XenpaperAST => parse(sourceCode.value, { grammarSource: 'source-code' })
 
@@ -157,9 +169,22 @@ const setSourceCode = (tune: string): void => {
 
 watch(sourceCode, () => {
   copiedShareLink.value = false
-  replaceShareHash(sourceCode.value)
+  void replaceShareRoute()
   void updateParsedSourceCode()
 })
+
+const replaceShareRoute = async (): Promise<void> => {
+  saveSourceCode(sourceCode.value)
+
+  const encodedSource = encodeSharedSource(sourceCode.value)
+  if (route.query[SHARE_QUERY_KEY] === encodedSource) return
+
+  await router.replace({
+    path: route.path,
+    query: { ...route.query, [SHARE_QUERY_KEY]: encodedSource },
+    hash: route.hash,
+  })
+}
 
 const copyShareLink = async (): Promise<void> => {
   if (!shareUrl.value) return
@@ -182,13 +207,16 @@ const copyShareLink = async (): Promise<void> => {
   textArea.remove()
 }
 
-const syncSourceCodeFromHash = (): void => {
-  const sharedSourceCode = getSharedSourceFromLocation()
+watch(
+  () => route.query[SHARE_QUERY_KEY],
+  (sharedSource) => {
+    const sharedSourceCode = getSharedSourceCode(sharedSource)
 
-  if (sharedSourceCode !== sourceCode.value) {
-    sourceCode.value = sharedSourceCode
-  }
-}
+    if (hasSharedSourceCode(sharedSource) && sharedSourceCode !== sourceCode.value) {
+      sourceCode.value = sharedSourceCode
+    }
+  },
+)
 
 const logParsedAst = (): void => {
   console.log('Parsed XenpaperAST:', parseSourceCode())
@@ -262,13 +290,11 @@ const cancelOnNote = soundEngine.onNote((note: MoscNoteMs, on: boolean) => {
 })
 
 onMounted(() => {
-  window.addEventListener('hashchange', syncSourceCodeFromHash)
-  replaceShareHash(sourceCode.value)
+  void replaceShareRoute()
   void updateParsedSourceCode()
 })
 
 onUnmounted(() => {
-  window.removeEventListener('hashchange', syncSourceCodeFromHash)
   cancelOnEnd()
   cancelOnNote()
   stopPlaybackAnimation()
