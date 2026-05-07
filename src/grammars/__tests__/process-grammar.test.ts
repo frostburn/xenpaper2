@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest'
 
+declare module 'vitest' {
+  interface Matchers<T> {
+    toBeAround(expected: number, precision?: number): T
+  }
+}
+
 import { processGrammar } from '../process-grammar'
 
 expect.extend({
@@ -165,7 +171,6 @@ describe('grammar to mosc score', () => {
           type: 'NOTE_TIME',
           time: 6.5,
           timeEnd: 7,
-          // @ts-ignore
           hz: expect.toBeAround(261.6255653005986),
           label: '1\\4  300.0c',
         },
@@ -173,7 +178,6 @@ describe('grammar to mosc score', () => {
           type: 'NOTE_TIME',
           time: 7,
           timeEnd: 7.5,
-          // @ts-ignore
           hz: expect.toBeAround(311.1269837220809),
           label: '2\\4  600.0c',
         },
@@ -181,7 +185,6 @@ describe('grammar to mosc score', () => {
           type: 'NOTE_TIME',
           time: 7.5,
           timeEnd: 8,
-          // @ts-ignore
           hz: expect.toBeAround(369.99442271163446),
           label: '3\\4  900.0c',
         },
@@ -574,7 +577,7 @@ describe('grammar to mosc score', () => {
     `{"type":"XenpaperGrammar","sequence":{"type":"Sequence","items":[{"type":"Comment","comment":" tempo changes","pos":0},{"type":"Note","pitch":{"type":"Pitch","value":{"type":"PitchDegree","degree":0,"pos":16},"pos":16},"tail":{"type":"Comma","delimiter":true,"pos":17},"pos":16},{"type":"Note","pitch":{"type":"Pitch","value":{"type":"PitchDegree","degree":0,"pos":18},"pos":18},"pos":18},{"type":"SetterGroup","setters":[{"type":"SetBms","bms":300,"pos":22}],"pos":21},{"type":"Note","pitch":{"type":"Pitch","value":{"type":"PitchDegree","degree":0,"pos":30},"pos":30},"tail":{"type":"Comma","delimiter":true,"pos":31},"pos":30},{"type":"Note","pitch":{"type":"Pitch","value":{"type":"PitchDegree","degree":0,"pos":32},"pos":32},"pos":32}],"pos":0},"pos":0}`,
   )
 
-  it('should translate tempo', () => {
+  it('should translate tempo with bms', () => {
     expect(processGrammar(TEMPO_TEST_BMS).score).toEqual({
       sequence: [
         ...INITIAL,
