@@ -126,8 +126,8 @@ export class SoundEngineTonejs extends SoundEngine {
       await Tone.start()
       this._started = true
 
-      const onEnd = () => {
-        this.synth.releaseAll()
+      const onEnd = (time: number) => {
+        this.synth.releaseAll(time)
         this._activeNoteEvents.forEach((noteMs) => {
           this._triggerEvent('note', noteMs, false)
         })
