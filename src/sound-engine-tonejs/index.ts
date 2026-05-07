@@ -126,8 +126,8 @@ export class SoundEngineTonejs extends SoundEngine {
       await Tone.start()
       this._started = true
 
-      const onEnd = () => {
-        this.synth.releaseAll()
+      const onEnd = (time: number) => {
+        this.synth.releaseAll(time)
         this._activeNoteEvents.forEach((noteMs) => {
           this._triggerEvent('note', noteMs, false)
         })
@@ -243,10 +243,10 @@ export class SoundEngineTonejs extends SoundEngine {
           this.setLoopEnd(0)
         }
 
-        Tone.Transport.schedule(() => {
+        Tone.Transport.schedule((time: number) => {
           if (Tone.Transport.loop) return
 
-          Tone.Transport.stop()
+          Tone.Transport.stop(time)
           this._triggerEvent('end')
         }, this._endMs * 0.001)
 
