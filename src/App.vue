@@ -2,11 +2,12 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import PlayPauseButton from './components/PlayPauseButton.vue'
+import PitchRuler from './components/PitchRuler.vue'
 import TutorialSidebar from './components/TutorialSidebar.vue'
 import { parse } from './grammars/grammar.generated.js'
 import { grammarToChars, type CharData } from './grammars/grammar-to-chars'
-import { processGrammar } from './grammars/process-grammar'
-import { scoreToMs, type MoscScoreMs } from './mosc'
+import { processGrammar, type InitialRulerState } from './grammars/process-grammar'
+import { scoreToMs, type MoscNoteMs, type MoscScoreMs } from './mosc'
 import { SoundEngineTonejs } from './sound-engine-tonejs'
 import type { XenpaperAST } from './grammars/grammar.generated'
 
@@ -15,6 +16,7 @@ type ParsedSource = {
   chars: CharData[]
   error: string
   playable: boolean
+  initialRulerState?: InitialRulerState
   scoreMs?: MoscScoreMs
 }
 
@@ -37,6 +39,8 @@ const isLooping = ref(false)
 const scoreLoaded = ref(false)
 const lastError = ref('')
 const chars = ref<CharData[]>([])
+const initialRulerState = ref<InitialRulerState>()
+const pitchRuler = ref<InstanceType<typeof PitchRuler>>()
 const playbackPositionMs = ref(-1)
 let parseVersion = 0
 let playbackAnimationFrame: number | undefined
@@ -81,7 +85,7 @@ const getErrorOffset = (error: unknown): number | undefined => {
 const parseAndProcessSourceCode = (): ParsedSource => {
   try {
     const ast = parseSourceCode()
-    const { score } = processGrammar(ast)
+    const { score, initialRulerState: processedInitialRulerState } = processGrammar(ast)
     const highlightedChars = grammarToChars(ast)
 
     if (!score) {
@@ -90,6 +94,7 @@ const parseAndProcessSourceCode = (): ParsedSource => {
         chars: highlightedChars,
         error: 'There is no playable score yet.',
         playable: false,
+        initialRulerState: processedInitialRulerState,
       }
     }
 
@@ -98,6 +103,7 @@ const parseAndProcessSourceCode = (): ParsedSource => {
       chars: highlightedChars,
       error: '',
       playable: true,
+      initialRulerState: processedInitialRulerState,
       scoreMs: scoreToMs(score),
     }
   } catch (error) {
@@ -121,6 +127,7 @@ const updateParsedSourceCode = async (): Promise<void> => {
   const parsedSource = parseAndProcessSourceCode()
   chars.value = parsedSource.chars
   lastError.value = parsedSource.error
+  initialRulerState.value = parsedSource.initialRulerState
 
   if (!parsedSource.playable || !parsedSource.scoreMs) {
     scoreLoaded.value = false
@@ -211,12 +218,17 @@ const cancelOnEnd = soundEngine.onEnd(() => {
   isPlaying.value = false
 })
 
+const cancelOnNote = soundEngine.onNote((note: MoscNoteMs, on: boolean) => {
+  pitchRuler.value?.setActiveNote(note, on)
+})
+
 onMounted(() => {
   void updateParsedSourceCode()
 })
 
 onUnmounted(() => {
   cancelOnEnd()
+  cancelOnNote()
   stopPlaybackAnimation()
 })
 </script>
@@ -264,6 +276,14 @@ onUnmounted(() => {
         </button>
       </div>
       <p v-if="lastError" class="playback-error" role="alert">{{ lastError }}</p>
+
+      <section class="ruler-panel" aria-labelledby="pitch-ruler-title">
+        <div class="ruler-heading">
+          <h2 id="pitch-ruler-title">Pitch ruler</h2>
+          <p>Click and drag to pan, use the mouse wheel to zoom. Plot scales with <code>(plot)</code>.</p>
+        </div>
+        <PitchRuler ref="pitchRuler" :initial-state="initialRulerState" />
+      </section>
     </main>
   </div>
 </template>
@@ -279,7 +299,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  width: min(100%, 48rem);
+  width: min(100%, 64rem);
   margin: 0 auto;
   padding: 2rem;
 }
@@ -438,6 +458,28 @@ onUnmounted(() => {
 .playback-error {
   margin: 0;
   color: #d14343;
+}
+
+.ruler-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.ruler-heading h2 {
+  margin: 0 0 0.25rem;
+  font-size: 1.25rem;
+}
+
+.ruler-heading p {
+  margin: 0;
+  opacity: 0.75;
+}
+
+.ruler-heading code {
+  border-radius: 0.25rem;
+  background: var(--color-background-mute);
+  padding: 0.05rem 0.25rem;
 }
 @media (max-width: 900px) {
   .app-layout {
