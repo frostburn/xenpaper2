@@ -588,6 +588,7 @@ export type Processed = {
 
 export const processGrammar = (grammar: XenpaperAST): Processed => {
   // console.log('grammar', JSON.stringify(grammar));
+  times.length = 0
 
   const grammarSequence = grammar.sequence
   if (!grammarSequence) {
