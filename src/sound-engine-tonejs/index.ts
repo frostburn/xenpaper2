@@ -1,12 +1,13 @@
 import type { MoscScoreMs, MoscNoteMs } from '../mosc'
 import { SoundEngine } from '../mosc'
 import * as Tone from 'tone'
+import type { SynthOptions, ToneOscillatorType } from 'tone'
 
 //
 // utils
 //
 
-function flatMap<I, O>(arr: I[], mapper: (item: I) => O[]): O[] {
+function flatMap<I, O>(arr: readonly I[], mapper: (item: I) => O[]): O[] {
   const out: O[] = []
   arr.forEach((item) => out.push(...mapper(item)))
   return out
@@ -18,9 +19,16 @@ function flatMap<I, O>(arr: I[], mapper: (item: I) => O[]): O[] {
 
 const OSC_VOLUME = -18
 
+type SoundEngineBaseOscillatorType = Exclude<ToneOscillatorType, 'custom'>
+type SoundEngineOscillatorType =
+  | SoundEngineBaseOscillatorType
+  | `fm${SoundEngineBaseOscillatorType}`
+  | `am${SoundEngineBaseOscillatorType}`
+  | `fat${SoundEngineBaseOscillatorType}`
+
 type SoundEngineOscParam = {
   type: 'osc'
-  osc: string
+  osc: SoundEngineOscillatorType
 }
 
 type SoundEngineEnvParam = {
@@ -35,8 +43,17 @@ const isRecord = (value: unknown): value is Record<string, unknown> => {
   return typeof value === 'object' && value !== null
 }
 
+const isToneOscillatorType = (value: string): value is SoundEngineOscillatorType => {
+  return (OSC_TYPES as readonly string[]).includes(value)
+}
+
 const isOscParam = (value: unknown): value is SoundEngineOscParam => {
-  return isRecord(value) && value.type === 'osc' && typeof value.osc === 'string'
+  return (
+    isRecord(value) &&
+    value.type === 'osc' &&
+    typeof value.osc === 'string' &&
+    isToneOscillatorType(value.osc)
+  )
 }
 
 const isEnvParam = (value: unknown): value is SoundEngineEnvParam => {
@@ -50,7 +67,7 @@ const isEnvParam = (value: unknown): value is SoundEngineEnvParam => {
   )
 }
 
-export const OSC_BASE_TYPES = ['sine', 'sawtooth', 'square', 'triangle']
+export const OSC_BASE_TYPES = ['sine', 'sawtooth', 'square', 'triangle'] as const
 
 export const OSC_PARTIAL_SUFFIXES: string[] = []
 for (let i = 1; i < 33; i++) {
@@ -67,7 +84,7 @@ export const OSC_TYPES_EXPANDED = flatMap(OSC_BASE_TYPES, (base) => [
 export const OSC_TYPES = flatMap(OSC_TYPES_EXPANDED, (type) => [
   type,
   ...OSC_PARTIAL_SUFFIXES.map((suffix) => `${type}${suffix}`),
-])
+]) as SoundEngineOscillatorType[]
 
 export class SoundEngineTonejs extends SoundEngine {
   _started = false
@@ -197,12 +214,12 @@ export class SoundEngineTonejs extends SoundEngine {
           // and relies on scheduled events to pass the provided time
           // to schedule correctly, but param changes cannot accept
           // the time argument
-          if (isOscParam(paramMs.value) && OSC_TYPES.includes(paramMs.value.osc)) {
+          if (isOscParam(paramMs.value)) {
             this.synth.set({
               oscillator: {
                 type: paramMs.value.osc,
                 volume: OSC_VOLUME,
-              },
+              } as Partial<SynthOptions['oscillator']>,
             })
           }
           if (isEnvParam(paramMs.value)) {
