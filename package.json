@@ -1,6 +1,6 @@
 {
   "name": "xenpaper2",
-  "version": "0.0.0",
+  "version": "2.0.0-alpha.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -49,5 +49,14 @@
   },
   "engines": {
     "node": "^20.19.0 || >=22.12.0"
-  }
+  },
+  "author": {
+    "name": "Lumi Pakkanen"
+  },
+  "contributors": [
+    {
+      "name": "Damien Clarke",
+      "url": "https://github.com/dxinteractive"
+    }
+  ]
 }

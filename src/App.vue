@@ -96,11 +96,11 @@ const htmlTitle = computed(() => {
   const titleLimit = 20
   const source = sourceCode.value
 
-  if (source.length === 0) return 'Xenpaper'
+  if (source.length === 0) return 'Xenpaper 2'
 
   return source.length > titleLimit
-    ? `Xenpaper: ${source.slice(0, titleLimit)}...`
-    : `Xenpaper: ${source}`
+    ? `Xenpaper 2: ${source.slice(0, titleLimit)}...`
+    : `Xenpaper 2: ${source}`
 })
 const sourceCharacters = computed(() => sourceCode.value.split(''))
 const hasPlayStartMarkers = computed(() => sourceCode.value.includes('\n'))
@@ -170,7 +170,7 @@ const embedCode = computed(
   () =>
     `<iframe width="560" height="315" src="${escapeHtmlAttribute(
       embedUrl.value,
-    )}" title="Xenpaper" frameborder="0"></iframe>`,
+    )}" title="Xenpaper 2" frameborder="0"></iframe>`,
 )
 
 const parseSourceCode = (): XenpaperAST => parse(sourceCode.value, { grammarSource: 'source-code' })
@@ -278,7 +278,7 @@ const parseAndProcessSourceCode = (): ParsedSource => {
 
     return {
       chars: highlightedChars,
-      error: error instanceof Error ? error.message : 'Unable to parse Xenpaper source code.',
+      error: error instanceof Error ? error.message : 'Unable to parse Xenpaper 2 source code.',
       playable: false,
     }
   }
@@ -609,7 +609,7 @@ onUnmounted(() => {
         target="_blank"
         rel="noopener noreferrer"
       >
-        Edit on Xenpaper
+        Edit on Xenpaper 2
       </a>
       <div v-if="!isEmbedMode" class="toolbar-rule" aria-hidden="true"></div>
       <button
@@ -667,7 +667,7 @@ onUnmounted(() => {
           id="source-code"
           :value="sourceCode"
           class="source-input"
-          placeholder="Enter Xenpaper source code..."
+          placeholder="Enter Xenpaper 2 source code..."
           autocapitalize="off"
           autocomplete="off"
           autocorrect="off"
@@ -680,7 +680,7 @@ onUnmounted(() => {
           v-if="sourceCode === ''"
           class="placeholder-text"
           aria-hidden="true"
-        >Enter Xenpaper source code...</span><template v-else><template v-for="token in sourceDisplayTokens" :key="token.key"><button
+        >Enter Xenpaper 2 source code...</span><template v-else><template v-for="token in sourceDisplayTokens" :key="token.key"><button
           v-if="token.type === 'playStart'"
           class="play-start-marker"
           :class="{ selected: selectedLine === token.line }"
@@ -713,7 +713,7 @@ onUnmounted(() => {
 
       <section v-else-if="sidebarMode === 'share'" class="sidebar-panel share-panel">
         <header class="sidebar-heading">
-          <h1>xenpaper</h1>
+          <h1>xenpaper 2</h1>
           <p>Text-based microtonal sequencer.</p>
           <p>Write down musical ideas and share the link around.</p>
         </header>
@@ -750,13 +750,19 @@ onUnmounted(() => {
           <button class="panel-button" type="button" @click="copyEmbedCode">
             {{ copiedEmbedCode ? 'Copied' : 'Copy embed code' }}
           </button>
-          <iframe class="embed-preview" :src="embedUrl" title="Xenpaper embed preview"></iframe>
+          <iframe class="embed-preview" :src="embedUrl" title="Xenpaper 2 embed preview"></iframe>
         </div>
+
+        <footer class="sidebar-footer">
+          <p>Made by Lumi Pakkanen.</p>
+          <p>Originally created by Damien Clarke.</p>
+          <p>Built with Vue 3, Vite, TypeScript, and Tone.js.</p>
+        </footer>
       </section>
 
       <section v-else class="sidebar-panel ruler-panel" aria-labelledby="pitch-ruler-title">
         <header class="sidebar-heading">
-          <h1>xenpaper</h1>
+          <h1>xenpaper 2</h1>
           <p>Text-based microtonal sequencer.</p>
         </header>
 
@@ -765,6 +771,12 @@ onUnmounted(() => {
           <p>Click and drag to pan, use mousewheel to zoom.</p>
         </div>
         <PitchRuler ref="pitchRuler" :initial-state="initialRulerState" />
+
+        <footer class="sidebar-footer">
+          <p>Made by Lumi Pakkanen.</p>
+          <p>Originally created by Damien Clarke.</p>
+          <p>Built with Vue 3, Vite, TypeScript, and Tone.js.</p>
+        </footer>
       </section>
     </aside>
   </div>
@@ -1165,6 +1177,24 @@ onUnmounted(() => {
 
 .sidebar-content p {
   margin: 0 0 1.5rem;
+}
+
+.sidebar-footer {
+  flex: 0 0 auto;
+  padding: 1rem 2rem 1.5rem;
+  background: var(--xenpaper-bg);
+  color: var(--xenpaper-placeholder);
+  font-size: 0.9rem;
+  font-style: italic;
+  line-height: 1.3rem;
+}
+
+.sidebar-footer p {
+  margin: 0;
+}
+
+.sidebar-footer p + p {
+  margin-top: 0.35rem;
 }
 
 .share-field {

@@ -188,7 +188,7 @@ const tutorialSections: TutorialSection[] = [
 <template>
   <aside class="tutorial-sidebar" aria-labelledby="tutorial-title">
     <header class="sidebar-header">
-      <h1 id="tutorial-title">Xenpaper</h1>
+      <h1 id="tutorial-title">Xenpaper 2</h1>
       <p>Text-based microtonal sequencer.</p>
     </header>
 
@@ -211,6 +211,12 @@ const tutorialSections: TutorialSection[] = [
         </article>
       </section>
     </div>
+
+    <footer class="sidebar-footer">
+      <p>Made by Lumi Pakkanen.</p>
+      <p>Originally created by Damien Clarke.</p>
+      <p>Built with Vue 3, Vite, TypeScript, and Tone.js.</p>
+    </footer>
   </aside>
 </template>
 
@@ -326,5 +332,22 @@ const tutorialSections: TutorialSection[] = [
 .example button:focus,
 .example button:active {
   opacity: 1;
+}
+
+.sidebar-footer {
+  padding: 1rem 2rem 1.5rem;
+  background: var(--xenpaper-bg);
+  color: var(--xenpaper-placeholder);
+  font-size: 0.9rem;
+  font-style: italic;
+  line-height: 1.3rem;
+}
+
+.sidebar-footer p {
+  margin: 0;
+}
+
+.sidebar-footer p + p {
+  margin-top: 0.35rem;
 }
 </style>
