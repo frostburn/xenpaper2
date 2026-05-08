@@ -91,6 +91,16 @@ const sidebarMode = ref<SidebarMode>('info')
 let parseVersion = 0
 let playbackAnimationFrame: number | undefined
 
+const htmlTitle = computed(() => {
+  const titleLimit = 20
+  const source = sourceCode.value
+
+  if (source.length === 0) return 'Xenpaper'
+
+  return source.length > titleLimit
+    ? `Xenpaper: ${source.slice(0, titleLimit)}...`
+    : `Xenpaper: ${source}`
+})
 const sourceCharacters = computed(() => sourceCode.value.split(''))
 const hasPlayStartMarkers = computed(() => sourceCode.value.includes('\n'))
 
@@ -350,6 +360,25 @@ const handleSourceKeydown = (event: KeyboardEvent): void => {
     redoSourceCode()
   }
 }
+
+onMounted(() => {
+  watch(
+    htmlTitle,
+    (title) => {
+      document.title = title
+
+      let openGraphTitle = document.head.querySelector<HTMLMetaElement>('meta[property="og:title"]')
+      if (!openGraphTitle) {
+        openGraphTitle = document.createElement('meta')
+        openGraphTitle.setAttribute('property', 'og:title')
+        document.head.append(openGraphTitle)
+      }
+
+      openGraphTitle.setAttribute('content', title)
+    },
+    { immediate: true },
+  )
+})
 
 watch(sourceCode, () => {
   copiedShareLink.value = false
