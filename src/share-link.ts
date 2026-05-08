@@ -38,6 +38,15 @@ export const decodeSharedSource = (encodedSource: string): string => {
     .join('_')
 }
 
+export const encodeShareHashForUrl = (hash: string): string =>
+  Array.from(hash, (character) => {
+    const charCode = character.charCodeAt(0)
+
+    return charCode <= 0x1f || charCode === 0x7f
+      ? encodeURIComponent(character).toUpperCase()
+      : character
+  }).join('')
+
 export const getShareHash = (sourceCode: string): string => `#${encodeSharedSource(sourceCode)}`
 
 export const getEmbedShareHash = (sourceCode: string): string =>

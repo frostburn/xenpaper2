@@ -15,6 +15,7 @@ import {
   undoSourceChange,
 } from '../source-history'
 import {
+  encodeShareHashForUrl,
   getEmbedShareHash,
   getSavedSourceCode,
   getShareHash,
@@ -262,8 +263,12 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   const shareHash = computed(() => getShareHash(sourceCode.value))
   const embedHash = computed(() => getEmbedShareHash(sourceCode.value))
   const routeHash = computed(() => (isEmbedMode.value ? embedHash.value : shareHash.value))
-  const shareUrl = computed(() => new URL(shareHash.value, locationHref.value).toString())
-  const embedUrl = computed(() => new URL(embedHash.value, locationHref.value).toString())
+  const shareUrl = computed(() =>
+    new URL(encodeShareHashForUrl(shareHash.value), locationHref.value).toString(),
+  )
+  const embedUrl = computed(() =>
+    new URL(encodeShareHashForUrl(embedHash.value), locationHref.value).toString(),
+  )
   const embedCode = computed(
     () =>
       `<iframe width="560" height="315" src="${escapeHtmlAttribute(
