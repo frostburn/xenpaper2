@@ -1,16 +1,19 @@
-# xenpaper2
+# Xenpaper 2
 
-## Original Project
+Xenpaper 2 is a text-based microtonal sequencer for writing musical ideas, playing them in the browser, and sharing them by URL or embed code.
 
-Xenpaper 2 has was forked from [Xenpaper](https://github.com/dxinteractive/xenpaper) by Lumi Pakkanen on May 2026.
+## Authors
+
+- **Current author:** Lumi Pakkanen, who forked the project in May 2026 and maintains Xenpaper 2.
+- **Original author:** Damien Clarke, creator of the [original project](https://github.com/dxinteractive/xenpaper).
 
 ## AI Agent Disclosure
 
 Portions of this project were developed with the assistance of [OpenAI Codex](https://openai.com/index/introducing-codex/) and ChatGPT. AI tools were used for tasks such as brainstorming, refactoring, debugging, and documentation, but all generated code and changes were reviewed, tested, and curated by human maintainers before inclusion in the project.
 
-## The Vue 3 boilerplate
+## Stack
 
-This template should help get you started developing with Vue 3 in Vite.
+Xenpaper 2 is built with Vue 3, Vite, TypeScript, Tone.js, Pinia, Vue Router, Peggy, and Vitest.
 
 ## Recommended IDE Setup
 
@@ -27,7 +30,7 @@ This template should help get you started developing with Vue 3 in Vite.
 
 ## Type Support for `.vue` Imports in TS
 
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
+TypeScript cannot handle type information for `.vue` imports by default, so this project replaces the `tsc` CLI with `vue-tsc` for type checking. In editors, [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) makes the TypeScript language service aware of `.vue` types.
 
 ## Customize configuration
 
