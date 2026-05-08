@@ -1,8 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { flushPromises, mount } from '@vue/test-utils'
+import { createPinia } from 'pinia'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import App from '../App.vue'
+import HomeView from '../views/HomeView.vue'
 
 type MockSoundEngine = {
   currentPosition: number
@@ -68,7 +70,10 @@ vi.mock('../sound-engine-tonejs', () => ({
 const mountApp = async (hash = '#0_2') => {
   const router = createRouter({
     history: createMemoryHistory(),
-    routes: [{ path: '/', component: { template: '<div />' } }],
+    routes: [
+      { path: '/', component: HomeView },
+      { path: '/about', component: { template: '<main />' } },
+    ],
   })
 
   await router.push(`/${hash}`)
@@ -76,7 +81,7 @@ const mountApp = async (hash = '#0_2') => {
 
   const wrapper = mount(App, {
     global: {
-      plugins: [router],
+      plugins: [createPinia(), router],
       stubs: {
         PitchRuler: true,
         PlayPauseButton: true,
