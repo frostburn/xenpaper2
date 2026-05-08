@@ -152,4 +152,48 @@ describe('App source editor keyboard shortcuts', () => {
     expect(engine.play).toHaveBeenCalledTimes(2)
     expect(engine.pause).not.toHaveBeenCalled()
   })
+
+  it('plays from the current source line for Ctrl+Space', async () => {
+    const { wrapper } = await mountApp('#0_2%0A4_5')
+    const engine = soundEngineMock.instances[soundEngineMock.instances.length - 1]!
+    const textarea = wrapper.get<HTMLTextAreaElement>('textarea').element
+
+    textarea.setSelectionRange(textarea.value.indexOf('\n') + 1, textarea.value.indexOf('\n') + 1)
+    engine.gotoMs.mockClear()
+    engine.play.mockClear()
+    engine.pause.mockClear()
+
+    const { preventDefault } = await dispatchSourceKeydown(textarea, {
+      key: ' ',
+      code: 'Space',
+      ctrlKey: true,
+    })
+
+    expect(preventDefault).toHaveBeenCalledTimes(1)
+    expect(engine.gotoMs).toHaveBeenCalledWith(500)
+    expect(engine.play).toHaveBeenCalledTimes(1)
+    expect(engine.pause).not.toHaveBeenCalled()
+  })
+
+  it('plays from the current source line for Cmd+Space', async () => {
+    const { wrapper } = await mountApp('#0_2%0A4_5')
+    const engine = soundEngineMock.instances[soundEngineMock.instances.length - 1]!
+    const textarea = wrapper.get<HTMLTextAreaElement>('textarea').element
+
+    textarea.setSelectionRange(textarea.value.indexOf('\n') + 1, textarea.value.indexOf('\n') + 1)
+    engine.gotoMs.mockClear()
+    engine.play.mockClear()
+    engine.pause.mockClear()
+
+    const { preventDefault } = await dispatchSourceKeydown(textarea, {
+      key: ' ',
+      code: 'Space',
+      metaKey: true,
+    })
+
+    expect(preventDefault).toHaveBeenCalledTimes(1)
+    expect(engine.gotoMs).toHaveBeenCalledWith(500)
+    expect(engine.play).toHaveBeenCalledTimes(1)
+    expect(engine.pause).not.toHaveBeenCalled()
+  })
 })

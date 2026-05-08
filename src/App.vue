@@ -200,6 +200,17 @@ const getMsAtLine = (tune: string, charData: CharData[] | undefined, line: numbe
 const getSelectedLineStartMs = (): number =>
   getMsAtLine(sourceCode.value, chars.value, selectedLine.value)
 
+const getSourceLineAtOffset = (offset: number): number =>
+  sourceCode.value.slice(0, offset).split('\n').length - 1
+
+const getEventSourceLine = (event: KeyboardEvent): number => {
+  const target = event.target
+
+  if (!(target instanceof HTMLTextAreaElement)) return selectedLine.value
+
+  return getSourceLineAtOffset(target.selectionStart)
+}
+
 const findOffsetFromLineColumn = (line: number, column: number): number | undefined => {
   let currentLine = 1
   let currentColumn = 1
@@ -352,6 +363,13 @@ const handleSourceKeydown = (event: KeyboardEvent): void => {
 
   if (event.key === 'Enter') {
     event.preventDefault()
+    void restartPlaybackFromSelectedLine()
+    return
+  }
+
+  if (event.key === ' ' || event.code === 'Space') {
+    event.preventDefault()
+    selectedLine.value = getEventSourceLine(event)
     void restartPlaybackFromSelectedLine()
     return
   }
