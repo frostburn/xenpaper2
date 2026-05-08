@@ -1,7 +1,51 @@
 <script setup lang="ts">
-import { useXenpaperStore } from '../stores/xenpaper'
+import { getSourceLineAtOffset, useXenpaperStore } from '../stores/xenpaper'
 
 const xenpaper = useXenpaperStore()
+
+const handleSourceInput = (event: Event): void => {
+  xenpaper.setSourceCode((event.target as HTMLTextAreaElement).value)
+}
+
+const handleSourceKeydown = (event: KeyboardEvent): void => {
+  if (!(event.ctrlKey || event.metaKey)) return
+
+  if (event.key === 'Enter') {
+    event.preventDefault()
+    void xenpaper.restartPlaybackFromStart()
+    return
+  }
+
+  if (event.key === ' ' || event.code === 'Space') {
+    event.preventDefault()
+    const target = event.target
+    const line =
+      target instanceof HTMLTextAreaElement
+        ? getSourceLineAtOffset(xenpaper.sourceCode, target.selectionStart)
+        : xenpaper.selectedLine
+    void xenpaper.restartPlaybackFromLine(line)
+    return
+  }
+
+  const key = event.key.toLowerCase()
+
+  if (key === 'z' && event.shiftKey) {
+    event.preventDefault()
+    xenpaper.redoSourceCode()
+    return
+  }
+
+  if (key === 'z') {
+    event.preventDefault()
+    xenpaper.undoSourceCode()
+    return
+  }
+
+  if (key === 'y') {
+    event.preventDefault()
+    xenpaper.redoSourceCode()
+  }
+}
 </script>
 
 <template>
@@ -18,8 +62,8 @@ const xenpaper = useXenpaperStore()
         autocorrect="off"
         spellcheck="false"
         :readonly="xenpaper.isEmbedMode"
-        @input="xenpaper.handleSourceInput"
-        @keydown="xenpaper.handleSourceKeydown"
+        @input="handleSourceInput"
+        @keydown="handleSourceKeydown"
       />
       <pre class="source-highlights"><span
         v-if="xenpaper.sourceCode === ''"

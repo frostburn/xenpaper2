@@ -1,9 +1,30 @@
 <script setup lang="ts">
+import { onMounted, onUnmounted, ref } from 'vue'
+
 import PitchRuler from './PitchRuler.vue'
 import TutorialSidebar from './TutorialSidebar.vue'
-import { useXenpaperStore } from '../stores/xenpaper'
+import { copyText, useXenpaperStore } from '../stores/xenpaper'
 
 const xenpaper = useXenpaperStore()
+const pitchRuler = ref<InstanceType<typeof PitchRuler>>()
+
+const copyShareLink = async (): Promise<void> => {
+  xenpaper.setCopiedShareLink(await copyText(xenpaper.shareUrl))
+}
+
+const copyEmbedCode = async (): Promise<void> => {
+  xenpaper.setCopiedEmbedCode(await copyText(xenpaper.embedCode))
+}
+
+onMounted(() => {
+  xenpaper.setActiveNoteHandler((note, on) => {
+    pitchRuler.value?.setActiveNote(note, on)
+  })
+})
+
+onUnmounted(() => {
+  xenpaper.setActiveNoteHandler()
+})
 </script>
 
 <template>
@@ -42,7 +63,7 @@ const xenpaper = useXenpaperStore()
             @focus="($event.target as HTMLInputElement).select()"
           />
         </label>
-        <button class="panel-button" type="button" @click="xenpaper.copyShareLink">
+        <button class="panel-button" type="button" @click="copyShareLink">
           {{ xenpaper.copiedShareLink ? 'Copied' : 'Copy link' }}
         </button>
 
@@ -58,7 +79,7 @@ const xenpaper = useXenpaperStore()
             @focus="($event.target as HTMLInputElement).select()"
           />
         </label>
-        <button class="panel-button" type="button" @click="xenpaper.copyEmbedCode">
+        <button class="panel-button" type="button" @click="copyEmbedCode">
           {{ xenpaper.copiedEmbedCode ? 'Copied' : 'Copy embed code' }}
         </button>
         <iframe
@@ -79,7 +100,7 @@ const xenpaper = useXenpaperStore()
         <h2 id="pitch-ruler-title">Pitch ruler</h2>
         <p>Click and drag to pan, use mousewheel to zoom.</p>
       </div>
-      <PitchRuler :ref="xenpaper.setPitchRuler" :initial-state="xenpaper.initialRulerState" />
+      <PitchRuler ref="pitchRuler" :initial-state="xenpaper.initialRulerState" />
     </section>
   </aside>
 </template>
