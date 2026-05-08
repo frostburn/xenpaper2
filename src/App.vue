@@ -1,785 +1,35 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { onMounted, onUnmounted } from 'vue'
+import { RouterView } from 'vue-router'
 
-import PlayPauseButton from './components/PlayPauseButton.vue'
-import PitchRuler from './components/PitchRuler.vue'
 import TheFooter from './components/TheFooter.vue'
-import TutorialSidebar from './components/TutorialSidebar.vue'
-import { parse } from './grammars/grammar.generated.js'
-import { grammarToChars, type CharData } from './grammars/grammar-to-chars'
-import { processGrammar, type InitialRulerState } from './grammars/process-grammar'
-import { scoreToMs, type MoscNoteMs, type MoscScoreMs } from './mosc'
-import {
-  canRedoSourceChange,
-  canUndoSourceChange,
-  createSourceHistory,
-  recordSourceChange,
-  redoSourceChange,
-  undoSourceChange,
-} from './source-history'
-import { SoundEngineTonejs } from './sound-engine-tonejs'
-import type { XenpaperAST } from './grammars/grammar.generated'
-import {
-  getEmbedShareHash,
-  getSavedSourceCode,
-  getShareHash,
-  getSharedSourceCode,
-  hasSharedSourceCode,
-  isEmbedHash,
-  saveSourceCode,
-} from './share-link'
-
-type ParsedSource = {
-  ast?: XenpaperAST
-  chars: CharData[]
-  error: string
-  playable: boolean
-  initialRulerState?: InitialRulerState
-  scoreMs?: MoscScoreMs
-}
-
-type ParseErrorLocation = {
-  start?: {
-    offset?: number
-    line?: number
-    column?: number
-  }
-}
-
-type ParseError = Error & {
-  location?: ParseErrorLocation
-}
-
-const router = useRouter()
-const route = useRoute()
-
-const decodeBrowserHash = (hash: string): string => {
-  try {
-    return decodeURIComponent(hash)
-  } catch {
-    return hash
-  }
-}
-
-const getInitialRouteHash = (): string => {
-  if (route.hash) return route.hash
-  if (typeof window !== 'undefined' && window.location.hash)
-    return decodeBrowserHash(window.location.hash)
-
-  return ''
-}
-
-const initialRouteHash = getInitialRouteHash()
-const soundEngine = new SoundEngineTonejs()
-const sourceCode = ref(getSavedSourceCode(initialRouteHash))
-const sourceHistory = ref(createSourceHistory(sourceCode.value))
-const isPlaying = ref(false)
-const isLooping = ref(false)
-const selectedLine = ref(0)
-const scoreLoaded = ref(false)
-const lastError = ref('')
-const chars = ref<CharData[]>([])
-const initialRulerState = ref<InitialRulerState>()
-const pitchRuler = ref<InstanceType<typeof PitchRuler>>()
-const playbackPositionMs = ref(-1)
-const copiedShareLink = ref(false)
-const copiedEmbedCode = ref(false)
-const isEmbedMode = ref(isEmbedHash(initialRouteHash))
-type SidebarMode = 'info' | 'share' | 'ruler' | 'none'
-type OpenSidebarMode = Exclude<SidebarMode, 'none'>
-const sidebarMode = ref<SidebarMode>('info')
-let parseVersion = 0
-let shouldApplyInitialSidebarMode = true
-let playbackAnimationFrame: number | undefined
-
-const htmlTitle = computed(() => {
-  const titleLimit = 20
-  const source = sourceCode.value
-
-  if (source.length === 0) return 'Xenpaper 2'
-
-  return source.length > titleLimit
-    ? `Xenpaper 2: ${source.slice(0, titleLimit)}...`
-    : `Xenpaper 2: ${source}`
-})
-const sourceCharacters = computed(() => sourceCode.value.split(''))
-const hasPlayStartMarkers = computed(() => sourceCode.value.includes('\n'))
-
-type SourceDisplayToken =
-  | {
-      type: 'playStart'
-      key: string
-      line: number
-    }
-  | {
-      type: 'character'
-      key: string
-      character: string
-      index: number
-    }
-
-const sourceDisplayTokens = computed<SourceDisplayToken[]>(() => {
-  const tokens: SourceDisplayToken[] = []
-  let playStartLine = 0
-
-  const addPlayStart = (): void => {
-    tokens.push({
-      type: 'playStart',
-      key: `play-start-${playStartLine}`,
-      line: playStartLine,
-    })
-    playStartLine++
-  }
-
-  if (hasPlayStartMarkers.value) addPlayStart()
-
-  sourceCharacters.value.forEach((character, index) => {
-    tokens.push({
-      type: 'character',
-      key: `character-${index}`,
-      character,
-      index,
-    })
-
-    if (hasPlayStartMarkers.value && character === '\n') addPlayStart()
-  })
-
-  return tokens
-})
-const canUndoSourceCode = computed(() => canUndoSourceChange(sourceHistory.value))
-const canRedoSourceCode = computed(() => canRedoSourceChange(sourceHistory.value))
-const shareRoute = computed(() =>
-  router.resolve({
-    path: route.path,
-    query: route.query,
-    hash: getShareHash(sourceCode.value),
-  }),
-)
-const shareUrl = computed(() => new URL(shareRoute.value.href, window.location.href).toString())
-const embedRoute = computed(() =>
-  router.resolve({
-    path: route.path,
-    query: route.query,
-    hash: getEmbedShareHash(sourceCode.value),
-  }),
-)
-const embedUrl = computed(() => new URL(embedRoute.value.href, window.location.href).toString())
-const escapeHtmlAttribute = (value: string): string =>
-  value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-const embedCode = computed(
-  () =>
-    `<iframe width="560" height="315" src="${escapeHtmlAttribute(
-      embedUrl.value,
-    )}" title="Xenpaper 2" frameborder="0"></iframe>`,
-)
-
-const parseSourceCode = (): XenpaperAST => parse(sourceCode.value, { grammarSource: 'source-code' })
-
-const getMsAtLine = (tune: string, charData: CharData[] | undefined, line: number): number => {
-  if (line === 0) return 0
-
-  let ms = 0
-  let counted = 0
-  const tuneCharacters = tune.split('')
-
-  for (let i = 0; i < tuneCharacters.length; i++) {
-    const character = tuneCharacters[i]
-    const [, end] = charData?.[i]?.playTime ?? []
-
-    if (end !== undefined) ms = end
-
-    if (character === '\n') {
-      counted++
-      if (counted === line) return ms
-    }
-  }
-
-  return 0
-}
-
-const getSelectedLineStartMs = (): number =>
-  getMsAtLine(sourceCode.value, chars.value, selectedLine.value)
-
-const getSourceLineAtOffset = (offset: number): number =>
-  sourceCode.value.slice(0, offset).split('\n').length - 1
-
-const getEventSourceLine = (event: KeyboardEvent): number => {
-  const target = event.target
-
-  if (!(target instanceof HTMLTextAreaElement)) return selectedLine.value
-
-  return getSourceLineAtOffset(target.selectionStart)
-}
-
-const findOffsetFromLineColumn = (line: number, column: number): number | undefined => {
-  let currentLine = 1
-  let currentColumn = 1
-
-  for (let offset = 0; offset < sourceCode.value.length; offset++) {
-    if (currentLine === line && currentColumn === column) return offset
-
-    if (sourceCode.value[offset] === '\n') {
-      currentLine++
-      currentColumn = 1
-    } else {
-      currentColumn++
-    }
-  }
-
-  return currentLine === line && currentColumn === column ? sourceCode.value.length : undefined
-}
-
-const getErrorOffset = (error: unknown): number | undefined => {
-  const parseError = error as Partial<ParseError>
-  const start = parseError.location?.start
-
-  if (typeof start?.offset === 'number') return start.offset
-  if (typeof start?.line === 'number' && typeof start?.column === 'number') {
-    return findOffsetFromLineColumn(start.line, start.column)
-  }
-
-  const match = error instanceof Error ? error.message.match(/(\d+):(\d+)/) : undefined
-  if (!match) return undefined
-
-  return findOffsetFromLineColumn(Number(match[1]), Number(match[2]))
-}
-
-const parseAndProcessSourceCode = (): ParsedSource => {
-  try {
-    const ast = parseSourceCode()
-    const { score, initialRulerState: processedInitialRulerState } = processGrammar(ast)
-    const highlightedChars = grammarToChars(ast)
-
-    if (!score) {
-      return {
-        ast,
-        chars: highlightedChars,
-        error: 'There is no playable score yet.',
-        playable: false,
-        initialRulerState: processedInitialRulerState,
-      }
-    }
-
-    return {
-      ast,
-      chars: highlightedChars,
-      error: '',
-      playable: true,
-      initialRulerState: processedInitialRulerState,
-      scoreMs: scoreToMs(score),
-    }
-  } catch (error) {
-    const highlightedChars: CharData[] = []
-    const offset = getErrorOffset(error)
-
-    if (typeof offset === 'number') {
-      highlightedChars[offset] = { color: 'error' }
-    }
-
-    return {
-      chars: highlightedChars,
-      error: error instanceof Error ? error.message : 'Unable to parse Xenpaper 2 source code.',
-      playable: false,
-    }
-  }
-}
-
-const updateParsedSourceCode = async (): Promise<void> => {
-  const version = ++parseVersion
-  const parsedSource = parseAndProcessSourceCode()
-  chars.value = parsedSource.chars
-  lastError.value = parsedSource.error
-  initialRulerState.value = parsedSource.initialRulerState
-
-  if (shouldApplyInitialSidebarMode) {
-    shouldApplyInitialSidebarMode = false
-
-    if (parsedSource.initialRulerState?.lowHz !== undefined && !isEmbedMode.value) {
-      sidebarMode.value = 'ruler'
-    }
-  }
-
-  if (!parsedSource.playable || !parsedSource.scoreMs) {
-    scoreLoaded.value = false
-    return
-  }
-
-  await soundEngine.setScore(parsedSource.scoreMs)
-  if (version !== parseVersion) return
-
-  soundEngine.setLoopActive(isLooping.value)
-  await soundEngine.gotoMs(0)
-  scoreLoaded.value = true
-  playbackPositionMs.value = -1
-}
-
-const applySourceCode = (tune: string, recordHistory = true): void => {
-  if (tune === sourceCode.value) return
-
-  sourceHistory.value = recordHistory
-    ? recordSourceChange(sourceHistory.value, tune)
-    : createSourceHistory(tune)
-  sourceCode.value = sourceHistory.value.present
-}
-
-const setSourceCode = (tune: string): void => {
-  applySourceCode(tune)
-}
-
-const setDemoTune = async (tune: string): Promise<void> => {
-  const sourceChanged = tune !== sourceCode.value
-  applySourceCode(tune)
-
-  if (sourceChanged || !scoreLoaded.value || soundEngine.position() >= soundEngine.endPosition()) {
-    await updateParsedSourceCode()
-    if (!scoreLoaded.value) return
-  }
-
-  await soundEngine.gotoMs(0)
-  await soundEngine.play()
-  isPlaying.value = true
-}
-
-const handleSourceInput = (event: Event): void => {
-  setSourceCode((event.target as HTMLTextAreaElement).value)
-}
-
-const undoSourceCode = (): void => {
-  sourceHistory.value = undoSourceChange(sourceHistory.value)
-  sourceCode.value = sourceHistory.value.present
-}
-
-const redoSourceCode = (): void => {
-  sourceHistory.value = redoSourceChange(sourceHistory.value)
-  sourceCode.value = sourceHistory.value.present
-}
-
-const setSelectedLine = (line: number): void => {
-  selectedLine.value = line
-}
-
-const handleSourceKeydown = (event: KeyboardEvent): void => {
-  if (!(event.ctrlKey || event.metaKey)) return
-
-  if (event.key === 'Enter') {
-    event.preventDefault()
-    void restartPlaybackFromStart()
-    return
-  }
-
-  if (event.key === ' ' || event.code === 'Space') {
-    event.preventDefault()
-    selectedLine.value = getEventSourceLine(event)
-    void restartPlaybackFromSelectedLine()
-    return
-  }
-
-  const key = event.key.toLowerCase()
-
-  if (key === 'z' && event.shiftKey) {
-    event.preventDefault()
-    redoSourceCode()
-    return
-  }
-
-  if (key === 'z') {
-    event.preventDefault()
-    undoSourceCode()
-    return
-  }
-
-  if (key === 'y') {
-    event.preventDefault()
-    redoSourceCode()
-  }
-}
+import XenpaperSidebar from './components/XenpaperSidebar.vue'
+import XenpaperToolbar from './components/XenpaperToolbar.vue'
+import { useXenpaperStore } from './stores/xenpaper'
+
+const xenpaper = useXenpaperStore()
 
 onMounted(() => {
-  watch(
-    htmlTitle,
-    (title) => {
-      document.title = title
-
-      let openGraphTitle = document.head.querySelector<HTMLMetaElement>('meta[property="og:title"]')
-      if (!openGraphTitle) {
-        openGraphTitle = document.createElement('meta')
-        openGraphTitle.setAttribute('property', 'og:title')
-        document.head.append(openGraphTitle)
-      }
-
-      openGraphTitle.setAttribute('content', title)
-    },
-    { immediate: true },
-  )
-})
-
-watch(sourceCode, () => {
-  copiedShareLink.value = false
-  copiedEmbedCode.value = false
-  void replaceShareRoute()
-  void updateParsedSourceCode()
-})
-
-watch([selectedLine, chars], () => {
-  soundEngine.setLoopStart(getSelectedLineStartMs())
-})
-
-const replaceShareRoute = async (): Promise<void> => {
-  saveSourceCode(sourceCode.value)
-
-  const shareHash = isEmbedMode.value
-    ? getEmbedShareHash(sourceCode.value)
-    : getShareHash(sourceCode.value)
-  if (route.hash === shareHash) return
-
-  await router.replace({
-    path: route.path,
-    query: route.query,
-    hash: shareHash,
-  })
-}
-
-const copyText = async (text: string): Promise<boolean> => {
-  if (!text) return false
-
-  const writeClipboardText = navigator.clipboard?.writeText
-
-  if (writeClipboardText) {
-    try {
-      await writeClipboardText.call(navigator.clipboard, text)
-      return true
-    } catch {
-      // Fall back for browsers that do not expose Clipboard API outside secure contexts.
-    }
-  }
-
-  const textArea = document.createElement('textarea')
-  textArea.value = text
-  textArea.style.position = 'fixed'
-  textArea.style.opacity = '0'
-  document.body.append(textArea)
-  textArea.select()
-  const copied = document.execCommand('copy')
-  textArea.remove()
-  return copied
-}
-
-const copyShareLink = async (): Promise<void> => {
-  copiedShareLink.value = await copyText(shareUrl.value)
-}
-
-const copyEmbedCode = async (): Promise<void> => {
-  copiedEmbedCode.value = await copyText(embedCode.value)
-}
-
-watch(
-  () => route.hash,
-  (sharedHash) => {
-    const sharedSourceCode = getSharedSourceCode(sharedHash)
-
-    if (hasSharedSourceCode(sharedHash)) {
-      isEmbedMode.value = isEmbedHash(sharedHash)
-    }
-
-    if (hasSharedSourceCode(sharedHash) && sharedSourceCode !== sourceCode.value) {
-      applySourceCode(sharedSourceCode, false)
-    }
-  },
-)
-
-const showSidebar = (mode: OpenSidebarMode): void => {
-  sidebarMode.value = sidebarMode.value === mode ? 'none' : mode
-}
-
-const closeSidebar = (): void => {
-  sidebarMode.value = 'none'
-}
-
-const preparePlayableScore = async (): Promise<boolean> => {
-  if (!scoreLoaded.value || soundEngine.position() >= soundEngine.endPosition()) {
-    await updateParsedSourceCode()
-  }
-
-  return scoreLoaded.value
-}
-
-const restartPlaybackFromSelectedLine = async (): Promise<void> => {
-  if (!(await preparePlayableScore())) return
-
-  await soundEngine.gotoMs(getSelectedLineStartMs())
-  await soundEngine.play()
-  isPlaying.value = true
-}
-
-const restartPlaybackFromStart = async (): Promise<void> => {
-  selectedLine.value = 0
-  await restartPlaybackFromSelectedLine()
-}
-
-const togglePlayback = async (): Promise<void> => {
-  if (isPlaying.value) {
-    await soundEngine.pause()
-    isPlaying.value = false
-    playbackPositionMs.value = -1
-    return
-  }
-
-  await restartPlaybackFromSelectedLine()
-}
-
-const toggleLoop = (): void => {
-  isLooping.value = !isLooping.value
-  soundEngine.setLoopActive(isLooping.value)
-}
-
-const startPlaybackAnimation = (): void => {
-  const tick = (): void => {
-    playbackPositionMs.value = soundEngine.playing() ? soundEngine.position() : -1
-    playbackAnimationFrame = window.requestAnimationFrame(tick)
-  }
-
-  if (playbackAnimationFrame === undefined) tick()
-}
-
-const stopPlaybackAnimation = (): void => {
-  if (playbackAnimationFrame !== undefined) {
-    window.cancelAnimationFrame(playbackAnimationFrame)
-    playbackAnimationFrame = undefined
-  }
-  playbackPositionMs.value = -1
-}
-
-const isCharacterActive = (charData?: CharData): boolean => {
-  const [start, end] = charData?.playTime ?? []
-  return (
-    isPlaying.value &&
-    start !== undefined &&
-    end !== undefined &&
-    playbackPositionMs.value >= start &&
-    playbackPositionMs.value < end
-  )
-}
-
-watch(isPlaying, (playing) => {
-  if (playing) {
-    startPlaybackAnimation()
-    return
-  }
-
-  stopPlaybackAnimation()
-})
-
-const cancelOnEnd = soundEngine.onEnd(() => {
-  isPlaying.value = false
-})
-
-const cancelOnNote = soundEngine.onNote((note: MoscNoteMs, on: boolean) => {
-  pitchRuler.value?.setActiveNote(note, on)
-})
-
-onMounted(() => {
-  void replaceShareRoute()
-  void updateParsedSourceCode()
+  xenpaper.initialize()
 })
 
 onUnmounted(() => {
-  cancelOnEnd()
-  cancelOnNote()
-  stopPlaybackAnimation()
+  xenpaper.cleanup()
 })
 </script>
 
 <template>
   <div class="app-shell">
-    <div class="app-layout" :class="{ 'app-layout-embed': isEmbedMode }">
-      <div class="actions" :class="{ 'actions-embed': isEmbedMode }" aria-label="Playback controls">
-        <PlayPauseButton :playing="isPlaying" @toggle="togglePlayback" />
-        <button
-          class="action-button loop-button"
-          :class="{ active: isLooping }"
-          type="button"
-          :aria-pressed="isLooping"
-          @click="toggleLoop"
-        >
-          Loop
-        </button>
-        <a
-          v-if="isEmbedMode"
-          class="action-button edit-link"
-          :href="shareUrl"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Edit on Xenpaper 2
-        </a>
-        <div v-if="!isEmbedMode" class="toolbar-rule" aria-hidden="true"></div>
-        <button
-          v-if="!isEmbedMode"
-          class="action-button"
-          type="button"
-          :disabled="!canUndoSourceCode"
-          @click="undoSourceCode"
-        >
-          Undo
-        </button>
-        <button
-          v-if="!isEmbedMode"
-          class="action-button"
-          type="button"
-          :disabled="!canRedoSourceCode"
-          @click="redoSourceCode"
-        >
-          Redo
-        </button>
-        <div v-if="!isEmbedMode" class="toolbar-rule" aria-hidden="true"></div>
-        <button
-          v-if="!isEmbedMode"
-          class="action-button"
-          :class="{ active: sidebarMode === 'info' }"
-          type="button"
-          @click="showSidebar('info')"
-        >
-          Info
-        </button>
-        <button
-          v-if="!isEmbedMode"
-          class="action-button"
-          :class="{ active: sidebarMode === 'share' }"
-          type="button"
-          @click="showSidebar('share')"
-        >
-          Share
-        </button>
-        <button
-          v-if="!isEmbedMode"
-          class="action-button"
-          :class="{ active: sidebarMode === 'ruler' }"
-          type="button"
-          @click="showSidebar('ruler')"
-        >
-          Ruler
-        </button>
-      </div>
-
-      <main class="xenpaper-app" :class="{ 'xenpaper-app-embed': isEmbedMode }">
-        <label class="source-label" for="source-code">Source code</label>
-        <div class="source-editor" :class="{ 'source-editor-embed': isEmbedMode }">
-          <textarea
-            id="source-code"
-            :value="sourceCode"
-            class="source-input"
-            placeholder="Type your tune here..."
-            autocapitalize="off"
-            autocomplete="off"
-            autocorrect="off"
-            spellcheck="false"
-            :readonly="isEmbedMode"
-            @input="handleSourceInput"
-            @keydown="handleSourceKeydown"
-          />
-          <pre class="source-highlights"><span
-          v-if="sourceCode === ''"
-          class="placeholder-text"
-          aria-hidden="true"
-        >Type your tune here...</span><template v-else><template v-for="token in sourceDisplayTokens" :key="token.key"><button
-          v-if="token.type === 'playStart'"
-          class="play-start-marker"
-          :class="{ selected: selectedLine === token.line }"
-          type="button"
-          :aria-label="`Start playback at line ${token.line + 1}`"
-          :aria-pressed="selectedLine === token.line"
-          @click="setSelectedLine(token.line)"
-        >&gt;</button><span
-          v-else
-          class="source-character"
-          aria-hidden="true"
-          :class="[
-            chars[token.index]?.color ? `highlight-${chars[token.index]?.color}` : 'highlight-unknown',
-            { active: isCharacterActive(chars[token.index]) },
-          ]"
-        >{{ token.character }}</span></template></template><br><br></pre>
-        </div>
-        <p v-if="lastError" class="playback-error" role="alert">Error: {{ lastError }}</p>
-      </main>
-
-      <aside
-        v-if="!isEmbedMode && sidebarMode !== 'none'"
-        class="sidebar-stack"
-        :class="`sidebar-stack-${sidebarMode}`"
-      >
-        <button
-          class="sidebar-close"
-          type="button"
-          aria-label="Close sidebar"
-          @click="closeSidebar"
-        >
-          ×
-        </button>
-        <TutorialSidebar v-if="sidebarMode === 'info'" @set-tune="setDemoTune" />
-
-        <section v-else-if="sidebarMode === 'share'" class="sidebar-panel share-panel">
-          <header class="sidebar-heading">
-            <h1>xenpaper 2</h1>
-            <p>Text-based microtonal sequencer.</p>
-            <p>Write down musical ideas and share the link around.</p>
-          </header>
-
-          <div class="sidebar-content">
-            <h2>Share</h2>
-            <p>Copy this URL to share the current tune.</p>
-            <label class="share-field">
-              <span>Share link</span>
-              <input
-                class="share-link-input"
-                :value="shareUrl"
-                type="text"
-                readonly
-                @focus="($event.target as HTMLInputElement).select()"
-              />
-            </label>
-            <button class="panel-button" type="button" @click="copyShareLink">
-              {{ copiedShareLink ? 'Copied' : 'Copy link' }}
-            </button>
-
-            <h2 class="embed-heading">Embed</h2>
-            <p>Copy this HTML to embed the current tune in another page.</p>
-            <label class="share-field">
-              <span>Embed code</span>
-              <input
-                class="share-link-input"
-                :value="embedCode"
-                type="text"
-                readonly
-                @focus="($event.target as HTMLInputElement).select()"
-              />
-            </label>
-            <button class="panel-button" type="button" @click="copyEmbedCode">
-              {{ copiedEmbedCode ? 'Copied' : 'Copy embed code' }}
-            </button>
-            <iframe class="embed-preview" :src="embedUrl" title="Xenpaper 2 embed preview"></iframe>
-          </div>
-        </section>
-
-        <section v-else class="sidebar-panel ruler-panel" aria-labelledby="pitch-ruler-title">
-          <header class="sidebar-heading">
-            <h1>xenpaper 2</h1>
-            <p>Text-based microtonal sequencer.</p>
-          </header>
-
-          <div class="ruler-heading">
-            <h2 id="pitch-ruler-title">Pitch ruler</h2>
-            <p>Click and drag to pan, use mousewheel to zoom.</p>
-          </div>
-          <PitchRuler ref="pitchRuler" :initial-state="initialRulerState" />
-        </section>
-      </aside>
+    <div class="app-layout" :class="{ 'app-layout-embed': xenpaper.isEmbedMode }">
+      <XenpaperToolbar />
+      <RouterView />
+      <XenpaperSidebar />
     </div>
-    <TheFooter v-if="!isEmbedMode" />
+    <TheFooter v-if="!xenpaper.isEmbedMode" />
   </div>
 </template>
 
-<style scoped>
+<style>
 .app-shell {
   display: flex;
   flex-direction: column;
@@ -1001,7 +251,7 @@ onUnmounted(() => {
   margin-left: auto;
 }
 
-.actions-embed :deep(.play-pause-button) {
+.actions-embed .play-pause-button {
   width: 3rem;
   height: 3rem;
   padding: 1rem 0.5rem;
@@ -1018,6 +268,21 @@ onUnmounted(() => {
 .toolbar-rule {
   margin: 0.75rem 0.5rem;
   border-top: 1px solid var(--xenpaper-bg-light);
+}
+
+.route-navigation {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  margin-top: 1.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--xenpaper-bg-light);
+}
+
+.route-link.router-link-active {
+  color: var(--xenpaper-bg);
+  background: var(--xenpaper-cyan);
 }
 
 .action-button {
@@ -1118,7 +383,7 @@ onUnmounted(() => {
   outline-offset: 2px;
 }
 
-:deep(.tutorial-sidebar) {
+.tutorial-sidebar {
   height: 100%;
   max-height: 100%;
 }
@@ -1294,6 +559,15 @@ onUnmounted(() => {
     border-left: 1px solid var(--xenpaper-bg-light);
   }
 
+  .route-navigation {
+    flex-direction: row;
+    margin-top: 0;
+    margin-left: auto;
+    padding-top: 0;
+    border-top: 0;
+    border-left: 1px solid var(--xenpaper-bg-light);
+  }
+
   .source-editor,
   .source-input,
   .source-highlights {
@@ -1310,7 +584,7 @@ onUnmounted(() => {
     flex-basis: auto;
   }
 
-  :deep(.tutorial-sidebar),
+  .tutorial-sidebar,
   .sidebar-panel {
     height: auto;
     max-height: none;

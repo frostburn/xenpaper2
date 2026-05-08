@@ -1,8 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { flushPromises, mount } from '@vue/test-utils'
+import { createPinia } from 'pinia'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import App from '../App.vue'
+import HomeView from '../views/HomeView.vue'
 
 type MockSoundEngine = {
   currentPosition: number
@@ -68,7 +70,10 @@ vi.mock('../sound-engine-tonejs', () => ({
 const mountApp = async (hash = '#0_2') => {
   const router = createRouter({
     history: createMemoryHistory(),
-    routes: [{ path: '/', component: { template: '<div />' } }],
+    routes: [
+      { path: '/', component: HomeView },
+      { path: '/about', component: { template: '<main />' } },
+    ],
   })
 
   await router.push(`/${hash}`)
@@ -76,7 +81,7 @@ const mountApp = async (hash = '#0_2') => {
 
   const wrapper = mount(App, {
     global: {
-      plugins: [router],
+      plugins: [createPinia(), router],
       stubs: {
         PitchRuler: true,
         PlayPauseButton: true,
@@ -196,5 +201,18 @@ describe('App source editor keyboard shortcuts', () => {
     expect(engine.gotoMs).toHaveBeenCalledWith(500)
     expect(engine.play).toHaveBeenCalledTimes(1)
     expect(engine.pause).not.toHaveBeenCalled()
+  })
+
+  it('keeps playback controls and sound engine alive on the About route', async () => {
+    const { router, wrapper } = await mountApp('#0_2%0A4_5')
+    const instanceCount = soundEngineMock.instances.length
+
+    await router.push('/about#0_2%0A4_5')
+    await flushPromises()
+
+    expect(wrapper.find('textarea').exists()).toBe(false)
+    expect(wrapper.find('[aria-label="Playback controls"]').exists()).toBe(true)
+    expect(wrapper.find('.loop-button').exists()).toBe(true)
+    expect(soundEngineMock.instances).toHaveLength(instanceCount)
   })
 })
