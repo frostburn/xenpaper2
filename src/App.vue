@@ -200,6 +200,17 @@ const getMsAtLine = (tune: string, charData: CharData[] | undefined, line: numbe
 const getSelectedLineStartMs = (): number =>
   getMsAtLine(sourceCode.value, chars.value, selectedLine.value)
 
+const getSourceLineAtOffset = (offset: number): number =>
+  sourceCode.value.slice(0, offset).split('\n').length - 1
+
+const getEventSourceLine = (event: KeyboardEvent): number => {
+  const target = event.target
+
+  if (!(target instanceof HTMLTextAreaElement)) return selectedLine.value
+
+  return getSourceLineAtOffset(target.selectionStart)
+}
+
 const findOffsetFromLineColumn = (line: number, column: number): number | undefined => {
   let currentLine = 1
   let currentColumn = 1
@@ -350,6 +361,19 @@ const setSelectedLine = (line: number): void => {
 const handleSourceKeydown = (event: KeyboardEvent): void => {
   if (!(event.ctrlKey || event.metaKey)) return
 
+  if (event.key === 'Enter') {
+    event.preventDefault()
+    void restartPlaybackFromStart()
+    return
+  }
+
+  if (event.key === ' ' || event.code === 'Space') {
+    event.preventDefault()
+    selectedLine.value = getEventSourceLine(event)
+    void restartPlaybackFromSelectedLine()
+    return
+  }
+
   const key = event.key.toLowerCase()
 
   if (key === 'z' && event.shiftKey) {
@@ -471,6 +495,27 @@ const closeSidebar = (): void => {
   sidebarMode.value = 'none'
 }
 
+const preparePlayableScore = async (): Promise<boolean> => {
+  if (!scoreLoaded.value || soundEngine.position() >= soundEngine.endPosition()) {
+    await updateParsedSourceCode()
+  }
+
+  return scoreLoaded.value
+}
+
+const restartPlaybackFromSelectedLine = async (): Promise<void> => {
+  if (!(await preparePlayableScore())) return
+
+  await soundEngine.gotoMs(getSelectedLineStartMs())
+  await soundEngine.play()
+  isPlaying.value = true
+}
+
+const restartPlaybackFromStart = async (): Promise<void> => {
+  selectedLine.value = 0
+  await restartPlaybackFromSelectedLine()
+}
+
 const togglePlayback = async (): Promise<void> => {
   if (isPlaying.value) {
     await soundEngine.pause()
@@ -479,14 +524,7 @@ const togglePlayback = async (): Promise<void> => {
     return
   }
 
-  if (!scoreLoaded.value || soundEngine.position() >= soundEngine.endPosition()) {
-    await updateParsedSourceCode()
-    if (!scoreLoaded.value) return
-  }
-
-  await soundEngine.gotoMs(getSelectedLineStartMs())
-  await soundEngine.play()
-  isPlaying.value = true
+  await restartPlaybackFromSelectedLine()
 }
 
 const toggleLoop = (): void => {
