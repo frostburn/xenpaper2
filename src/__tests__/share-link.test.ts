@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 
 import {
   decodeSharedSource,
+  encodeShareHashForUrl,
   encodeSharedSource,
   getEmbedShareHash,
   getSavedSourceCode,
@@ -42,6 +43,15 @@ describe('share-link', () => {
     expect(getShareHash('embed:linked tune')).toBe('#embed%3Alinked_tune')
     expect(getEmbedShareHash('linked tune')).toBe('#embed:linked_tune')
     expect(getShareHash(`"0-\`0-100%`)).toBe('#"0-`0-100%25')
+  })
+
+  it('encodes control characters before hash fragments are used in absolute URLs', () => {
+    const hash = getShareHash('0_2\n4_5\t6_7')
+
+    expect(encodeShareHashForUrl(hash)).toBe('#0%_2%0A4%_5%096%_7')
+    expect(new URL(encodeShareHashForUrl(hash), 'https://example.test/').hash).toBe(
+      '#0%_2%0A4%_5%096%_7',
+    )
   })
 
   it('detects embed hashes and restores their source code', () => {

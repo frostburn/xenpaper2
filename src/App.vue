@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted } from 'vue'
-import { RouterView } from 'vue-router'
+import { computed, onMounted, onUnmounted, watch, type WatchStopHandle } from 'vue'
+import { RouterView, useRoute, useRouter } from 'vue-router'
 
 import TheFooter from './components/TheFooter.vue'
 import XenpaperSidebar from './components/XenpaperSidebar.vue'
@@ -8,15 +8,140 @@ import XenpaperToolbar from './components/XenpaperToolbar.vue'
 import { useXenpaperStore } from './stores/xenpaper'
 
 const xenpaper = useXenpaperStore()
+const route = useRoute()
+const router = useRouter()
+
+let playbackAnimationFrame: number | undefined
+let stopTitleWatcher: WatchStopHandle | undefined
+let stopSourceWatcher: WatchStopHandle | undefined
+let stopLoopStartWatcher: WatchStopHandle | undefined
+let stopRouteHashWatcher: WatchStopHandle | undefined
+let stopPlaybackWatcher: WatchStopHandle | undefined
+
+const decodeBrowserHash = (hash: string): string => {
+  try {
+    return decodeURIComponent(hash)
+  } catch {
+    return hash
+  }
+}
+
+const initialRouteHash = (): string => {
+  if (route.hash) return route.hash
+  if (window.location.hash) return decodeBrowserHash(window.location.hash)
+
+  return ''
+}
+
+const currentRouteHash = computed(() => xenpaper.routeHash)
+
+const replaceShareRoute = async (): Promise<void> => {
+  xenpaper.saveSourceCodeToBrowser()
+
+  if (route.hash === currentRouteHash.value) return
+
+  await router.replace({
+    path: route.path,
+    query: route.query,
+    hash: currentRouteHash.value,
+  })
+}
+
+const syncDocumentTitle = (title: string): void => {
+  document.title = title
+
+  let openGraphTitle = document.head.querySelector<HTMLMetaElement>('meta[property="og:title"]')
+  if (!openGraphTitle) {
+    openGraphTitle = document.createElement('meta')
+    openGraphTitle.setAttribute('property', 'og:title')
+    document.head.append(openGraphTitle)
+  }
+
+  openGraphTitle.setAttribute('content', title)
+}
+
+const startPlaybackAnimation = (): void => {
+  const tick = (): void => {
+    xenpaper.syncPlaybackPosition()
+    playbackAnimationFrame = window.requestAnimationFrame(tick)
+  }
+
+  if (playbackAnimationFrame === undefined) tick()
+}
+
+const stopPlaybackAnimation = (): void => {
+  if (playbackAnimationFrame !== undefined) {
+    window.cancelAnimationFrame(playbackAnimationFrame)
+    playbackAnimationFrame = undefined
+  }
+  xenpaper.resetPlaybackPosition()
+}
+
+const startWatchers = (): void => {
+  stopTitleWatcher = watch(() => xenpaper.htmlTitle, syncDocumentTitle, { immediate: true })
+
+  stopSourceWatcher = watch(
+    () => xenpaper.sourceCode,
+    () => {
+      xenpaper.resetCopiedState()
+      void replaceShareRoute()
+      void xenpaper.updateParsedSourceCode()
+    },
+  )
+
+  stopLoopStartWatcher = watch([() => xenpaper.selectedLine, () => xenpaper.chars], () => {
+    xenpaper.updateLoopStart()
+  })
+
+  stopRouteHashWatcher = watch(
+    () => route.hash,
+    (sharedHash) => {
+      xenpaper.applySharedHash(sharedHash)
+    },
+  )
+
+  stopPlaybackWatcher = watch(
+    () => xenpaper.isPlaying,
+    (playing) => {
+      if (playing) {
+        startPlaybackAnimation()
+        return
+      }
+
+      stopPlaybackAnimation()
+    },
+  )
+}
+
+const stopWatchers = (): void => {
+  stopTitleWatcher?.()
+  stopSourceWatcher?.()
+  stopLoopStartWatcher?.()
+  stopRouteHashWatcher?.()
+  stopPlaybackWatcher?.()
+  stopTitleWatcher = undefined
+  stopSourceWatcher = undefined
+  stopLoopStartWatcher = undefined
+  stopRouteHashWatcher = undefined
+  stopPlaybackWatcher = undefined
+}
 
 onMounted(() => {
-  xenpaper.initialize()
+  xenpaper.initializeLocation(window.location.href)
+  xenpaper.initializeSourceCode(initialRouteHash())
+  xenpaper.startSoundEngineListeners()
+  startWatchers()
+  void replaceShareRoute()
+  void xenpaper.updateParsedSourceCode()
 })
 
 onUnmounted(() => {
-  xenpaper.cleanup()
+  stopWatchers()
+  xenpaper.stopSoundEngineListeners()
+  stopPlaybackAnimation()
 })
 </script>
+
 
 <template>
   <div class="app-shell">
