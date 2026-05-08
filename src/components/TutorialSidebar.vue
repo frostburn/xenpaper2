@@ -214,7 +214,11 @@ const tutorialSections: TutorialSection[] = [
 
     <footer class="sidebar-footer">
       <h2>Bugs and future features</h2>
-      <p>Find anything broken, or have some ideas you want to share? Visit the <a href="https://github.com/xenharmonic-devs/xenpaper2/issues">issue tracker on GitHub</a> to file bugs or discuss future features.</p>
+      <p>
+        Find anything broken, or have some ideas you want to share? Visit the
+        <a href="https://github.com/xenharmonic-devs/xenpaper2/issues">issue tracker on GitHub</a>
+        to file bugs or discuss future features.
+      </p>
     </footer>
   </aside>
 </template>

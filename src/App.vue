@@ -668,7 +668,7 @@ onUnmounted(() => {
           id="source-code"
           :value="sourceCode"
           class="source-input"
-          placeholder="Enter Xenpaper 2 source code..."
+          placeholder="Type your tune here..."
           autocapitalize="off"
           autocomplete="off"
           autocorrect="off"
@@ -681,7 +681,7 @@ onUnmounted(() => {
           v-if="sourceCode === ''"
           class="placeholder-text"
           aria-hidden="true"
-        >Enter Xenpaper 2 source code...</span><template v-else><template v-for="token in sourceDisplayTokens" :key="token.key"><button
+        >Type your tune here...</span><template v-else><template v-for="token in sourceDisplayTokens" :key="token.key"><button
           v-if="token.type === 'playStart'"
           class="play-start-marker"
           :class="{ selected: selectedLine === token.line }"
