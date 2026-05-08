@@ -23,6 +23,9 @@ type GrammarLocation = {
   start?: {
     offset?: number
   }
+  end?: {
+    offset?: number
+  }
 }
 
 type GrammarNode = {
@@ -76,9 +79,16 @@ const colorMap = new Map<string, HighlightColor>([
   ['Comment', 'comment'],
 ])
 
-const getPosition = (data: GrammarNode): number | undefined => {
-  if (typeof data.pos === 'number') return data.pos
-  return data.location?.start?.offset
+const getSpan = (data: GrammarNode): { pos: number; len: number } | undefined => {
+  const pos = typeof data.pos === 'number' ? data.pos : data.location?.start?.offset
+  if (typeof pos !== 'number') return undefined
+
+  if (typeof data.len === 'number') return { pos, len: data.len }
+
+  const end = data.location?.end?.offset
+  if (typeof end === 'number') return { pos, len: end - pos }
+
+  return undefined
 }
 
 // need to pass playhead time in
@@ -98,11 +108,11 @@ const extract = (
       ? colorMap.get(`${parent}.${node.type}`) || colorMap.get(node.type)
       : undefined
     const time = withinTime ?? node.time
-    const pos = getPosition(node)
+    const span = getSpan(node)
 
-    if (typeof pos === 'number' && typeof node.len === 'number' && color) {
-      for (let i = 0; i < node.len; i++) {
-        chars[pos + i] = {
+    if (span && color) {
+      for (let i = 0; i < span.len; i++) {
+        chars[span.pos + i] = {
           color: color === 'comment' && i === 0 ? 'commentStart' : color,
           playTime: time,
         }
