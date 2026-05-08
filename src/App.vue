@@ -9,6 +9,14 @@ import { parse } from './grammars/grammar.generated.js'
 import { grammarToChars, type CharData } from './grammars/grammar-to-chars'
 import { processGrammar, type InitialRulerState } from './grammars/process-grammar'
 import { scoreToMs, type MoscNoteMs, type MoscScoreMs } from './mosc'
+import {
+  canRedoSourceChange,
+  canUndoSourceChange,
+  createSourceHistory,
+  recordSourceChange,
+  redoSourceChange,
+  undoSourceChange,
+} from './source-history'
 import { SoundEngineTonejs } from './sound-engine-tonejs'
 import type { XenpaperAST } from './grammars/grammar.generated'
 import {
@@ -61,6 +69,7 @@ const getInitialRouteHash = (): string => {
 
 const soundEngine = new SoundEngineTonejs()
 const sourceCode = ref(getSavedSourceCode(getInitialRouteHash()))
+const sourceHistory = ref(createSourceHistory(sourceCode.value))
 const isPlaying = ref(false)
 const isLooping = ref(false)
 const scoreLoaded = ref(false)
@@ -77,6 +86,8 @@ let parseVersion = 0
 let playbackAnimationFrame: number | undefined
 
 const sourceCharacters = computed(() => sourceCode.value.split(''))
+const canUndoSourceCode = computed(() => canUndoSourceChange(sourceHistory.value))
+const canRedoSourceCode = computed(() => canRedoSourceChange(sourceHistory.value))
 const shareRoute = computed(() =>
   router.resolve({
     path: route.path,
@@ -182,8 +193,54 @@ const updateParsedSourceCode = async (): Promise<void> => {
   playbackPositionMs.value = -1
 }
 
+const applySourceCode = (tune: string, recordHistory = true): void => {
+  if (tune === sourceCode.value) return
+
+  sourceHistory.value = recordHistory
+    ? recordSourceChange(sourceHistory.value, tune)
+    : createSourceHistory(tune)
+  sourceCode.value = sourceHistory.value.present
+}
+
 const setSourceCode = (tune: string): void => {
-  sourceCode.value = tune
+  applySourceCode(tune)
+}
+
+const handleSourceInput = (event: Event): void => {
+  applySourceCode((event.target as HTMLTextAreaElement).value)
+}
+
+const undoSourceCode = (): void => {
+  sourceHistory.value = undoSourceChange(sourceHistory.value)
+  sourceCode.value = sourceHistory.value.present
+}
+
+const redoSourceCode = (): void => {
+  sourceHistory.value = redoSourceChange(sourceHistory.value)
+  sourceCode.value = sourceHistory.value.present
+}
+
+const handleSourceKeydown = (event: KeyboardEvent): void => {
+  if (!(event.ctrlKey || event.metaKey)) return
+
+  const key = event.key.toLowerCase()
+
+  if (key === 'z' && event.shiftKey) {
+    event.preventDefault()
+    redoSourceCode()
+    return
+  }
+
+  if (key === 'z') {
+    event.preventDefault()
+    undoSourceCode()
+    return
+  }
+
+  if (key === 'y') {
+    event.preventDefault()
+    redoSourceCode()
+  }
 }
 
 watch(sourceCode, () => {
@@ -236,7 +293,7 @@ watch(
     const sharedSourceCode = getSharedSourceCode(sharedHash)
 
     if (hasSharedSourceCode(sharedHash) && sharedSourceCode !== sourceCode.value) {
-      sourceCode.value = sharedSourceCode
+      applySourceCode(sharedSourceCode, false)
     }
   },
 )
@@ -344,6 +401,23 @@ onUnmounted(() => {
       <div class="toolbar-rule" aria-hidden="true"></div>
       <button
         class="action-button"
+        type="button"
+        :disabled="!canUndoSourceCode"
+        @click="undoSourceCode"
+      >
+        Undo
+      </button>
+      <button
+        class="action-button"
+        type="button"
+        :disabled="!canRedoSourceCode"
+        @click="redoSourceCode"
+      >
+        Redo
+      </button>
+      <div class="toolbar-rule" aria-hidden="true"></div>
+      <button
+        class="action-button"
         :class="{ active: sidebarMode === 'info' }"
         type="button"
         @click="showSidebar('info')"
@@ -373,13 +447,15 @@ onUnmounted(() => {
       <div class="source-editor">
         <textarea
           id="source-code"
-          v-model="sourceCode"
+          :value="sourceCode"
           class="source-input"
           placeholder="Enter Xenpaper source code..."
           autocapitalize="off"
           autocomplete="off"
           autocorrect="off"
           spellcheck="false"
+          @input="handleSourceInput"
+          @keydown="handleSourceKeydown"
         />
         <pre class="source-highlights" aria-hidden="true"><span
           v-if="sourceCode === ''"
@@ -635,6 +711,18 @@ onUnmounted(() => {
 
 .action-button:focus-visible {
   border-left-color: var(--xenpaper-focus);
+}
+
+.action-button:disabled {
+  cursor: not-allowed;
+  color: var(--xenpaper-placeholder);
+  opacity: 0.45;
+}
+
+.action-button:disabled:hover,
+.action-button:disabled:focus,
+.action-button:disabled:active {
+  background: var(--xenpaper-bg);
 }
 
 .action-button.active {
