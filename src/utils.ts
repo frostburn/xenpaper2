@@ -73,16 +73,6 @@ export const parseAndProcessSourceCode = (source: string): ParsedSource => {
     const { score, initialRulerState } = processGrammar(ast)
     const chars = grammarToChars(ast)
 
-    if (!score) {
-      return {
-        ast,
-        chars,
-        error: 'There is no playable score yet.',
-        playable: false,
-        initialRulerState,
-      }
-    }
-
     return {
       ast,
       chars,

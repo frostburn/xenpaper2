@@ -205,11 +205,12 @@ const getNoteColor = (note: MoscNoteMs): string => {
 }
 
 const rootGridLines = computed(() => {
-  if (!rulerState.rootHz || !rulerState.octaveSize) return []
+  const { rootHz, octaveSize } = rulerState
+  if (!rootHz || !octaveSize) return []
 
   return ROOT_GRID_POSITIONS.map((octave) => ({
     octave,
-    hz: rulerState.rootHz! * Math.pow(rulerState.octaveSize!, octave),
+    hz: rootHz * Math.pow(octaveSize, octave),
   }))
     .filter(({ hz }) => hzInRange(hz, visibleRange.value))
     .map(({ octave, hz }) => ({
@@ -222,16 +223,17 @@ const rootGridLines = computed(() => {
 })
 
 const centsGridLines = computed(() => {
-  if (!rulerState.rootHz || !rulerState.octaveSize) return []
+  const { rootHz, octaveSize } = rulerState
+  if (!rootHz || !octaveSize) return []
 
   const lines: Array<{ key: string; label: string; y: number; stroke: string; fill: string }> = []
-  const equaveCents = ratioToCents(rulerState.octaveSize)
+  const equaveCents = ratioToCents(octaveSize)
 
   CENT_GRID_POSITIONS.forEach((equave) => {
-    const equaveRatio = Math.pow(rulerState.octaveSize!, equave)
+    const equaveRatio = Math.pow(octaveSize, equave)
 
     for (let cents = 100; cents < equaveCents; cents += 100) {
-      const hz = rulerState.rootHz! * equaveRatio * centsToRatio(cents)
+      const hz = rootHz * equaveRatio * centsToRatio(cents)
       if (hzInRange(hz, visibleRange.value)) {
         lines.push({
           key: `cents-${equave}-${cents}`,

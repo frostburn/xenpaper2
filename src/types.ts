@@ -26,11 +26,27 @@ export type SidebarMode = 'info' | 'share' | 'ruler' | 'none'
 
 export type OpenSidebarMode = Exclude<SidebarMode, 'none'>
 
-export type ParsedSource = {
-  ast?: XenpaperAST
+type ParsedSourceBase = {
   chars: CharData[]
   error: string
-  playable: boolean
-  initialRulerState?: InitialRulerState
-  scoreMs?: MoscScoreMs
 }
+
+export type ParseFailedSource = ParsedSourceBase & {
+  playable: false
+}
+
+export type ProcessedSource = ParsedSourceBase & {
+  ast: XenpaperAST
+  initialRulerState: InitialRulerState
+}
+
+export type UnplayableProcessedSource = ProcessedSource & {
+  playable: false
+}
+
+export type PlayableParsedSource = ProcessedSource & {
+  playable: true
+  scoreMs: MoscScoreMs
+}
+
+export type ParsedSource = ParseFailedSource | UnplayableProcessedSource | PlayableParsedSource
