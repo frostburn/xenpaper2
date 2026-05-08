@@ -441,7 +441,7 @@ onUnmounted(() => {
         target="_blank"
         rel="noopener noreferrer"
       >
-        Edit
+        Edit on Xenpaper
       </a>
       <div v-if="!isEmbedMode" class="toolbar-rule" aria-hidden="true"></div>
       <button
@@ -555,7 +555,7 @@ onUnmounted(() => {
             {{ copiedShareLink ? 'Copied' : 'Copy link' }}
           </button>
 
-          <h2>Embed</h2>
+          <h2 class="embed-heading">Embed</h2>
           <p>Copy this HTML to embed the current tune in another page.</p>
           <label class="share-field">
             <span>Embed code</span>
@@ -949,6 +949,10 @@ onUnmounted(() => {
   margin: 0 0 1rem;
   font-size: 1.5rem;
   font-weight: 400;
+}
+
+.sidebar-content .embed-heading {
+  margin-top: 2.5rem;
 }
 
 .sidebar-content p {
