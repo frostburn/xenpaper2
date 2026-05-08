@@ -463,44 +463,43 @@ watch(
 <style scoped>
 .pitch-ruler {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
-  min-height: 28rem;
-  border: 1px solid var(--color-border);
-  border-radius: 0.75rem;
+  min-height: 0;
+  height: 100%;
   overflow: hidden;
-  background: color-mix(in srgb, var(--color-background-soft) 70%, #000 30%);
+  background: var(--xenpaper-bg-light);
+  font-family: var(--xenpaper-font-mono);
 }
 
 .ruler-toolbar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.75rem 1rem;
-  padding: 0.75rem;
-  border-bottom: 1px solid var(--color-border);
-  background: var(--color-background-mute);
+  gap: 0.5rem 1.5rem;
+  padding: 0.5rem 0.75rem 0;
+  background: var(--xenpaper-bg-light);
 }
 
 .ruler-control {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.5rem;
+  padding-bottom: 0.5rem;
   user-select: none;
 }
 
 .ruler-control span {
-  font-size: 0.85rem;
-  opacity: 0.8;
+  color: var(--xenpaper-text);
 }
 
 .ruler-control select,
 .ruler-control input[type='number'] {
   max-width: 11rem;
-  border: 1px solid var(--color-border);
-  border-radius: 0.35rem;
-  color: var(--color-text);
-  background: var(--color-background-soft);
-  padding: 0.25rem 0.4rem;
+  border: 1px solid #a490b3;
+  color: var(--xenpaper-text);
+  background: var(--xenpaper-bg);
+  padding: 0.25rem;
 }
 
 .ruler-control input[type='number'] {
@@ -509,12 +508,13 @@ watch(
 
 .ruler-button {
   border: 0;
-  border-radius: 0.35rem;
-  color: var(--color-background);
-  background: hsla(160, 100%, 37%, 1);
+  display: block;
+  padding: 0.25rem 0.5rem;
   cursor: pointer;
-  padding: 0.35rem 0.7rem;
-  opacity: 0.75;
+  background: #a490b3;
+  color: var(--xenpaper-bg);
+  outline: none;
+  opacity: 0.7;
   transition: opacity 0.2s ease-out;
 }
 
@@ -525,8 +525,8 @@ watch(
 
 .ruler-canvas {
   position: relative;
-  flex: 1 1 28rem;
-  min-height: 28rem;
+  flex: 1 1 auto;
+  min-height: 0;
   cursor: grab;
   touch-action: none;
   overflow: hidden;
@@ -546,7 +546,7 @@ watch(
 .ruler-svg text {
   font-size: 0.75rem;
   paint-order: stroke;
-  stroke: rgba(0, 0, 0, 0.45);
+  stroke: rgba(14, 21, 27, 0.75);
   stroke-width: 2px;
   stroke-linejoin: round;
 }

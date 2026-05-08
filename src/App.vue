@@ -323,7 +323,32 @@ onUnmounted(() => {
 
 <template>
   <div class="app-layout">
-    <TutorialSidebar @set-tune="setSourceCode" />
+    <div class="actions" aria-label="Playback controls">
+      <PlayPauseButton :playing="isPlaying" @toggle="togglePlayback" />
+      <button
+        class="action-button loop-button"
+        :class="{ active: isLooping }"
+        type="button"
+        :aria-pressed="isLooping"
+        @click="toggleLoop"
+      >
+        Loop
+      </button>
+      <button class="action-button" type="button" @click="logParsedAst">Log AST</button>
+      <label class="share-link">
+        <span>Share</span>
+        <input
+          class="share-link-input"
+          :value="shareUrl"
+          type="text"
+          readonly
+          @focus="($event.target as HTMLInputElement).select()"
+        />
+      </label>
+      <button class="action-button" type="button" @click="copyShareLink">
+        {{ copiedShareLink ? 'Copied' : 'Copy link' }}
+      </button>
+    </div>
 
     <main class="xenpaper-app">
       <label class="source-label" for="source-code">Source code</label>
@@ -348,115 +373,107 @@ onUnmounted(() => {
           :class="[chars[index]?.color ? `highlight-${chars[index]?.color}` : 'highlight-unknown', { active: isCharacterActive(chars[index]) }]"
         >{{ character }}</span></template><br><br></pre>
       </div>
-      <div class="actions" aria-label="Playback controls">
-        <PlayPauseButton :playing="isPlaying" @toggle="togglePlayback" />
-        <button
-          class="action-button loop-button"
-          :class="{ active: isLooping }"
-          type="button"
-          :aria-pressed="isLooping"
-          @click="toggleLoop"
-        >
-          Loop
-        </button>
-        <button class="action-button" type="button" @click="logParsedAst">
-          Log parsed XenpaperAST
-        </button>
-        <label class="share-link">
-          <span>Share link</span>
-          <input
-            class="share-link-input"
-            :value="shareUrl"
-            type="text"
-            readonly
-            @focus="($event.target as HTMLInputElement).select()"
-          />
-        </label>
-        <button class="action-button" type="button" @click="copyShareLink">
-          {{ copiedShareLink ? 'Copied' : 'Copy share link' }}
-        </button>
-      </div>
-      <p v-if="lastError" class="playback-error" role="alert">{{ lastError }}</p>
+      <p v-if="lastError" class="playback-error" role="alert">Error: {{ lastError }}</p>
+    </main>
 
+    <aside class="sidebar-stack">
+      <TutorialSidebar @set-tune="setSourceCode" />
       <section class="ruler-panel" aria-labelledby="pitch-ruler-title">
         <div class="ruler-heading">
           <h2 id="pitch-ruler-title">Pitch ruler</h2>
-          <p>
-            Click and drag to pan, use the mouse wheel to zoom. Plot scales with
-            <code>(plot)</code>.
-          </p>
+          <p>Click and drag to pan, use mousewheel to zoom.</p>
         </div>
         <PitchRuler ref="pitchRuler" :initial-state="initialRulerState" />
       </section>
-    </main>
+    </aside>
   </div>
 </template>
 
 <style scoped>
 .app-layout {
-  display: grid;
-  grid-template-columns: minmax(20rem, 28rem) minmax(0, 1fr);
+  display: flex;
   min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--xenpaper-bg);
+  color: var(--xenpaper-text);
 }
 
 .xenpaper-app {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  width: min(100%, 64rem);
-  margin: 0 auto;
-  padding: 2rem;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  overflow: auto;
+  padding: 1.5rem 0 0 1rem;
 }
 
 .source-label {
-  font-weight: 600;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .source-editor {
   position: relative;
-  min-height: 20rem;
-  border: 1px solid var(--color-border);
-  border-radius: 0.5rem;
-  background: var(--color-background-soft);
-  overflow: hidden;
+  min-height: calc(100vh - 1.5rem);
+  line-height: 1.4em;
+  font-size: clamp(1.1rem, 1.65vw, 1.4rem);
 }
 
-.source-editor:focus-within {
-  border-color: hsla(160, 100%, 37%, 1);
-  box-shadow: 0 0 0 2px hsla(160, 100%, 37%, 0.2);
+.source-editor::before {
+  content: '';
+  display: block;
+  width: 3px;
+  height: 4rem;
+  background-color: transparent;
+  transition: background-color 0.2s ease-out;
+  position: absolute;
+  top: 12px;
+  left: 0;
+}
+
+.source-editor:focus-within::before {
+  background-color: var(--xenpaper-focus);
 }
 
 .source-input,
 .source-highlights {
   box-sizing: border-box;
-  min-height: 20rem;
+  min-height: calc(100vh - 1.5rem);
   width: 100%;
   margin: 0;
-  padding: 1rem;
   border: 0;
-  color: var(--color-text);
   background: transparent;
   font: inherit;
-  font-family: monospace;
-  line-height: 1.5;
+  font-family: var(--xenpaper-font-mono);
+  line-height: inherit;
   tab-size: 2;
   white-space: pre-wrap;
+  word-break: keep-all;
   overflow-wrap: break-word;
+  padding: 1rem 1rem 1rem 2rem;
 }
 
 .source-input {
   position: absolute;
   inset: 0;
   height: 100%;
-  resize: vertical;
+  resize: none;
   outline: 0;
-  caret-color: var(--color-text);
-  color: transparent;
+  caret-color: var(--xenpaper-text);
+  color: inherit;
+  overflow: hidden;
   -webkit-text-fill-color: transparent;
 }
 
 .source-input::selection {
-  background: hsla(160, 100%, 37%, 0.35);
+  background: var(--xenpaper-cyan);
 }
 
 .source-highlights {
@@ -466,156 +483,208 @@ onUnmounted(() => {
 }
 
 .placeholder-text {
-  color: var(--color-text);
-  opacity: 0.5;
+  color: var(--xenpaper-placeholder);
   font-style: italic;
 }
 
 .source-character {
-  transition:
-    color 0.2s ease-out,
-    background-color 0.2s ease-out;
+  transition: color 0.2s ease-out;
 }
 
 .source-character.active {
-  color: #fff;
-  background: hsla(160, 100%, 37%, 0.6);
-  transition:
-    color 0s linear,
-    background-color 0s linear;
+  color: #ffffff;
+  transition: color 0s linear;
 }
 
 .highlight-delimiter {
-  color: #8e8e93;
+  color: var(--xenpaper-placeholder);
 }
 
-.highlight-pitch {
-  color: #5edfff;
-}
-
+.highlight-pitch,
 .highlight-chord {
-  color: #ffb86c;
+  color: var(--xenpaper-cyan);
 }
 
 .highlight-scaleGroup {
-  color: #c792ea;
+  color: #94472f;
 }
 
 .highlight-scale {
-  color: #82e68b;
+  color: #ff541e;
 }
 
 .highlight-setterGroup {
-  color: #ff79c6;
+  color: #821361;
 }
 
 .highlight-setter {
-  color: #ffd866;
+  color: #d61ba4;
 }
 
-.highlight-comment,
+.highlight-comment {
+  color: #ffffff;
+}
+
 .highlight-commentStart {
-  color: #6a9955;
+  color: var(--xenpaper-placeholder);
 }
 
 .highlight-error,
 .highlight-errorMessage {
-  color: #ff5c57;
-  background: rgba(255, 92, 87, 0.16);
+  color: #cc0000;
 }
 
 .highlight-unknown {
-  color: var(--color-text);
+  color: #a490b3;
 }
 
 .actions {
+  flex: 0 0 5rem;
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.75rem;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  padding-top: 2rem;
+  background: var(--xenpaper-bg);
+  z-index: 4;
 }
 
 .share-link {
   display: flex;
-  flex: 1 1 20rem;
-  align-items: center;
+  flex-direction: column;
   gap: 0.5rem;
-  min-width: min(100%, 20rem);
-}
-
-.share-link span {
-  flex: 0 0 auto;
-  font-weight: 600;
+  padding: 0.5rem;
+  width: 5rem;
+  color: #ffffff;
+  font-size: 0.75rem;
+  text-transform: uppercase;
 }
 
 .share-link-input {
-  min-width: 0;
   width: 100%;
-  border: 1px solid var(--color-border);
-  border-radius: 0.5rem;
-  color: var(--color-text);
-  background: var(--color-background-mute);
-  padding: 0.75rem 1rem;
+  min-width: 0;
+  border: 1px solid #a490b3;
+  color: #ffffff;
+  background: var(--xenpaper-bg);
+  padding: 0.25rem;
+  font: inherit;
+  text-transform: none;
 }
 
 .share-link-input:focus-visible {
-  outline: 2px solid hsla(160, 100%, 37%, 1);
-  outline-offset: 2px;
+  outline: 0;
+  border-color: var(--xenpaper-cyan);
 }
 
 .action-button {
-  border: 1px solid var(--color-border);
-  border-radius: 0.5rem;
-  color: var(--color-text);
-  background: var(--color-background-mute);
+  border: 0;
+  border-left: 3px solid transparent;
+  display: block;
+  width: 5rem;
+  padding: 0.5rem;
   cursor: pointer;
-  padding: 0.75rem 1rem;
+  background: var(--xenpaper-bg);
+  color: #ffffff;
+  outline: none;
+  font-family: var(--xenpaper-font-mono);
+  font-size: 1.1rem;
+  text-align: center;
+  text-transform: uppercase;
 }
 
-.action-button:hover {
-  border-color: hsla(160, 100%, 37%, 1);
+.action-button:hover,
+.action-button:focus,
+.action-button:active {
+  background: var(--xenpaper-bg-light);
 }
 
 .action-button:focus-visible {
-  outline: 2px solid hsla(160, 100%, 37%, 1);
-  outline-offset: 2px;
+  border-left-color: var(--xenpaper-focus);
 }
 
 .loop-button.active {
-  border-color: hsla(160, 100%, 37%, 1);
-  color: var(--color-background);
-  background: hsla(160, 100%, 37%, 1);
+  color: var(--xenpaper-bg);
+  background: var(--xenpaper-placeholder);
 }
 
 .playback-error {
+  position: relative;
   margin: 0;
-  color: #d14343;
+  padding: 0 0 1rem 1rem;
+  color: #cc0000;
+  font-family: var(--xenpaper-font-mono);
+}
+
+.sidebar-stack {
+  flex: 0 0 clamp(20rem, 40vw, 30rem);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--xenpaper-bg-light);
+  font-family: var(--xenpaper-font-copy);
 }
 
 .ruler-panel {
+  flex: 0 0 42%;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  min-height: 18rem;
+  border-top: 1px solid var(--xenpaper-bg);
+  overflow: hidden;
+}
+
+.ruler-heading {
+  padding: 1rem 2rem;
+  background: var(--xenpaper-bg);
 }
 
 .ruler-heading h2 {
   margin: 0 0 0.25rem;
-  font-size: 1.25rem;
+  font-size: 1.5rem;
+  font-weight: 400;
 }
 
 .ruler-heading p {
   margin: 0;
-  opacity: 0.75;
+  color: var(--xenpaper-placeholder);
+  font-style: italic;
+  line-height: 1.3rem;
 }
 
-.ruler-heading code {
-  border-radius: 0.25rem;
-  background: var(--color-background-mute);
-  padding: 0.05rem 0.25rem;
-}
-@media (max-width: 900px) {
+@media (max-width: 640px) {
   .app-layout {
-    grid-template-columns: 1fr;
+    display: block;
+    height: auto;
+    overflow: visible;
+  }
+
+  .actions {
+    position: sticky;
+    top: 0;
+    flex-direction: row;
+    width: 100%;
+    padding-top: 0;
+  }
+
+  .action-button,
+  .share-link {
+    width: auto;
+  }
+
+  .share-link {
+    flex: 1 1 auto;
+  }
+
+  .source-editor,
+  .source-input,
+  .source-highlights {
+    min-height: 50vh;
+  }
+
+  .sidebar-stack {
+    height: auto;
   }
 }
 </style>
