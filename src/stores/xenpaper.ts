@@ -195,9 +195,6 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   const isLooping = ref(false)
   const selectedLine = ref(0)
   const scoreLoaded = ref(false)
-  const lastError = ref('')
-  const chars = ref<CharData[]>([])
-  const initialRulerState = ref<InitialRulerState>()
   const playbackPositionMs = ref(-1)
   const isEmbedMode = ref(false)
   type SidebarMode = 'info' | 'share' | 'ruler' | 'none'
@@ -210,6 +207,10 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   let cancelOnNote: (() => void) | undefined
   let activeNoteHandler: ((note: MoscNoteMs, on: boolean) => void) | undefined
 
+  const parsedSource = computed(() => parseAndProcessSourceCode(sourceCode.value))
+  const chars = computed(() => parsedSource.value.chars)
+  const lastError = computed(() => parsedSource.value.error)
+  const initialRulerState = computed(() => parsedSource.value.initialRulerState)
   const htmlTitle = computed(() => createHtmlTitle(sourceCode.value))
   const sourceDisplayTokens = computed<SourceDisplayToken[]>(() =>
     createSourceDisplayTokens(sourceCode.value),
@@ -237,25 +238,22 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
 
   const updateParsedSourceCode = async (): Promise<void> => {
     const version = ++parseVersion
-    const parsedSource = parseAndProcessSourceCode(sourceCode.value)
-    chars.value = parsedSource.chars
-    lastError.value = parsedSource.error
-    initialRulerState.value = parsedSource.initialRulerState
+    const source = parsedSource.value
 
     if (shouldApplyInitialSidebarMode) {
       shouldApplyInitialSidebarMode = false
 
-      if (parsedSource.initialRulerState?.lowHz !== undefined && !isEmbedMode.value) {
+      if (source.initialRulerState?.lowHz !== undefined && !isEmbedMode.value) {
         sidebarMode.value = 'ruler'
       }
     }
 
-    if (!parsedSource.playable || !parsedSource.scoreMs) {
+    if (!source.playable || !source.scoreMs) {
       scoreLoaded.value = false
       return
     }
 
-    await soundEngine.setScore(parsedSource.scoreMs)
+    await soundEngine.setScore(source.scoreMs)
     if (version !== parseVersion) return
 
     soundEngine.setLoopActive(isLooping.value)
