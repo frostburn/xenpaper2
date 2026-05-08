@@ -3,8 +3,7 @@ import { RouterLink } from 'vue-router'
 
 import PlayPauseButton from './PlayPauseButton.vue'
 
-type SidebarMode = 'info' | 'share' | 'ruler' | 'none'
-type OpenSidebarMode = Exclude<SidebarMode, 'none'>
+import type { OpenSidebarMode, SidebarMode } from '../types'
 
 defineProps<{
   isEmbedMode: boolean

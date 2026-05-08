@@ -3,11 +3,10 @@ import { onMounted, onUnmounted, ref, watch } from 'vue'
 
 import type { MoscNoteMs } from '../mosc'
 import type { InitialRulerState } from '../grammars/process-grammar'
-import { copyText } from '../stores/xenpaper'
+import type { SidebarMode } from '../types'
+import { copyText } from '../utils'
 import PitchRuler from './PitchRuler.vue'
 import TutorialSidebar from './TutorialSidebar.vue'
-
-type SidebarMode = 'info' | 'share' | 'ruler' | 'none'
 
 const COPY_FEEDBACK_MS = 2000
 

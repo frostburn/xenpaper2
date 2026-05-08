@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { CharData } from '../grammars/grammar-to-chars'
-import { getSourceLineAtOffset, type SourceDisplayToken } from '../source-display'
+import type { SourceDisplayToken } from '../types'
+import { getSourceLineAtOffset } from '../source-display'
 
 const props = defineProps<{
   isEmbedMode: boolean
