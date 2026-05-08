@@ -5,7 +5,9 @@ import { getSourceLineAtOffset } from '../source-display'
 
 const props = defineProps<{
   isEmbedMode: boolean
+  sourceCodes: string[]
   sourceCode: string
+  activeSourceCodeIndex: number
   sourceDisplayTokens: SourceDisplayToken[]
   selectedLine: number
   chars: CharData[]
@@ -16,6 +18,9 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:sourceCode': [source: string]
+  addSourceCode: []
+  removeSourceCode: [index: number]
+  setActiveSourceCodeIndex: [index: number]
   restartPlaybackFromStart: []
   restartPlaybackFromLine: [line: number]
   undoSourceCode: []
@@ -82,6 +87,40 @@ const isCharacterActive = (charData?: CharData): boolean => {
 
 <template>
   <main class="xenpaper-app" :class="{ 'xenpaper-app-embed': isEmbedMode }">
+    <div v-if="!isEmbedMode" class="source-tabs" role="tablist" aria-label="Source codes">
+      <button
+        v-for="(_, index) in sourceCodes"
+        :key="index"
+        class="source-tab"
+        :class="{ active: activeSourceCodeIndex === index }"
+        type="button"
+        role="tab"
+        :aria-selected="activeSourceCodeIndex === index"
+        :aria-controls="'source-code'"
+        @click="emit('setActiveSourceCodeIndex', index)"
+      >
+        <span>Source {{ index + 1 }}</span>
+        <span
+          v-if="sourceCodes.length > 1"
+          class="source-tab-close"
+          role="button"
+          tabindex="0"
+          :aria-label="`Delete source ${index + 1}`"
+          @click.stop="emit('removeSourceCode', index)"
+          @keydown.enter.stop.prevent="emit('removeSourceCode', index)"
+          @keydown.space.stop.prevent="emit('removeSourceCode', index)"
+          >×</span
+        >
+      </button>
+      <button
+        class="source-tab source-tab-add"
+        type="button"
+        aria-label="Add source code"
+        @click="emit('addSourceCode')"
+      >
+        +
+      </button>
+    </div>
     <label class="source-label" for="source-code">Source code</label>
     <div class="source-editor" :class="{ 'source-editor-embed': isEmbedMode }">
       <textarea

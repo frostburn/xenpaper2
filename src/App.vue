@@ -81,7 +81,7 @@ const startWatchers = (): void => {
   stopTitleWatcher = watch(() => xenpaper.htmlTitle, syncDocumentTitle, { immediate: true })
 
   stopSourceWatcher = watch(
-    () => xenpaper.sourceCode,
+    () => xenpaper.sourceCodes,
     () => {
       void replaceShareRoute()
       void xenpaper.updateParsedSourceCode()
@@ -201,6 +201,64 @@ onUnmounted(() => {
   height: 100%;
   overflow: auto;
   padding: 1.5rem 0 0 1rem;
+}
+
+.source-tabs {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-end;
+  gap: 0.25rem;
+  padding: 0 1rem 0.5rem 2rem;
+  overflow-x: auto;
+}
+
+.source-tab {
+  border: 1px solid var(--xenpaper-bg-light);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.25rem;
+  padding: 0.35rem 0.65rem;
+  cursor: pointer;
+  background: var(--xenpaper-bg);
+  color: #ffffff;
+  font-family: var(--xenpaper-font-mono);
+  font-size: 0.9rem;
+}
+
+.source-tab:hover,
+.source-tab:focus,
+.source-tab:active,
+.source-tab.active {
+  background: var(--xenpaper-bg-light);
+}
+
+.source-tab:focus-visible,
+.source-tab-close:focus-visible {
+  outline: 2px solid var(--xenpaper-focus);
+  outline-offset: 2px;
+}
+
+.source-tab-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 999px;
+  color: var(--xenpaper-placeholder);
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.source-tab-close:hover,
+.source-tab-close:focus {
+  color: #ffffff;
+}
+
+.source-tab-add {
+  font-size: 1.25rem;
+  line-height: 1;
 }
 
 .source-label {

@@ -8,7 +8,9 @@ const xenpaper = useXenpaperStore()
 <template>
   <XenpaperSourceEditor
     :is-embed-mode="xenpaper.isEmbedMode"
+    :source-codes="xenpaper.sourceCodes"
     :source-code="xenpaper.sourceCode"
+    :active-source-code-index="xenpaper.activeSourceCodeIndex"
     :source-display-tokens="xenpaper.sourceDisplayTokens"
     :selected-line="xenpaper.selectedLine"
     :chars="xenpaper.chars"
@@ -16,6 +18,9 @@ const xenpaper = useXenpaperStore()
     :is-playing="xenpaper.isPlaying"
     :playback-position-ms="xenpaper.playbackPositionMs"
     @update:source-code="xenpaper.setSourceCode"
+    @add-source-code="xenpaper.addSourceCode"
+    @remove-source-code="xenpaper.removeSourceCode"
+    @set-active-source-code-index="xenpaper.setActiveSourceCodeIndex"
     @restart-playback-from-start="xenpaper.restartPlaybackFromStart"
     @restart-playback-from-line="xenpaper.restartPlaybackFromLine"
     @undo-source-code="xenpaper.undoSourceCode"

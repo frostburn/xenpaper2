@@ -2,12 +2,15 @@ import { afterEach, describe, expect, it } from 'vitest'
 
 import {
   decodeSharedSource,
+  decodeSharedSourceCodes,
   encodeShareHashForUrl,
   encodeSharedSource,
+  encodeSharedSourceCodes,
   getEmbedShareHash,
   getSavedSourceCode,
   getShareHash,
   getSharedSourceCode,
+  getSharedSourceCodes,
   hasSharedSourceCode,
   isEmbedHash,
   saveSourceCode,
@@ -36,6 +39,19 @@ describe('share-link', () => {
 
     expect(encoded).toBe('pitch%_name_with_space')
     expect(decodeSharedSource(encoded)).toBe('pitch_name with space')
+  })
+
+  it('round-trips multiple source codes with a sequential separator', () => {
+    const sourceCodes = ['0 2 4', 'embed:keeps colons safe', '10_11::literal separator text']
+
+    expect(encodeSharedSourceCodes(sourceCodes)).toBe(
+      '0_2_4::embed%3Akeeps_colons_safe::10%_11%3A%3Aliteral_separator_text',
+    )
+    expect(decodeSharedSourceCodes(encodeSharedSourceCodes(sourceCodes))).toEqual(sourceCodes)
+    expect(getShareHash(sourceCodes)).toBe(
+      '#0_2_4::embed%3Akeeps_colons_safe::10%_11%3A%3Aliteral_separator_text',
+    )
+    expect(getSharedSourceCodes(getShareHash(sourceCodes))).toEqual(sourceCodes)
   })
 
   it('builds hash fragments for shared and embedded source code', () => {

@@ -87,10 +87,15 @@ export const OSC_TYPES = flatMap(OSC_TYPES_EXPANDED, (type) => [
 ]) as SoundEngineOscillatorType[]
 
 export class SoundEngineTonejs extends SoundEngine {
+  constructor(private readonly autoStopTransport = true) {
+    super()
+  }
+
   _started = false
   _endMs = 0
   _loopEndMs = 0
   _activeNoteEvents = new Set<MoscNoteMs>()
+  _scheduledEventIds: number[] = []
 
   _synth: PolySynth<Synth> | undefined
 
@@ -187,32 +192,37 @@ export class SoundEngineTonejs extends SoundEngine {
   async setScore(scoreMs: MoscScoreMs): Promise<void> {
     this.scoreMs = scoreMs
 
-    // clear all previous notes from tone transport
-    Tone.Transport.cancel()
+    // clear this engine's previous notes from the shared tone transport
+    this._scheduledEventIds.forEach((eventId) => Tone.Transport.clear(eventId))
+    this._scheduledEventIds = []
 
     // add all new notes to tone transport
     this.scoreMs.sequence.forEach((item): void => {
       if (item.type === 'NOTE_MS') {
         const noteMs = item
-        Tone.Transport.schedule(
-          (time: number) => {
-            this.getSynth().triggerAttackRelease(
-              noteMs.hz,
-              noteMs.msEnd * 0.001 - noteMs.ms * 0.001,
-              time,
-            )
-            this._activeNoteEvents.add(noteMs)
-            this._triggerEvent('note', noteMs, true)
-          },
-          noteMs.ms * 0.001 + 0.1,
+        this._scheduledEventIds.push(
+          Tone.Transport.schedule(
+            (time: number) => {
+              this.getSynth().triggerAttackRelease(
+                noteMs.hz,
+                noteMs.msEnd * 0.001 - noteMs.ms * 0.001,
+                time,
+              )
+              this._activeNoteEvents.add(noteMs)
+              this._triggerEvent('note', noteMs, true)
+            },
+            noteMs.ms * 0.001 + 0.1,
+          ),
         ) // schedule in the future slightly to avoid double note playing at end
 
-        Tone.Transport.schedule(
-          () => {
-            this._activeNoteEvents.delete(noteMs)
-            this._triggerEvent('note', noteMs, false)
-          },
-          noteMs.msEnd * 0.001 + 0.1,
+        this._scheduledEventIds.push(
+          Tone.Transport.schedule(
+            () => {
+              this._activeNoteEvents.delete(noteMs)
+              this._triggerEvent('note', noteMs, false)
+            },
+            noteMs.msEnd * 0.001 + 0.1,
+          ),
         )
 
         return
@@ -220,31 +230,33 @@ export class SoundEngineTonejs extends SoundEngine {
 
       if (item.type === 'PARAM_MS') {
         const paramMs = item
-        Tone.Transport.schedule(() => {
-          // this is inaccurate
-          // as tonejs calls these callbacks several ms ahead of schedule
-          // and relies on scheduled events to pass the provided time
-          // to schedule correctly, but param changes cannot accept
-          // the time argument
-          if (isOscParam(paramMs.value)) {
-            this.getSynth().set({
-              oscillator: {
-                type: paramMs.value.osc,
-                volume: OSC_VOLUME,
-              } as Partial<SynthOptions['oscillator']>,
-            })
-          }
-          if (isEnvParam(paramMs.value)) {
-            this.getSynth().set({
-              envelope: {
-                attack: paramMs.value.a,
-                decay: paramMs.value.d,
-                sustain: paramMs.value.s,
-                release: paramMs.value.r,
-              },
-            })
-          }
-        }, paramMs.ms * 0.001)
+        this._scheduledEventIds.push(
+          Tone.Transport.schedule(() => {
+            // this is inaccurate
+            // as tonejs calls these callbacks several ms ahead of schedule
+            // and relies on scheduled events to pass the provided time
+            // to schedule correctly, but param changes cannot accept
+            // the time argument
+            if (isOscParam(paramMs.value)) {
+              this.getSynth().set({
+                oscillator: {
+                  type: paramMs.value.osc,
+                  volume: OSC_VOLUME,
+                } as Partial<SynthOptions['oscillator']>,
+              })
+            }
+            if (isEnvParam(paramMs.value)) {
+              this.getSynth().set({
+                envelope: {
+                  attack: paramMs.value.a,
+                  decay: paramMs.value.d,
+                  sustain: paramMs.value.s,
+                  release: paramMs.value.r,
+                },
+              })
+            }
+          }, paramMs.ms * 0.001),
+        )
 
         return
       }
@@ -255,12 +267,14 @@ export class SoundEngineTonejs extends SoundEngine {
           this.setLoopEnd(0)
         }
 
-        Tone.Transport.schedule((time: number) => {
-          if (Tone.Transport.loop) return
+        this._scheduledEventIds.push(
+          Tone.Transport.schedule((time: number) => {
+            if (Tone.Transport.loop) return
 
-          Tone.Transport.stop(time)
-          this._triggerEvent('end')
-        }, this._endMs * 0.001)
+            if (this.autoStopTransport) Tone.Transport.stop(time)
+            this._triggerEvent('end')
+          }, this._endMs * 0.001),
+        )
 
         return
       }

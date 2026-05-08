@@ -4,6 +4,11 @@ const ESCAPED_UNDERSCORE = '%_'
 const hasBrowserWindow = (): boolean => typeof window !== 'undefined'
 
 const EMBED_PREFIX = 'embed:'
+const SOURCE_CODE_SEPARATOR = '::'
+const LAST_TUNE_KEY = 'lasttune'
+
+const normalizeSourceCodes = (sourceCodes: readonly string[]): string[] =>
+  sourceCodes.length > 0 ? [...sourceCodes] : ['']
 
 const removeHashPrefix = (hash: string): string => (hash.startsWith('#') ? hash.slice(1) : hash)
 
@@ -47,10 +52,21 @@ export const encodeShareHashForUrl = (hash: string): string =>
       : character
   }).join('')
 
-export const getShareHash = (sourceCode: string): string => `#${encodeSharedSource(sourceCode)}`
+export const encodeSharedSourceCodes = (sourceCodes: readonly string[]): string =>
+  normalizeSourceCodes(sourceCodes).map(encodeSharedSource).join(SOURCE_CODE_SEPARATOR)
 
-export const getEmbedShareHash = (sourceCode: string): string =>
-  `#${EMBED_PREFIX}${encodeSharedSource(sourceCode)}`
+export const decodeSharedSourceCodes = (encodedSources: string): string[] =>
+  encodedSources.split(SOURCE_CODE_SEPARATOR).map(decodeSharedSource)
+
+export const getShareHash = (sourceCode: string | readonly string[]): string =>
+  `#${typeof sourceCode === 'string' ? encodeSharedSource(sourceCode) : encodeSharedSourceCodes(sourceCode)}`
+
+export const getEmbedShareHash = (sourceCode: string | readonly string[]): string =>
+  `#${EMBED_PREFIX}${
+    typeof sourceCode === 'string'
+      ? encodeSharedSource(sourceCode)
+      : encodeSharedSourceCodes(sourceCode)
+  }`
 
 export const isEmbedHash = (hash: unknown): boolean => {
   return typeof hash === 'string' && removeHashPrefix(hash).startsWith(EMBED_PREFIX)
@@ -60,21 +76,32 @@ export const hasSharedSourceCode = (hash: unknown): boolean => {
   return typeof hash === 'string' && removeHashPrefix(hash) !== ''
 }
 
-export const getSharedSourceCode = (hash: unknown): string => {
-  if (!hasSharedSourceCode(hash)) return ''
+export const getSharedSourceCodes = (hash: unknown): string[] => {
+  if (!hasSharedSourceCode(hash)) return ['']
 
-  return decodeSharedSource(removeEmbedPrefix(removeHashPrefix(hash as string)))
+  return decodeSharedSourceCodes(removeEmbedPrefix(removeHashPrefix(hash as string)))
 }
 
-export const getSavedSourceCode = (hash: unknown): string => {
-  if (hasSharedSourceCode(hash)) return getSharedSourceCode(hash)
-  if (!hasBrowserWindow()) return ''
+export const getSharedSourceCode = (hash: unknown): string => getSharedSourceCodes(hash)[0] || ''
 
-  return window.localStorage?.getItem('lasttune') || ''
+export const getSavedSourceCodes = (hash: unknown): string[] => {
+  if (hasSharedSourceCode(hash)) return getSharedSourceCodes(hash)
+  if (!hasBrowserWindow()) return ['']
+
+  const saved = window.localStorage?.getItem(LAST_TUNE_KEY) || ''
+  return hasSharedSourceCode(saved) ? getSharedSourceCodes(saved) : [saved]
+}
+
+export const getSavedSourceCode = (hash: unknown): string => getSavedSourceCodes(hash)[0] || ''
+
+export const saveSourceCodes = (sourceCodes: readonly string[]): void => {
+  if (!hasBrowserWindow()) return
+
+  window.localStorage?.setItem(LAST_TUNE_KEY, encodeSharedSourceCodes(sourceCodes))
 }
 
 export const saveSourceCode = (sourceCode: string): void => {
   if (!hasBrowserWindow()) return
 
-  window.localStorage?.setItem('lasttune', sourceCode)
+  window.localStorage?.setItem(LAST_TUNE_KEY, sourceCode)
 }
