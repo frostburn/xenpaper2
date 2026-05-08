@@ -202,4 +202,17 @@ describe('App source editor keyboard shortcuts', () => {
     expect(engine.play).toHaveBeenCalledTimes(1)
     expect(engine.pause).not.toHaveBeenCalled()
   })
+
+  it('keeps playback controls and sound engine alive on the About route', async () => {
+    const { router, wrapper } = await mountApp('#0_2%0A4_5')
+    const instanceCount = soundEngineMock.instances.length
+
+    await router.push('/about#0_2%0A4_5')
+    await flushPromises()
+
+    expect(wrapper.find('textarea').exists()).toBe(false)
+    expect(wrapper.find('[aria-label="Playback controls"]').exists()).toBe(true)
+    expect(wrapper.find('.loop-button').exists()).toBe(true)
+    expect(soundEngineMock.instances).toHaveLength(instanceCount)
+  })
 })

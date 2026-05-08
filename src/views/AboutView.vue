@@ -10,7 +10,10 @@
 
 <style scoped>
 .about-view {
-  min-height: 100vh;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  overflow: auto;
   max-width: 48rem;
   padding: 4rem 2rem;
   color: var(--xenpaper-text);

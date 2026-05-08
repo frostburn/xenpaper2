@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { RouterLink } from 'vue-router'
+
 import PlayPauseButton from './PlayPauseButton.vue'
 import { useXenpaperStore } from '../stores/xenpaper'
 
@@ -73,5 +75,9 @@ const xenpaper = useXenpaperStore()
     >
       Ruler
     </button>
+    <nav v-if="!xenpaper.isEmbedMode" class="route-navigation" aria-label="Application navigation">
+      <RouterLink class="action-button route-link" to="/">Home</RouterLink>
+      <RouterLink class="action-button route-link" to="/about">About</RouterLink>
+    </nav>
   </div>
 </template>
