@@ -5,17 +5,28 @@ const hasBrowserWindow = (): boolean => typeof window !== 'undefined'
 
 const removeHashPrefix = (hash: string): string => (hash.startsWith('#') ? hash.slice(1) : hash)
 
-const restoreSpaces = (value: string): string => value.replace(/(^|[^%])_/g, '$1%20')
-
 export const encodeSharedSource = (sourceCode: string): string =>
-  encodeURIComponent(sourceCode).replace(/_/g, ESCAPED_UNDERSCORE).replace(/%20/g, SPACE_TOKEN)
+  sourceCode.replace(/%/g, '%25').replace(/_/g, ESCAPED_UNDERSCORE).replace(/ /g, SPACE_TOKEN)
 
 export const decodeSharedSource = (encodedSource: string): string => {
+  const percentPlaceholder = '\0percent\0'
+  const underscorePlaceholder = '\0underscore\0'
+  let restoredSource = encodedSource
+    .replace(/%25/g, percentPlaceholder)
+    .replace(/%_/g, underscorePlaceholder)
+
   try {
-    return decodeURIComponent(restoreSpaces(encodedSource).replace(/%_/g, SPACE_TOKEN))
+    restoredSource = decodeURIComponent(restoredSource)
   } catch {
-    return encodedSource
+    // If the hash contains a literal malformed percent sequence, leave it as-is.
   }
+
+  return restoredSource
+    .replace(/_/g, ' ')
+    .split(percentPlaceholder)
+    .join('%')
+    .split(underscorePlaceholder)
+    .join('_')
 }
 
 export const getShareHash = (sourceCode: string): string => `#${encodeSharedSource(sourceCode)}`

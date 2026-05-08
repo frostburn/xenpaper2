@@ -16,9 +16,16 @@ describe('share-link', () => {
   })
 
   it('round-trips source code through the shared source encoding', () => {
-    const sourceCode = '{19edo} 0 1_2 # comment\n(tempo: 140)'
+    const sourceCode = '{19edo} 0 1_2 # comment\n(tempo: 140) 100% done'
 
     expect(decodeSharedSource(encodeSharedSource(sourceCode))).toBe(sourceCode)
+  })
+
+  it('decodes router-normalized punctuation from earlier double-encoded share URLs', () => {
+    const sourceCode = `0-3-'0-'3-"0-'"0-\`0-\`\`0-`
+    const legacyHash = "#0-3-'0-'3-%220-'%220-%600-%60%600-"
+
+    expect(getSharedSourceCode(legacyHash)).toBe(sourceCode)
   })
 
   it('uses underscores for spaces while preserving literal underscores', () => {
@@ -30,6 +37,7 @@ describe('share-link', () => {
 
   it('builds a hash fragment for shared source code', () => {
     expect(getShareHash('linked tune')).toBe('#linked_tune')
+    expect(getShareHash(`"0-\`0-100%`)).toBe('#"0-`0-100%25')
   })
 
   it('restores source code from a route hash before local storage', () => {
@@ -40,6 +48,10 @@ describe('share-link', () => {
 
   it('restores source code from a route hash without a leading hash prefix', () => {
     expect(getSharedSourceCode('linked_tune')).toBe('linked tune')
+  })
+
+  it('preserves literal percent-encoded text in new hash fragments', () => {
+    expect(getSharedSourceCode('%2522_and_%2560')).toBe('%22 and %60')
   })
 
   it('falls back to local storage when there is no shared hash value', () => {

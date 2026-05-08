@@ -40,14 +40,25 @@ type ParseError = Error & {
   location?: ParseErrorLocation
 }
 
-const getInitialRouteHash = (): string => {
-  if (typeof window !== 'undefined' && window.location.hash) return window.location.hash
-
-  return route.hash
-}
-
 const router = useRouter()
 const route = useRoute()
+
+const decodeBrowserHash = (hash: string): string => {
+  try {
+    return decodeURIComponent(hash)
+  } catch {
+    return hash
+  }
+}
+
+const getInitialRouteHash = (): string => {
+  if (route.hash) return route.hash
+  if (typeof window !== 'undefined' && window.location.hash)
+    return decodeBrowserHash(window.location.hash)
+
+  return ''
+}
+
 const soundEngine = new SoundEngineTonejs()
 const sourceCode = ref(getSavedSourceCode(getInitialRouteHash()))
 const isPlaying = ref(false)
