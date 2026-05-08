@@ -1,8 +1,4 @@
-export type SourceHistory = {
-  past: string[]
-  present: string
-  future: string[]
-}
+import type { SourceHistory } from './types'
 
 const DEFAULT_MAX_HISTORY = 300
 

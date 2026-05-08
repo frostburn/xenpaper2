@@ -1,15 +1,4 @@
-export type SourceDisplayToken =
-  | {
-      type: 'playStart'
-      key: string
-      line: number
-    }
-  | {
-      type: 'character'
-      key: string
-      character: string
-      index: number
-    }
+import type { SourceDisplayToken } from './types'
 
 export const createSourceDisplayTokens = (source: string): SourceDisplayToken[] => {
   const sourceCharacters = source.split('')
