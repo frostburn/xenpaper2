@@ -775,7 +775,7 @@ onUnmounted(() => {
         </section>
       </aside>
     </div>
-    <TheFooter />
+    <TheFooter v-if="!isEmbedMode" />
   </div>
 </template>
 
