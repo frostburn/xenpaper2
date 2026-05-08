@@ -394,7 +394,11 @@ onUnmounted(() => {
       <p v-if="lastError" class="playback-error" role="alert">Error: {{ lastError }}</p>
     </main>
 
-    <aside v-if="sidebarMode !== 'none'" class="sidebar-stack">
+    <aside
+      v-if="sidebarMode !== 'none'"
+      class="sidebar-stack"
+      :class="`sidebar-stack-${sidebarMode}`"
+    >
       <button class="sidebar-close" type="button" aria-label="Close sidebar" @click="closeSidebar">
         ×
       </button>
@@ -648,12 +652,16 @@ onUnmounted(() => {
 
 .sidebar-stack {
   position: relative;
-  flex: 0 0 clamp(20rem, 40vw, 30rem);
-  min-width: 0;
+  flex: 0 0 40%;
+  min-width: min(30rem, calc(100vw - 5rem));
   height: 100%;
   overflow: hidden;
   background: var(--xenpaper-bg-light);
   font-family: var(--xenpaper-font-copy);
+}
+
+.sidebar-stack-ruler {
+  flex-basis: 55%;
 }
 
 .sidebar-close {
@@ -848,7 +856,13 @@ onUnmounted(() => {
   }
 
   .sidebar-stack {
+    min-width: 0;
+    width: 100%;
     height: auto;
+  }
+
+  .sidebar-stack-ruler {
+    flex-basis: auto;
   }
 
   :deep(.tutorial-sidebar),
