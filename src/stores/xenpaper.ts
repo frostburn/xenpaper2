@@ -54,7 +54,9 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   const parsedSource = computed(() => parseAndProcessSourceCode(sourceCode.value))
   const chars = computed(() => parsedSource.value.chars)
   const lastError = computed(() => parsedSource.value.error)
-  const initialRulerState = computed(() => parsedSource.value.initialRulerState)
+  const initialRulerState = computed(() =>
+    'initialRulerState' in parsedSource.value ? parsedSource.value.initialRulerState : undefined,
+  )
   const htmlTitle = computed(() => createHtmlTitle(sourceCode.value))
   const sourceDisplayTokens = computed<SourceDisplayToken[]>(() =>
     createSourceDisplayTokens(sourceCode.value),
@@ -87,12 +89,16 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     if (shouldApplyInitialSidebarMode) {
       shouldApplyInitialSidebarMode = false
 
-      if (source.initialRulerState?.lowHz !== undefined && !isEmbedMode.value) {
+      if (
+        'initialRulerState' in source &&
+        source.initialRulerState.lowHz !== undefined &&
+        !isEmbedMode.value
+      ) {
         sidebarMode.value = 'ruler'
       }
     }
 
-    if (!source.playable || !source.scoreMs) {
+    if (!source.playable) {
       scoreLoaded.value = false
       return
     }

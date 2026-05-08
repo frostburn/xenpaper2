@@ -1,52 +1,50 @@
 import type { LocationRange } from 'peggy'
 
-export type NodeType = {
-  type: string
-  delimiter: boolean
+export type NodeType<Type extends string = string, Delimiter extends boolean = false> = {
+  type: Type
+  delimiter: Delimiter
   time?: [number, number]
   location: LocationRange
 }
 
-//
-// delimiters and whitespace
-//
-
-export type DelimiterType = NodeType & {
-  delimiter: true
-}
+export type DelimiterType =
+  | NodeType<'Colon', true>
+  | NodeType<'Semicolon', true>
+  | NodeType<'BarLine', true>
+  | NodeType<'Whitespace', true>
 
 //
 // pitches
 //
 
-type OctaveModifierType = NodeType & {
+type OctaveModifierType = NodeType<'OctaveModifier'> & {
   octave: number
 }
 
-export type PitchCentsType = NodeType & {
+export type PitchCentsType = NodeType<'PitchCents'> & {
   cents: number
 }
 
-export type PitchOctaveDivisionType = NodeType & {
+export type PitchOctaveDivisionType = NodeType<'PitchOctaveDivision'> & {
   numerator: number
   denominator: number
   octaveSize: number
 }
 
-export type PitchRatioType = NodeType & {
+export type PitchRatioType = NodeType<'PitchRatio'> & {
   numerator: number
   denominator: number
 }
 
-export type PitchDegreeType = NodeType & {
+export type PitchDegreeType = NodeType<'PitchDegree'> & {
   degree: number
 }
 
-export type PitchHzType = NodeType & {
+export type PitchHzType = NodeType<'PitchHz'> & {
   hz: number
 }
 
-export type PitchType = NodeType & {
+export type PitchType = NodeType<'Pitch'> & {
   value: PitchCentsType | PitchOctaveDivisionType | PitchRatioType | PitchDegreeType | PitchHzType
   octave?: OctaveModifierType
 }
@@ -57,17 +55,17 @@ export type PitchGroupType = Array<PitchType | DelimiterType>
 // note
 //
 
-export type HoldType = NodeType & {
+export type HoldType = NodeType<'Hold'> & {
   length: number
 }
 
 export type TailType = HoldType
 
-export type RestType = NodeType & {
+export type RestType = NodeType<'Rest'> & {
   length: number
 }
 
-export type NoteType = NodeType & {
+export type NoteType = NodeType<'Note'> & {
   pitch: PitchType
   tail?: TailType
 }
@@ -76,19 +74,19 @@ export type NoteType = NodeType & {
 // chords
 //
 
-export type RatioChordPitchType = NodeType & {
+export type RatioChordPitchType = NodeType<'RatioChordPitch'> & {
   pitch: number
 }
 
 export type RatioChordPitchGroupType = Array<RatioChordPitchType | DelimiterType>
 
-export type ChordType = NodeType & {
+export type ChordType = NodeType<'Chord'> & {
   pitches: Array<RatioChordPitchType | PitchType | DelimiterType>
   tail?: TailType
 }
 
-export type RatioChordType = NodeType & {
-  pitches: Array<RatioChordPitchType>
+export type RatioChordType = NodeType<'RatioChord'> & {
+  pitches: Array<RatioChordPitchType | DelimiterType>
   tail?: TailType
 }
 
@@ -96,24 +94,24 @@ export type RatioChordType = NodeType & {
 // scales
 //
 
-export type EdoScaleType = NodeType & {
+export type EdoScaleType = NodeType<'EdoScale'> & {
   divisions: number
   octaveSize: number
 }
 
-export type ScaleOctaveMarkerType = NodeType
+export type ScaleOctaveMarkerType = NodeType<'ScaleOctaveMarker'>
 
-export type PitchGroupScalePrefixType = NodeType & {
+export type PitchGroupScalePrefixType = NodeType<'PitchGroupScalePrefix'> & {
   prefix: string
 }
 
-export type PitchGroupScaleType = NodeType & {
+export type PitchGroupScaleType = NodeType<'PitchGroupScale'> & {
   pitchGroupScalePrefix?: PitchGroupScalePrefixType
   pitches: PitchGroupType
   scaleOctaveMarker?: ScaleOctaveMarkerType
 }
 
-export type RatioChordScaleType = NodeType & {
+export type RatioChordScaleType = NodeType<'RatioChordScale'> & {
   pitches: Array<RatioChordPitchType | DelimiterType>
   scaleOctaveMarker?: ScaleOctaveMarkerType
 }
@@ -122,11 +120,11 @@ export type RatioChordScaleType = NodeType & {
 // scale setters
 //
 
-export type SetScaleType = NodeType & {
+export type SetScaleType = NodeType<'SetScale'> & {
   scale: EdoScaleType | RatioChordScaleType | PitchGroupScaleType
 }
 
-export type SetRootType = NodeType & {
+export type SetRootType = NodeType<'SetRoot'> & {
   pitch: PitchType
 }
 
@@ -136,64 +134,64 @@ export type SetRootType = NodeType & {
 
 // bpm
 
-export type SetBpmValue = NodeType & {
+export type SetBpmValue = NodeType<'SetBpmValue'> & {
   bpm: number
 }
 
-export type SetBpmType = NodeType & {
+export type SetBpmType = NodeType<'SetBpm'> & {
   bpm: number
 }
 
-export type SetBpmValueType = NodeType & {
+export type SetBpmValueType = NodeType<'SetBpmValue'> & {
   bpm: number
 }
 
 // bms (beat milliseconds)
 
-export type SetBmsValue = NodeType & {
+export type SetBmsValue = NodeType<'SetBmsValue'> & {
   bms: number
 }
 
-export type SetBmsType = NodeType & {
+export type SetBmsType = NodeType<'SetBms'> & {
   bms: number
 }
 
-export type SetBmsValueType = NodeType & {
+export type SetBmsValueType = NodeType<'SetBmsValue'> & {
   bms: number
 }
 
 // subdivision
 
-export type SetSubdivisionValueType = NodeType & {
+export type SetSubdivisionValueType = NodeType<'SetSubdivisionValue'> & {
   subdivision: number
-  denominator: number
+  denominator?: number
 }
 
-export type SetSubdivisionType = NodeType & {
+export type SetSubdivisionType = NodeType<'SetSubdivision'> & {
   subdivision: number
-  denominator: number
+  denominator?: number
 }
 
 // osc
 
-export type SetOscValueType = NodeType & {
+export type SetOscValueType = NodeType<'SetOscValue'> & {
   osc: string
 }
 
-export type SetOscType = NodeType & {
+export type SetOscType = NodeType<'SetOsc'> & {
   osc: string
 }
 
 // env
 
-export type SetEnvValueType = NodeType & {
+export type SetEnvValueType = NodeType<'SetEnvValue'> & {
   a: number
   d: number
   s: number
   r: number
 }
 
-export type SetEnvType = NodeType & {
+export type SetEnvType = NodeType<'SetEnv'> & {
   a: number
   d: number
   s: number
@@ -202,12 +200,12 @@ export type SetEnvType = NodeType & {
 
 // ruler
 
-export type SetRulerRangeType = NodeType & {
+export type SetRulerRangeType = NodeType<'SetRulerRange'> & {
   low: PitchType
   high: PitchType
 }
 
-export type SetRulerPlotType = NodeType
+export type SetRulerPlotType = NodeType<'SetRulerPlot'>
 
 export type SetRulerType = SetRulerRangeType | SetRulerPlotType
 
@@ -221,15 +219,15 @@ export type SetterType =
   | SetEnvType
   | SetRulerType
 
-export type SetterGroupType = NodeType & {
-  setters: SetterType[]
+export type SetterGroupType = NodeType<'SetterGroup'> & {
+  setters: Array<SetterType | DelimiterType>
 }
 
 //
 // comments
 //
 
-export type CommentType = NodeType & {
+export type CommentType = NodeType<'Comment'> & {
   comment: string
 }
 
@@ -246,8 +244,9 @@ export type SequenceItemsType =
   | SetScaleType
   | SetRootType
   | CommentType
+  | DelimiterType
 
-export type SequenceType = NodeType & {
+export type SequenceType = NodeType<'Sequence'> & {
   items: SequenceItemsType[]
 }
 
@@ -255,16 +254,16 @@ export type SequenceType = NodeType & {
 // params
 //
 
-export type ParamEmbedType = NodeType
+export type ParamEmbedType = NodeType<'ParamEmbed'>
 
 export type ParamType = ParamEmbedType
 
-export type ParamGroupType = NodeType & {
+export type ParamGroupType = NodeType<'ParamGroup'> & {
   params: ParamType[]
 }
 
-export type XenpaperAST = NodeType & {
-  sequence?: SequenceType
+export type XenpaperAST = NodeType<'XenpaperGrammar'> & {
+  sequence: SequenceType
   paramGroup?: ParamGroupType
 }
 
