@@ -25,6 +25,7 @@ import {
   saveSourceCode,
 } from '../share-link'
 import { SoundEngineTonejs } from '../sound-engine-tonejs'
+import { createSourceDisplayTokens, type SourceDisplayToken } from '../source-display'
 
 type ParsedSource = {
   ast?: XenpaperAST
@@ -47,19 +48,6 @@ type ParseError = Error & {
   location?: ParseErrorLocation
 }
 
-type SourceDisplayToken =
-  | {
-      type: 'playStart'
-      key: string
-      line: number
-    }
-  | {
-      type: 'character'
-      key: string
-      character: string
-      index: number
-    }
-
 const DEFAULT_DOCUMENT_TITLE = 'Xenpaper 2'
 const TITLE_SOURCE_LIMIT = 20
 const DEFAULT_LOCATION_HREF = 'http://localhost/'
@@ -75,38 +63,11 @@ const createHtmlTitle = (source: string): string => {
     : `${DEFAULT_DOCUMENT_TITLE}: ${source}`
 }
 
-const createSourceDisplayTokens = (source: string): SourceDisplayToken[] => {
-  const sourceCharacters = source.split('')
-  const hasPlayStartMarkers = source.includes('\n')
-  const tokens: SourceDisplayToken[] = []
-  let playStartLine = 0
-
-  const addPlayStart = (): void => {
-    tokens.push({
-      type: 'playStart',
-      key: `play-start-${playStartLine}`,
-      line: playStartLine,
-    })
-    playStartLine++
-  }
-
-  if (hasPlayStartMarkers) addPlayStart()
-
-  sourceCharacters.forEach((character, index) => {
-    tokens.push({
-      type: 'character',
-      key: `character-${index}`,
-      character,
-      index,
-    })
-
-    if (hasPlayStartMarkers && character === '\n') addPlayStart()
-  })
-
-  return tokens
-}
-
-const findOffsetFromLineColumn = (source: string, line: number, column: number): number | undefined => {
+const findOffsetFromLineColumn = (
+  source: string,
+  line: number,
+  column: number,
+): number | undefined => {
   let currentLine = 1
   let currentColumn = 1
 
@@ -200,9 +161,6 @@ const getMsAtLine = (source: string, charData: CharData[] | undefined, line: num
 
   return 0
 }
-
-export const getSourceLineAtOffset = (source: string, offset: number): number =>
-  source.slice(0, offset).split('\n').length - 1
 
 export const copyText = async (text: string): Promise<boolean> => {
   if (!text) return false
@@ -507,6 +465,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     lastError,
     chars,
     initialRulerState,
+    playbackPositionMs,
     copiedShareLink,
     copiedEmbedCode,
     isEmbedMode,

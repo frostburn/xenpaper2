@@ -1,49 +1,62 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue'
 
+import type { MoscNoteMs } from '../mosc'
+import type { InitialRulerState } from '../grammars/process-grammar'
 import PitchRuler from './PitchRuler.vue'
 import TutorialSidebar from './TutorialSidebar.vue'
-import { copyText, useXenpaperStore } from '../stores/xenpaper'
 
-const xenpaper = useXenpaperStore()
+type SidebarMode = 'info' | 'share' | 'ruler' | 'none'
+
+defineProps<{
+  isEmbedMode: boolean
+  sidebarMode: SidebarMode
+  shareUrl: string
+  embedCode: string
+  embedUrl: string
+  copiedShareLink: boolean
+  copiedEmbedCode: boolean
+  initialRulerState?: InitialRulerState
+}>()
+
+const emit = defineEmits<{
+  closeSidebar: []
+  setTune: [source: string]
+  copyShareLink: []
+  copyEmbedCode: []
+  activeNoteHandlerChange: [handler?: (note: MoscNoteMs, on: boolean) => void]
+}>()
+
 const pitchRuler = ref<InstanceType<typeof PitchRuler>>()
 
-const copyShareLink = async (): Promise<void> => {
-  xenpaper.setCopiedShareLink(await copyText(xenpaper.shareUrl))
-}
-
-const copyEmbedCode = async (): Promise<void> => {
-  xenpaper.setCopiedEmbedCode(await copyText(xenpaper.embedCode))
-}
-
 onMounted(() => {
-  xenpaper.setActiveNoteHandler((note, on) => {
+  emit('activeNoteHandlerChange', (note, on) => {
     pitchRuler.value?.setActiveNote(note, on)
   })
 })
 
 onUnmounted(() => {
-  xenpaper.setActiveNoteHandler()
+  emit('activeNoteHandlerChange')
 })
 </script>
 
 <template>
   <aside
-    v-if="!xenpaper.isEmbedMode && xenpaper.sidebarMode !== 'none'"
+    v-if="!isEmbedMode && sidebarMode !== 'none'"
     class="sidebar-stack"
-    :class="`sidebar-stack-${xenpaper.sidebarMode}`"
+    :class="`sidebar-stack-${sidebarMode}`"
   >
     <button
       class="sidebar-close"
       type="button"
       aria-label="Close sidebar"
-      @click="xenpaper.closeSidebar"
+      @click="emit('closeSidebar')"
     >
       ×
     </button>
-    <TutorialSidebar v-if="xenpaper.sidebarMode === 'info'" @set-tune="xenpaper.setDemoTune" />
+    <TutorialSidebar v-if="sidebarMode === 'info'" @set-tune="emit('setTune', $event)" />
 
-    <section v-else-if="xenpaper.sidebarMode === 'share'" class="sidebar-panel share-panel">
+    <section v-else-if="sidebarMode === 'share'" class="sidebar-panel share-panel">
       <header class="sidebar-heading">
         <h1>xenpaper 2</h1>
         <p>Text-based microtonal sequencer.</p>
@@ -57,14 +70,14 @@ onUnmounted(() => {
           <span>Share link</span>
           <input
             class="share-link-input"
-            :value="xenpaper.shareUrl"
+            :value="shareUrl"
             type="text"
             readonly
             @focus="($event.target as HTMLInputElement).select()"
           />
         </label>
-        <button class="panel-button" type="button" @click="copyShareLink">
-          {{ xenpaper.copiedShareLink ? 'Copied' : 'Copy link' }}
+        <button class="panel-button" type="button" @click="emit('copyShareLink')">
+          {{ copiedShareLink ? 'Copied' : 'Copy link' }}
         </button>
 
         <h2 class="embed-heading">Embed</h2>
@@ -73,20 +86,16 @@ onUnmounted(() => {
           <span>Embed code</span>
           <input
             class="share-link-input"
-            :value="xenpaper.embedCode"
+            :value="embedCode"
             type="text"
             readonly
             @focus="($event.target as HTMLInputElement).select()"
           />
         </label>
-        <button class="panel-button" type="button" @click="copyEmbedCode">
-          {{ xenpaper.copiedEmbedCode ? 'Copied' : 'Copy embed code' }}
+        <button class="panel-button" type="button" @click="emit('copyEmbedCode')">
+          {{ copiedEmbedCode ? 'Copied' : 'Copy embed code' }}
         </button>
-        <iframe
-          class="embed-preview"
-          :src="xenpaper.embedUrl"
-          title="Xenpaper 2 embed preview"
-        ></iframe>
+        <iframe class="embed-preview" :src="embedUrl" title="Xenpaper 2 embed preview"></iframe>
       </div>
     </section>
 
@@ -100,7 +109,7 @@ onUnmounted(() => {
         <h2 id="pitch-ruler-title">Pitch ruler</h2>
         <p>Click and drag to pan, use mousewheel to zoom.</p>
       </div>
-      <PitchRuler ref="pitchRuler" :initial-state="xenpaper.initialRulerState" />
+      <PitchRuler ref="pitchRuler" :initial-state="initialRulerState" />
     </section>
   </aside>
 </template>

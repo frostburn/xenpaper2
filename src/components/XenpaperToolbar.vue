@@ -2,84 +2,98 @@
 import { RouterLink } from 'vue-router'
 
 import PlayPauseButton from './PlayPauseButton.vue'
-import { useXenpaperStore } from '../stores/xenpaper'
 
-const xenpaper = useXenpaperStore()
+type SidebarMode = 'info' | 'share' | 'ruler' | 'none'
+type OpenSidebarMode = Exclude<SidebarMode, 'none'>
+
+defineProps<{
+  isEmbedMode: boolean
+  isPlaying: boolean
+  isLooping: boolean
+  shareUrl: string
+  canUndoSourceCode: boolean
+  canRedoSourceCode: boolean
+  sidebarMode: SidebarMode
+}>()
+
+const emit = defineEmits<{
+  togglePlayback: []
+  toggleLoop: []
+  undoSourceCode: []
+  redoSourceCode: []
+  showSidebar: [mode: OpenSidebarMode]
+}>()
 </script>
 
 <template>
-  <div
-    class="actions"
-    :class="{ 'actions-embed': xenpaper.isEmbedMode }"
-    aria-label="Playback controls"
-  >
-    <PlayPauseButton :playing="xenpaper.isPlaying" @toggle="xenpaper.togglePlayback" />
+  <div class="actions" :class="{ 'actions-embed': isEmbedMode }" aria-label="Playback controls">
+    <PlayPauseButton :playing="isPlaying" @toggle="emit('togglePlayback')" />
     <button
       class="action-button loop-button"
-      :class="{ active: xenpaper.isLooping }"
+      :class="{ active: isLooping }"
       type="button"
-      :aria-pressed="xenpaper.isLooping"
-      @click="xenpaper.toggleLoop"
+      :aria-pressed="isLooping"
+      @click="emit('toggleLoop')"
     >
       Loop
     </button>
     <a
-      v-if="xenpaper.isEmbedMode"
+      v-if="isEmbedMode"
       class="action-button edit-link"
-      :href="xenpaper.shareUrl"
+      :href="shareUrl"
       target="_blank"
       rel="noopener noreferrer"
     >
       Edit on Xenpaper 2
     </a>
-    <div v-if="!xenpaper.isEmbedMode" class="toolbar-rule" aria-hidden="true"></div>
+    <div v-if="!isEmbedMode" class="toolbar-rule" aria-hidden="true"></div>
     <button
-      v-if="!xenpaper.isEmbedMode"
+      v-if="!isEmbedMode"
       class="action-button"
       type="button"
-      :disabled="!xenpaper.canUndoSourceCode"
-      @click="xenpaper.undoSourceCode"
+      :disabled="!canUndoSourceCode"
+      @click="emit('undoSourceCode')"
     >
       Undo
     </button>
     <button
-      v-if="!xenpaper.isEmbedMode"
+      v-if="!isEmbedMode"
       class="action-button"
       type="button"
-      :disabled="!xenpaper.canRedoSourceCode"
-      @click="xenpaper.redoSourceCode"
+      :disabled="!canRedoSourceCode"
+      @click="emit('redoSourceCode')"
     >
       Redo
     </button>
-    <div v-if="!xenpaper.isEmbedMode" class="toolbar-rule" aria-hidden="true"></div>
+    <div v-if="!isEmbedMode" class="toolbar-rule" aria-hidden="true"></div>
     <button
-      v-if="!xenpaper.isEmbedMode"
+      v-if="!isEmbedMode"
       class="action-button"
-      :class="{ active: xenpaper.sidebarMode === 'info' }"
+      :class="{ active: sidebarMode === 'info' }"
       type="button"
-      @click="xenpaper.showSidebar('info')"
+      @click="emit('showSidebar', 'info')"
     >
       Info
     </button>
     <button
-      v-if="!xenpaper.isEmbedMode"
+      v-if="!isEmbedMode"
       class="action-button"
-      :class="{ active: xenpaper.sidebarMode === 'share' }"
+      :class="{ active: sidebarMode === 'share' }"
       type="button"
-      @click="xenpaper.showSidebar('share')"
+      @click="emit('showSidebar', 'share')"
     >
       Share
     </button>
     <button
-      v-if="!xenpaper.isEmbedMode"
+      v-if="!isEmbedMode"
       class="action-button"
-      :class="{ active: xenpaper.sidebarMode === 'ruler' }"
+      :class="{ active: sidebarMode === 'ruler' }"
       type="button"
-      @click="xenpaper.showSidebar('ruler')"
+      @click="emit('showSidebar', 'ruler')"
     >
       Ruler
     </button>
-    <nav v-if="!xenpaper.isEmbedMode" class="route-navigation" aria-label="Application navigation">
+    <nav v-if="!isEmbedMode" class="route-navigation" aria-label="Application navigation">
       <RouterLink class="action-button route-link" to="/">Home</RouterLink>
       <RouterLink class="action-button route-link" to="/about">About</RouterLink>
     </nav>
