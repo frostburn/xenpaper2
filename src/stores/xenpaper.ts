@@ -199,8 +199,6 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   const chars = ref<CharData[]>([])
   const initialRulerState = ref<InitialRulerState>()
   const playbackPositionMs = ref(-1)
-  const copiedShareLink = ref(false)
-  const copiedEmbedCode = ref(false)
   const isEmbedMode = ref(false)
   type SidebarMode = 'info' | 'share' | 'ruler' | 'none'
   type OpenSidebarMode = Exclude<SidebarMode, 'none'>
@@ -289,11 +287,6 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
 
   const saveSourceCodeToBrowser = (): void => {
     saveSourceCode(sourceCode.value)
-  }
-
-  const resetCopiedState = (): void => {
-    copiedShareLink.value = false
-    copiedEmbedCode.value = false
   }
 
   const applySharedHash = (sharedHash: string): void => {
@@ -431,14 +424,6 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     cancelOnNote = undefined
   }
 
-  const setCopiedShareLink = (copied: boolean): void => {
-    copiedShareLink.value = copied
-  }
-
-  const setCopiedEmbedCode = (copied: boolean): void => {
-    copiedEmbedCode.value = copied
-  }
-
   const showSidebar = (mode: OpenSidebarMode): void => {
     sidebarMode.value = sidebarMode.value === mode ? 'none' : mode
   }
@@ -466,8 +451,6 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     chars,
     initialRulerState,
     playbackPositionMs,
-    copiedShareLink,
-    copiedEmbedCode,
     isEmbedMode,
     sidebarMode,
     initializeSourceCode,
@@ -477,7 +460,6 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     updateParsedSourceCode,
     updateLoopStart,
     saveSourceCodeToBrowser,
-    resetCopiedState,
     applySharedHash,
     setSourceCode,
     setSelectedLine,
@@ -489,8 +471,6 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     syncPlaybackPosition,
     resetPlaybackPosition,
     setActiveNoteHandler,
-    setCopiedShareLink,
-    setCopiedEmbedCode,
     showSidebar,
     closeSidebar,
     togglePlayback,

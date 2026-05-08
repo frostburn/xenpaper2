@@ -5,7 +5,7 @@ import { RouterView, useRoute, useRouter } from 'vue-router'
 import TheFooter from './components/TheFooter.vue'
 import XenpaperSidebar from './components/XenpaperSidebar.vue'
 import XenpaperToolbar from './components/XenpaperToolbar.vue'
-import { copyText, useXenpaperStore } from './stores/xenpaper'
+import { useXenpaperStore } from './stores/xenpaper'
 
 const xenpaper = useXenpaperStore()
 const route = useRoute()
@@ -34,14 +34,6 @@ const initialRouteHash = (): string => {
 }
 
 const currentRouteHash = computed(() => xenpaper.routeHash)
-
-const copyShareLink = async (): Promise<void> => {
-  xenpaper.setCopiedShareLink(await copyText(xenpaper.shareUrl))
-}
-
-const copyEmbedCode = async (): Promise<void> => {
-  xenpaper.setCopiedEmbedCode(await copyText(xenpaper.embedCode))
-}
 
 const replaceShareRoute = async (): Promise<void> => {
   xenpaper.saveSourceCodeToBrowser()
@@ -91,7 +83,6 @@ const startWatchers = (): void => {
   stopSourceWatcher = watch(
     () => xenpaper.sourceCode,
     () => {
-      xenpaper.resetCopiedState()
       void replaceShareRoute()
       void xenpaper.updateParsedSourceCode()
     },
@@ -174,13 +165,9 @@ onUnmounted(() => {
         :share-url="xenpaper.shareUrl"
         :embed-code="xenpaper.embedCode"
         :embed-url="xenpaper.embedUrl"
-        :copied-share-link="xenpaper.copiedShareLink"
-        :copied-embed-code="xenpaper.copiedEmbedCode"
         :initial-ruler-state="xenpaper.initialRulerState"
         @close-sidebar="xenpaper.closeSidebar"
         @set-tune="xenpaper.setDemoTune"
-        @copy-share-link="copyShareLink"
-        @copy-embed-code="copyEmbedCode"
         @active-note-handler-change="xenpaper.setActiveNoteHandler"
       />
     </div>

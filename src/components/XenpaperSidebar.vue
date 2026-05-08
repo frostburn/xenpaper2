@@ -1,33 +1,83 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 
 import type { MoscNoteMs } from '../mosc'
 import type { InitialRulerState } from '../grammars/process-grammar'
+import { copyText } from '../stores/xenpaper'
 import PitchRuler from './PitchRuler.vue'
 import TutorialSidebar from './TutorialSidebar.vue'
 
 type SidebarMode = 'info' | 'share' | 'ruler' | 'none'
 
-defineProps<{
+const COPY_FEEDBACK_MS = 2000
+
+const props = defineProps<{
   isEmbedMode: boolean
   sidebarMode: SidebarMode
   shareUrl: string
   embedCode: string
   embedUrl: string
-  copiedShareLink: boolean
-  copiedEmbedCode: boolean
   initialRulerState?: InitialRulerState
 }>()
 
 const emit = defineEmits<{
   closeSidebar: []
   setTune: [source: string]
-  copyShareLink: []
-  copyEmbedCode: []
   activeNoteHandlerChange: [handler?: (note: MoscNoteMs, on: boolean) => void]
 }>()
 
 const pitchRuler = ref<InstanceType<typeof PitchRuler>>()
+const copiedShareLink = ref(false)
+const copiedEmbedCode = ref(false)
+let shareLinkResetTimeout: number | undefined
+let embedCodeResetTimeout: number | undefined
+
+const resetCopiedShareLink = (): void => {
+  if (shareLinkResetTimeout !== undefined) {
+    window.clearTimeout(shareLinkResetTimeout)
+    shareLinkResetTimeout = undefined
+  }
+
+  copiedShareLink.value = false
+}
+
+const resetCopiedEmbedCode = (): void => {
+  if (embedCodeResetTimeout !== undefined) {
+    window.clearTimeout(embedCodeResetTimeout)
+    embedCodeResetTimeout = undefined
+  }
+
+  copiedEmbedCode.value = false
+}
+
+const setCopiedShareLink = (copied: boolean): void => {
+  resetCopiedShareLink()
+  copiedShareLink.value = copied
+
+  if (copied) {
+    shareLinkResetTimeout = window.setTimeout(resetCopiedShareLink, COPY_FEEDBACK_MS)
+  }
+}
+
+const setCopiedEmbedCode = (copied: boolean): void => {
+  resetCopiedEmbedCode()
+  copiedEmbedCode.value = copied
+
+  if (copied) {
+    embedCodeResetTimeout = window.setTimeout(resetCopiedEmbedCode, COPY_FEEDBACK_MS)
+  }
+}
+
+const copyShareLink = async (): Promise<void> => {
+  setCopiedShareLink(await copyText(props.shareUrl))
+}
+
+const copyEmbedCode = async (): Promise<void> => {
+  setCopiedEmbedCode(await copyText(props.embedCode))
+}
+
+watch(() => props.shareUrl, resetCopiedShareLink)
+watch(() => props.embedCode, resetCopiedEmbedCode)
 
 onMounted(() => {
   emit('activeNoteHandlerChange', (note, on) => {
@@ -36,6 +86,8 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  resetCopiedShareLink()
+  resetCopiedEmbedCode()
   emit('activeNoteHandlerChange')
 })
 </script>
@@ -76,7 +128,7 @@ onUnmounted(() => {
             @focus="($event.target as HTMLInputElement).select()"
           />
         </label>
-        <button class="panel-button" type="button" @click="emit('copyShareLink')">
+        <button class="panel-button" type="button" @click="copyShareLink">
           {{ copiedShareLink ? 'Copied' : 'Copy link' }}
         </button>
 
@@ -92,7 +144,7 @@ onUnmounted(() => {
             @focus="($event.target as HTMLInputElement).select()"
           />
         </label>
-        <button class="panel-button" type="button" @click="emit('copyEmbedCode')">
+        <button class="panel-button" type="button" @click="copyEmbedCode">
           {{ copiedEmbedCode ? 'Copied' : 'Copy embed code' }}
         </button>
         <iframe class="embed-preview" :src="embedUrl" title="Xenpaper 2 embed preview"></iframe>
