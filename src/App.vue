@@ -591,93 +591,95 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="app-layout" :class="{ 'app-layout-embed': isEmbedMode }">
-    <div class="actions" :class="{ 'actions-embed': isEmbedMode }" aria-label="Playback controls">
-      <PlayPauseButton :playing="isPlaying" @toggle="togglePlayback" />
-      <button
-        class="action-button loop-button"
-        :class="{ active: isLooping }"
-        type="button"
-        :aria-pressed="isLooping"
-        @click="toggleLoop"
-      >
-        Loop
-      </button>
-      <a
-        v-if="isEmbedMode"
-        class="action-button edit-link"
-        :href="shareUrl"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        Edit on Xenpaper 2
-      </a>
-      <div v-if="!isEmbedMode" class="toolbar-rule" aria-hidden="true"></div>
-      <button
-        v-if="!isEmbedMode"
-        class="action-button"
-        type="button"
-        :disabled="!canUndoSourceCode"
-        @click="undoSourceCode"
-      >
-        Undo
-      </button>
-      <button
-        v-if="!isEmbedMode"
-        class="action-button"
-        type="button"
-        :disabled="!canRedoSourceCode"
-        @click="redoSourceCode"
-      >
-        Redo
-      </button>
-      <div v-if="!isEmbedMode" class="toolbar-rule" aria-hidden="true"></div>
-      <button
-        v-if="!isEmbedMode"
-        class="action-button"
-        :class="{ active: sidebarMode === 'info' }"
-        type="button"
-        @click="showSidebar('info')"
-      >
-        Info
-      </button>
-      <button
-        v-if="!isEmbedMode"
-        class="action-button"
-        :class="{ active: sidebarMode === 'share' }"
-        type="button"
-        @click="showSidebar('share')"
-      >
-        Share
-      </button>
-      <button
-        v-if="!isEmbedMode"
-        class="action-button"
-        :class="{ active: sidebarMode === 'ruler' }"
-        type="button"
-        @click="showSidebar('ruler')"
-      >
-        Ruler
-      </button>
-    </div>
+  <div class="app-shell">
+    <div class="app-layout" :class="{ 'app-layout-embed': isEmbedMode }">
+      <div class="actions" :class="{ 'actions-embed': isEmbedMode }" aria-label="Playback controls">
+        <PlayPauseButton :playing="isPlaying" @toggle="togglePlayback" />
+        <button
+          class="action-button loop-button"
+          :class="{ active: isLooping }"
+          type="button"
+          :aria-pressed="isLooping"
+          @click="toggleLoop"
+        >
+          Loop
+        </button>
+        <a
+          v-if="isEmbedMode"
+          class="action-button edit-link"
+          :href="shareUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Edit on Xenpaper 2
+        </a>
+        <div v-if="!isEmbedMode" class="toolbar-rule" aria-hidden="true"></div>
+        <button
+          v-if="!isEmbedMode"
+          class="action-button"
+          type="button"
+          :disabled="!canUndoSourceCode"
+          @click="undoSourceCode"
+        >
+          Undo
+        </button>
+        <button
+          v-if="!isEmbedMode"
+          class="action-button"
+          type="button"
+          :disabled="!canRedoSourceCode"
+          @click="redoSourceCode"
+        >
+          Redo
+        </button>
+        <div v-if="!isEmbedMode" class="toolbar-rule" aria-hidden="true"></div>
+        <button
+          v-if="!isEmbedMode"
+          class="action-button"
+          :class="{ active: sidebarMode === 'info' }"
+          type="button"
+          @click="showSidebar('info')"
+        >
+          Info
+        </button>
+        <button
+          v-if="!isEmbedMode"
+          class="action-button"
+          :class="{ active: sidebarMode === 'share' }"
+          type="button"
+          @click="showSidebar('share')"
+        >
+          Share
+        </button>
+        <button
+          v-if="!isEmbedMode"
+          class="action-button"
+          :class="{ active: sidebarMode === 'ruler' }"
+          type="button"
+          @click="showSidebar('ruler')"
+        >
+          Ruler
+        </button>
+      </div>
 
-    <main class="xenpaper-app" :class="{ 'xenpaper-app-embed': isEmbedMode }">
-      <label class="source-label" for="source-code">Source code</label>
-      <div class="source-editor" :class="{ 'source-editor-embed': isEmbedMode }">
-        <textarea
-          id="source-code"
-          :value="sourceCode"
-          class="source-input"
-          placeholder="Type your tune here..."
-          autocapitalize="off"
-          autocomplete="off"
-          autocorrect="off"
-          spellcheck="false"
-          :readonly="isEmbedMode"
-          @input="handleSourceInput"
-          @keydown="handleSourceKeydown"
-        />
-        <pre class="source-highlights"><span
+      <main class="xenpaper-app" :class="{ 'xenpaper-app-embed': isEmbedMode }">
+        <label class="source-label" for="source-code">Source code</label>
+        <p v-if="lastError" class="playback-error" role="alert">Error: {{ lastError }}</p>
+        <div class="source-editor" :class="{ 'source-editor-embed': isEmbedMode }">
+          <textarea
+            id="source-code"
+            :value="sourceCode"
+            class="source-input"
+            placeholder="Type your tune here..."
+            autocapitalize="off"
+            autocomplete="off"
+            autocorrect="off"
+            spellcheck="false"
+            :readonly="isEmbedMode"
+            @input="handleSourceInput"
+            @keydown="handleSourceKeydown"
+          />
+          <pre class="source-highlights"><span
           v-if="sourceCode === ''"
           class="placeholder-text"
           aria-hidden="true"
@@ -698,85 +700,98 @@ onUnmounted(() => {
             { active: isCharacterActive(chars[token.index]) },
           ]"
         >{{ token.character }}</span></template></template><br><br></pre>
-      </div>
-      <p v-if="lastError" class="playback-error" role="alert">Error: {{ lastError }}</p>
-    </main>
-
-    <aside
-      v-if="!isEmbedMode && sidebarMode !== 'none'"
-      class="sidebar-stack"
-      :class="`sidebar-stack-${sidebarMode}`"
-    >
-      <button class="sidebar-close" type="button" aria-label="Close sidebar" @click="closeSidebar">
-        ×
-      </button>
-      <TutorialSidebar v-if="sidebarMode === 'info'" @set-tune="setDemoTune" />
-
-      <section v-else-if="sidebarMode === 'share'" class="sidebar-panel share-panel">
-        <header class="sidebar-heading">
-          <h1>xenpaper 2</h1>
-          <p>Text-based microtonal sequencer.</p>
-          <p>Write down musical ideas and share the link around.</p>
-        </header>
-
-        <div class="sidebar-content">
-          <h2>Share</h2>
-          <p>Copy this URL to share the current tune.</p>
-          <label class="share-field">
-            <span>Share link</span>
-            <input
-              class="share-link-input"
-              :value="shareUrl"
-              type="text"
-              readonly
-              @focus="($event.target as HTMLInputElement).select()"
-            />
-          </label>
-          <button class="panel-button" type="button" @click="copyShareLink">
-            {{ copiedShareLink ? 'Copied' : 'Copy link' }}
-          </button>
-
-          <h2 class="embed-heading">Embed</h2>
-          <p>Copy this HTML to embed the current tune in another page.</p>
-          <label class="share-field">
-            <span>Embed code</span>
-            <input
-              class="share-link-input"
-              :value="embedCode"
-              type="text"
-              readonly
-              @focus="($event.target as HTMLInputElement).select()"
-            />
-          </label>
-          <button class="panel-button" type="button" @click="copyEmbedCode">
-            {{ copiedEmbedCode ? 'Copied' : 'Copy embed code' }}
-          </button>
-          <iframe class="embed-preview" :src="embedUrl" title="Xenpaper 2 embed preview"></iframe>
         </div>
-      </section>
+      </main>
 
-      <section v-else class="sidebar-panel ruler-panel" aria-labelledby="pitch-ruler-title">
-        <header class="sidebar-heading">
-          <h1>xenpaper 2</h1>
-          <p>Text-based microtonal sequencer.</p>
-        </header>
+      <aside
+        v-if="!isEmbedMode && sidebarMode !== 'none'"
+        class="sidebar-stack"
+        :class="`sidebar-stack-${sidebarMode}`"
+      >
+        <button
+          class="sidebar-close"
+          type="button"
+          aria-label="Close sidebar"
+          @click="closeSidebar"
+        >
+          ×
+        </button>
+        <TutorialSidebar v-if="sidebarMode === 'info'" @set-tune="setDemoTune" />
 
-        <div class="ruler-heading">
-          <h2 id="pitch-ruler-title">Pitch ruler</h2>
-          <p>Click and drag to pan, use mousewheel to zoom.</p>
-        </div>
-        <PitchRuler ref="pitchRuler" :initial-state="initialRulerState" />
-      </section>
-    </aside>
+        <section v-else-if="sidebarMode === 'share'" class="sidebar-panel share-panel">
+          <header class="sidebar-heading">
+            <h1>xenpaper 2</h1>
+            <p>Text-based microtonal sequencer.</p>
+            <p>Write down musical ideas and share the link around.</p>
+          </header>
+
+          <div class="sidebar-content">
+            <h2>Share</h2>
+            <p>Copy this URL to share the current tune.</p>
+            <label class="share-field">
+              <span>Share link</span>
+              <input
+                class="share-link-input"
+                :value="shareUrl"
+                type="text"
+                readonly
+                @focus="($event.target as HTMLInputElement).select()"
+              />
+            </label>
+            <button class="panel-button" type="button" @click="copyShareLink">
+              {{ copiedShareLink ? 'Copied' : 'Copy link' }}
+            </button>
+
+            <h2 class="embed-heading">Embed</h2>
+            <p>Copy this HTML to embed the current tune in another page.</p>
+            <label class="share-field">
+              <span>Embed code</span>
+              <input
+                class="share-link-input"
+                :value="embedCode"
+                type="text"
+                readonly
+                @focus="($event.target as HTMLInputElement).select()"
+              />
+            </label>
+            <button class="panel-button" type="button" @click="copyEmbedCode">
+              {{ copiedEmbedCode ? 'Copied' : 'Copy embed code' }}
+            </button>
+            <iframe class="embed-preview" :src="embedUrl" title="Xenpaper 2 embed preview"></iframe>
+          </div>
+        </section>
+
+        <section v-else class="sidebar-panel ruler-panel" aria-labelledby="pitch-ruler-title">
+          <header class="sidebar-heading">
+            <h1>xenpaper 2</h1>
+            <p>Text-based microtonal sequencer.</p>
+          </header>
+
+          <div class="ruler-heading">
+            <h2 id="pitch-ruler-title">Pitch ruler</h2>
+            <p>Click and drag to pan, use mousewheel to zoom.</p>
+          </div>
+          <PitchRuler ref="pitchRuler" :initial-state="initialRulerState" />
+        </section>
+      </aside>
+    </div>
+    <TheFooter />
   </div>
-  <TheFooter />
 </template>
 
 <style scoped>
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--xenpaper-bg);
+}
+
 .app-layout {
   display: flex;
-  min-height: 100vh;
-  height: 100vh;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow: hidden;
   background: var(--xenpaper-bg);
   color: var(--xenpaper-text);
@@ -785,6 +800,8 @@ onUnmounted(() => {
 .xenpaper-app {
   flex: 1 1 auto;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
   height: 100%;
   overflow: auto;
   padding: 1.5rem 0 0 1rem;
@@ -804,7 +821,8 @@ onUnmounted(() => {
 
 .source-editor {
   position: relative;
-  min-height: calc(100vh - 1.5rem);
+  flex: 1 0 auto;
+  min-height: 0;
   line-height: 1.4em;
   font-size: clamp(1.1rem, 1.65vw, 1.4rem);
 }
@@ -828,7 +846,7 @@ onUnmounted(() => {
 .source-input,
 .source-highlights {
   box-sizing: border-box;
-  min-height: calc(100vh - 1.5rem);
+  min-height: 100%;
   width: 100%;
   margin: 0;
   border: 0;
@@ -993,12 +1011,6 @@ onUnmounted(() => {
   padding-top: 3rem;
 }
 
-.source-editor-embed,
-.source-editor-embed .source-input,
-.source-editor-embed .source-highlights {
-  min-height: calc(100vh - 3rem);
-}
-
 .source-editor-embed .source-input {
   cursor: default;
 }
@@ -1053,11 +1065,13 @@ onUnmounted(() => {
 }
 
 .playback-error {
-  position: relative;
-  margin: 0;
-  padding: 0 0 1rem 1rem;
-  color: #cc0000;
+  margin: 0 1rem 0.75rem 2rem;
+  padding: 0.75rem 1rem;
+  border-left: 3px solid #cc0000;
+  background: var(--xenpaper-bg-light);
+  color: #ff541e;
   font-family: var(--xenpaper-font-mono);
+  overflow-wrap: anywhere;
 }
 
 .sidebar-stack {
@@ -1249,9 +1263,15 @@ onUnmounted(() => {
 }
 
 @media (max-width: 640px) {
+  .app-shell {
+    min-height: 100vh;
+    height: auto;
+    overflow: visible;
+  }
+
   .app-layout:not(.app-layout-embed) {
     display: block;
-    height: auto;
+    min-height: 0;
     overflow: visible;
   }
 
