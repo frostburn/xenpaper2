@@ -70,6 +70,8 @@ const initialRulerState = ref<InitialRulerState>()
 const pitchRuler = ref<InstanceType<typeof PitchRuler>>()
 const playbackPositionMs = ref(-1)
 const copiedShareLink = ref(false)
+type SidebarMode = 'demos' | 'share' | 'ruler'
+const sidebarMode = ref<SidebarMode>('demos')
 let parseVersion = 0
 let playbackAnimationFrame: number | undefined
 
@@ -238,8 +240,8 @@ watch(
   },
 )
 
-const logParsedAst = (): void => {
-  console.log('Parsed XenpaperAST:', parseSourceCode())
+const showSidebar = (mode: SidebarMode): void => {
+  sidebarMode.value = mode
 }
 
 const togglePlayback = async (): Promise<void> => {
@@ -334,19 +336,30 @@ onUnmounted(() => {
       >
         Loop
       </button>
-      <button class="action-button" type="button" @click="logParsedAst">Log AST</button>
-      <label class="share-link">
-        <span>Share</span>
-        <input
-          class="share-link-input"
-          :value="shareUrl"
-          type="text"
-          readonly
-          @focus="($event.target as HTMLInputElement).select()"
-        />
-      </label>
-      <button class="action-button" type="button" @click="copyShareLink">
-        {{ copiedShareLink ? 'Copied' : 'Copy link' }}
+      <div class="toolbar-rule" aria-hidden="true"></div>
+      <button
+        class="action-button"
+        :class="{ active: sidebarMode === 'demos' }"
+        type="button"
+        @click="showSidebar('demos')"
+      >
+        Demos
+      </button>
+      <button
+        class="action-button"
+        :class="{ active: sidebarMode === 'share' }"
+        type="button"
+        @click="showSidebar('share')"
+      >
+        Share
+      </button>
+      <button
+        class="action-button"
+        :class="{ active: sidebarMode === 'ruler' }"
+        type="button"
+        @click="showSidebar('ruler')"
+      >
+        Ruler
       </button>
     </div>
 
@@ -377,8 +390,40 @@ onUnmounted(() => {
     </main>
 
     <aside class="sidebar-stack">
-      <TutorialSidebar @set-tune="setSourceCode" />
-      <section class="ruler-panel" aria-labelledby="pitch-ruler-title">
+      <TutorialSidebar v-if="sidebarMode === 'demos'" @set-tune="setSourceCode" />
+
+      <section v-else-if="sidebarMode === 'share'" class="sidebar-panel share-panel">
+        <header class="sidebar-heading">
+          <h1>xenpaper</h1>
+          <p>Text-based microtonal sequencer.</p>
+          <p>Write down musical ideas and share the link around.</p>
+        </header>
+
+        <div class="sidebar-content">
+          <h2>Share</h2>
+          <p>Copy this URL to share the current tune.</p>
+          <label class="share-field">
+            <span>Share link</span>
+            <input
+              class="share-link-input"
+              :value="shareUrl"
+              type="text"
+              readonly
+              @focus="($event.target as HTMLInputElement).select()"
+            />
+          </label>
+          <button class="panel-button" type="button" @click="copyShareLink">
+            {{ copiedShareLink ? 'Copied' : 'Copy link' }}
+          </button>
+        </div>
+      </section>
+
+      <section v-else class="sidebar-panel ruler-panel" aria-labelledby="pitch-ruler-title">
+        <header class="sidebar-heading">
+          <h1>xenpaper</h1>
+          <p>Text-based microtonal sequencer.</p>
+        </header>
+
         <div class="ruler-heading">
           <h2 id="pitch-ruler-title">Pitch ruler</h2>
           <p>Click and drag to pan, use mousewheel to zoom.</p>
@@ -549,31 +594,9 @@ onUnmounted(() => {
   z-index: 4;
 }
 
-.share-link {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  padding: 0.5rem;
-  width: 5rem;
-  color: #ffffff;
-  font-size: 0.75rem;
-  text-transform: uppercase;
-}
-
-.share-link-input {
-  width: 100%;
-  min-width: 0;
-  border: 1px solid #a490b3;
-  color: #ffffff;
-  background: var(--xenpaper-bg);
-  padding: 0.25rem;
-  font: inherit;
-  text-transform: none;
-}
-
-.share-link-input:focus-visible {
-  outline: 0;
-  border-color: var(--xenpaper-cyan);
+.toolbar-rule {
+  margin: 0.75rem 0.5rem;
+  border-top: 1px solid var(--xenpaper-bg-light);
 }
 
 .action-button {
@@ -602,7 +625,7 @@ onUnmounted(() => {
   border-left-color: var(--xenpaper-focus);
 }
 
-.loop-button.active {
+.action-button.active {
   color: var(--xenpaper-bg);
   background: var(--xenpaper-placeholder);
 }
@@ -617,8 +640,6 @@ onUnmounted(() => {
 
 .sidebar-stack {
   flex: 0 0 clamp(20rem, 40vw, 30rem);
-  display: flex;
-  flex-direction: column;
   min-width: 0;
   height: 100%;
   overflow: hidden;
@@ -626,18 +647,117 @@ onUnmounted(() => {
   font-family: var(--xenpaper-font-copy);
 }
 
-.ruler-panel {
-  flex: 0 0 42%;
+.sidebar-panel {
   display: flex;
   flex-direction: column;
-  min-height: 18rem;
-  border-top: 1px solid var(--xenpaper-bg);
+  height: 100%;
+  min-height: 0;
+  overflow: auto;
+  background: var(--xenpaper-bg-light);
+  animation: 0.3s ease-out sidebar-show;
+}
+
+@keyframes sidebar-show {
+  from {
+    opacity: 0;
+    transform: translateY(0.25rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.sidebar-heading {
+  flex: 0 0 auto;
+  padding: 2rem 2rem 1.5rem;
+  background: var(--xenpaper-bg);
+}
+
+.sidebar-heading h1 {
+  margin: 0 0 0.5rem;
+  font-size: 2.5rem;
+  line-height: 2rem;
+  font-weight: 400;
+  text-transform: lowercase;
+}
+
+.sidebar-heading p {
+  margin: 0;
+  color: var(--xenpaper-placeholder);
+  font-style: italic;
+  line-height: 1.3rem;
+}
+
+.sidebar-content {
+  padding: 2rem;
+}
+
+.sidebar-content h2 {
+  margin: 0 0 1rem;
+  font-size: 1.5rem;
+  font-weight: 400;
+}
+
+.sidebar-content p {
+  margin: 0 0 1.5rem;
+}
+
+.share-field {
+  display: block;
+  margin-bottom: 1rem;
+  font-family: var(--xenpaper-font-mono);
+}
+
+.share-field span {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--xenpaper-placeholder);
+  font-style: italic;
+}
+
+.share-link-input {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #a490b3;
+  color: #ffffff;
+  background: var(--xenpaper-bg);
+  padding: 0.5rem;
+  font: inherit;
+}
+
+.share-link-input:focus-visible {
+  outline: 0;
+  border-color: var(--xenpaper-cyan);
+}
+
+.panel-button {
+  border: 0;
+  display: inline-block;
+  padding: 0.5rem;
+  cursor: pointer;
+  background: #ff541e;
+  color: var(--xenpaper-bg);
+  outline: none;
+  opacity: 0.7;
+  transition: opacity 0.2s ease-out;
+}
+
+.panel-button:hover,
+.panel-button:focus,
+.panel-button:active {
+  opacity: 1;
+}
+
+.ruler-panel {
   overflow: hidden;
 }
 
 .ruler-heading {
-  padding: 1rem 2rem;
-  background: var(--xenpaper-bg);
+  flex: 0 0 auto;
+  padding: 2rem 2rem 1rem;
+  background: var(--xenpaper-bg-light);
 }
 
 .ruler-heading h2 {
@@ -668,13 +788,14 @@ onUnmounted(() => {
     padding-top: 0;
   }
 
-  .action-button,
-  .share-link {
+  .action-button {
     width: auto;
   }
 
-  .share-link {
-    flex: 1 1 auto;
+  .toolbar-rule {
+    margin: 0.5rem 0.25rem;
+    border-top: 0;
+    border-left: 1px solid var(--xenpaper-bg-light);
   }
 
   .source-editor,
@@ -684,6 +805,10 @@ onUnmounted(() => {
   }
 
   .sidebar-stack {
+    height: auto;
+  }
+
+  .sidebar-panel {
     height: auto;
   }
 }
