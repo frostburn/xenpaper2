@@ -5,7 +5,7 @@ import { RouterView, useRoute, useRouter } from 'vue-router'
 import TheFooter from './components/TheFooter.vue'
 import XenpaperSidebar from './components/XenpaperSidebar.vue'
 import XenpaperToolbar from './components/XenpaperToolbar.vue'
-import { useXenpaperStore } from './stores/xenpaper'
+import { copyText, useXenpaperStore } from './stores/xenpaper'
 
 const xenpaper = useXenpaperStore()
 const route = useRoute()
@@ -34,6 +34,14 @@ const initialRouteHash = (): string => {
 }
 
 const currentRouteHash = computed(() => xenpaper.routeHash)
+
+const copyShareLink = async (): Promise<void> => {
+  xenpaper.setCopiedShareLink(await copyText(xenpaper.shareUrl))
+}
+
+const copyEmbedCode = async (): Promise<void> => {
+  xenpaper.setCopiedEmbedCode(await copyText(xenpaper.embedCode))
+}
 
 const replaceShareRoute = async (): Promise<void> => {
   xenpaper.saveSourceCodeToBrowser()
@@ -142,13 +150,39 @@ onUnmounted(() => {
 })
 </script>
 
-
 <template>
   <div class="app-shell">
     <div class="app-layout" :class="{ 'app-layout-embed': xenpaper.isEmbedMode }">
-      <XenpaperToolbar />
+      <XenpaperToolbar
+        :is-embed-mode="xenpaper.isEmbedMode"
+        :is-playing="xenpaper.isPlaying"
+        :is-looping="xenpaper.isLooping"
+        :share-url="xenpaper.shareUrl"
+        :can-undo-source-code="xenpaper.canUndoSourceCode"
+        :can-redo-source-code="xenpaper.canRedoSourceCode"
+        :sidebar-mode="xenpaper.sidebarMode"
+        @toggle-playback="xenpaper.togglePlayback"
+        @toggle-loop="xenpaper.toggleLoop"
+        @undo-source-code="xenpaper.undoSourceCode"
+        @redo-source-code="xenpaper.redoSourceCode"
+        @show-sidebar="xenpaper.showSidebar"
+      />
       <RouterView />
-      <XenpaperSidebar />
+      <XenpaperSidebar
+        :is-embed-mode="xenpaper.isEmbedMode"
+        :sidebar-mode="xenpaper.sidebarMode"
+        :share-url="xenpaper.shareUrl"
+        :embed-code="xenpaper.embedCode"
+        :embed-url="xenpaper.embedUrl"
+        :copied-share-link="xenpaper.copiedShareLink"
+        :copied-embed-code="xenpaper.copiedEmbedCode"
+        :initial-ruler-state="xenpaper.initialRulerState"
+        @close-sidebar="xenpaper.closeSidebar"
+        @set-tune="xenpaper.setDemoTune"
+        @copy-share-link="copyShareLink"
+        @copy-embed-code="copyEmbedCode"
+        @active-note-handler-change="xenpaper.setActiveNoteHandler"
+      />
     </div>
     <TheFooter v-if="!xenpaper.isEmbedMode" />
   </div>
