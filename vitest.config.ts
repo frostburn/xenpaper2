@@ -10,7 +10,7 @@ export default mergeConfig(
     test: {
       environment: 'jsdom',
       execArgv: nodeMajor >= 25 ? ['--no-experimental-webstorage'] : [],
-      exclude: [...configDefaults.exclude, 'e2e/**', 'reference/**'],
+      exclude: [...configDefaults.exclude, 'e2e/**'],
       root: fileURLToPath(new URL('./', import.meta.url)),
     },
   }),
