@@ -89,6 +89,7 @@ type SidebarMode = 'info' | 'share' | 'ruler' | 'none'
 type OpenSidebarMode = Exclude<SidebarMode, 'none'>
 const sidebarMode = ref<SidebarMode>('info')
 let parseVersion = 0
+let shouldApplyInitialSidebarMode = true
 let playbackAnimationFrame: number | undefined
 
 const htmlTitle = computed(() => {
@@ -278,6 +279,14 @@ const updateParsedSourceCode = async (): Promise<void> => {
   chars.value = parsedSource.chars
   lastError.value = parsedSource.error
   initialRulerState.value = parsedSource.initialRulerState
+
+  if (shouldApplyInitialSidebarMode) {
+    shouldApplyInitialSidebarMode = false
+
+    if (parsedSource.initialRulerState?.lowHz !== undefined && !isEmbedMode.value) {
+      sidebarMode.value = 'ruler'
+    }
+  }
 
   if (!parsedSource.playable || !parsedSource.scoreMs) {
     scoreLoaded.value = false
