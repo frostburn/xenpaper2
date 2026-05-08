@@ -9,6 +9,8 @@ import { version } from '../../package.json'
 </template>
 <style scoped>
 footer {
+  flex: 0 0 auto;
+  padding: 0.5rem 1rem;
   font-family: var(--xenpaper-font-copy);
   font-size: 0.9rem;
   line-height: 1.3rem;
