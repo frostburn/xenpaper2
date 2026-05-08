@@ -1,0 +1,13 @@
+(bpm:30)(osc:sawtooth4)
+[0 1 7]-
+[0 6 7]-
+[0 1 4 7]-
+[0 1 3 7]-
+[`10 0 1 6 7]-
+[`10 0 1 3 7]-
+[`9 0 1 4 7]-
+[`10 0 1 6 7]-
+[`10 0 4 7]- # resolution (no semitone)
+[`9 0 1 4 7]-
+[`10 0 3 7]- # resolution (no semitone)
+[`10 0 4 7]- # bonus picardy

@@ -1,0 +1,24 @@
+# minor chord inversions in father
+# 1st inversion is a stack of two semisixths
+# 2nd inversion is a major chord
+
+{8edo}
+[0 2 5]---
+[2 5 '0]---
+[5 '0 '2]---
+..
+{13edo}
+[0 3 8]---
+[3 8 '0]---
+[8 '0 '3]---
+..
+{21edo}
+[0 5 13]---
+[5 13 '0]---
+[13 '0 '5]---
+..
+{34edo}
+[0 8 21]---
+[8 21 '0]---
+[21 '0 '8]---
+..

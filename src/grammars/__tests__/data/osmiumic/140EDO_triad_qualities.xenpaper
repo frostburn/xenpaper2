@@ -1,0 +1,14 @@
+(bpm:30)(osc:sawtooth16)(env:4844){140edo}
+[0 41 82]- # (true) neutral triad
+[0 42 82]- # superneutral triad
+[0 52 82]- # sensimajor/ultramajor triad
+[0 30 82]- # sensiminor/ultraminor triad
+[0 41 82]- # (true) neutral triad
+[0 40 82]- # subneutral triad
+[0 31 82]- # subminor triad
+[0 51 82]- # supermajor triad
+[0 52 82]- # sensimajor/ultramajor triad
+[0 53 82]- # semisixth/naiadic triad
+[0 31 82]- # subminor triad
+[0 30 82]- # sensiminor/inframinor triad
+[0 29 82]- # semifourth/cthonic triad

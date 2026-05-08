@@ -1,0 +1,2 @@
+(bpm:20) (osc:triangle) [0c 710c] [0c 702c]
+.        (osc:sine)     [0c 710c] [0c 702c]

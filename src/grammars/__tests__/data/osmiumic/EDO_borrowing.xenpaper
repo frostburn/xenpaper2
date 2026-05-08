@@ -1,0 +1,13 @@
+(bpm:40)(osc:sawtooth8){21edo}
+23:28:31:46-[0 6 9 21]-
+23:29:31:46-[0 7 9 21]-
+23:29:33:46-[0 7 11 21]-
+23:29:35:46-{42edo}[0 14 25 42]-{21edo} # here im borrowing from 42edo
+23:28:39:46-[0 6 16 21]-
+46:56:83:92-[0 6 18 21]-
+46:56:74:92-{42edo}[0 12 29 42]-{21edo} # here im borrowing from 42edo
+46:56:71:92-[0 6 13 21]-
+# keep in mind, i havent even
+# changed the mode of the harmonic series a single time;
+# if i didnt care about this restriction, itd probably be
+# easier to find a chord of 21 that fits

@@ -1,0 +1,18 @@
+(bpm:40)(osc:sawtooth16)(env:4844){108edo}
+[0 36 63]- # ~novamajor triad
+[0 38 63]- # shrubmajor triad
+[0 39 63]- # supermajor triad
+[0 35 63]- # (penta)major triad
+[0 34 63]- # magimajor triad
+[0 32 63]- # neutral triad
+[0 33 63]- # submajor triad
+[0 37 63]- # neomajor triad
+..
+[0 27 63]- # novaminor triad
+[0 25 63]- # gothminor triad (inverse of shrubmajor)
+[0 24 63]- # subminor triad
+[0 28 63]- # (penta)minor triad
+[0 29 63]- # cakeminor triad (inverse of magimajor)
+[0 31 63]- # neutral triad
+[0 30 63]- # supraminor triad
+[0 26 63]- # neominor triad

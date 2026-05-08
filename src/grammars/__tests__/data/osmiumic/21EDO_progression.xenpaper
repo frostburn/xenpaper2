@@ -1,0 +1,12 @@
+(bpm:40)(osc:sawtooth8){21edo}
+23:28:31:46-[0 6 9 21]-
+23:29:31:46-[0 7 9 21]-
+23:29:33:46-[0 7 11 21]-
+31:39:46:62-[0 7 12 21]- # briefly changing from /23 to /31 here
+# the reason was i knew i wanted a major third in the chord, and
+# 29/23 didnt seem to work, so the only other interpretation of
+# 7\21 in the table is 39/31, so i deduced 46/31 from there
+23:28:39:46-[0 6 16 21]-
+46:56:83:92-[0 6 18 21]- # taking 83 from /46 but otherwise /23
+46:56:73:92-[0 6 14 21]-
+46:56:71:92-[0 6 13 21]-
