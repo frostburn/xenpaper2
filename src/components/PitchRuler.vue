@@ -68,7 +68,9 @@ const hzInRange = (hz: number, [lowHz, highHz]: [number, number]): boolean => {
   return hz >= lowHz && hz <= highHz
 }
 
-const getInitialView = (initialState?: InitialRulerState): { viewPan: number; viewZoom: number } => {
+const getInitialView = (
+  initialState?: InitialRulerState,
+): { viewPan: number; viewZoom: number } => {
   if (initialState?.lowHz && initialState.highHz) {
     const lowPan = hzToPan(initialState.lowHz)
     const highPan = hzToPan(initialState.highHz)
@@ -104,7 +106,9 @@ const createRulerState = (initialState?: InitialRulerState): RulerState => {
 const rulerState = reactive<RulerState>(createRulerState(props.initialState))
 
 const totalColumns = computed(() => rulerState.plots.length + 1)
-const noteSetWidth = computed(() => Math.max((rulerWidth.value - LABEL_GUTTER_WIDTH) / totalColumns.value, 0))
+const noteSetWidth = computed(() =>
+  Math.max((rulerWidth.value - LABEL_GUTTER_WIDTH) / totalColumns.value, 0),
+)
 
 const visibleRange = computed<[number, number]>(() => [
   panToHz(pxToPan(rulerHeight.value, rulerState.viewPan, rulerState.viewZoom, rulerHeight.value)),
@@ -149,7 +153,8 @@ const noteSetColumns = computed(() => {
   return columns
 })
 
-const getY = (hz: number): number => panToPx(hzToPan(hz), rulerState.viewPan, rulerState.viewZoom, rulerHeight.value)
+const getY = (hz: number): number =>
+  panToPx(hzToPan(hz), rulerState.viewPan, rulerState.viewZoom, rulerHeight.value)
 
 const getGradientColorFromNote = (note: MoscNoteMs): string => {
   const matched = note.label.match(/([\d.]+)c/)
@@ -168,9 +173,12 @@ const getColorFromNoteProximity = (
   if (!proxNotes.length) return hsl(0, 100, 66)
 
   const noteCents = panToCents(hzToPan(note.hz))
-  let distance = Math.min(
-    ...proxNotes.map((proxNote) => panToCents(hzToPan(proxNote.hz))).map((cents) => Math.abs(noteCents - cents)),
-  ) / threshold
+  let distance =
+    Math.min(
+      ...proxNotes
+        .map((proxNote) => panToCents(hzToPan(proxNote.hz)))
+        .map((cents) => Math.abs(noteCents - cents)),
+    ) / threshold
 
   if (hard) distance = distance > 1 ? 1000 : distance
 
@@ -420,7 +428,11 @@ watch(
           <text :x="Math.max(rulerWidth - 55, 0)" y="-5" :fill="line.fill">{{ line.label }}</text>
         </g>
 
-        <g v-for="column in noteSetColumns" :key="column.key" :transform="`translate(${column.x} 0)`">
+        <g
+          v-for="column in noteSetColumns"
+          :key="column.key"
+          :transform="`translate(${column.x} 0)`"
+        >
           <g
             v-for="(note, index) in visibleNotesForColumn(column.notes)"
             :key="`${column.key}-${note.hz}-${note.label}-${index}`"
