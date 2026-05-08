@@ -75,6 +75,7 @@ const sourceCode = ref(getSavedSourceCode(initialRouteHash))
 const sourceHistory = ref(createSourceHistory(sourceCode.value))
 const isPlaying = ref(false)
 const isLooping = ref(false)
+const selectedLine = ref(0)
 const scoreLoaded = ref(false)
 const lastError = ref('')
 const chars = ref<CharData[]>([])
@@ -91,6 +92,49 @@ let parseVersion = 0
 let playbackAnimationFrame: number | undefined
 
 const sourceCharacters = computed(() => sourceCode.value.split(''))
+const hasPlayStartMarkers = computed(() => sourceCode.value.includes('\n'))
+
+type SourceDisplayToken =
+  | {
+      type: 'playStart'
+      key: string
+      line: number
+    }
+  | {
+      type: 'character'
+      key: string
+      character: string
+      index: number
+    }
+
+const sourceDisplayTokens = computed<SourceDisplayToken[]>(() => {
+  const tokens: SourceDisplayToken[] = []
+  let playStartLine = 0
+
+  const addPlayStart = (): void => {
+    tokens.push({
+      type: 'playStart',
+      key: `play-start-${playStartLine}`,
+      line: playStartLine,
+    })
+    playStartLine++
+  }
+
+  if (hasPlayStartMarkers.value) addPlayStart()
+
+  sourceCharacters.value.forEach((character, index) => {
+    tokens.push({
+      type: 'character',
+      key: `character-${index}`,
+      character,
+      index,
+    })
+
+    if (hasPlayStartMarkers.value && character === '\n') addPlayStart()
+  })
+
+  return tokens
+})
 const canUndoSourceCode = computed(() => canUndoSourceChange(sourceHistory.value))
 const canRedoSourceCode = computed(() => canRedoSourceChange(sourceHistory.value))
 const shareRoute = computed(() =>
@@ -119,6 +163,31 @@ const embedCode = computed(
 )
 
 const parseSourceCode = (): XenpaperAST => parse(sourceCode.value, { grammarSource: 'source-code' })
+
+const getMsAtLine = (tune: string, charData: CharData[] | undefined, line: number): number => {
+  if (line === 0) return 0
+
+  let ms = 0
+  let counted = 0
+  const tuneCharacters = tune.split('')
+
+  for (let i = 0; i < tuneCharacters.length; i++) {
+    const character = tuneCharacters[i]
+    const [, end] = charData?.[i]?.playTime ?? []
+
+    if (end !== undefined) ms = end
+
+    if (character === '\n') {
+      counted++
+      if (counted === line) return ms
+    }
+  }
+
+  return 0
+}
+
+const getSelectedLineStartMs = (): number =>
+  getMsAtLine(sourceCode.value, chars.value, selectedLine.value)
 
 const findOffsetFromLineColumn = (line: number, column: number): number | undefined => {
   let currentLine = 1
@@ -241,6 +310,10 @@ const redoSourceCode = (): void => {
   sourceCode.value = sourceHistory.value.present
 }
 
+const setSelectedLine = (line: number): void => {
+  selectedLine.value = line
+}
+
 const handleSourceKeydown = (event: KeyboardEvent): void => {
   if (!(event.ctrlKey || event.metaKey)) return
 
@@ -269,6 +342,10 @@ watch(sourceCode, () => {
   copiedEmbedCode.value = false
   void replaceShareRoute()
   void updateParsedSourceCode()
+})
+
+watch([selectedLine, chars], () => {
+  soundEngine.setLoopStart(getSelectedLineStartMs())
 })
 
 const replaceShareRoute = async (): Promise<void> => {
@@ -355,6 +432,7 @@ const togglePlayback = async (): Promise<void> => {
     if (!scoreLoaded.value) return
   }
 
+  await soundEngine.gotoMs(getSelectedLineStartMs())
   await soundEngine.play()
   isPlaying.value = true
 }
@@ -508,15 +586,27 @@ onUnmounted(() => {
           @input="handleSourceInput"
           @keydown="handleSourceKeydown"
         />
-        <pre class="source-highlights" aria-hidden="true"><span
+        <pre class="source-highlights"><span
           v-if="sourceCode === ''"
           class="placeholder-text"
-        >Enter Xenpaper source code...</span><template v-else><span
-          v-for="(character, index) in sourceCharacters"
-          :key="index"
+          aria-hidden="true"
+        >Enter Xenpaper source code...</span><template v-else><template v-for="token in sourceDisplayTokens" :key="token.key"><button
+          v-if="token.type === 'playStart'"
+          class="play-start-marker"
+          :class="{ selected: selectedLine === token.line }"
+          type="button"
+          :aria-label="`Start playback at line ${token.line + 1}`"
+          :aria-pressed="selectedLine === token.line"
+          @click="setSelectedLine(token.line)"
+        >&gt;</button><span
+          v-else
           class="source-character"
-          :class="[chars[index]?.color ? `highlight-${chars[index]?.color}` : 'highlight-unknown', { active: isCharacterActive(chars[index]) }]"
-        >{{ character }}</span></template><br><br></pre>
+          aria-hidden="true"
+          :class="[
+            chars[token.index]?.color ? `highlight-${chars[token.index]?.color}` : 'highlight-unknown',
+            { active: isCharacterActive(chars[token.index]) },
+          ]"
+        >{{ token.character }}</span></template></template><br><br></pre>
       </div>
       <p v-if="lastError" class="playback-error" role="alert">Error: {{ lastError }}</p>
     </main>
@@ -681,6 +771,34 @@ onUnmounted(() => {
   position: relative;
   pointer-events: none;
   user-select: none;
+}
+
+.play-start-marker {
+  position: absolute;
+  left: 0.8rem;
+  border: 0;
+  display: block;
+  padding: 0;
+  cursor: pointer;
+  background: transparent;
+  color: var(--xenpaper-placeholder);
+  font: inherit;
+  line-height: inherit;
+  outline: none;
+  opacity: 0.2;
+  pointer-events: auto;
+  transition: opacity 0.2s ease-out;
+}
+
+.play-start-marker.selected,
+.play-start-marker:hover,
+.play-start-marker:focus,
+.play-start-marker:active {
+  opacity: 1;
+}
+
+.play-start-marker:focus-visible {
+  color: var(--xenpaper-focus);
 }
 
 .placeholder-text {
