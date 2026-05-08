@@ -3,7 +3,6 @@ import type { LocationRange } from 'peggy'
 export type NodeType = {
   type: string
   delimiter: boolean
-  len: number
   time?: [number, number]
   location: LocationRange
 }

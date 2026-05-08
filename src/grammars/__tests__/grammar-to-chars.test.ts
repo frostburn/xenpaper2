@@ -72,11 +72,11 @@ describe('grammarToChars', () => {
         items: [
           {
             type: 'Note',
+            location: { start: { offset: 0 }, end: { offset: 1 } },
             time: [1, 2],
             pitch: {
               type: 'Pitch',
-              len: 1,
-              location: { start: { offset: 0 } },
+              location: { start: { offset: 0 }, end: { offset: 1 } },
             },
           },
         ],
