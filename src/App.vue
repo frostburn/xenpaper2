@@ -20,10 +20,12 @@ import {
 import { SoundEngineTonejs } from './sound-engine-tonejs'
 import type { XenpaperAST } from './grammars/grammar.generated'
 import {
+  getEmbedShareHash,
   getSavedSourceCode,
   getShareHash,
   getSharedSourceCode,
   hasSharedSourceCode,
+  isEmbedHash,
   saveSourceCode,
 } from './share-link'
 
@@ -67,8 +69,9 @@ const getInitialRouteHash = (): string => {
   return ''
 }
 
+const initialRouteHash = getInitialRouteHash()
 const soundEngine = new SoundEngineTonejs()
-const sourceCode = ref(getSavedSourceCode(getInitialRouteHash()))
+const sourceCode = ref(getSavedSourceCode(initialRouteHash))
 const sourceHistory = ref(createSourceHistory(sourceCode.value))
 const isPlaying = ref(false)
 const isLooping = ref(false)
@@ -79,6 +82,8 @@ const initialRulerState = ref<InitialRulerState>()
 const pitchRuler = ref<InstanceType<typeof PitchRuler>>()
 const playbackPositionMs = ref(-1)
 const copiedShareLink = ref(false)
+const copiedEmbedCode = ref(false)
+const isEmbedMode = ref(isEmbedHash(initialRouteHash))
 type SidebarMode = 'info' | 'share' | 'ruler' | 'none'
 type OpenSidebarMode = Exclude<SidebarMode, 'none'>
 const sidebarMode = ref<SidebarMode>('info')
@@ -96,6 +101,22 @@ const shareRoute = computed(() =>
   }),
 )
 const shareUrl = computed(() => new URL(shareRoute.value.href, window.location.href).toString())
+const embedRoute = computed(() =>
+  router.resolve({
+    path: route.path,
+    query: route.query,
+    hash: getEmbedShareHash(sourceCode.value),
+  }),
+)
+const embedUrl = computed(() => new URL(embedRoute.value.href, window.location.href).toString())
+const escapeHtmlAttribute = (value: string): string =>
+  value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+const embedCode = computed(
+  () =>
+    `<iframe width="560" height="315" src="${escapeHtmlAttribute(
+      embedUrl.value,
+    )}" title="Xenpaper" frameborder="0"></iframe>`,
+)
 
 const parseSourceCode = (): XenpaperAST => parse(sourceCode.value, { grammarSource: 'source-code' })
 
@@ -245,6 +266,7 @@ const handleSourceKeydown = (event: KeyboardEvent): void => {
 
 watch(sourceCode, () => {
   copiedShareLink.value = false
+  copiedEmbedCode.value = false
   void replaceShareRoute()
   void updateParsedSourceCode()
 })
@@ -252,7 +274,9 @@ watch(sourceCode, () => {
 const replaceShareRoute = async (): Promise<void> => {
   saveSourceCode(sourceCode.value)
 
-  const shareHash = getShareHash(sourceCode.value)
+  const shareHash = isEmbedMode.value
+    ? getEmbedShareHash(sourceCode.value)
+    : getShareHash(sourceCode.value)
   if (route.hash === shareHash) return
 
   await router.replace({
@@ -262,35 +286,47 @@ const replaceShareRoute = async (): Promise<void> => {
   })
 }
 
-const copyShareLink = async (): Promise<void> => {
-  if (!shareUrl.value) return
+const copyText = async (text: string): Promise<boolean> => {
+  if (!text) return false
 
   const writeClipboardText = navigator.clipboard?.writeText
 
   if (writeClipboardText) {
     try {
-      await writeClipboardText.call(navigator.clipboard, shareUrl.value)
-      copiedShareLink.value = true
-      return
+      await writeClipboardText.call(navigator.clipboard, text)
+      return true
     } catch {
       // Fall back for browsers that do not expose Clipboard API outside secure contexts.
     }
   }
 
   const textArea = document.createElement('textarea')
-  textArea.value = shareUrl.value
+  textArea.value = text
   textArea.style.position = 'fixed'
   textArea.style.opacity = '0'
   document.body.append(textArea)
   textArea.select()
-  copiedShareLink.value = document.execCommand('copy')
+  const copied = document.execCommand('copy')
   textArea.remove()
+  return copied
+}
+
+const copyShareLink = async (): Promise<void> => {
+  copiedShareLink.value = await copyText(shareUrl.value)
+}
+
+const copyEmbedCode = async (): Promise<void> => {
+  copiedEmbedCode.value = await copyText(embedCode.value)
 }
 
 watch(
   () => route.hash,
   (sharedHash) => {
     const sharedSourceCode = getSharedSourceCode(sharedHash)
+
+    if (hasSharedSourceCode(sharedHash)) {
+      isEmbedMode.value = isEmbedHash(sharedHash)
+    }
 
     if (hasSharedSourceCode(sharedHash) && sharedSourceCode !== sourceCode.value) {
       applySourceCode(sharedSourceCode, false)
@@ -386,8 +422,8 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="app-layout">
-    <div class="actions" aria-label="Playback controls">
+  <div class="app-layout" :class="{ 'app-layout-embed': isEmbedMode }">
+    <div class="actions" :class="{ 'actions-embed': isEmbedMode }" aria-label="Playback controls">
       <PlayPauseButton :playing="isPlaying" @toggle="togglePlayback" />
       <button
         class="action-button loop-button"
@@ -398,8 +434,18 @@ onUnmounted(() => {
       >
         Loop
       </button>
-      <div class="toolbar-rule" aria-hidden="true"></div>
+      <a
+        v-if="isEmbedMode"
+        class="action-button edit-link"
+        :href="shareUrl"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        Edit
+      </a>
+      <div v-if="!isEmbedMode" class="toolbar-rule" aria-hidden="true"></div>
       <button
+        v-if="!isEmbedMode"
         class="action-button"
         type="button"
         :disabled="!canUndoSourceCode"
@@ -408,6 +454,7 @@ onUnmounted(() => {
         Undo
       </button>
       <button
+        v-if="!isEmbedMode"
         class="action-button"
         type="button"
         :disabled="!canRedoSourceCode"
@@ -415,8 +462,9 @@ onUnmounted(() => {
       >
         Redo
       </button>
-      <div class="toolbar-rule" aria-hidden="true"></div>
+      <div v-if="!isEmbedMode" class="toolbar-rule" aria-hidden="true"></div>
       <button
+        v-if="!isEmbedMode"
         class="action-button"
         :class="{ active: sidebarMode === 'info' }"
         type="button"
@@ -425,6 +473,7 @@ onUnmounted(() => {
         Info
       </button>
       <button
+        v-if="!isEmbedMode"
         class="action-button"
         :class="{ active: sidebarMode === 'share' }"
         type="button"
@@ -433,6 +482,7 @@ onUnmounted(() => {
         Share
       </button>
       <button
+        v-if="!isEmbedMode"
         class="action-button"
         :class="{ active: sidebarMode === 'ruler' }"
         type="button"
@@ -442,9 +492,9 @@ onUnmounted(() => {
       </button>
     </div>
 
-    <main class="xenpaper-app">
+    <main class="xenpaper-app" :class="{ 'xenpaper-app-embed': isEmbedMode }">
       <label class="source-label" for="source-code">Source code</label>
-      <div class="source-editor">
+      <div class="source-editor" :class="{ 'source-editor-embed': isEmbedMode }">
         <textarea
           id="source-code"
           :value="sourceCode"
@@ -454,6 +504,7 @@ onUnmounted(() => {
           autocomplete="off"
           autocorrect="off"
           spellcheck="false"
+          :readonly="isEmbedMode"
           @input="handleSourceInput"
           @keydown="handleSourceKeydown"
         />
@@ -471,7 +522,7 @@ onUnmounted(() => {
     </main>
 
     <aside
-      v-if="sidebarMode !== 'none'"
+      v-if="!isEmbedMode && sidebarMode !== 'none'"
       class="sidebar-stack"
       :class="`sidebar-stack-${sidebarMode}`"
     >
@@ -503,6 +554,23 @@ onUnmounted(() => {
           <button class="panel-button" type="button" @click="copyShareLink">
             {{ copiedShareLink ? 'Copied' : 'Copy link' }}
           </button>
+
+          <h2>Embed</h2>
+          <p>Copy this HTML to embed the current tune in another page.</p>
+          <label class="share-field">
+            <span>Embed code</span>
+            <input
+              class="share-link-input"
+              :value="embedCode"
+              type="text"
+              readonly
+              @focus="($event.target as HTMLInputElement).select()"
+            />
+          </label>
+          <button class="panel-button" type="button" @click="copyEmbedCode">
+            {{ copiedEmbedCode ? 'Copied' : 'Copy embed code' }}
+          </button>
+          <iframe class="embed-preview" :src="embedUrl" title="Xenpaper embed preview"></iframe>
         </div>
       </section>
 
@@ -682,6 +750,35 @@ onUnmounted(() => {
   z-index: 4;
 }
 
+.actions-embed {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  flex: 0 0 auto;
+  flex-direction: row;
+  width: 100%;
+  padding-top: 0;
+}
+
+.actions-embed .action-button {
+  width: auto;
+}
+
+.xenpaper-app-embed {
+  padding-top: 4rem;
+}
+
+.source-editor-embed,
+.source-editor-embed .source-input,
+.source-editor-embed .source-highlights {
+  min-height: calc(100vh - 4rem);
+}
+
+.source-editor-embed .source-input {
+  cursor: default;
+}
+
 .toolbar-rule {
   margin: 0.75rem 0.5rem;
   border-top: 1px solid var(--xenpaper-bg-light);
@@ -701,6 +798,7 @@ onUnmounted(() => {
   font-size: 1.1rem;
   text-align: center;
   text-transform: uppercase;
+  text-decoration: none;
 }
 
 .action-button:hover,
@@ -889,6 +987,16 @@ onUnmounted(() => {
   opacity: 1;
 }
 
+.embed-preview {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 20rem;
+  margin-top: 1.5rem;
+  border: 1px solid #a490b3;
+  background: var(--xenpaper-bg);
+}
+
 .ruler-panel {
   overflow: hidden;
 }
@@ -913,13 +1021,13 @@ onUnmounted(() => {
 }
 
 @media (max-width: 640px) {
-  .app-layout {
+  .app-layout:not(.app-layout-embed) {
     display: block;
     height: auto;
     overflow: visible;
   }
 
-  .actions {
+  .actions:not(.actions-embed) {
     position: sticky;
     top: 0;
     flex-direction: row;

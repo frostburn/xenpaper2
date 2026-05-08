@@ -3,10 +3,12 @@ import { afterEach, describe, expect, it } from 'vitest'
 import {
   decodeSharedSource,
   encodeSharedSource,
+  getEmbedShareHash,
   getSavedSourceCode,
   getShareHash,
   getSharedSourceCode,
   hasSharedSourceCode,
+  isEmbedHash,
   saveSourceCode,
 } from '../share-link'
 
@@ -35,9 +37,16 @@ describe('share-link', () => {
     expect(decodeSharedSource(encoded)).toBe('pitch_name with space')
   })
 
-  it('builds a hash fragment for shared source code', () => {
+  it('builds hash fragments for shared and embedded source code', () => {
     expect(getShareHash('linked tune')).toBe('#linked_tune')
+    expect(getEmbedShareHash('linked tune')).toBe('#embed:linked_tune')
     expect(getShareHash(`"0-\`0-100%`)).toBe('#"0-`0-100%25')
+  })
+
+  it('detects embed hashes and restores their source code', () => {
+    expect(isEmbedHash('#embed:linked_tune')).toBe(true)
+    expect(isEmbedHash('#linked_tune')).toBe(false)
+    expect(getSharedSourceCode('#embed:linked_tune')).toBe('linked tune')
   })
 
   it('restores source code from a route hash before local storage', () => {

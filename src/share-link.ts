@@ -3,7 +3,12 @@ const ESCAPED_UNDERSCORE = '%_'
 
 const hasBrowserWindow = (): boolean => typeof window !== 'undefined'
 
+const EMBED_PREFIX = 'embed:'
+
 const removeHashPrefix = (hash: string): string => (hash.startsWith('#') ? hash.slice(1) : hash)
+
+const removeEmbedPrefix = (hash: string): string =>
+  hash.startsWith(EMBED_PREFIX) ? hash.slice(EMBED_PREFIX.length) : hash
 
 export const encodeSharedSource = (sourceCode: string): string =>
   sourceCode.replace(/%/g, '%25').replace(/_/g, ESCAPED_UNDERSCORE).replace(/ /g, SPACE_TOKEN)
@@ -31,6 +36,13 @@ export const decodeSharedSource = (encodedSource: string): string => {
 
 export const getShareHash = (sourceCode: string): string => `#${encodeSharedSource(sourceCode)}`
 
+export const getEmbedShareHash = (sourceCode: string): string =>
+  `#${EMBED_PREFIX}${encodeSharedSource(sourceCode)}`
+
+export const isEmbedHash = (hash: unknown): boolean => {
+  return typeof hash === 'string' && removeHashPrefix(hash).startsWith(EMBED_PREFIX)
+}
+
 export const hasSharedSourceCode = (hash: unknown): boolean => {
   return typeof hash === 'string' && removeHashPrefix(hash) !== ''
 }
@@ -38,7 +50,7 @@ export const hasSharedSourceCode = (hash: unknown): boolean => {
 export const getSharedSourceCode = (hash: unknown): string => {
   if (!hasSharedSourceCode(hash)) return ''
 
-  return decodeSharedSource(removeHashPrefix(hash as string))
+  return decodeSharedSource(removeEmbedPrefix(removeHashPrefix(hash as string)))
 }
 
 export const getSavedSourceCode = (hash: unknown): string => {
