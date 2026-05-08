@@ -363,7 +363,7 @@ const handleSourceKeydown = (event: KeyboardEvent): void => {
 
   if (event.key === 'Enter') {
     event.preventDefault()
-    void restartPlaybackFromSelectedLine()
+    void restartPlaybackFromStart()
     return
   }
 
@@ -509,6 +509,11 @@ const restartPlaybackFromSelectedLine = async (): Promise<void> => {
   await soundEngine.gotoMs(getSelectedLineStartMs())
   await soundEngine.play()
   isPlaying.value = true
+}
+
+const restartPlaybackFromStart = async (): Promise<void> => {
+  selectedLine.value = 0
+  await restartPlaybackFromSelectedLine()
 }
 
 const togglePlayback = async (): Promise<void> => {

@@ -114,11 +114,12 @@ describe('App source editor keyboard shortcuts', () => {
     window.localStorage.clear()
   })
 
-  it('restarts and plays from the selected/default start position for Ctrl+Enter', async () => {
-    const { wrapper } = await mountApp()
+  it('resets to the beginning and plays for Ctrl+Enter', async () => {
+    const { wrapper } = await mountApp('#0_2%0A4_5')
     const engine = soundEngineMock.instances[soundEngineMock.instances.length - 1]!
     const textarea = wrapper.get<HTMLTextAreaElement>('textarea').element
 
+    await wrapper.get('button[aria-label="Start playback at line 2"]').trigger('click')
     engine.gotoMs.mockClear()
     engine.play.mockClear()
     engine.pause.mockClear()
@@ -134,7 +135,7 @@ describe('App source editor keyboard shortcuts', () => {
     expect(engine.pause).not.toHaveBeenCalled()
   })
 
-  it('restarts playback instead of pausing when Cmd+Enter is pressed while playing', async () => {
+  it('resets playback instead of pausing when Cmd+Enter is pressed while playing', async () => {
     const { wrapper } = await mountApp()
     const engine = soundEngineMock.instances[soundEngineMock.instances.length - 1]!
     const textarea = wrapper.get<HTMLTextAreaElement>('textarea').element
