@@ -216,48 +216,64 @@ const tutorialSections: TutorialSection[] = [
 
 <style scoped>
 .tutorial-sidebar {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-  max-height: 100vh;
-  overflow: hidden;
-  border-right: 1px solid var(--color-border);
-  background: var(--color-background-soft);
+  height: 100%;
+  min-height: 0;
+  overflow: auto;
+  background: var(--xenpaper-bg-light);
+  color: var(--xenpaper-text);
+  font-family: var(--xenpaper-font-copy);
+  animation: 0.3s ease-out on-show;
+}
+
+@keyframes on-show {
+  from {
+    opacity: 0;
+    transform: translateY(0.25rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .sidebar-header {
-  padding: 2rem;
-  border-bottom: 1px solid var(--color-border);
-  background: var(--color-background-mute);
+  padding: 2rem 2rem 1.5rem;
+  background: var(--xenpaper-bg);
 }
 
 .sidebar-header h1 {
   margin: 0 0 0.5rem;
-  font-size: 2rem;
+  font-size: 2.5rem;
+  line-height: 2rem;
+  font-weight: 400;
+  text-transform: lowercase;
 }
 
 .sidebar-header p {
   margin: 0;
-  color: var(--color-text);
+  color: var(--xenpaper-placeholder);
   font-style: italic;
+  line-height: 1.3rem;
 }
 
 .sidebar-content {
-  overflow: auto;
-  padding: 1.5rem;
+  padding: 2rem;
 }
 
 .tutorial-section + .tutorial-section {
-  margin-top: 2rem;
+  margin-top: 2.5rem;
 }
 
 .tutorial-section h2 {
   margin: 0 0 1rem;
-  font-size: 1.25rem;
+  font-size: 1.5rem;
+  line-height: 1.2;
+  font-weight: 400;
 }
 
-.tutorial-demo + .tutorial-demo {
-  margin-top: 1.5rem;
+.tutorial-demo {
+  margin-bottom: 2rem;
 }
 
 .tutorial-demo p {
@@ -265,37 +281,50 @@ const tutorialSections: TutorialSection[] = [
 }
 
 .example {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 0.75rem;
-  align-items: start;
-  margin-top: 0.75rem;
-  padding: 0.75rem;
-  background: var(--color-background);
-  font-family: monospace;
+  display: flex;
+  align-items: stretch;
+  margin-top: 1rem;
+  padding: 0.5rem;
+  background: var(--xenpaper-bg);
+  font-family: var(--xenpaper-font-mono);
+  line-height: 2em;
 }
 
 .example-label {
-  color: var(--color-text);
+  flex: 0 0 auto;
+  color: var(--xenpaper-placeholder);
   font-style: italic;
+  padding: 0 1rem 0 0.6rem;
 }
 
 .example pre {
-  overflow: auto;
+  flex: 1 1 auto;
+  width: 0;
   margin: 0;
+  padding-right: 0.5rem;
+  color: var(--xenpaper-cyan);
+  font: inherit;
+  line-height: 1.4em;
   white-space: pre-wrap;
-  color: hsla(160, 100%, 37%, 1);
+  word-wrap: break-word;
 }
 
 .example button {
-  padding: 0.4rem 0.6rem;
+  flex: 0 0 auto;
   border: 0;
-  color: var(--color-background);
-  background: hsla(160, 100%, 37%, 1);
+  display: block;
+  padding: 0.5rem;
   cursor: pointer;
+  background: #ff541e;
+  color: var(--xenpaper-bg);
+  outline: none;
+  opacity: 0.7;
+  transition: opacity 0.2s ease-out;
 }
 
-.example button:hover {
-  opacity: 0.8;
+.example button:hover,
+.example button:focus,
+.example button:active {
+  opacity: 1;
 }
 </style>

@@ -70,6 +70,9 @@ const initialRulerState = ref<InitialRulerState>()
 const pitchRuler = ref<InstanceType<typeof PitchRuler>>()
 const playbackPositionMs = ref(-1)
 const copiedShareLink = ref(false)
+type SidebarMode = 'info' | 'share' | 'ruler' | 'none'
+type OpenSidebarMode = Exclude<SidebarMode, 'none'>
+const sidebarMode = ref<SidebarMode>('info')
 let parseVersion = 0
 let playbackAnimationFrame: number | undefined
 
@@ -238,8 +241,12 @@ watch(
   },
 )
 
-const logParsedAst = (): void => {
-  console.log('Parsed XenpaperAST:', parseSourceCode())
+const showSidebar = (mode: OpenSidebarMode): void => {
+  sidebarMode.value = sidebarMode.value === mode ? 'none' : mode
+}
+
+const closeSidebar = (): void => {
+  sidebarMode.value = 'none'
 }
 
 const togglePlayback = async (): Promise<void> => {
@@ -323,7 +330,43 @@ onUnmounted(() => {
 
 <template>
   <div class="app-layout">
-    <TutorialSidebar @set-tune="setSourceCode" />
+    <div class="actions" aria-label="Playback controls">
+      <PlayPauseButton :playing="isPlaying" @toggle="togglePlayback" />
+      <button
+        class="action-button loop-button"
+        :class="{ active: isLooping }"
+        type="button"
+        :aria-pressed="isLooping"
+        @click="toggleLoop"
+      >
+        Loop
+      </button>
+      <div class="toolbar-rule" aria-hidden="true"></div>
+      <button
+        class="action-button"
+        :class="{ active: sidebarMode === 'info' }"
+        type="button"
+        @click="showSidebar('info')"
+      >
+        Info
+      </button>
+      <button
+        class="action-button"
+        :class="{ active: sidebarMode === 'share' }"
+        type="button"
+        @click="showSidebar('share')"
+      >
+        Share
+      </button>
+      <button
+        class="action-button"
+        :class="{ active: sidebarMode === 'ruler' }"
+        type="button"
+        @click="showSidebar('ruler')"
+      >
+        Ruler
+      </button>
+    </div>
 
     <main class="xenpaper-app">
       <label class="source-label" for="source-code">Source code</label>
@@ -348,115 +391,146 @@ onUnmounted(() => {
           :class="[chars[index]?.color ? `highlight-${chars[index]?.color}` : 'highlight-unknown', { active: isCharacterActive(chars[index]) }]"
         >{{ character }}</span></template><br><br></pre>
       </div>
-      <div class="actions" aria-label="Playback controls">
-        <PlayPauseButton :playing="isPlaying" @toggle="togglePlayback" />
-        <button
-          class="action-button loop-button"
-          :class="{ active: isLooping }"
-          type="button"
-          :aria-pressed="isLooping"
-          @click="toggleLoop"
-        >
-          Loop
-        </button>
-        <button class="action-button" type="button" @click="logParsedAst">
-          Log parsed XenpaperAST
-        </button>
-        <label class="share-link">
-          <span>Share link</span>
-          <input
-            class="share-link-input"
-            :value="shareUrl"
-            type="text"
-            readonly
-            @focus="($event.target as HTMLInputElement).select()"
-          />
-        </label>
-        <button class="action-button" type="button" @click="copyShareLink">
-          {{ copiedShareLink ? 'Copied' : 'Copy share link' }}
-        </button>
-      </div>
-      <p v-if="lastError" class="playback-error" role="alert">{{ lastError }}</p>
+      <p v-if="lastError" class="playback-error" role="alert">Error: {{ lastError }}</p>
+    </main>
 
-      <section class="ruler-panel" aria-labelledby="pitch-ruler-title">
+    <aside
+      v-if="sidebarMode !== 'none'"
+      class="sidebar-stack"
+      :class="`sidebar-stack-${sidebarMode}`"
+    >
+      <button class="sidebar-close" type="button" aria-label="Close sidebar" @click="closeSidebar">
+        ×
+      </button>
+      <TutorialSidebar v-if="sidebarMode === 'info'" @set-tune="setSourceCode" />
+
+      <section v-else-if="sidebarMode === 'share'" class="sidebar-panel share-panel">
+        <header class="sidebar-heading">
+          <h1>xenpaper</h1>
+          <p>Text-based microtonal sequencer.</p>
+          <p>Write down musical ideas and share the link around.</p>
+        </header>
+
+        <div class="sidebar-content">
+          <h2>Share</h2>
+          <p>Copy this URL to share the current tune.</p>
+          <label class="share-field">
+            <span>Share link</span>
+            <input
+              class="share-link-input"
+              :value="shareUrl"
+              type="text"
+              readonly
+              @focus="($event.target as HTMLInputElement).select()"
+            />
+          </label>
+          <button class="panel-button" type="button" @click="copyShareLink">
+            {{ copiedShareLink ? 'Copied' : 'Copy link' }}
+          </button>
+        </div>
+      </section>
+
+      <section v-else class="sidebar-panel ruler-panel" aria-labelledby="pitch-ruler-title">
+        <header class="sidebar-heading">
+          <h1>xenpaper</h1>
+          <p>Text-based microtonal sequencer.</p>
+        </header>
+
         <div class="ruler-heading">
           <h2 id="pitch-ruler-title">Pitch ruler</h2>
-          <p>
-            Click and drag to pan, use the mouse wheel to zoom. Plot scales with
-            <code>(plot)</code>.
-          </p>
+          <p>Click and drag to pan, use mousewheel to zoom.</p>
         </div>
         <PitchRuler ref="pitchRuler" :initial-state="initialRulerState" />
       </section>
-    </main>
+    </aside>
   </div>
 </template>
 
 <style scoped>
 .app-layout {
-  display: grid;
-  grid-template-columns: minmax(20rem, 28rem) minmax(0, 1fr);
+  display: flex;
   min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--xenpaper-bg);
+  color: var(--xenpaper-text);
 }
 
 .xenpaper-app {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  width: min(100%, 64rem);
-  margin: 0 auto;
-  padding: 2rem;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  overflow: auto;
+  padding: 1.5rem 0 0 1rem;
 }
 
 .source-label {
-  font-weight: 600;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .source-editor {
   position: relative;
-  min-height: 20rem;
-  border: 1px solid var(--color-border);
-  border-radius: 0.5rem;
-  background: var(--color-background-soft);
-  overflow: hidden;
+  min-height: calc(100vh - 1.5rem);
+  line-height: 1.4em;
+  font-size: clamp(1.1rem, 1.65vw, 1.4rem);
 }
 
-.source-editor:focus-within {
-  border-color: hsla(160, 100%, 37%, 1);
-  box-shadow: 0 0 0 2px hsla(160, 100%, 37%, 0.2);
+.source-editor::before {
+  content: '';
+  display: block;
+  width: 3px;
+  height: 4rem;
+  background-color: transparent;
+  transition: background-color 0.2s ease-out;
+  position: absolute;
+  top: 12px;
+  left: 0;
+}
+
+.source-editor:focus-within::before {
+  background-color: var(--xenpaper-focus);
 }
 
 .source-input,
 .source-highlights {
   box-sizing: border-box;
-  min-height: 20rem;
+  min-height: calc(100vh - 1.5rem);
   width: 100%;
   margin: 0;
-  padding: 1rem;
   border: 0;
-  color: var(--color-text);
   background: transparent;
   font: inherit;
-  font-family: monospace;
-  line-height: 1.5;
+  font-family: var(--xenpaper-font-mono);
+  line-height: inherit;
   tab-size: 2;
   white-space: pre-wrap;
+  word-break: keep-all;
   overflow-wrap: break-word;
+  padding: 1rem 1rem 1rem 2rem;
 }
 
 .source-input {
   position: absolute;
   inset: 0;
   height: 100%;
-  resize: vertical;
+  resize: none;
   outline: 0;
-  caret-color: var(--color-text);
-  color: transparent;
+  caret-color: var(--xenpaper-text);
+  color: inherit;
+  overflow: hidden;
   -webkit-text-fill-color: transparent;
 }
 
 .source-input::selection {
-  background: hsla(160, 100%, 37%, 0.35);
+  background: var(--xenpaper-cyan);
 }
 
 .source-highlights {
@@ -466,156 +540,335 @@ onUnmounted(() => {
 }
 
 .placeholder-text {
-  color: var(--color-text);
-  opacity: 0.5;
+  color: var(--xenpaper-placeholder);
   font-style: italic;
 }
 
 .source-character {
-  transition:
-    color 0.2s ease-out,
-    background-color 0.2s ease-out;
+  transition: color 0.2s ease-out;
 }
 
 .source-character.active {
-  color: #fff;
-  background: hsla(160, 100%, 37%, 0.6);
-  transition:
-    color 0s linear,
-    background-color 0s linear;
+  color: #ffffff;
+  transition: color 0s linear;
 }
 
 .highlight-delimiter {
-  color: #8e8e93;
+  color: var(--xenpaper-placeholder);
 }
 
-.highlight-pitch {
-  color: #5edfff;
-}
-
+.highlight-pitch,
 .highlight-chord {
-  color: #ffb86c;
+  color: var(--xenpaper-cyan);
 }
 
 .highlight-scaleGroup {
-  color: #c792ea;
+  color: #94472f;
 }
 
 .highlight-scale {
-  color: #82e68b;
+  color: #ff541e;
 }
 
 .highlight-setterGroup {
-  color: #ff79c6;
+  color: #821361;
 }
 
 .highlight-setter {
-  color: #ffd866;
+  color: #d61ba4;
 }
 
-.highlight-comment,
+.highlight-comment {
+  color: #ffffff;
+}
+
 .highlight-commentStart {
-  color: #6a9955;
+  color: var(--xenpaper-placeholder);
 }
 
 .highlight-error,
 .highlight-errorMessage {
-  color: #ff5c57;
-  background: rgba(255, 92, 87, 0.16);
+  color: #cc0000;
 }
 
 .highlight-unknown {
-  color: var(--color-text);
+  color: #a490b3;
 }
 
 .actions {
+  flex: 0 0 5rem;
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.75rem;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  padding-top: 2rem;
+  background: var(--xenpaper-bg);
+  z-index: 4;
 }
 
-.share-link {
-  display: flex;
-  flex: 1 1 20rem;
-  align-items: center;
-  gap: 0.5rem;
-  min-width: min(100%, 20rem);
-}
-
-.share-link span {
-  flex: 0 0 auto;
-  font-weight: 600;
-}
-
-.share-link-input {
-  min-width: 0;
-  width: 100%;
-  border: 1px solid var(--color-border);
-  border-radius: 0.5rem;
-  color: var(--color-text);
-  background: var(--color-background-mute);
-  padding: 0.75rem 1rem;
-}
-
-.share-link-input:focus-visible {
-  outline: 2px solid hsla(160, 100%, 37%, 1);
-  outline-offset: 2px;
+.toolbar-rule {
+  margin: 0.75rem 0.5rem;
+  border-top: 1px solid var(--xenpaper-bg-light);
 }
 
 .action-button {
-  border: 1px solid var(--color-border);
-  border-radius: 0.5rem;
-  color: var(--color-text);
-  background: var(--color-background-mute);
+  border: 0;
+  border-left: 3px solid transparent;
+  display: block;
+  width: 5rem;
+  padding: 0.5rem;
   cursor: pointer;
-  padding: 0.75rem 1rem;
+  background: var(--xenpaper-bg);
+  color: #ffffff;
+  outline: none;
+  font-family: var(--xenpaper-font-mono);
+  font-size: 1.1rem;
+  text-align: center;
+  text-transform: uppercase;
 }
 
-.action-button:hover {
-  border-color: hsla(160, 100%, 37%, 1);
+.action-button:hover,
+.action-button:focus,
+.action-button:active {
+  background: var(--xenpaper-bg-light);
 }
 
 .action-button:focus-visible {
-  outline: 2px solid hsla(160, 100%, 37%, 1);
-  outline-offset: 2px;
+  border-left-color: var(--xenpaper-focus);
 }
 
-.loop-button.active {
-  border-color: hsla(160, 100%, 37%, 1);
-  color: var(--color-background);
-  background: hsla(160, 100%, 37%, 1);
+.action-button.active {
+  color: var(--xenpaper-bg);
+  background: var(--xenpaper-placeholder);
 }
 
 .playback-error {
+  position: relative;
   margin: 0;
-  color: #d14343;
+  padding: 0 0 1rem 1rem;
+  color: #cc0000;
+  font-family: var(--xenpaper-font-mono);
+}
+
+.sidebar-stack {
+  position: relative;
+  flex: 0 0 40%;
+  min-width: min(30rem, calc(100vw - 5rem));
+  height: 100%;
+  overflow: hidden;
+  background: var(--xenpaper-bg-light);
+  font-family: var(--xenpaper-font-copy);
+}
+
+.sidebar-stack-ruler {
+  flex-basis: 55%;
+}
+
+.sidebar-close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 2;
+  border: 0;
+  width: 3rem;
+  height: 3rem;
+  padding: 0;
+  cursor: pointer;
+  background: transparent;
+  color: #ffffff;
+  font-family: var(--xenpaper-font-mono);
+  font-size: 2rem;
+  line-height: 1;
+  opacity: 0.9;
+}
+
+.sidebar-close:hover,
+.sidebar-close:focus-visible {
+  background: var(--xenpaper-bg-light);
+  opacity: 1;
+}
+
+.sidebar-close:focus-visible {
+  outline: 2px solid var(--xenpaper-focus);
+  outline-offset: 2px;
+}
+
+:deep(.tutorial-sidebar) {
+  height: 100%;
+  max-height: 100%;
+}
+
+.sidebar-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: auto;
+  background: var(--xenpaper-bg-light);
+  animation: 0.3s ease-out sidebar-show;
+}
+
+@keyframes sidebar-show {
+  from {
+    opacity: 0;
+    transform: translateY(0.25rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.sidebar-heading {
+  flex: 0 0 auto;
+  padding: 2rem 2rem 1.5rem;
+  background: var(--xenpaper-bg);
+}
+
+.sidebar-heading h1 {
+  margin: 0 0 0.5rem;
+  font-size: 2.5rem;
+  line-height: 2rem;
+  font-weight: 400;
+  text-transform: lowercase;
+}
+
+.sidebar-heading p {
+  margin: 0;
+  color: var(--xenpaper-placeholder);
+  font-style: italic;
+  line-height: 1.3rem;
+}
+
+.sidebar-content {
+  padding: 2rem;
+}
+
+.sidebar-content h2 {
+  margin: 0 0 1rem;
+  font-size: 1.5rem;
+  font-weight: 400;
+}
+
+.sidebar-content p {
+  margin: 0 0 1.5rem;
+}
+
+.share-field {
+  display: block;
+  margin-bottom: 1rem;
+  font-family: var(--xenpaper-font-mono);
+}
+
+.share-field span {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--xenpaper-placeholder);
+  font-style: italic;
+}
+
+.share-link-input {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #a490b3;
+  color: #ffffff;
+  background: var(--xenpaper-bg);
+  padding: 0.5rem;
+  font: inherit;
+}
+
+.share-link-input:focus-visible {
+  outline: 0;
+  border-color: var(--xenpaper-cyan);
+}
+
+.panel-button {
+  border: 0;
+  display: inline-block;
+  padding: 0.5rem;
+  cursor: pointer;
+  background: #ff541e;
+  color: var(--xenpaper-bg);
+  outline: none;
+  opacity: 0.7;
+  transition: opacity 0.2s ease-out;
+}
+
+.panel-button:hover,
+.panel-button:focus,
+.panel-button:active {
+  opacity: 1;
 }
 
 .ruler-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+  overflow: hidden;
+}
+
+.ruler-heading {
+  flex: 0 0 auto;
+  padding: 2rem 2rem 1rem;
+  background: var(--xenpaper-bg-light);
 }
 
 .ruler-heading h2 {
   margin: 0 0 0.25rem;
-  font-size: 1.25rem;
+  font-size: 1.5rem;
+  font-weight: 400;
 }
 
 .ruler-heading p {
   margin: 0;
-  opacity: 0.75;
+  color: var(--xenpaper-placeholder);
+  font-style: italic;
+  line-height: 1.3rem;
 }
 
-.ruler-heading code {
-  border-radius: 0.25rem;
-  background: var(--color-background-mute);
-  padding: 0.05rem 0.25rem;
-}
-@media (max-width: 900px) {
+@media (max-width: 640px) {
   .app-layout {
-    grid-template-columns: 1fr;
+    display: block;
+    height: auto;
+    overflow: visible;
+  }
+
+  .actions {
+    position: sticky;
+    top: 0;
+    flex-direction: row;
+    width: 100%;
+    padding-top: 0;
+  }
+
+  .action-button {
+    width: auto;
+  }
+
+  .toolbar-rule {
+    margin: 0.5rem 0.25rem;
+    border-top: 0;
+    border-left: 1px solid var(--xenpaper-bg-light);
+  }
+
+  .source-editor,
+  .source-input,
+  .source-highlights {
+    min-height: 50vh;
+  }
+
+  .sidebar-stack {
+    min-width: 0;
+    width: 100%;
+    height: auto;
+  }
+
+  .sidebar-stack-ruler {
+    flex-basis: auto;
+  }
+
+  :deep(.tutorial-sidebar),
+  .sidebar-panel {
+    height: auto;
+    max-height: none;
   }
 }
 </style>

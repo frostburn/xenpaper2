@@ -30,30 +30,36 @@ const playbackPaths = computed(() => PLAY_PATHS[playbackState.value])
 
 <style scoped>
 .play-pause-button {
-  display: inline-grid;
-  place-items: center;
-  width: 3rem;
-  height: 3rem;
-  padding: 0.85rem;
-  border: 1px solid var(--color-border);
-  border-radius: 0.5rem;
-  color: var(--color-text);
-  background: var(--color-background-mute);
+  border: 0;
+  border-left: 3px solid transparent;
+  display: block;
+  width: 5rem;
+  height: 4rem;
+  padding: 1rem;
   cursor: pointer;
+  background: transparent;
+  color: #ffffff;
+  position: relative;
+  outline: none;
 }
 
 .play-pause-button:hover {
-  border-color: hsla(160, 100%, 37%, 1);
+  background: var(--xenpaper-bg-light);
 }
 
 .play-pause-button:focus-visible {
-  outline: 2px solid hsla(160, 100%, 37%, 1);
-  outline-offset: 2px;
+  border-left-color: var(--xenpaper-focus);
 }
 
 .playback-icon {
+  display: block;
   width: 100%;
   height: 100%;
+  opacity: 0.9;
+}
+
+.playback-icon:hover {
+  opacity: 1;
 }
 
 .playback-icon path {
@@ -70,5 +76,13 @@ const playbackPaths = computed(() => PLAY_PATHS[playbackState.value])
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+
+@media (max-width: 640px) {
+  .play-pause-button {
+    width: 3rem;
+    height: 3rem;
+    padding: 1rem 0.5rem;
+  }
 }
 </style>
