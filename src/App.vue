@@ -12,12 +12,11 @@ import { scoreToMs, type MoscNoteMs, type MoscScoreMs } from './mosc'
 import { SoundEngineTonejs } from './sound-engine-tonejs'
 import type { XenpaperAST } from './grammars/grammar.generated'
 import {
-  encodeSharedSource,
   getSavedSourceCode,
+  getShareHash,
   getSharedSourceCode,
   hasSharedSourceCode,
   saveSourceCode,
-  SHARE_QUERY_KEY,
 } from './share-link'
 
 type ParsedSource = {
@@ -41,10 +40,16 @@ type ParseError = Error & {
   location?: ParseErrorLocation
 }
 
+const getInitialRouteHash = (): string => {
+  if (typeof window !== 'undefined' && window.location.hash) return window.location.hash
+
+  return route.hash
+}
+
 const router = useRouter()
 const route = useRoute()
 const soundEngine = new SoundEngineTonejs()
-const sourceCode = ref(getSavedSourceCode(route.query[SHARE_QUERY_KEY]))
+const sourceCode = ref(getSavedSourceCode(getInitialRouteHash()))
 const isPlaying = ref(false)
 const isLooping = ref(false)
 const scoreLoaded = ref(false)
@@ -61,8 +66,8 @@ const sourceCharacters = computed(() => sourceCode.value.split(''))
 const shareRoute = computed(() =>
   router.resolve({
     path: route.path,
-    query: { ...route.query, [SHARE_QUERY_KEY]: encodeSharedSource(sourceCode.value) },
-    hash: route.hash,
+    query: route.query,
+    hash: getShareHash(sourceCode.value),
   }),
 )
 const shareUrl = computed(() => new URL(shareRoute.value.href, window.location.href).toString())
@@ -176,25 +181,29 @@ watch(sourceCode, () => {
 const replaceShareRoute = async (): Promise<void> => {
   saveSourceCode(sourceCode.value)
 
-  const encodedSource = encodeSharedSource(sourceCode.value)
-  if (route.query[SHARE_QUERY_KEY] === encodedSource) return
+  const shareHash = getShareHash(sourceCode.value)
+  if (route.hash === shareHash) return
 
   await router.replace({
     path: route.path,
-    query: { ...route.query, [SHARE_QUERY_KEY]: encodedSource },
-    hash: route.hash,
+    query: route.query,
+    hash: shareHash,
   })
 }
 
 const copyShareLink = async (): Promise<void> => {
   if (!shareUrl.value) return
 
-  try {
-    await navigator.clipboard?.writeText(shareUrl.value)
-    copiedShareLink.value = true
-    return
-  } catch {
-    // Fall back for browsers that do not expose Clipboard API outside secure contexts.
+  const writeClipboardText = navigator.clipboard?.writeText
+
+  if (writeClipboardText) {
+    try {
+      await writeClipboardText.call(navigator.clipboard, shareUrl.value)
+      copiedShareLink.value = true
+      return
+    } catch {
+      // Fall back for browsers that do not expose Clipboard API outside secure contexts.
+    }
   }
 
   const textArea = document.createElement('textarea')
@@ -208,11 +217,11 @@ const copyShareLink = async (): Promise<void> => {
 }
 
 watch(
-  () => route.query[SHARE_QUERY_KEY],
-  (sharedSource) => {
-    const sharedSourceCode = getSharedSourceCode(sharedSource)
+  () => route.hash,
+  (sharedHash) => {
+    const sharedSourceCode = getSharedSourceCode(sharedHash)
 
-    if (hasSharedSourceCode(sharedSource) && sharedSourceCode !== sourceCode.value) {
+    if (hasSharedSourceCode(sharedHash) && sharedSourceCode !== sourceCode.value) {
       sourceCode.value = sharedSourceCode
     }
   },

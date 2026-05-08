@@ -4,19 +4,15 @@ import {
   decodeSharedSource,
   encodeSharedSource,
   getSavedSourceCode,
+  getShareHash,
   getSharedSourceCode,
   hasSharedSourceCode,
   saveSourceCode,
-  SHARE_QUERY_KEY,
 } from '../share-link'
 
 describe('share-link', () => {
   afterEach(() => {
     window.localStorage.clear()
-  })
-
-  it('uses the tune query key for shared source code', () => {
-    expect(SHARE_QUERY_KEY).toBe('tune')
   })
 
   it('round-trips source code through the shared source encoding', () => {
@@ -32,27 +28,25 @@ describe('share-link', () => {
     expect(decodeSharedSource(encoded)).toBe('pitch_name with space')
   })
 
-  it('restores source code from a query value before local storage', () => {
-    window.localStorage.setItem('lasttune', 'stored tune')
-
-    expect(getSavedSourceCode('linked_tune')).toBe('linked tune')
+  it('builds a hash fragment for shared source code', () => {
+    expect(getShareHash('linked tune')).toBe('#linked_tune')
   })
 
-  it('uses the first query value if Vue Router provides an array', () => {
-    expect(getSharedSourceCode(['linked_tune', 'other_tune'])).toBe('linked tune')
-  })
-
-  it('treats an empty query value as shared empty source code', () => {
+  it('restores source code from a route hash before local storage', () => {
     window.localStorage.setItem('lasttune', 'stored tune')
 
-    expect(hasSharedSourceCode('')).toBe(true)
-    expect(getSavedSourceCode('')).toBe('')
+    expect(getSavedSourceCode('#linked_tune')).toBe('linked tune')
   })
 
-  it('falls back to local storage when there is no shared query value', () => {
+  it('restores source code from a route hash without a leading hash prefix', () => {
+    expect(getSharedSourceCode('linked_tune')).toBe('linked tune')
+  })
+
+  it('falls back to local storage when there is no shared hash value', () => {
     window.localStorage.setItem('lasttune', 'stored tune')
 
-    expect(getSavedSourceCode(undefined)).toBe('stored tune')
+    expect(hasSharedSourceCode('')).toBe(false)
+    expect(getSavedSourceCode('')).toBe('stored tune')
   })
 
   it('remembers the latest tune without touching URL hash state', () => {
