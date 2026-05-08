@@ -70,8 +70,9 @@ const initialRulerState = ref<InitialRulerState>()
 const pitchRuler = ref<InstanceType<typeof PitchRuler>>()
 const playbackPositionMs = ref(-1)
 const copiedShareLink = ref(false)
-type SidebarMode = 'demos' | 'share' | 'ruler'
-const sidebarMode = ref<SidebarMode>('demos')
+type SidebarMode = 'info' | 'share' | 'ruler' | 'none'
+type OpenSidebarMode = Exclude<SidebarMode, 'none'>
+const sidebarMode = ref<SidebarMode>('info')
 let parseVersion = 0
 let playbackAnimationFrame: number | undefined
 
@@ -240,8 +241,12 @@ watch(
   },
 )
 
-const showSidebar = (mode: SidebarMode): void => {
-  sidebarMode.value = mode
+const showSidebar = (mode: OpenSidebarMode): void => {
+  sidebarMode.value = sidebarMode.value === mode ? 'none' : mode
+}
+
+const closeSidebar = (): void => {
+  sidebarMode.value = 'none'
 }
 
 const togglePlayback = async (): Promise<void> => {
@@ -339,11 +344,11 @@ onUnmounted(() => {
       <div class="toolbar-rule" aria-hidden="true"></div>
       <button
         class="action-button"
-        :class="{ active: sidebarMode === 'demos' }"
+        :class="{ active: sidebarMode === 'info' }"
         type="button"
-        @click="showSidebar('demos')"
+        @click="showSidebar('info')"
       >
-        Demos
+        Info
       </button>
       <button
         class="action-button"
@@ -389,8 +394,11 @@ onUnmounted(() => {
       <p v-if="lastError" class="playback-error" role="alert">Error: {{ lastError }}</p>
     </main>
 
-    <aside class="sidebar-stack">
-      <TutorialSidebar v-if="sidebarMode === 'demos'" @set-tune="setSourceCode" />
+    <aside v-if="sidebarMode !== 'none'" class="sidebar-stack">
+      <button class="sidebar-close" type="button" aria-label="Close sidebar" @click="closeSidebar">
+        ×
+      </button>
+      <TutorialSidebar v-if="sidebarMode === 'info'" @set-tune="setSourceCode" />
 
       <section v-else-if="sidebarMode === 'share'" class="sidebar-panel share-panel">
         <header class="sidebar-heading">
@@ -639,12 +647,47 @@ onUnmounted(() => {
 }
 
 .sidebar-stack {
+  position: relative;
   flex: 0 0 clamp(20rem, 40vw, 30rem);
   min-width: 0;
   height: 100%;
   overflow: hidden;
   background: var(--xenpaper-bg-light);
   font-family: var(--xenpaper-font-copy);
+}
+
+.sidebar-close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 2;
+  border: 0;
+  width: 3rem;
+  height: 3rem;
+  padding: 0;
+  cursor: pointer;
+  background: transparent;
+  color: #ffffff;
+  font-family: var(--xenpaper-font-mono);
+  font-size: 2rem;
+  line-height: 1;
+  opacity: 0.9;
+}
+
+.sidebar-close:hover,
+.sidebar-close:focus-visible {
+  background: var(--xenpaper-bg-light);
+  opacity: 1;
+}
+
+.sidebar-close:focus-visible {
+  outline: 2px solid var(--xenpaper-focus);
+  outline-offset: 2px;
+}
+
+:deep(.tutorial-sidebar) {
+  height: 100%;
+  max-height: 100%;
 }
 
 .sidebar-panel {
@@ -808,8 +851,10 @@ onUnmounted(() => {
     height: auto;
   }
 
+  :deep(.tutorial-sidebar),
   .sidebar-panel {
     height: auto;
+    max-height: none;
   }
 }
 </style>

@@ -216,7 +216,7 @@ const tutorialSections: TutorialSection[] = [
 
 <style scoped>
 .tutorial-sidebar {
-  flex: 1 1 58%;
+  height: 100%;
   min-height: 0;
   overflow: auto;
   background: var(--xenpaper-bg-light);
