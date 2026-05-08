@@ -763,16 +763,30 @@ onUnmounted(() => {
 
 .actions-embed .action-button {
   width: auto;
+  height: 3rem;
+  padding: 1rem 0.5rem;
+  font-size: 0.9rem;
+  line-height: 1rem;
+}
+
+.actions-embed .edit-link {
+  margin-left: auto;
+}
+
+.actions-embed :deep(.play-pause-button) {
+  width: 3rem;
+  height: 3rem;
+  padding: 1rem 0.5rem;
 }
 
 .xenpaper-app-embed {
-  padding-top: 4rem;
+  padding-top: 3rem;
 }
 
 .source-editor-embed,
 .source-editor-embed .source-input,
 .source-editor-embed .source-highlights {
-  min-height: calc(100vh - 4rem);
+  min-height: calc(100vh - 3rem);
 }
 
 .source-editor-embed .source-input {
