@@ -89,40 +89,34 @@ describe('grammar', () => {
           {
             type: 'Comment',
             comment: ' a 7th chord',
-            len: 13,
           },
           {
             type: 'Chord',
-            tail: { type: 'Hold', length: 2, len: 2 },
+            tail: { type: 'Hold', length: 2 },
           },
           {
             type: 'Rest',
             length: 1,
-            len: 1,
           },
           {
             type: 'Rest',
             length: 1,
-            len: 1,
           },
           {
             type: 'Comment',
             comment: ' a harmonic 7th chord',
-            len: 22,
           },
           {
             type: 'RatioChord',
-            tail: { type: 'Hold', length: 2, len: 2 },
+            tail: { type: 'Hold', length: 2 },
           },
           {
             type: 'Rest',
             length: 1,
-            len: 1,
           },
           {
             type: 'Rest',
             length: 1,
-            len: 1,
           },
         ])
       })
@@ -136,16 +130,12 @@ describe('grammar', () => {
               value: {
                 type: 'PitchDegree',
                 degree: 2,
-                len: 1,
               },
-              len: 1,
             },
             tail: undefined,
-            len: 1,
           },
           {
             type: 'Whitespace',
-            len: 1,
           },
           {
             type: 'Note',
@@ -154,16 +144,12 @@ describe('grammar', () => {
               value: {
                 type: 'PitchDegree',
                 degree: 34,
-                len: 2,
               },
-              len: 2,
             },
             tail: undefined,
-            len: 2,
           },
           {
             type: 'Whitespace',
-            len: 1,
           },
           {
             type: 'Note',
@@ -172,12 +158,9 @@ describe('grammar', () => {
               value: {
                 type: 'PitchDegree',
                 degree: 56,
-                len: 2,
               },
-              len: 2,
             },
             tail: undefined,
-            len: 2,
           },
         ])
       })
@@ -191,12 +174,9 @@ describe('grammar', () => {
               value: {
                 type: 'PitchDegree',
                 degree: 2,
-                len: 1,
               },
-              len: 1,
             },
             tail: undefined,
-            len: 1,
           },
           {
             type: 'Note',
@@ -205,12 +185,9 @@ describe('grammar', () => {
               value: {
                 type: 'PitchDegree',
                 degree: 34,
-                len: 2,
               },
-              len: 2,
             },
             tail: undefined,
-            len: 2,
           },
           {
             type: 'Note',
@@ -219,12 +196,9 @@ describe('grammar', () => {
               value: {
                 type: 'PitchDegree',
                 degree: 56,
-                len: 2,
               },
-              len: 2,
             },
             tail: undefined,
-            len: 2,
           },
         ])
       })
@@ -238,16 +212,12 @@ describe('grammar', () => {
               value: {
                 type: 'PitchDegree',
                 degree: 2,
-                len: 1,
               },
-              len: 1,
             },
             tail: undefined,
-            len: 1,
           },
           {
             type: 'BarLine',
-            len: 1,
           },
           {
             type: 'Note',
@@ -256,16 +226,12 @@ describe('grammar', () => {
               value: {
                 type: 'PitchDegree',
                 degree: 34,
-                len: 2,
               },
-              len: 2,
             },
             tail: undefined,
-            len: 2,
           },
           {
             type: 'BarLine',
-            len: 1,
           },
           {
             type: 'Note',
@@ -274,16 +240,12 @@ describe('grammar', () => {
               value: {
                 type: 'PitchDegree',
                 degree: 56,
-                len: 2,
               },
-              len: 2,
             },
             tail: undefined,
-            len: 2,
           },
           {
             type: 'BarLine',
-            len: 1,
           },
         ])
       })
@@ -299,16 +261,12 @@ describe('grammar', () => {
               value: {
                 type: 'PitchDegree',
                 degree: 2,
-                len: 1,
               },
-              len: 1,
             },
             tail: {
               type: 'Hold',
               length: 1,
-              len: 1,
             },
-            len: 2,
           },
           {
             type: 'Note',
@@ -317,16 +275,12 @@ describe('grammar', () => {
               value: {
                 type: 'PitchDegree',
                 degree: 34,
-                len: 2,
               },
-              len: 2,
             },
             tail: {
               type: 'Hold',
               length: 3,
-              len: 3,
             },
-            len: 5,
           },
           {
             type: 'Note',
@@ -335,12 +289,9 @@ describe('grammar', () => {
               value: {
                 type: 'PitchDegree',
                 degree: 56,
-                len: 2,
               },
-              len: 2,
             },
             tail: undefined,
-            len: 2,
           },
         ])
       })
@@ -354,20 +305,15 @@ describe('grammar', () => {
               value: {
                 type: 'PitchDegree',
                 degree: 2,
-                len: 1,
               },
-              len: 1,
             },
             tail: {
               type: 'Hold',
               length: 1,
-              len: 1,
             },
-            len: 2,
           },
           {
             type: 'Whitespace',
-            len: 1,
           },
           {
             type: 'Note',
@@ -376,12 +322,9 @@ describe('grammar', () => {
               value: {
                 type: 'PitchDegree',
                 degree: 3,
-                len: 1,
               },
-              len: 1,
             },
             tail: undefined,
-            len: 1,
           },
         ])
       })
@@ -395,17 +338,13 @@ describe('grammar', () => {
               value: {
                 type: 'PitchDegree',
                 degree: 2,
-                len: 1,
               },
-              len: 1,
             },
             tail: undefined,
-            len: 1,
           },
           {
             type: 'Rest',
             length: 1,
-            len: 1,
           },
           {
             type: 'Note',
@@ -414,31 +353,24 @@ describe('grammar', () => {
               value: {
                 type: 'PitchDegree',
                 degree: 34,
-                len: 2,
               },
-              len: 2,
             },
             tail: {
               type: 'Hold',
               length: 2,
-              len: 2,
             },
-            len: 4,
           },
           {
             type: 'Rest',
             length: 1,
-            len: 1,
           },
           {
             type: 'Rest',
             length: 1,
-            len: 1,
           },
           {
             type: 'Rest',
             length: 1,
-            len: 1,
           },
           {
             type: 'Note',
@@ -447,12 +379,9 @@ describe('grammar', () => {
               value: {
                 type: 'PitchDegree',
                 degree: 56,
-                len: 2,
               },
-              len: 2,
             },
             tail: undefined,
-            len: 2,
           },
         ])
       })
@@ -466,21 +395,16 @@ describe('grammar', () => {
               value: {
                 type: 'PitchDegree',
                 degree: 2,
-                len: 1,
               },
-              len: 1,
             },
             tail: undefined,
-            len: 1,
           },
           {
             type: 'Rest',
             length: 1,
-            len: 1,
           },
           {
             type: 'Whitespace',
-            len: 1,
           },
           {
             type: 'Note',
@@ -489,12 +413,9 @@ describe('grammar', () => {
               value: {
                 type: 'PitchDegree',
                 degree: 3,
-                len: 1,
               },
-              len: 1,
             },
             tail: undefined,
-            len: 1,
           },
         ])
       })
@@ -506,7 +427,6 @@ describe('grammar', () => {
         expect(strip(parser(seq)).sequence.items).toEqual([
           {
             type: 'BarLine',
-            len: 1,
           },
           {
             type: 'Note',
@@ -515,17 +435,13 @@ describe('grammar', () => {
               value: {
                 type: 'PitchDegree',
                 degree: 2,
-                len: 1,
               },
-              len: 1,
             },
             tail: undefined,
-            len: 1,
           },
           {
             type: 'Rest',
             length: 1,
-            len: 1,
           },
           {
             type: 'Note',
@@ -534,31 +450,24 @@ describe('grammar', () => {
               value: {
                 type: 'PitchDegree',
                 degree: 34,
-                len: 2,
               },
-              len: 2,
             },
             tail: {
               type: 'Hold',
               length: 2,
-              len: 2,
             },
-            len: 4,
           },
           {
             type: 'Rest',
             length: 1,
-            len: 1,
           },
           {
             type: 'Rest',
             length: 1,
-            len: 1,
           },
           {
             type: 'Rest',
             length: 1,
-            len: 1,
           },
           {
             type: 'Note',
@@ -567,12 +476,9 @@ describe('grammar', () => {
               value: {
                 type: 'PitchDegree',
                 degree: 56,
-                len: 2,
               },
-              len: 2,
             },
             tail: undefined,
-            len: 2,
           },
         ])
       })
@@ -597,20 +503,15 @@ describe('grammar', () => {
               value: {
                 type: 'PitchDegree',
                 degree: 2,
-                len: 1,
               },
-              len: 1,
             },
             tail: {
               type: 'Hold',
               length: 7,
-              len: 8,
             },
-            len: 9,
           },
           {
             type: 'BarLine',
-            len: 1,
           },
         ])
       })
@@ -626,21 +527,16 @@ describe('grammar', () => {
               value: {
                 type: 'PitchDegree',
                 degree: 0,
-                len: 1,
               },
               octave: {
                 type: 'OctaveModifier',
                 octave: 1,
-                len: 1,
               },
-              len: 2,
             },
             tail: undefined,
-            len: 2,
           },
           {
             type: 'Whitespace',
-            len: 1,
           },
           {
             type: 'Note',
@@ -649,21 +545,16 @@ describe('grammar', () => {
               value: {
                 type: 'PitchDegree',
                 degree: 0,
-                len: 1,
               },
               octave: {
                 type: 'OctaveModifier',
                 octave: 2,
-                len: 1,
               },
-              len: 2,
             },
             tail: undefined,
-            len: 2,
           },
           {
             type: 'Whitespace',
-            len: 1,
           },
           {
             type: 'Note',
@@ -672,21 +563,16 @@ describe('grammar', () => {
               value: {
                 type: 'PitchDegree',
                 degree: 0,
-                len: 1,
               },
               octave: {
                 type: 'OctaveModifier',
                 octave: 3,
-                len: 2,
               },
-              len: 3,
             },
             tail: undefined,
-            len: 3,
           },
           {
             type: 'Whitespace',
-            len: 1,
           },
           {
             type: 'Note',
@@ -695,21 +581,16 @@ describe('grammar', () => {
               value: {
                 type: 'PitchDegree',
                 degree: 0,
-                len: 1,
               },
               octave: {
                 type: 'OctaveModifier',
                 octave: -1,
-                len: 1,
               },
-              len: 2,
             },
             tail: undefined,
-            len: 2,
           },
           {
             type: 'Whitespace',
-            len: 1,
           },
           {
             type: 'Note',
@@ -718,17 +599,13 @@ describe('grammar', () => {
               value: {
                 type: 'PitchDegree',
                 degree: 0,
-                len: 1,
               },
               octave: {
                 type: 'OctaveModifier',
                 octave: -2,
-                len: 2,
               },
-              len: 3,
             },
             tail: undefined,
-            len: 3,
           },
         ])
       })
@@ -743,16 +620,12 @@ describe('grammar', () => {
                 type: 'PitchRatio',
                 numerator: 2,
                 denominator: 3,
-                len: 3,
               },
-              len: 3,
             },
             tail: undefined,
-            len: 3,
           },
           {
             type: 'Whitespace',
-            len: 1,
           },
           {
             type: 'Note',
@@ -762,12 +635,9 @@ describe('grammar', () => {
                 type: 'PitchRatio',
                 numerator: 3,
                 denominator: 4,
-                len: 3,
               },
-              len: 3,
             },
             tail: undefined,
-            len: 3,
           },
         ])
       })
@@ -783,16 +653,12 @@ describe('grammar', () => {
                 numerator: 2,
                 denominator: 3,
                 octaveSize: 2,
-                len: 4,
               },
-              len: 4,
             },
             tail: undefined,
-            len: 4,
           },
           {
             type: 'Whitespace',
-            len: 1,
           },
           {
             type: 'Note',
@@ -803,16 +669,12 @@ describe('grammar', () => {
                 numerator: 3,
                 denominator: 4,
                 octaveSize: 3,
-                len: 5,
               },
-              len: 5,
             },
             tail: undefined,
-            len: 5,
           },
           {
             type: 'Whitespace',
-            len: 1,
           },
           {
             type: 'Note',
@@ -823,12 +685,9 @@ describe('grammar', () => {
                 numerator: 3,
                 denominator: 4,
                 octaveSize: 1.5,
-                len: 7,
               },
-              len: 7,
             },
             tail: undefined,
-            len: 7,
           },
         ])
       })
@@ -844,12 +703,9 @@ describe('grammar', () => {
                 numerator: 2,
                 denominator: 3,
                 octaveSize: 2,
-                len: 3,
               },
-              len: 3,
             },
             tail: undefined,
-            len: 3,
           },
         ])
       })
@@ -863,16 +719,12 @@ describe('grammar', () => {
               value: {
                 type: 'PitchCents',
                 cents: 2,
-                len: 2,
               },
-              len: 2,
             },
             tail: undefined,
-            len: 2,
           },
           {
             type: 'Whitespace',
-            len: 1,
           },
           {
             type: 'Note',
@@ -881,16 +733,12 @@ describe('grammar', () => {
               value: {
                 type: 'PitchCents',
                 cents: 2,
-                len: 2,
               },
-              len: 2,
             },
             tail: undefined,
-            len: 2,
           },
           {
             type: 'Whitespace',
-            len: 1,
           },
           {
             type: 'Note',
@@ -899,12 +747,9 @@ describe('grammar', () => {
               value: {
                 type: 'PitchCents',
                 cents: 2.2,
-                len: 4,
               },
-              len: 4,
             },
             tail: undefined,
-            len: 4,
           },
         ])
       })
@@ -918,16 +763,12 @@ describe('grammar', () => {
               value: {
                 type: 'PitchHz',
                 hz: 2,
-                len: 3,
               },
-              len: 3,
             },
             tail: undefined,
-            len: 3,
           },
           {
             type: 'Whitespace',
-            len: 1,
           },
           {
             type: 'Note',
@@ -936,16 +777,12 @@ describe('grammar', () => {
               value: {
                 type: 'PitchHz',
                 hz: 2,
-                len: 3,
               },
-              len: 3,
             },
             tail: undefined,
-            len: 3,
           },
           {
             type: 'Whitespace',
-            len: 1,
           },
           {
             type: 'Note',
@@ -954,12 +791,9 @@ describe('grammar', () => {
               value: {
                 type: 'PitchHz',
                 hz: 2.2,
-                len: 5,
               },
-              len: 5,
             },
             tail: undefined,
-            len: 5,
           },
         ])
       })
@@ -976,43 +810,33 @@ describe('grammar', () => {
                 value: {
                   type: 'PitchCents',
                   cents: 0,
-                  len: 2,
                 },
-                len: 2,
               },
               {
                 type: 'Whitespace',
-                len: 1,
               },
               {
                 type: 'Pitch',
                 value: {
                   type: 'PitchCents',
                   cents: 100,
-                  len: 4,
                 },
-                len: 4,
               },
               {
                 type: 'Whitespace',
-                len: 2,
               },
               {
                 type: 'Pitch',
                 value: {
                   type: 'PitchCents',
                   cents: 200,
-                  len: 4,
                 },
-                len: 4,
               },
             ],
             tail: {
               type: 'Hold',
               length: 2,
-              len: 2,
             },
-            len: 17,
           },
         ])
       })
@@ -1026,16 +850,15 @@ describe('grammar', () => {
           {
             type: 'RatioChord',
             pitches: [
-              { type: 'RatioChordPitch', pitch: 4, len: 1 },
-              { type: 'Colon', len: 1 },
-              { type: 'RatioChordPitch', pitch: 5, len: 1 },
-              { type: 'Colon', len: 1 },
-              { type: 'RatioChordPitch', pitch: 6, len: 1 },
-              { type: 'Colon', len: 1 },
-              { type: 'RatioChordPitch', pitch: 7, len: 1 },
+              { type: 'RatioChordPitch', pitch: 4 },
+              { type: 'Colon' },
+              { type: 'RatioChordPitch', pitch: 5 },
+              { type: 'Colon' },
+              { type: 'RatioChordPitch', pitch: 6 },
+              { type: 'Colon' },
+              { type: 'RatioChordPitch', pitch: 7 },
             ],
-            tail: { type: 'Hold', length: 2, len: 2 },
-            len: 9,
+            tail: { type: 'Hold', length: 2 },
           },
         ])
       })
@@ -1045,16 +868,15 @@ describe('grammar', () => {
           {
             type: 'Chord',
             pitches: [
-              { type: 'RatioChordPitch', pitch: 4, len: 1 },
-              { type: 'Colon', len: 1 },
-              { type: 'RatioChordPitch', pitch: 5, len: 1 },
-              { type: 'Colon', len: 1 },
-              { type: 'RatioChordPitch', pitch: 6, len: 1 },
-              { type: 'Colon', len: 1 },
-              { type: 'RatioChordPitch', pitch: 7, len: 1 },
+              { type: 'RatioChordPitch', pitch: 4 },
+              { type: 'Colon' },
+              { type: 'RatioChordPitch', pitch: 5 },
+              { type: 'Colon' },
+              { type: 'RatioChordPitch', pitch: 6 },
+              { type: 'Colon' },
+              { type: 'RatioChordPitch', pitch: 7 },
             ],
-            tail: { type: 'Hold', length: 2, len: 2 },
-            len: 11,
+            tail: { type: 'Hold', length: 2 },
           },
         ])
       })
@@ -1064,16 +886,15 @@ describe('grammar', () => {
           {
             type: 'RatioChord',
             pitches: [
-              { type: 'RatioChordPitch', pitch: 4, len: 1 },
-              { type: 'Colon', len: 1 },
-              { type: 'Colon', len: 1 },
-              { type: 'RatioChordPitch', pitch: 7, len: 1 },
-              { type: 'Colon', len: 1 },
-              { type: 'Colon', len: 1 },
-              { type: 'RatioChordPitch', pitch: 10, len: 2 },
+              { type: 'RatioChordPitch', pitch: 4 },
+              { type: 'Colon' },
+              { type: 'Colon' },
+              { type: 'RatioChordPitch', pitch: 7 },
+              { type: 'Colon' },
+              { type: 'Colon' },
+              { type: 'RatioChordPitch', pitch: 10 },
             ],
-            tail: { type: 'Hold', length: 2, len: 2 },
-            len: 10,
+            tail: { type: 'Hold', length: 2 },
           },
         ])
       })
@@ -1088,44 +909,34 @@ describe('grammar', () => {
                 value: {
                   type: 'PitchDegree',
                   degree: 0,
-                  len: 1,
                 },
-                len: 1,
               },
               {
                 type: 'Whitespace',
-                len: 1,
               },
               {
                 type: 'Pitch',
                 value: {
                   type: 'PitchDegree',
                   degree: 7,
-                  len: 1,
                 },
-                len: 1,
               },
               {
                 type: 'Whitespace',
-                len: 1,
               },
               {
                 type: 'Pitch',
                 value: {
                   type: 'PitchDegree',
                   degree: 0,
-                  len: 1,
                 },
                 octave: {
                   type: 'OctaveModifier',
                   octave: 1,
-                  len: 1,
                 },
-                len: 2,
               },
             ],
             tail: undefined,
-            len: 8,
           },
         ])
       })
@@ -1140,9 +951,7 @@ describe('grammar', () => {
               type: 'EdoScale',
               divisions: 12,
               octaveSize: 2,
-              len: 5,
             },
-            len: 7,
           },
         ])
       })
@@ -1155,9 +964,7 @@ describe('grammar', () => {
               type: 'EdoScale',
               divisions: 12,
               octaveSize: 2,
-              len: 5,
             },
-            len: 7,
           },
         ])
       })
@@ -1170,9 +977,7 @@ describe('grammar', () => {
               type: 'EdoScale',
               divisions: 5,
               octaveSize: 0,
-              len: 4,
             },
-            len: 6,
           },
         ])
 
@@ -1183,9 +988,7 @@ describe('grammar', () => {
               type: 'EdoScale',
               divisions: 5,
               octaveSize: 1,
-              len: 4,
             },
-            len: 6,
           },
         ])
       })
@@ -1198,9 +1001,7 @@ describe('grammar', () => {
               type: 'EdoScale',
               divisions: 12,
               octaveSize: 3,
-              len: 5,
             },
-            len: 7,
           },
         ])
       })
@@ -1213,9 +1014,7 @@ describe('grammar', () => {
               type: 'EdoScale',
               divisions: 12,
               octaveSize: 1.5,
-              len: 7,
             },
-            len: 9,
           },
         ])
       })
@@ -1230,31 +1029,24 @@ describe('grammar', () => {
                 {
                   type: 'RatioChordPitch',
                   pitch: 4,
-                  len: 1,
                 },
                 {
                   type: 'Colon',
-                  len: 1,
                 },
                 {
                   type: 'RatioChordPitch',
                   pitch: 5,
-                  len: 1,
                 },
                 {
                   type: 'Colon',
-                  len: 1,
                 },
                 {
                   type: 'RatioChordPitch',
                   pitch: 6,
-                  len: 1,
                 },
               ],
               scaleOctaveMarker: undefined,
-              len: 5,
             },
-            len: 7,
           },
         ])
 
@@ -1267,34 +1059,26 @@ describe('grammar', () => {
                 {
                   type: 'RatioChordPitch',
                   pitch: 4,
-                  len: 1,
                 },
                 {
                   type: 'Colon',
-                  len: 1,
                 },
                 {
                   type: 'RatioChordPitch',
                   pitch: 5,
-                  len: 1,
                 },
                 {
                   type: 'Colon',
-                  len: 1,
                 },
                 {
                   type: 'RatioChordPitch',
                   pitch: 6,
-                  len: 1,
                 },
               ],
               scaleOctaveMarker: {
                 type: 'ScaleOctaveMarker',
-                len: 1,
               },
-              len: 6,
             },
-            len: 8,
           },
         ])
 
@@ -1307,35 +1091,27 @@ describe('grammar', () => {
                 {
                   type: 'RatioChordPitch',
                   pitch: 4,
-                  len: 1,
                 },
                 {
                   type: 'Colon',
-                  len: 1,
                 },
                 {
                   type: 'RatioChordPitch',
                   pitch: 6,
-                  len: 1,
                 },
                 {
                   type: 'Colon',
-                  len: 1,
                 },
                 {
                   type: 'Colon',
-                  len: 1,
                 },
                 {
                   type: 'RatioChordPitch',
                   pitch: 8,
-                  len: 1,
                 },
               ],
               scaleOctaveMarker: undefined,
-              len: 6,
             },
-            len: 8,
           },
         ])
       })
@@ -1354,13 +1130,10 @@ describe('grammar', () => {
                     type: 'PitchRatio',
                     numerator: 1,
                     denominator: 1,
-                    len: 3,
                   },
-                  len: 3,
                 },
                 {
                   type: 'Whitespace',
-                  len: 1,
                 },
                 {
                   type: 'Pitch',
@@ -1368,13 +1141,10 @@ describe('grammar', () => {
                     type: 'PitchRatio',
                     numerator: 9,
                     denominator: 8,
-                    len: 3,
                   },
-                  len: 3,
                 },
                 {
                   type: 'Whitespace',
-                  len: 1,
                 },
                 {
                   type: 'Pitch',
@@ -1382,15 +1152,11 @@ describe('grammar', () => {
                     type: 'PitchRatio',
                     numerator: 5,
                     denominator: 4,
-                    len: 3,
                   },
-                  len: 3,
                 },
               ],
               scaleOctaveMarker: undefined,
-              len: 11,
             },
-            len: 13,
           },
         ])
 
@@ -1407,13 +1173,10 @@ describe('grammar', () => {
                     type: 'PitchRatio',
                     numerator: 1,
                     denominator: 1,
-                    len: 3,
                   },
-                  len: 3,
                 },
                 {
                   type: 'Whitespace',
-                  len: 1,
                 },
                 {
                   type: 'Pitch',
@@ -1421,13 +1184,10 @@ describe('grammar', () => {
                     type: 'PitchRatio',
                     numerator: 9,
                     denominator: 8,
-                    len: 3,
                   },
-                  len: 3,
                 },
                 {
                   type: 'Whitespace',
-                  len: 1,
                 },
                 {
                   type: 'Pitch',
@@ -1435,18 +1195,13 @@ describe('grammar', () => {
                     type: 'PitchRatio',
                     numerator: 5,
                     denominator: 4,
-                    len: 3,
                   },
-                  len: 3,
                 },
               ],
               scaleOctaveMarker: {
                 type: 'ScaleOctaveMarker',
-                len: 1,
               },
-              len: 12,
             },
-            len: 14,
           },
         ])
 
@@ -1458,7 +1213,6 @@ describe('grammar', () => {
               pitchGroupScalePrefix: {
                 type: 'PitchGroupScalePrefix',
                 prefix: 'm',
-                len: 2,
               },
               pitches: [
                 {
@@ -1466,28 +1220,21 @@ describe('grammar', () => {
                   value: {
                     type: 'PitchDegree',
                     degree: 2,
-                    len: 1,
                   },
-                  len: 1,
                 },
                 {
                   type: 'Whitespace',
-                  len: 1,
                 },
                 {
                   type: 'Pitch',
                   value: {
                     type: 'PitchDegree',
                     degree: 1,
-                    len: 1,
                   },
-                  len: 1,
                 },
               ],
               scaleOctaveMarker: undefined,
-              len: 5,
             },
-            len: 7,
           },
         ])
 
@@ -1499,7 +1246,6 @@ describe('grammar', () => {
               pitchGroupScalePrefix: {
                 type: 'PitchGroupScalePrefix',
                 prefix: 'm',
-                len: 1,
               },
               pitches: [
                 {
@@ -1507,28 +1253,21 @@ describe('grammar', () => {
                   value: {
                     type: 'PitchDegree',
                     degree: 2,
-                    len: 1,
                   },
-                  len: 1,
                 },
                 {
                   type: 'Whitespace',
-                  len: 1,
                 },
                 {
                   type: 'Pitch',
                   value: {
                     type: 'PitchDegree',
                     degree: 1,
-                    len: 1,
                   },
-                  len: 1,
                 },
               ],
               scaleOctaveMarker: undefined,
-              len: 4,
             },
-            len: 6,
           },
         ])
       })
@@ -1543,19 +1282,15 @@ describe('grammar', () => {
               {
                 type: 'SetBpm',
                 bpm: 440,
-                len: 7,
               },
               {
                 type: 'Semicolon',
-                len: 2,
               },
               {
                 type: 'SetBpm',
                 bpm: 432.5,
-                len: 10,
               },
             ],
-            len: 21,
           },
         ])
       })
@@ -1568,19 +1303,15 @@ describe('grammar', () => {
               {
                 type: 'SetBms',
                 bms: 100,
-                len: 7,
               },
               {
                 type: 'Semicolon',
-                len: 2,
               },
               {
                 type: 'SetBms',
                 bms: 999.2,
-                len: 10,
               },
             ],
-            len: 21,
           },
         ])
       })
@@ -1594,20 +1325,16 @@ describe('grammar', () => {
                 type: 'SetSubdivision',
                 subdivision: 4,
                 denominator: undefined,
-                len: 5,
               },
               {
                 type: 'Semicolon',
-                len: 2,
               },
               {
                 type: 'SetSubdivision',
                 subdivision: 1,
                 denominator: 4,
-                len: 7,
               },
             ],
-            len: 16,
           },
         ])
       })
@@ -1621,10 +1348,8 @@ describe('grammar', () => {
                 type: 'SetSubdivision',
                 subdivision: 4,
                 denominator: undefined,
-                len: 1,
               },
             ],
-            len: 3,
           },
         ])
       })
@@ -1638,10 +1363,8 @@ describe('grammar', () => {
                 type: 'SetSubdivision',
                 subdivision: 1,
                 denominator: 2,
-                len: 3,
               },
             ],
-            len: 5,
           },
         ])
       })
@@ -1651,18 +1374,15 @@ describe('grammar', () => {
         expect(ast.sequence.items.filter((item) => item.type === 'SetterGroup')).toEqual([
           {
             type: 'SetterGroup',
-            setters: [{ type: 'SetSubdivision', subdivision: 3, denominator: undefined, len: 1 }],
-            len: 3,
+            setters: [{ type: 'SetSubdivision', subdivision: 3, denominator: undefined }],
           },
           {
             type: 'SetterGroup',
-            setters: [{ type: 'SetSubdivision', subdivision: 4, denominator: undefined, len: 1 }],
-            len: 3,
+            setters: [{ type: 'SetSubdivision', subdivision: 4, denominator: undefined }],
           },
           {
             type: 'SetterGroup',
-            setters: [{ type: 'SetSubdivision', subdivision: 1, denominator: 2, len: 3 }],
-            len: 5,
+            setters: [{ type: 'SetSubdivision', subdivision: 1, denominator: 2 }],
           },
         ])
       })
@@ -1676,11 +1396,8 @@ describe('grammar', () => {
               value: {
                 degree: 6,
                 type: 'PitchDegree',
-                len: 1,
               },
-              len: 1,
             },
-            len: 4,
           },
           {
             type: 'SetRoot',
@@ -1690,11 +1407,8 @@ describe('grammar', () => {
                 numerator: 7,
                 denominator: 5,
                 type: 'PitchRatio',
-                len: 3,
               },
-              len: 3,
             },
-            len: 6,
           },
           {
             type: 'SetRoot',
@@ -1703,11 +1417,8 @@ describe('grammar', () => {
               value: {
                 hz: 300,
                 type: 'PitchHz',
-                len: 5,
               },
-              len: 5,
             },
-            len: 8,
           },
           {
             type: 'SetRoot',
@@ -1716,11 +1427,8 @@ describe('grammar', () => {
               value: {
                 hz: 400,
                 type: 'PitchHz',
-                len: 5,
               },
-              len: 5,
             },
-            len: 8,
           },
         ])
       })
@@ -1733,19 +1441,15 @@ describe('grammar', () => {
               {
                 type: 'SetOsc',
                 osc: 'sine',
-                len: 8,
               },
               {
                 type: 'Semicolon',
-                len: 2,
               },
               {
                 type: 'SetOsc',
                 osc: 'saw4',
-                len: 9,
               },
             ],
-            len: 21,
           },
         ])
       })
@@ -1761,11 +1465,9 @@ describe('grammar', () => {
                 d: 1,
                 s: 2,
                 r: 3,
-                len: 8,
               },
               {
                 type: 'Semicolon',
-                len: 2,
               },
               {
                 type: 'SetEnv',
@@ -1773,10 +1475,8 @@ describe('grammar', () => {
                 d: 8,
                 s: 7,
                 r: 3,
-                len: 9,
               },
             ],
-            len: 21,
           },
         ])
       })
@@ -1789,27 +1489,21 @@ describe('grammar', () => {
               {
                 type: 'SetRulerRange',
                 high: {
-                  len: 4,
                   type: 'Pitch',
                   value: {
                     cents: 400,
-                    len: 4,
                     type: 'PitchCents',
                   },
                 },
-                len: 12,
                 low: {
-                  len: 4,
                   type: 'Pitch',
                   value: {
                     cents: 200,
-                    len: 4,
                     type: 'PitchCents',
                   },
                 },
               },
             ],
-            len: 14,
           },
         ])
       })
@@ -1821,10 +1515,8 @@ describe('grammar', () => {
             setters: [
               {
                 type: 'SetRulerPlot',
-                len: 4,
               },
             ],
-            len: 6,
           },
         ])
       })
@@ -1845,10 +1537,8 @@ describe('grammar', () => {
     it('should parse sequence with param', () => {
       const output = strip(parser('embed:2'))
       expect(output.paramGroup).toEqual({
-        len: 6,
         params: [
           {
-            len: 5,
             type: 'ParamEmbed',
           },
         ],
@@ -1863,12 +1553,9 @@ describe('grammar', () => {
             value: {
               type: 'PitchDegree',
               degree: 2,
-              len: 1,
             },
-            len: 1,
           },
           tail: undefined,
-          len: 1,
         },
       ])
     })

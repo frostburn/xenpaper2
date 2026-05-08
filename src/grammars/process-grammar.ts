@@ -353,7 +353,6 @@ const setScale = (setScale: SetScaleType, context: Context): void => {
           degree: 0,
           delimiter: false,
           location: pitchGroupScalePrefix.location,
-          len: 0,
         },
       ]
 

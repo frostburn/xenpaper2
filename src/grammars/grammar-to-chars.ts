@@ -1,3 +1,4 @@
+import type { LocationRange } from 'peggy'
 import type { XenpaperAST } from './grammar.generated'
 
 export type HighlightColor =
@@ -19,22 +20,18 @@ export type CharData = {
   playTime?: [number, number]
 }
 
-type GrammarLocation = {
-  start?: {
-    offset?: number
-  }
-  end?: {
-    offset?: number
-  }
-}
-
 type GrammarNode = {
-  type?: string
-  len?: number
+  type: string
   time?: [number, number]
-  location?: GrammarLocation
+  location: LocationRange
   [key: string]: unknown
 }
+
+const isGrammarNode = (data: unknown): data is GrammarNode =>
+  data instanceof Object &&
+  typeof (data as Partial<GrammarNode>).type === 'string' &&
+  typeof (data as Partial<GrammarNode>).location?.start.offset === 'number' &&
+  typeof (data as Partial<GrammarNode>).location?.end.offset === 'number'
 
 const colorMap = new Map<string, HighlightColor>([
   ['Semicolon', 'delimiter'],
@@ -79,18 +76,6 @@ const colorMap = new Map<string, HighlightColor>([
   ['Comment', 'comment'],
 ])
 
-const getSpan = (data: GrammarNode): { pos: number; len: number } | undefined => {
-  const pos = typeof data.pos === 'number' ? data.pos : data.location?.start?.offset
-  if (typeof pos !== 'number') return undefined
-
-  if (typeof data.len === 'number') return { pos, len: data.len }
-
-  const end = data.location?.end?.offset
-  if (typeof end === 'number') return { pos, len: end - pos }
-
-  return undefined
-}
-
 // need to pass playhead time in
 const extract = (
   chars: CharData[],
@@ -103,23 +88,24 @@ const extract = (
     return
   }
   if (data instanceof Object) {
-    const node = data as GrammarNode
-    const color = node.type
-      ? colorMap.get(`${parent}.${node.type}`) || colorMap.get(node.type)
-      : undefined
-    const time = withinTime ?? node.time
-    const span = getSpan(node)
+    const node = data as Record<string, unknown>
+    const grammarNode = isGrammarNode(node) ? node : undefined
+    const type = grammarNode?.type
+    const color = type ? colorMap.get(`${parent}.${type}`) || colorMap.get(type) : undefined
+    const time = withinTime ?? grammarNode?.time
 
-    if (span && color) {
-      for (let i = 0; i < span.len; i++) {
-        chars[span.pos + i] = {
-          color: color === 'comment' && i === 0 ? 'commentStart' : color,
+    if (grammarNode && color) {
+      const startOffset = grammarNode.location.start.offset
+      const endOffset = grammarNode.location.end.offset
+      for (let offset = startOffset; offset < endOffset; offset++) {
+        chars[offset] = {
+          color: color === 'comment' && offset === startOffset ? 'commentStart' : color,
           playTime: time,
         }
       }
     }
     Object.keys(node).forEach((key) => {
-      extract(chars, node[key], node.type ?? parent, time)
+      extract(chars, node[key], type ?? parent, time)
     })
   }
 }
