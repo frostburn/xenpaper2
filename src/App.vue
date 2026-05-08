@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import PlayPauseButton from './components/PlayPauseButton.vue'
 import PitchRuler from './components/PitchRuler.vue'
+import TheFooter from './components/TheFooter.vue'
 import TutorialSidebar from './components/TutorialSidebar.vue'
 import { parse } from './grammars/grammar.generated.js'
 import { grammarToChars, type CharData } from './grammars/grammar-to-chars'
@@ -752,12 +753,6 @@ onUnmounted(() => {
           </button>
           <iframe class="embed-preview" :src="embedUrl" title="Xenpaper 2 embed preview"></iframe>
         </div>
-
-        <footer class="sidebar-footer">
-          <p>Made by Lumi Pakkanen.</p>
-          <p>Originally created by Damien Clarke.</p>
-          <p>Built with Vue 3, Vite, TypeScript, and Tone.js.</p>
-        </footer>
       </section>
 
       <section v-else class="sidebar-panel ruler-panel" aria-labelledby="pitch-ruler-title">
@@ -771,15 +766,10 @@ onUnmounted(() => {
           <p>Click and drag to pan, use mousewheel to zoom.</p>
         </div>
         <PitchRuler ref="pitchRuler" :initial-state="initialRulerState" />
-
-        <footer class="sidebar-footer">
-          <p>Made by Lumi Pakkanen.</p>
-          <p>Originally created by Damien Clarke.</p>
-          <p>Built with Vue 3, Vite, TypeScript, and Tone.js.</p>
-        </footer>
       </section>
     </aside>
   </div>
+  <TheFooter />
 </template>
 
 <style scoped>
@@ -1177,24 +1167,6 @@ onUnmounted(() => {
 
 .sidebar-content p {
   margin: 0 0 1.5rem;
-}
-
-.sidebar-footer {
-  flex: 0 0 auto;
-  padding: 1rem 2rem 1.5rem;
-  background: var(--xenpaper-bg);
-  color: var(--xenpaper-placeholder);
-  font-size: 0.9rem;
-  font-style: italic;
-  line-height: 1.3rem;
-}
-
-.sidebar-footer p {
-  margin: 0;
-}
-
-.sidebar-footer p + p {
-  margin-top: 0.35rem;
 }
 
 .share-field {

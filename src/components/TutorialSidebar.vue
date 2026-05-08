@@ -213,9 +213,8 @@ const tutorialSections: TutorialSection[] = [
     </div>
 
     <footer class="sidebar-footer">
-      <p>Made by Lumi Pakkanen.</p>
-      <p>Originally created by Damien Clarke.</p>
-      <p>Built with Vue 3, Vite, TypeScript, and Tone.js.</p>
+      <h2>Bugs and future features</h2>
+      <p>Find anything broken, or have some ideas you want to share? Visit the <a href="https://github.com/xenharmonic-devs/xenpaper2/issues">issue tracker on GitHub</a> to file bugs or discuss future features.</p>
     </footer>
   </aside>
 </template>
@@ -339,7 +338,6 @@ const tutorialSections: TutorialSection[] = [
   background: var(--xenpaper-bg);
   color: var(--xenpaper-placeholder);
   font-size: 0.9rem;
-  font-style: italic;
   line-height: 1.3rem;
 }
 

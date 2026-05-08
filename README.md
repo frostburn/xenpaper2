@@ -2,12 +2,10 @@
 
 Xenpaper 2 is a text-based microtonal sequencer for writing musical ideas, playing them in the browser, and sharing them by URL or embed code.
 
-## Authors and contributors
+## Authors
 
-- **Current author:** Lumi Pakkanen, who forked and maintains Xenpaper 2.
-- **Original author and contributor:** Damien Clarke, creator of the [original project](https://github.com/dxinteractive/xenpaper).
-
-Xenpaper 2 was forked from the original project in May 2026.
+- **Current author:** Lumi Pakkanen, who forked the project in May 2026 and maintains Xenpaper 2.
+- **Original author:** Damien Clarke, creator of the [original project](https://github.com/dxinteractive/xenpaper).
 
 ## AI Agent Disclosure
 
