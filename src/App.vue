@@ -350,6 +350,12 @@ const setSelectedLine = (line: number): void => {
 const handleSourceKeydown = (event: KeyboardEvent): void => {
   if (!(event.ctrlKey || event.metaKey)) return
 
+  if (event.key === 'Enter') {
+    event.preventDefault()
+    void restartPlaybackFromSelectedLine()
+    return
+  }
+
   const key = event.key.toLowerCase()
 
   if (key === 'z' && event.shiftKey) {
@@ -471,6 +477,22 @@ const closeSidebar = (): void => {
   sidebarMode.value = 'none'
 }
 
+const preparePlayableScore = async (): Promise<boolean> => {
+  if (!scoreLoaded.value || soundEngine.position() >= soundEngine.endPosition()) {
+    await updateParsedSourceCode()
+  }
+
+  return scoreLoaded.value
+}
+
+const restartPlaybackFromSelectedLine = async (): Promise<void> => {
+  if (!(await preparePlayableScore())) return
+
+  await soundEngine.gotoMs(getSelectedLineStartMs())
+  await soundEngine.play()
+  isPlaying.value = true
+}
+
 const togglePlayback = async (): Promise<void> => {
   if (isPlaying.value) {
     await soundEngine.pause()
@@ -479,14 +501,7 @@ const togglePlayback = async (): Promise<void> => {
     return
   }
 
-  if (!scoreLoaded.value || soundEngine.position() >= soundEngine.endPosition()) {
-    await updateParsedSourceCode()
-    if (!scoreLoaded.value) return
-  }
-
-  await soundEngine.gotoMs(getSelectedLineStartMs())
-  await soundEngine.play()
-  isPlaying.value = true
+  await restartPlaybackFromSelectedLine()
 }
 
 const toggleLoop = (): void => {
