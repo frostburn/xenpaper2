@@ -8,7 +8,11 @@ const xenpaper = useXenpaperStore()
 </script>
 
 <template>
-  <div class="actions" :class="{ 'actions-embed': xenpaper.isEmbedMode }" aria-label="Playback controls">
+  <div
+    class="actions"
+    :class="{ 'actions-embed': xenpaper.isEmbedMode }"
+    aria-label="Playback controls"
+  >
     <PlayPauseButton :playing="xenpaper.isPlaying" @toggle="xenpaper.togglePlayback" />
     <button
       class="action-button loop-button"

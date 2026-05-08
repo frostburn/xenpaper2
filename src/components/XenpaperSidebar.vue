@@ -61,7 +61,11 @@ const xenpaper = useXenpaperStore()
         <button class="panel-button" type="button" @click="xenpaper.copyEmbedCode">
           {{ xenpaper.copiedEmbedCode ? 'Copied' : 'Copy embed code' }}
         </button>
-        <iframe class="embed-preview" :src="xenpaper.embedUrl" title="Xenpaper 2 embed preview"></iframe>
+        <iframe
+          class="embed-preview"
+          :src="xenpaper.embedUrl"
+          title="Xenpaper 2 embed preview"
+        ></iframe>
       </div>
     </section>
 

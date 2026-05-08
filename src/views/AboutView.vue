@@ -2,8 +2,8 @@
   <main class="about-view">
     <h1>About Xenpaper 2</h1>
     <p>
-      Xenpaper 2 is a text-based microtonal sequencer for writing musical ideas, playing them in
-      the browser, and sharing them by URL or embed code.
+      Xenpaper 2 is a text-based microtonal sequencer for writing musical ideas, playing them in the
+      browser, and sharing them by URL or embed code.
     </p>
   </main>
 </template>

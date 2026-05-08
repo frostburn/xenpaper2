@@ -173,7 +173,8 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
       )}" title="Xenpaper 2" frameborder="0"></iframe>`,
   )
 
-  const parseSourceCode = (): XenpaperAST => parse(sourceCode.value, { grammarSource: 'source-code' })
+  const parseSourceCode = (): XenpaperAST =>
+    parse(sourceCode.value, { grammarSource: 'source-code' })
 
   const getMsAtLine = (tune: string, charData: CharData[] | undefined, line: number): number => {
     if (line === 0) return 0
@@ -330,7 +331,11 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     const sourceChanged = tune !== sourceCode.value
     applySourceCode(tune)
 
-    if (sourceChanged || !scoreLoaded.value || soundEngine.position() >= soundEngine.endPosition()) {
+    if (
+      sourceChanged ||
+      !scoreLoaded.value ||
+      soundEngine.position() >= soundEngine.endPosition()
+    ) {
       await updateParsedSourceCode()
       if (!scoreLoaded.value) return
     }
@@ -402,7 +407,9 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
       (title) => {
         document.title = title
 
-        let openGraphTitle = document.head.querySelector<HTMLMetaElement>('meta[property="og:title"]')
+        let openGraphTitle = document.head.querySelector<HTMLMetaElement>(
+          'meta[property="og:title"]',
+        )
         if (!openGraphTitle) {
           openGraphTitle = document.createElement('meta')
           openGraphTitle.setAttribute('property', 'og:title')
