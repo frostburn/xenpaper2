@@ -39,14 +39,17 @@ describe('share-link', () => {
 
   it('builds hash fragments for shared and embedded source code', () => {
     expect(getShareHash('linked tune')).toBe('#linked_tune')
+    expect(getShareHash('embed:linked tune')).toBe('#embed%3Alinked_tune')
     expect(getEmbedShareHash('linked tune')).toBe('#embed:linked_tune')
     expect(getShareHash(`"0-\`0-100%`)).toBe('#"0-`0-100%25')
   })
 
   it('detects embed hashes and restores their source code', () => {
     expect(isEmbedHash('#embed:linked_tune')).toBe(true)
+    expect(isEmbedHash(getShareHash('embed:linked tune'))).toBe(false)
     expect(isEmbedHash('#linked_tune')).toBe(false)
     expect(getSharedSourceCode('#embed:linked_tune')).toBe('linked tune')
+    expect(getSharedSourceCode(getShareHash('embed:linked tune'))).toBe('embed:linked tune')
   })
 
   it('restores source code from a route hash before local storage', () => {

@@ -11,7 +11,11 @@ const removeEmbedPrefix = (hash: string): string =>
   hash.startsWith(EMBED_PREFIX) ? hash.slice(EMBED_PREFIX.length) : hash
 
 export const encodeSharedSource = (sourceCode: string): string =>
-  sourceCode.replace(/%/g, '%25').replace(/_/g, ESCAPED_UNDERSCORE).replace(/ /g, SPACE_TOKEN)
+  sourceCode
+    .replace(/%/g, '%25')
+    .replace(/:/g, '%3A')
+    .replace(/_/g, ESCAPED_UNDERSCORE)
+    .replace(/ /g, SPACE_TOKEN)
 
 export const decodeSharedSource = (encodedSource: string): string => {
   const percentPlaceholder = '\0percent\0'
