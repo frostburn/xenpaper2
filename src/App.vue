@@ -664,7 +664,6 @@ onUnmounted(() => {
 
       <main class="xenpaper-app" :class="{ 'xenpaper-app-embed': isEmbedMode }">
         <label class="source-label" for="source-code">Source code</label>
-        <p v-if="lastError" class="playback-error" role="alert">Error: {{ lastError }}</p>
         <div class="source-editor" :class="{ 'source-editor-embed': isEmbedMode }">
           <textarea
             id="source-code"
@@ -701,6 +700,7 @@ onUnmounted(() => {
           ]"
         >{{ token.character }}</span></template></template><br><br></pre>
         </div>
+        <p v-if="lastError" class="playback-error" role="alert">Error: {{ lastError }}</p>
       </main>
 
       <aside
@@ -821,7 +821,7 @@ onUnmounted(() => {
 
 .source-editor {
   position: relative;
-  flex: 1 0 auto;
+  flex: 1 1 auto;
   min-height: 0;
   line-height: 1.4em;
   font-size: clamp(1.1rem, 1.65vw, 1.4rem);
@@ -1065,7 +1065,8 @@ onUnmounted(() => {
 }
 
 .playback-error {
-  margin: 0 1rem 0.75rem 2rem;
+  flex: 0 0 auto;
+  margin: 0.75rem 1rem 1rem 2rem;
   padding: 0.75rem 1rem;
   border-left: 3px solid #cc0000;
   background: var(--xenpaper-bg-light);
