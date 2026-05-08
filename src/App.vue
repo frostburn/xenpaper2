@@ -296,8 +296,22 @@ const setSourceCode = (tune: string): void => {
   applySourceCode(tune)
 }
 
+const setDemoTune = async (tune: string): Promise<void> => {
+  const sourceChanged = tune !== sourceCode.value
+  applySourceCode(tune)
+
+  if (sourceChanged || !scoreLoaded.value || soundEngine.position() >= soundEngine.endPosition()) {
+    await updateParsedSourceCode()
+    if (!scoreLoaded.value) return
+  }
+
+  await soundEngine.gotoMs(0)
+  await soundEngine.play()
+  isPlaying.value = true
+}
+
 const handleSourceInput = (event: Event): void => {
-  applySourceCode((event.target as HTMLTextAreaElement).value)
+  setSourceCode((event.target as HTMLTextAreaElement).value)
 }
 
 const undoSourceCode = (): void => {
@@ -619,7 +633,7 @@ onUnmounted(() => {
       <button class="sidebar-close" type="button" aria-label="Close sidebar" @click="closeSidebar">
         ×
       </button>
-      <TutorialSidebar v-if="sidebarMode === 'info'" @set-tune="setSourceCode" />
+      <TutorialSidebar v-if="sidebarMode === 'info'" @set-tune="setDemoTune" />
 
       <section v-else-if="sidebarMode === 'share'" class="sidebar-panel share-panel">
         <header class="sidebar-heading">
