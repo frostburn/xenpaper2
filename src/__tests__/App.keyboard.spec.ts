@@ -7,23 +7,27 @@ import App from '../App.vue'
 import { useXenpaperStore } from '../stores/xenpaper'
 import HomeView from '../views/HomeView.vue'
 
+type MockFn<T extends (...args: never[]) => unknown> = ReturnType<typeof vi.fn<T>>
+
 type MockSoundEngine = {
   currentPosition: number
   playingState: boolean
   endMs: number
   endCallback?: () => void
   noteCallback?: (...args: unknown[]) => void
-  playing: ReturnType<typeof vi.fn>
-  position: ReturnType<typeof vi.fn>
-  endPosition: ReturnType<typeof vi.fn>
-  play: ReturnType<typeof vi.fn>
-  pause: ReturnType<typeof vi.fn>
-  gotoMs: ReturnType<typeof vi.fn>
-  setLoopActive: ReturnType<typeof vi.fn>
-  setLoopStart: ReturnType<typeof vi.fn>
-  setScore: ReturnType<typeof vi.fn>
-  onEnd: ReturnType<typeof vi.fn>
-  onNote: ReturnType<typeof vi.fn>
+  playing: MockFn<() => boolean>
+  position: MockFn<() => number>
+  endPosition: MockFn<() => number>
+  start: MockFn<() => Promise<void>>
+  play: MockFn<() => Promise<void>>
+  pause: MockFn<() => Promise<void>>
+  stopSilently: MockFn<() => void>
+  gotoMs: MockFn<(ms: number) => Promise<void>>
+  setLoopActive: MockFn<(active: boolean) => void>
+  setLoopStart: MockFn<(ms?: number) => void>
+  setScore: MockFn<(...args: unknown[]) => Promise<void>>
+  onEnd: MockFn<(callback: () => void) => () => void>
+  onNote: MockFn<(callback: (...args: unknown[]) => void) => () => void>
 }
 
 const soundEngineMock = vi.hoisted(() => ({
@@ -39,10 +43,15 @@ vi.mock('../sound-engine-tonejs', () => ({
       playing: vi.fn<() => boolean>(() => engine.playingState),
       position: vi.fn<() => number>(() => engine.currentPosition),
       endPosition: vi.fn<() => number>(() => engine.endMs),
+      start: vi.fn<() => Promise<void>>(async () => {}),
       play: vi.fn<() => Promise<void>>(async () => {
+        await engine.start()
         engine.playingState = true
       }),
       pause: vi.fn<() => Promise<void>>(async () => {
+        engine.playingState = false
+      }),
+      stopSilently: vi.fn<() => void>(() => {
         engine.playingState = false
       }),
       gotoMs: vi.fn<(ms: number) => Promise<void>>(async (ms: number) => {
@@ -112,6 +121,7 @@ const dispatchSourceKeydown = async (textarea: HTMLTextAreaElement, init: Keyboa
 
 describe('App source editor keyboard shortcuts', () => {
   beforeEach(() => {
+    soundEngineMock.instances.length = 0
     window.localStorage.clear()
   })
 
@@ -120,6 +130,55 @@ describe('App source editor keyboard shortcuts', () => {
     window.localStorage.clear()
   })
 
+  it('does not start audio on initial mount before playback is requested', async () => {
+    const { wrapper } = await mountApp('#0_2%0A4_5')
+    const enginesAfterMount = soundEngineMock.instances.slice()
+
+    expect(enginesAfterMount).not.toHaveLength(0)
+    enginesAfterMount.forEach((engine) => {
+      expect(engine.start).not.toHaveBeenCalled()
+      expect(engine.play).not.toHaveBeenCalled()
+      expect(engine.pause).not.toHaveBeenCalled()
+    })
+
+    await wrapper.get('button.play-pause-button').trigger('click')
+    await flushPromises()
+
+    expect(soundEngineMock.instances.some((engine) => engine.start.mock.calls.length > 0)).toBe(
+      true,
+    )
+  })
+
+  it('does not start audio while replacing sources from a changed route hash', async () => {
+    const { router, wrapper } = await mountApp('#first')
+
+    soundEngineMock.instances.forEach((engine) => {
+      engine.start.mockClear()
+      engine.play.mockClear()
+      engine.pause.mockClear()
+      engine.stopSilently.mockClear()
+    })
+
+    await router.push('/#4_5')
+    await flushPromises()
+
+    const enginesAfterHashReplacement = soundEngineMock.instances.slice()
+    enginesAfterHashReplacement.forEach((engine) => {
+      expect(engine.start).not.toHaveBeenCalled()
+      expect(engine.play).not.toHaveBeenCalled()
+      expect(engine.pause).not.toHaveBeenCalled()
+    })
+    expect(
+      enginesAfterHashReplacement.some((engine) => engine.stopSilently.mock.calls.length > 0),
+    ).toBe(true)
+
+    await wrapper.get('button.play-pause-button').trigger('click')
+    await flushPromises()
+
+    expect(soundEngineMock.instances.some((engine) => engine.start.mock.calls.length > 0)).toBe(
+      true,
+    )
+  })
   it('resets to the beginning and plays for Ctrl+Enter', async () => {
     const { wrapper } = await mountApp('#0_2%0A4_5')
     const engine = soundEngineMock.instances[soundEngineMock.instances.length - 1]!
@@ -410,10 +469,17 @@ describe('App source editor keyboard shortcuts', () => {
     await wrapper.get('button[aria-label="Add source code"]').trigger('click')
     await flushPromises()
 
+    const remainingEngine = soundEngineMock.instances[soundEngineMock.instances.length - 2]!
+    const removedEngine = soundEngineMock.instances[soundEngineMock.instances.length - 1]!
+
     store.selectSourceCodeTab(0)
     await store.restartPlaybackFromStart()
     expect(store.isPlaying).toBe(true)
     expect(wrapper.get('.play-pause-button').text()).toContain('Pause')
+    remainingEngine.pause.mockClear()
+    remainingEngine.stopSilently.mockClear()
+    removedEngine.pause.mockClear()
+    removedEngine.stopSilently.mockClear()
 
     await store.closeSourceCodeTab(store.sourceTabs[1]!.id)
     await flushPromises()
@@ -421,6 +487,10 @@ describe('App source editor keyboard shortcuts', () => {
     expect(store.isPlaying).toBe(false)
     expect(store.playbackPositionMs).toBe(-1)
     expect(wrapper.get('.play-pause-button').text()).toContain('Play')
+    expect(remainingEngine.pause).toHaveBeenCalledTimes(1)
+    expect(remainingEngine.stopSilently).not.toHaveBeenCalled()
+    expect(removedEngine.pause).toHaveBeenCalledTimes(1)
+    expect(removedEngine.stopSilently).toHaveBeenCalled()
   })
 
   it('resets the project to one source tab when selecting a demo', async () => {

@@ -224,7 +224,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   }
 
   const clearScoreEngine = async (engine: ScoreEngine): Promise<void> => {
-    await engine.soundEngine.pause()
+    engine.soundEngine.stopSilently()
     await engine.soundEngine.setScore(EMPTY_SCORE_MS)
     engine.scoreLoaded.value = false
   }
@@ -411,8 +411,6 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     if (isPlaying.value) {
       resetPlaybackState()
       await Promise.all(previousScoreEngines.map((engine) => engine.soundEngine.pause()))
-    } else {
-      await removed.soundEngine.pause()
     }
     await clearScoreEngine(removed)
     rememberDeadScoreEngines([removed])
