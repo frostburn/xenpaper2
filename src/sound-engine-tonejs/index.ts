@@ -264,10 +264,10 @@ export class SoundEngineTonejs extends SoundEngine {
           this.setLoopEnd(0)
         }
 
-        const endEventId = Tone.Transport.schedule(() => {
+        const endEventId = Tone.Transport.schedule((time?: number) => {
           if (Tone.Transport.loop) return
 
-          this._releaseActiveNotes()
+          this._releaseActiveNotes(time)
           this._triggerEvent('end')
         }, this._endMs * 0.001)
 
