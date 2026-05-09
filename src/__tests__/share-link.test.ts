@@ -5,14 +5,11 @@ import {
   encodeShareHashForUrl,
   encodeSharedSource,
   getEmbedShareHash,
-  getSavedSourceCode,
   getSavedSourceCodes,
   getShareHash,
-  getSharedSourceCode,
   getSharedSourceCodes,
   hasSharedSourceCode,
   isEmbedHash,
-  saveSourceCode,
   saveSourceCodes,
 } from '../share-link'
 
@@ -31,7 +28,7 @@ describe('share-link', () => {
     const sourceCode = `0-3-'0-'3-"0-'"0-\`0-\`\`0-`
     const legacyHash = "#0-3-'0-'3-%220-'%220-%600-%60%600-"
 
-    expect(getSharedSourceCode(legacyHash)).toBe(sourceCode)
+    expect(getSharedSourceCodes(legacyHash)).toEqual([sourceCode])
   })
 
   it('uses underscores for spaces while preserving literal underscores', () => {
@@ -55,7 +52,6 @@ describe('share-link', () => {
 
     expect(hash).toBe('#first_tab~second%3Atab_with%_under~third\nline~tilde%7Etab')
     expect(getSharedSourceCodes(hash)).toEqual(sources)
-    expect(getSharedSourceCode(hash)).toBe('first tab')
   })
 
   it('builds embedded multi-source hash fragments', () => {
@@ -86,43 +82,28 @@ describe('share-link', () => {
     expect(isEmbedHash('#embed:linked_tune')).toBe(true)
     expect(isEmbedHash(getShareHash('embed:linked tune'))).toBe(false)
     expect(isEmbedHash('#linked_tune')).toBe(false)
-    expect(getSharedSourceCode('#embed:linked_tune')).toBe('linked tune')
-    expect(getSharedSourceCode(getShareHash('embed:linked tune'))).toBe('embed:linked tune')
-  })
-
-  it('restores source code from a route hash before local storage', () => {
-    window.localStorage.setItem('lasttune', 'stored tune')
-
-    expect(getSavedSourceCode('#linked_tune')).toBe('linked tune')
+    expect(getSharedSourceCodes('#embed:linked_tune')).toEqual(['linked tune'])
+    expect(getSharedSourceCodes(getShareHash('embed:linked tune'))).toEqual(['embed:linked tune'])
   })
 
   it('restores source code from a route hash without a leading hash prefix', () => {
-    expect(getSharedSourceCode('linked_tune')).toBe('linked tune')
+    expect(getSharedSourceCodes('linked_tune')).toEqual(['linked tune'])
   })
 
   it('preserves literal percent-encoded text in new hash fragments', () => {
-    expect(getSharedSourceCode('%2522_and_%2560')).toBe('%22 and %60')
+    expect(getSharedSourceCodes('%2522_and_%2560')).toEqual(['%22 and %60'])
   })
 
   it('falls back to local storage when there is no shared hash value', () => {
-    window.localStorage.setItem('lasttune', 'stored tune')
+    window.localStorage.setItem('lasttunes', JSON.stringify(['stored tune']))
 
     expect(hasSharedSourceCode('')).toBe(false)
-    expect(getSavedSourceCode('')).toBe('stored tune')
     expect(getSavedSourceCodes('')).toEqual(['stored tune'])
-  })
-
-  it('remembers the latest tune without touching URL hash state', () => {
-    saveSourceCode('shared tune')
-
-    expect(window.localStorage.getItem('lasttune')).toBe('shared tune')
-    expect(getSavedSourceCodes('')).toEqual(['shared tune'])
   })
 
   it('remembers multiple latest tunes in browser storage', () => {
     saveSourceCodes(['first tune', 'second tune'])
 
-    expect(window.localStorage.getItem('lasttune')).toBe('first tune')
     expect(getSavedSourceCodes('')).toEqual(['first tune', 'second tune'])
   })
 })

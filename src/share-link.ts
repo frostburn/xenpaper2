@@ -104,8 +104,6 @@ export const getSharedSourceCodes = (hash: unknown): string[] => {
   return decodeSharedSources(removeEmbedPrefix(removeHashPrefix(hash as string)))
 }
 
-export const getSharedSourceCode = (hash: unknown): string => getSharedSourceCodes(hash)[0] ?? ''
-
 export const getSavedSourceCodes = (hash: unknown): string[] => {
   if (hasSharedSourceCode(hash)) return getSharedSourceCodes(hash)
   if (!hasBrowserWindow()) return ['']
@@ -113,19 +111,12 @@ export const getSavedSourceCodes = (hash: unknown): string[] => {
   const storedSourceCodes = parseStoredSourceCodes(window.localStorage?.getItem('lasttunes'))
   if (storedSourceCodes) return storedSourceCodes
 
-  return [window.localStorage?.getItem('lasttune') || '']
+  return ['']
 }
-
-export const getSavedSourceCode = (hash: unknown): string => getSavedSourceCodes(hash)[0] ?? ''
 
 export const saveSourceCodes = (sourceCodes: string[]): void => {
   if (!hasBrowserWindow()) return
 
   const normalizedSourceCodes = normalizeSourceCodes(sourceCodes)
   window.localStorage?.setItem('lasttunes', JSON.stringify(normalizedSourceCodes))
-  window.localStorage?.setItem('lasttune', normalizedSourceCodes[0] ?? '')
-}
-
-export const saveSourceCode = (sourceCode: string): void => {
-  saveSourceCodes([sourceCode])
 }
