@@ -215,4 +215,28 @@ describe('App source editor keyboard shortcuts', () => {
     expect(wrapper.find('.loop-button').exists()).toBe(true)
     expect(soundEngineMock.instances).toHaveLength(instanceCount)
   })
+
+  it('adds source code tabs with isolated editor contents', async () => {
+    const { wrapper } = await mountApp('#0_2%0A4_5')
+
+    await wrapper.get('button[aria-label="Add source code"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.findAll('[role="tab"]')).toHaveLength(2)
+    expect(wrapper.get<HTMLTextAreaElement>('textarea').element.value).toBe('')
+
+    await wrapper.get<HTMLTextAreaElement>('textarea').setValue('0_2')
+    await flushPromises()
+
+    await wrapper.findAll('[role="tab"]')[0]!.trigger('click')
+    await flushPromises()
+
+    expect(wrapper.get<HTMLTextAreaElement>('textarea').element.value).toBe('0 2\n4 5')
+
+    await wrapper.findAll('[role="tab"]')[1]!.trigger('click')
+    await flushPromises()
+
+    expect(wrapper.get<HTMLTextAreaElement>('textarea').element.value).toBe('0_2')
+  })
+
 })

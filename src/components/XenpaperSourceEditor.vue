@@ -1,7 +1,15 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+
 import type { CharData } from '../grammars/grammar-to-chars'
-import type { SourceDisplayToken } from '../types'
 import { getSourceLineAtOffset } from '../source-display'
+import type { SourceDisplayToken } from '../types'
+
+type SourceTab = {
+  id: number
+  title: string
+  active: boolean
+}
 
 const props = defineProps<{
   isEmbedMode: boolean
@@ -12,6 +20,8 @@ const props = defineProps<{
   lastError: string
   isPlaying: boolean
   playbackPositionMs: number
+  sourceTabs: SourceTab[]
+  activeSourceCodeTabIndex: number
 }>()
 
 const emit = defineEmits<{
@@ -21,6 +31,9 @@ const emit = defineEmits<{
   undoSourceCode: []
   redoSourceCode: []
   setSelectedLine: [line: number]
+  addSourceCodeTab: []
+  selectSourceCodeTab: [index: number]
+  closeSourceCodeTab: [index: number]
 }>()
 
 const handleSourceInput = (event: Event): void => {
@@ -67,6 +80,8 @@ const handleSourceKeydown = (event: KeyboardEvent): void => {
   }
 }
 
+const activeSourceTab = computed(() => props.sourceTabs[props.activeSourceCodeTabIndex])
+
 const isCharacterActive = (charData?: CharData): boolean => {
   const [start, end] = charData?.playTime ?? []
 
@@ -82,8 +97,45 @@ const isCharacterActive = (charData?: CharData): boolean => {
 
 <template>
   <main class="xenpaper-app" :class="{ 'xenpaper-app-embed': isEmbedMode }">
+    <div v-if="!isEmbedMode" class="source-tabs" role="tablist" aria-label="Source codes">
+      <div v-for="(tab, index) in sourceTabs" :key="tab.id" class="source-tab">
+        <button
+          class="source-tab-button"
+          :class="{ active: tab.active }"
+          type="button"
+          role="tab"
+          :aria-selected="tab.active"
+          :aria-controls="`source-code-panel-${tab.id}`"
+          @click="emit('selectSourceCodeTab', index)"
+        >
+          {{ tab.title }}
+        </button>
+        <button
+          v-if="sourceTabs.length > 1"
+          class="source-tab-close"
+          type="button"
+          :aria-label="`Close ${tab.title}`"
+          @click="emit('closeSourceCodeTab', index)"
+        >
+          ×
+        </button>
+      </div>
+      <button
+        class="source-tab-add"
+        type="button"
+        aria-label="Add source code"
+        @click="emit('addSourceCodeTab')"
+      >
+        +
+      </button>
+    </div>
     <label class="source-label" for="source-code">Source code</label>
-    <div class="source-editor" :class="{ 'source-editor-embed': isEmbedMode }">
+    <div
+      class="source-editor"
+      :id="activeSourceTab ? `source-code-panel-${activeSourceTab.id}` : undefined"
+      role="tabpanel"
+      :class="{ 'source-editor-embed': isEmbedMode }"
+    >
       <textarea
         id="source-code"
         :value="sourceCode"

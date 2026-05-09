@@ -91,6 +91,7 @@ export class SoundEngineTonejs extends SoundEngine {
   _endMs = 0
   _loopEndMs = 0
   _activeNoteEvents = new Set<MoscNoteMs>()
+  _transportEventIds: number[] = []
 
   _synth: PolySynth<Synth> | undefined
 
@@ -187,14 +188,18 @@ export class SoundEngineTonejs extends SoundEngine {
   async setScore(scoreMs: MoscScoreMs): Promise<void> {
     this.scoreMs = scoreMs
 
-    // clear all previous notes from tone transport
-    Tone.Transport.cancel()
+    // clear this engine's previous notes from tone transport without
+    // disturbing other score engines that share the same transport clock
+    this._transportEventIds.forEach((id) => Tone.Transport.clear(id))
+    this._transportEventIds = []
+    this._endMs = scoreMs.lengthMs
+    this._releaseActiveNotes()
 
     // add all new notes to tone transport
     this.scoreMs.sequence.forEach((item): void => {
       if (item.type === 'NOTE_MS') {
         const noteMs = item
-        Tone.Transport.schedule(
+        const noteStartEventId = Tone.Transport.schedule(
           (time: number) => {
             this.getSynth().triggerAttackRelease(
               noteMs.hz,
@@ -207,7 +212,7 @@ export class SoundEngineTonejs extends SoundEngine {
           noteMs.ms * 0.001 + 0.1,
         ) // schedule in the future slightly to avoid double note playing at end
 
-        Tone.Transport.schedule(
+        const noteEndEventId = Tone.Transport.schedule(
           () => {
             this._activeNoteEvents.delete(noteMs)
             this._triggerEvent('note', noteMs, false)
@@ -215,12 +220,14 @@ export class SoundEngineTonejs extends SoundEngine {
           noteMs.msEnd * 0.001 + 0.1,
         )
 
+        this._transportEventIds.push(noteStartEventId, noteEndEventId)
+
         return
       }
 
       if (item.type === 'PARAM_MS') {
         const paramMs = item
-        Tone.Transport.schedule(() => {
+        const paramEventId = Tone.Transport.schedule(() => {
           // this is inaccurate
           // as tonejs calls these callbacks several ms ahead of schedule
           // and relies on scheduled events to pass the provided time
@@ -246,6 +253,8 @@ export class SoundEngineTonejs extends SoundEngine {
           }
         }, paramMs.ms * 0.001)
 
+        this._transportEventIds.push(paramEventId)
+
         return
       }
 
@@ -255,12 +264,14 @@ export class SoundEngineTonejs extends SoundEngine {
           this.setLoopEnd(0)
         }
 
-        Tone.Transport.schedule((time: number) => {
+        const endEventId = Tone.Transport.schedule(() => {
           if (Tone.Transport.loop) return
 
-          Tone.Transport.stop(time)
+          this._releaseActiveNotes()
           this._triggerEvent('end')
         }, this._endMs * 0.001)
+
+        this._transportEventIds.push(endEventId)
 
         return
       }
