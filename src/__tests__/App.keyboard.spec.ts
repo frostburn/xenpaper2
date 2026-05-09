@@ -306,6 +306,29 @@ describe('App source editor keyboard shortcuts', () => {
     expect(wrapper.get<HTMLTextAreaElement>('textarea').element.value).toBe('second')
   })
 
+  it('stops playback when restoring a recently closed source code tab', async () => {
+    const { store, wrapper } = await mountApp('#0_2')
+
+    await wrapper.get('button[aria-label="Add source code"]').trigger('click')
+    await wrapper.get<HTMLTextAreaElement>('textarea').setValue('4_5')
+    await flushPromises()
+
+    await store.closeSourceCodeTab(store.sourceTabs[1]!.id)
+    await flushPromises()
+
+    await store.restartPlaybackFromStart()
+    expect(store.isPlaying).toBe(true)
+    expect(wrapper.get('.play-pause-button').text()).toContain('Pause')
+
+    await wrapper.get('button[title="Restore 4_5"]').trigger('click')
+    await flushPromises()
+
+    expect(store.isPlaying).toBe(false)
+    expect(wrapper.get('.play-pause-button').text()).toContain('Play')
+    expect(store.activeSourceCodeTabIndex).toBe(1)
+    expect(wrapper.get<HTMLTextAreaElement>('textarea').element.value).toBe('4_5')
+  })
+
   it('closes the recently closed menu when clicking outside it', async () => {
     const { store, wrapper } = await mountApp('#first')
 

@@ -23,7 +23,7 @@ import {
 } from '../share-link'
 import { SoundEngineTonejs } from '../sound-engine-tonejs'
 import { createSourceDisplayTokens } from '../source-display'
-import type { OpenSidebarMode, SidebarMode, SourceDisplayToken } from '../types'
+import type { OpenSidebarMode, SidebarMode, SourceDisplayToken, SourceTab } from '../types'
 import {
   createHtmlTitle,
   escapeHtmlAttribute,
@@ -37,13 +37,6 @@ const TAB_TITLE_LENGTH = 18
 const MAX_DEAD_SOURCE_TABS = 10
 
 type ScoreEngine = ReturnType<typeof useScoreEngine>
-
-type SourceTab = {
-  id: number
-  title: string
-  active: boolean
-  alive: boolean
-}
 
 // Coupling of a sound engine to a source code with history
 function useScoreEngine(id: number) {
@@ -308,6 +301,11 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   const restoreDeadSourceCodeTab = (deadIndex: number): void => {
     const restored = deadScoreEngines.value[deadIndex]
     if (!restored) return
+
+    if (isPlaying.value) {
+      resetPlaybackState()
+      void pauseAllSoundEngines()
+    }
 
     deadScoreEngines.value = deadScoreEngines.value.filter((_, index) => index !== deadIndex)
     scoreEngines.value = [...scoreEngines.value, restored]

@@ -3,14 +3,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 import type { CharData } from '../grammars/grammar-to-chars'
 import { getSourceLineAtOffset } from '../source-display'
-import type { SourceDisplayToken } from '../types'
-
-type SourceTab = {
-  id: number
-  title: string
-  active: boolean
-  alive: boolean
-}
+import type { SourceDisplayToken, SourceTab } from '../types'
 
 const props = defineProps<{
   isEmbedMode: boolean
