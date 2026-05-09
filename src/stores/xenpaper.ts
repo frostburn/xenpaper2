@@ -1,16 +1,8 @@
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 
 import { type CharData } from '../grammars/grammar-to-chars'
 import { type MoscNoteMs } from '../mosc'
-import {
-  canRedoSourceChange,
-  canUndoSourceChange,
-  createSourceHistory,
-  recordSourceChange,
-  redoSourceChange,
-  undoSourceChange,
-} from '../source-history'
 import {
   encodeShareHashForUrl,
   getEmbedShareHash,
@@ -21,48 +13,42 @@ import {
   isEmbedHash,
   saveSourceCode,
 } from '../share-link'
+import { ScoreEngine } from '../score-engine'
 import { SoundEngineTonejs } from '../sound-engine-tonejs'
 import { createSourceDisplayTokens } from '../source-display'
 import type { OpenSidebarMode, SidebarMode, SourceDisplayToken } from '../types'
-import {
-  createHtmlTitle,
-  escapeHtmlAttribute,
-  getMsAtLine,
-  parseAndProcessSourceCode,
-} from '../utils'
+import { createHtmlTitle, escapeHtmlAttribute } from '../utils'
 
 const DEFAULT_LOCATION_HREF = 'http://localhost/'
 
 export const useXenpaperStore = defineStore('xenpaper', () => {
-  const soundEngine = new SoundEngineTonejs()
-  const sourceCode = ref('')
-  const sourceHistory = ref(createSourceHistory(''))
+  const scoreEngine = reactive(new ScoreEngine(new SoundEngineTonejs()))
   const isPlaying = ref(false)
   const isLooping = ref(false)
   const selectedLine = ref(0)
-  const scoreLoaded = ref(false)
   const playbackPositionMs = ref(-1)
   const isEmbedMode = ref(false)
   const sidebarMode = ref<SidebarMode>('info')
   const locationHref = ref(DEFAULT_LOCATION_HREF)
-  let parseVersion = 0
   let shouldApplyInitialSidebarMode = true
   let cancelOnEnd: (() => void) | undefined
   let cancelOnNote: (() => void) | undefined
   let activeNoteHandler: ((note: MoscNoteMs, on: boolean) => void) | undefined
 
-  const parsedSource = computed(() => parseAndProcessSourceCode(sourceCode.value))
-  const chars = computed(() => parsedSource.value.chars)
-  const lastError = computed(() => parsedSource.value.error)
+  const sourceCode = computed(() => scoreEngine.sourceCode)
+  const chars = computed(() => scoreEngine.chars)
+  const lastError = computed(() => scoreEngine.lastError)
   const initialRulerState = computed(() =>
-    'initialRulerState' in parsedSource.value ? parsedSource.value.initialRulerState : undefined,
+    'initialRulerState' in scoreEngine.parsedSource
+      ? scoreEngine.parsedSource.initialRulerState
+      : undefined,
   )
   const htmlTitle = computed(() => createHtmlTitle(sourceCode.value))
   const sourceDisplayTokens = computed<SourceDisplayToken[]>(() =>
     createSourceDisplayTokens(sourceCode.value),
   )
-  const canUndoSourceCode = computed(() => canUndoSourceChange(sourceHistory.value))
-  const canRedoSourceCode = computed(() => canRedoSourceChange(sourceHistory.value))
+  const canUndoSourceCode = computed(() => scoreEngine.canUndoSourceCode)
+  const canRedoSourceCode = computed(() => scoreEngine.canRedoSourceCode)
   const shareHash = computed(() => getShareHash(sourceCode.value))
   const embedHash = computed(() => getEmbedShareHash(sourceCode.value))
   const routeHash = computed(() => (isEmbedMode.value ? embedHash.value : shareHash.value))
@@ -79,12 +65,8 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
       )}" title="Xenpaper 2" frameborder="0"></iframe>`,
   )
 
-  const getSelectedLineStartMs = (): number =>
-    getMsAtLine(sourceCode.value, chars.value, selectedLine.value)
-
   const updateParsedSourceCode = async (): Promise<void> => {
-    const version = ++parseVersion
-    const source = parsedSource.value
+    const source = scoreEngine.parsedSource
 
     if (shouldApplyInitialSidebarMode) {
       shouldApplyInitialSidebarMode = false
@@ -98,33 +80,17 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
       }
     }
 
-    if (!source.playable) {
-      scoreLoaded.value = false
-      return
+    if (await scoreEngine.updateParsedSourceCode(isLooping.value)) {
+      playbackPositionMs.value = -1
     }
-
-    await soundEngine.setScore(source.scoreMs)
-    if (version !== parseVersion) return
-
-    soundEngine.setLoopActive(isLooping.value)
-    await soundEngine.gotoMs(0)
-    scoreLoaded.value = true
-    playbackPositionMs.value = -1
   }
 
-  const applySourceCode = (source: string, recordHistory = true): void => {
-    if (source === sourceCode.value) return
-
-    sourceHistory.value = recordHistory
-      ? recordSourceChange(sourceHistory.value, source)
-      : createSourceHistory(source)
-    sourceCode.value = sourceHistory.value.present
-  }
+  const applySourceCode = (source: string, recordHistory = true): boolean =>
+    scoreEngine.setSourceCode(source, recordHistory)
 
   const initializeSourceCode = (sharedHash: string): void => {
     const source = getSavedSourceCode(sharedHash)
-    sourceHistory.value = createSourceHistory(source)
-    sourceCode.value = source
+    scoreEngine.resetSourceCode(source)
     isEmbedMode.value = isEmbedHash(sharedHash)
     shouldApplyInitialSidebarMode = true
   }
@@ -145,7 +111,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     }
 
     if (hasSharedSourceCode(sharedHash) && sharedSourceCode !== sourceCode.value) {
-      applySourceCode(sharedSourceCode, false)
+      scoreEngine.resetSourceCode(sharedSourceCode)
     }
   }
 
@@ -159,26 +125,24 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
 
     if (
       sourceChanged ||
-      !scoreLoaded.value ||
-      soundEngine.position() >= soundEngine.endPosition()
+      !scoreEngine.scoreLoaded ||
+      scoreEngine.position() >= scoreEngine.endPosition()
     ) {
       await updateParsedSourceCode()
-      if (!scoreLoaded.value) return
+      if (!scoreEngine.scoreLoaded) return
     }
 
-    await soundEngine.gotoMs(0)
-    await soundEngine.play()
+    await scoreEngine.gotoMs(0)
+    await scoreEngine.play()
     isPlaying.value = true
   }
 
   const undoSourceCode = (): void => {
-    sourceHistory.value = undoSourceChange(sourceHistory.value)
-    sourceCode.value = sourceHistory.value.present
+    scoreEngine.undoSourceCode()
   }
 
   const redoSourceCode = (): void => {
-    sourceHistory.value = redoSourceChange(sourceHistory.value)
-    sourceCode.value = sourceHistory.value.present
+    scoreEngine.redoSourceCode()
   }
 
   const setSelectedLine = (line: number): void => {
@@ -186,23 +150,12 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   }
 
   const updateLoopStart = (): void => {
-    soundEngine.setLoopStart(getSelectedLineStartMs())
-  }
-
-  const preparePlayableScore = async (): Promise<boolean> => {
-    if (!scoreLoaded.value || soundEngine.position() >= soundEngine.endPosition()) {
-      await updateParsedSourceCode()
-    }
-
-    return scoreLoaded.value
+    scoreEngine.setLoopStart(selectedLine.value)
   }
 
   const restartPlaybackFromSelectedLine = async (): Promise<void> => {
-    if (!(await preparePlayableScore())) return
-
-    await soundEngine.gotoMs(getSelectedLineStartMs())
-    await soundEngine.play()
-    isPlaying.value = true
+    const didStart = await scoreEngine.restartPlaybackFromLine(selectedLine.value, isLooping.value)
+    if (didStart) isPlaying.value = true
   }
 
   const restartPlaybackFromLine = async (line: number): Promise<void> => {
@@ -216,7 +169,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
 
   const togglePlayback = async (): Promise<void> => {
     if (isPlaying.value) {
-      await soundEngine.pause()
+      await scoreEngine.pause()
       isPlaying.value = false
       playbackPositionMs.value = -1
       return
@@ -227,11 +180,11 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
 
   const toggleLoop = (): void => {
     isLooping.value = !isLooping.value
-    soundEngine.setLoopActive(isLooping.value)
+    scoreEngine.setLoopActive(isLooping.value)
   }
 
   const syncPlaybackPosition = (): void => {
-    playbackPositionMs.value = soundEngine.playing() ? soundEngine.position() : -1
+    playbackPositionMs.value = scoreEngine.playing() ? scoreEngine.position() : -1
   }
 
   const resetPlaybackPosition = (): void => {
@@ -256,11 +209,11 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   const startSoundEngineListeners = (): void => {
     if (cancelOnEnd || cancelOnNote) return
 
-    cancelOnEnd = soundEngine.onEnd(() => {
+    cancelOnEnd = scoreEngine.onEnd(() => {
       isPlaying.value = false
     })
 
-    cancelOnNote = soundEngine.onNote((note: MoscNoteMs, on: boolean) => {
+    cancelOnNote = scoreEngine.onNote((note: MoscNoteMs, on: boolean) => {
       activeNoteHandler?.(note, on)
     })
   }
