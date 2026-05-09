@@ -248,13 +248,26 @@ describe('App source editor keyboard shortcuts', () => {
     await flushPromises()
 
     expect(store.sourceCodes).toEqual(['first', 'second_tab'])
-    expect(store.routeHash).toBe('#tabs:first:second%_tab')
-    await vi.waitFor(() => expect(router.currentRoute.value.hash).toBe('#tabs:first:second%_tab'))
+    expect(store.routeHash).toBe('#first:second%_tab')
+    await vi.waitFor(() => expect(router.currentRoute.value.hash).toBe('#first:second%_tab'))
 
-    const { store: restoredStore } = await mountApp('#tabs:first:second%_tab:third')
+    const { store: restoredStore } = await mountApp('#first:second%_tab:third')
 
     expect(restoredStore.sourceCodes).toEqual(['first', 'second_tab', 'third'])
     expect(restoredStore.sourceTabs).toHaveLength(3)
+  })
+
+  it('shows tabs in embed mode for shared multi-tab projects', async () => {
+    const { wrapper } = await mountApp('#embed:first:second')
+
+    expect(wrapper.findAll('[role="tab"]')).toHaveLength(2)
+    expect(wrapper.find('button[aria-label="Add source code"]').exists()).toBe(false)
+    expect(wrapper.find('.source-tab-close').exists()).toBe(false)
+
+    await wrapper.findAll('[role="tab"]')[1]!.trigger('click')
+    await flushPromises()
+
+    expect(wrapper.get<HTMLTextAreaElement>('textarea').element.value).toBe('second')
   })
 
   it('resets playback state when closing a tab during playback', async () => {

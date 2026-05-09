@@ -4,7 +4,6 @@ const ESCAPED_UNDERSCORE = '%_'
 const hasBrowserWindow = (): boolean => typeof window !== 'undefined'
 
 const EMBED_PREFIX = 'embed:'
-const MULTI_SOURCE_PREFIX = 'tabs:'
 const SOURCE_SEPARATOR = ':'
 
 const removeHashPrefix = (hash: string): string => (hash.startsWith('#') ? hash.slice(1) : hash)
@@ -58,17 +57,16 @@ export const decodeSharedSource = (encodedSource: string): string => {
     .join('_')
 }
 
-export const encodeSharedSources = (sourceCodes: string[]): string =>
-  `${MULTI_SOURCE_PREFIX}${normalizeSourceCodes(sourceCodes).map(encodeSharedSource).join(SOURCE_SEPARATOR)}`
+export const encodeSharedSources = (sourceCodes: string[]): string => {
+  const normalizedSourceCodes = normalizeSourceCodes(sourceCodes)
+
+  return normalizedSourceCodes.length === 1
+    ? encodeSharedSource(normalizedSourceCodes[0] ?? '')
+    : normalizedSourceCodes.map(encodeSharedSource).join(SOURCE_SEPARATOR)
+}
 
 export const decodeSharedSources = (encodedSources: string): string[] => {
-  if (!encodedSources.startsWith(MULTI_SOURCE_PREFIX)) {
-    return [decodeSharedSource(encodedSources)]
-  }
-
-  const encodedSourceCodes = encodedSources
-    .slice(MULTI_SOURCE_PREFIX.length)
-    .split(SOURCE_SEPARATOR)
+  const encodedSourceCodes = encodedSources.split(SOURCE_SEPARATOR)
 
   return normalizeSourceCodes(encodedSourceCodes.map(decodeSharedSource))
 }

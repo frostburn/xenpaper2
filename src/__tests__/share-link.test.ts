@@ -46,19 +46,20 @@ describe('share-link', () => {
     expect(getShareHash('embed:linked tune')).toBe('#embed%3Alinked_tune')
     expect(getEmbedShareHash('linked tune')).toBe('#embed:linked_tune')
     expect(getShareHash(`"0-\`0-100%`)).toBe('#"0-`0-100%25')
+    expect(getShareHash(['linked tune'])).toBe('#linked_tune')
   })
 
   it('builds and restores multi-source hash fragments in order', () => {
     const sources = ['first tab', 'second:tab with_under', 'third\nline']
     const hash = getShareHash(sources)
 
-    expect(hash).toBe('#tabs:first_tab:second%3Atab_with%_under:third\nline')
+    expect(hash).toBe('#first_tab:second%3Atab_with%_under:third\nline')
     expect(getSharedSourceCodes(hash)).toEqual(sources)
     expect(getSharedSourceCode(hash)).toBe('first tab')
   })
 
   it('builds embedded multi-source hash fragments', () => {
-    expect(getEmbedShareHash(['one', 'two'])).toBe('#embed:tabs:one:two')
+    expect(getEmbedShareHash(['one', 'two'])).toBe('#embed:one:two')
     expect(isEmbedHash(getEmbedShareHash(['one', 'two']))).toBe(true)
     expect(getSharedSourceCodes(getEmbedShareHash(['one', 'two']))).toEqual(['one', 'two'])
   })

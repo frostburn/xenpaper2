@@ -97,7 +97,12 @@ const isCharacterActive = (charData?: CharData): boolean => {
 
 <template>
   <main class="xenpaper-app" :class="{ 'xenpaper-app-embed': isEmbedMode }">
-    <div v-if="!isEmbedMode" class="source-tabs" role="tablist" aria-label="Source codes">
+    <div
+      v-if="!isEmbedMode || sourceTabs.length > 1"
+      class="source-tabs"
+      role="tablist"
+      aria-label="Source codes"
+    >
       <div v-for="(tab, index) in sourceTabs" :key="tab.id" class="source-tab">
         <button
           class="source-tab-button"
@@ -111,7 +116,7 @@ const isCharacterActive = (charData?: CharData): boolean => {
           {{ tab.title }}
         </button>
         <button
-          v-if="sourceTabs.length > 1"
+          v-if="!isEmbedMode && sourceTabs.length > 1"
           class="source-tab-close"
           type="button"
           :aria-label="`Close ${tab.title}`"
@@ -121,6 +126,7 @@ const isCharacterActive = (charData?: CharData): boolean => {
         </button>
       </div>
       <button
+        v-if="!isEmbedMode"
         class="source-tab-add"
         type="button"
         aria-label="Add source code"
