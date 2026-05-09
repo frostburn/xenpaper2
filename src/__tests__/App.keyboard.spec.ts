@@ -278,6 +278,61 @@ describe('App source editor keyboard shortcuts', () => {
     expect(wrapper.get<HTMLTextAreaElement>('textarea').element.value).toBe('second')
   })
 
+  it('shows and restores a recently closed source code tab', async () => {
+    const { store, wrapper } = await mountApp('#first')
+
+    await wrapper.get('button[aria-label="Add source code"]').trigger('click')
+    await wrapper.get<HTMLTextAreaElement>('textarea').setValue('second')
+    await flushPromises()
+
+    await store.closeSourceCodeTab(1)
+    await flushPromises()
+
+    expect(store.sourceCodes).toEqual(['first'])
+    expect(store.sourceTabs).toMatchObject([
+      { title: 'first', alive: true, active: true },
+      { title: 'second', alive: false, active: false },
+    ])
+
+    await wrapper.get('button[title="Restore second"]').trigger('click')
+    await flushPromises()
+
+    expect(store.sourceCodes).toEqual(['first', 'second'])
+    expect(store.sourceTabs.every((tab) => tab.alive)).toBe(true)
+    expect(store.activeSourceCodeTabIndex).toBe(1)
+    expect(wrapper.findAll('[role="tab"]')).toHaveLength(2)
+    expect(wrapper.get<HTMLTextAreaElement>('textarea').element.value).toBe('second')
+  })
+
+  it('keeps replaced project tabs available as recently closed tabs after selecting a demo tune', async () => {
+    const { store, wrapper } = await mountApp('#first')
+
+    await wrapper.get('button[aria-label="Add source code"]').trigger('click')
+    await wrapper.get<HTMLTextAreaElement>('textarea').setValue('second')
+    await flushPromises()
+
+    await store.setDemoTune('4 5')
+    await flushPromises()
+
+    expect(store.sourceCodes).toEqual(['4 5'])
+    expect(store.sourceTabs).toMatchObject([
+      { title: '4 5', alive: true, active: true },
+      { title: 'first', alive: false, active: false },
+      { title: 'second', alive: false, active: false },
+    ])
+    expect(store.isPlaying).toBe(true)
+
+    await wrapper.get('button[title="Restore first"]').trigger('click')
+    await flushPromises()
+    await wrapper.get('button[title="Restore second"]').trigger('click')
+    await flushPromises()
+
+    expect(store.sourceCodes).toEqual(['4 5', 'first', 'second'])
+    expect(store.sourceTabs.every((tab) => tab.alive)).toBe(true)
+    expect(store.activeSourceCodeTabIndex).toBe(2)
+    expect(wrapper.get<HTMLTextAreaElement>('textarea').element.value).toBe('second')
+  })
+
   it('resets playback state when closing a tab during playback', async () => {
     const { store, wrapper } = await mountApp('#0_2')
 
@@ -308,7 +363,9 @@ describe('App source editor keyboard shortcuts', () => {
     await store.setDemoTune('4 5')
     await flushPromises()
 
-    expect(store.sourceTabs).toHaveLength(1)
+    expect(store.sourceCodes).toEqual(['4 5'])
+    expect(store.sourceTabs).toHaveLength(3)
+    expect(store.sourceTabs.filter((tab) => !tab.alive)).toHaveLength(2)
     expect(store.sourceCode).toBe('4 5')
     expect(store.activeSourceCodeTabIndex).toBe(0)
     expect(store.isPlaying).toBe(true)

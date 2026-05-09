@@ -9,6 +9,7 @@ type SourceTab = {
   id: number
   title: string
   active: boolean
+  alive: boolean
 }
 
 const props = defineProps<{
@@ -81,6 +82,7 @@ const handleSourceKeydown = (event: KeyboardEvent): void => {
 }
 
 const activeSourceTab = computed(() => props.sourceTabs[props.activeSourceCodeTabIndex])
+const liveSourceTabCount = computed(() => props.sourceTabs.filter((tab) => tab.alive).length)
 
 const isCharacterActive = (charData?: CharData): boolean => {
   const [start, end] = charData?.playTime ?? []
@@ -106,17 +108,18 @@ const isCharacterActive = (charData?: CharData): boolean => {
       <div v-for="(tab, index) in sourceTabs" :key="tab.id" class="source-tab">
         <button
           class="source-tab-button"
-          :class="{ active: tab.active }"
+          :class="{ active: tab.active, 'source-tab-dead': !tab.alive }"
           type="button"
           role="tab"
           :aria-selected="tab.active"
-          :aria-controls="`source-code-panel-${tab.id}`"
+          :aria-controls="tab.alive ? `source-code-panel-${tab.id}` : undefined"
+          :title="tab.alive ? undefined : `Restore ${tab.title}`"
           @click="emit('selectSourceCodeTab', index)"
         >
-          {{ tab.title }}
+          {{ tab.alive ? tab.title : `Restore ${tab.title}` }}
         </button>
         <button
-          v-if="!isEmbedMode && sourceTabs.length > 1"
+          v-if="!isEmbedMode && tab.alive && liveSourceTabCount > 1"
           class="source-tab-close"
           type="button"
           :aria-label="`Close ${tab.title}`"

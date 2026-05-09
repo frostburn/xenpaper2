@@ -34,6 +34,7 @@ import {
 const DEFAULT_LOCATION_HREF = 'http://localhost/'
 const EMPTY_SCORE_MS = { sequence: [], lengthMs: 0 }
 const TAB_TITLE_LENGTH = 18
+const MAX_DEAD_SOURCE_TABS = 10
 
 type ScoreEngine = ReturnType<typeof useScoreEngine>
 
@@ -41,6 +42,7 @@ type SourceTab = {
   id: number
   title: string
   active: boolean
+  alive: boolean
 }
 
 // Coupling of a sound engine to a source code with history
@@ -161,6 +163,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   const isEmbedMode = ref(false)
   const sidebarMode = ref<SidebarMode>('info')
   const locationHref = ref(DEFAULT_LOCATION_HREF)
+  const deadScoreEngines = shallowRef<ScoreEngine[]>([])
   let nextScoreEngineId = 2
   let shouldApplyInitialSidebarMode = true
   const cancelOnEndByEngine = new Map<number, () => void>()
@@ -169,13 +172,20 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
 
   const activeScoreEngine = computed(() => scoreEngines.value[activeScoreEngineIndex.value]!)
 
-  const sourceTabs = computed<SourceTab[]>(() =>
-    scoreEngines.value.map((engine, index) => ({
+  const sourceTabs = computed<SourceTab[]>(() => [
+    ...scoreEngines.value.map((engine, index) => ({
       id: engine.id,
       title: getSourceTabTitle(engine.sourceCode.value, index),
       active: index === activeScoreEngineIndex.value,
+      alive: true,
     })),
-  )
+    ...deadScoreEngines.value.map((engine, index) => ({
+      id: engine.id,
+      title: getSourceTabTitle(engine.sourceCode.value, index),
+      active: false,
+      alive: false,
+    })),
+  ])
 
   const sourceCode = computed({
     get: () => activeScoreEngine.value.sourceCode.value,
@@ -208,7 +218,6 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   const canRedoSourceCode = computed(() =>
     canRedoSourceChange(activeScoreEngine.value.sourceHistory.value),
   )
-
   const getPlayableScoreEngines = (): ScoreEngine[] =>
     scoreEngines.value.filter((engine) => engine.scoreLoaded.value)
 
@@ -244,6 +253,31 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     return engine
   }
 
+  const trimDeadScoreEngines = (): void => {
+    const enginesToRemove = deadScoreEngines.value.slice(MAX_DEAD_SOURCE_TABS)
+    deadScoreEngines.value = deadScoreEngines.value.slice(0, MAX_DEAD_SOURCE_TABS)
+    void clearScoreEngines(enginesToRemove)
+  }
+
+  const rememberDeadScoreEngines = (engines: ScoreEngine[]): void => {
+    if (!engines.length) return
+
+    engines.forEach((engine) => {
+      cancelOnEndByEngine.get(engine.id)?.()
+      cancelOnEndByEngine.delete(engine.id)
+      cancelOnNoteByEngine.get(engine.id)?.()
+      cancelOnNoteByEngine.delete(engine.id)
+    })
+
+    deadScoreEngines.value = [...engines, ...deadScoreEngines.value]
+    trimDeadScoreEngines()
+  }
+
+  const clearDeadScoreEngines = (): void => {
+    void clearScoreEngines(deadScoreEngines.value)
+    deadScoreEngines.value = []
+  }
+
   const replaceScoreEnginesWithSources = (sources: string[]): void => {
     stopSoundEngineListeners()
     void clearScoreEngines(scoreEngines.value)
@@ -252,7 +286,22 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
       createScoreEngineFromSource(source, index + 1),
     )
     activeScoreEngineIndex.value = 0
-    nextScoreEngineId = scoreEngines.value.length + 1
+    nextScoreEngineId =
+      Math.max(
+        ...scoreEngines.value.map((engine) => engine.id),
+        ...deadScoreEngines.value.map((engine) => engine.id),
+        0,
+      ) + 1
+    startSoundEngineListeners()
+  }
+
+  const restoreDeadSourceCodeTab = (deadIndex: number): void => {
+    const restored = deadScoreEngines.value[deadIndex]
+    if (!restored) return
+
+    deadScoreEngines.value = deadScoreEngines.value.filter((_, index) => index !== deadIndex)
+    scoreEngines.value = [...scoreEngines.value, restored]
+    activeScoreEngineIndex.value = scoreEngines.value.length - 1
     startSoundEngineListeners()
   }
 
@@ -284,6 +333,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
 
   const initializeSourceCode = (sharedHash: string): void => {
     replaceScoreEnginesWithSources(getSavedSourceCodes(sharedHash))
+    clearDeadScoreEngines()
     isEmbedMode.value = isEmbedHash(sharedHash)
     shouldApplyInitialSidebarMode = true
   }
@@ -307,6 +357,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
       hasSharedSourceCode(sharedHash) &&
       !sourceCodesEqual(sharedSourceCodes, sourceCodes.value)
     ) {
+      clearDeadScoreEngines()
       replaceScoreEnginesWithSources(sharedSourceCodes)
     }
   }
@@ -322,7 +373,13 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   }
 
   const selectSourceCodeTab = (index: number): void => {
-    if (index < 0 || index >= scoreEngines.value.length) return
+    if (index < 0 || index >= sourceTabs.value.length) return
+
+    if (index >= scoreEngines.value.length) {
+      restoreDeadSourceCodeTab(index - scoreEngines.value.length)
+      return
+    }
+
     activeScoreEngineIndex.value = index
   }
 
@@ -333,19 +390,15 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     const [removed] = nextScoreEngines.splice(index, 1)
     if (!removed) return
 
-    cancelOnEndByEngine.get(removed.id)?.()
-    cancelOnEndByEngine.delete(removed.id)
-    cancelOnNoteByEngine.get(removed.id)?.()
-    cancelOnNoteByEngine.delete(removed.id)
-
     if (isPlaying.value) {
       resetPlaybackState()
       await pauseAllSoundEngines()
     } else {
       await removed.soundEngine.pause()
     }
-    await removed.soundEngine.setScore(EMPTY_SCORE_MS)
+    await clearScoreEngine(removed)
 
+    rememberDeadScoreEngines([removed])
     scoreEngines.value = nextScoreEngines
 
     if (activeScoreEngineIndex.value >= scoreEngines.value.length) {
@@ -361,20 +414,20 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     resetPlaybackState()
     await clearScoreEngines(previousScoreEngines)
 
-    const engine = createScoreEngineFromSource(source, 1)
+    const engine = createScoreEngineFromSource(source, nextScoreEngineId++)
 
     await engine.updateParsedSourceCode()
     if (!engine.scoreLoaded.value) {
       scoreEngines.value = [engine]
       activeScoreEngineIndex.value = 0
-      nextScoreEngineId = 2
+      rememberDeadScoreEngines(previousScoreEngines)
       startSoundEngineListeners()
       return
     }
 
     scoreEngines.value = [engine]
     activeScoreEngineIndex.value = 0
-    nextScoreEngineId = 2
+    rememberDeadScoreEngines(previousScoreEngines)
     startSoundEngineListeners()
     engine.soundEngine.setLoopActive(isLooping.value)
     await engine.soundEngine.gotoMs(0)

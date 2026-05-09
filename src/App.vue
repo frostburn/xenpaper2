@@ -254,6 +254,11 @@ onUnmounted(() => {
   background: var(--xenpaper-cyan);
 }
 
+.source-tab-button.source-tab-dead {
+  color: var(--xenpaper-placeholder);
+  font-style: italic;
+}
+
 .source-tab-close {
   width: 2rem;
   padding: 0 0.5rem;
