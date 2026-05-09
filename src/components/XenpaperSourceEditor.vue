@@ -82,7 +82,11 @@ const handleSourceKeydown = (event: KeyboardEvent): void => {
 }
 
 const activeSourceTab = computed(() => props.sourceTabs[props.activeSourceCodeTabIndex])
-const liveSourceTabCount = computed(() => props.sourceTabs.filter((tab) => tab.alive).length)
+const liveSourceTabs = computed(() => props.sourceTabs.filter((tab) => tab.alive))
+const deadSourceTabs = computed(() =>
+  props.sourceTabs.map((tab, index) => ({ ...tab, index })).filter((tab) => !tab.alive),
+)
+const liveSourceTabCount = computed(() => liveSourceTabs.value.length)
 
 const isCharacterActive = (charData?: CharData): boolean => {
   const [start, end] = charData?.playTime ?? []
@@ -100,26 +104,25 @@ const isCharacterActive = (charData?: CharData): boolean => {
 <template>
   <main class="xenpaper-app" :class="{ 'xenpaper-app-embed': isEmbedMode }">
     <div
-      v-if="!isEmbedMode || sourceTabs.length > 1"
+      v-if="!isEmbedMode || liveSourceTabs.length > 1"
       class="source-tabs"
       role="tablist"
       aria-label="Source codes"
     >
-      <div v-for="(tab, index) in sourceTabs" :key="tab.id" class="source-tab">
+      <div v-for="(tab, index) in liveSourceTabs" :key="tab.id" class="source-tab">
         <button
           class="source-tab-button"
-          :class="{ active: tab.active, 'source-tab-dead': !tab.alive }"
+          :class="{ active: tab.active }"
           type="button"
           role="tab"
           :aria-selected="tab.active"
-          :aria-controls="tab.alive ? `source-code-panel-${tab.id}` : undefined"
-          :title="tab.alive ? undefined : `Restore ${tab.title}`"
+          :aria-controls="`source-code-panel-${tab.id}`"
           @click="emit('selectSourceCodeTab', index)"
         >
-          {{ tab.alive ? tab.title : `Restore ${tab.title}` }}
+          {{ tab.title }}
         </button>
         <button
-          v-if="!isEmbedMode && tab.alive && liveSourceTabCount > 1"
+          v-if="!isEmbedMode && liveSourceTabCount > 1"
           class="source-tab-close"
           type="button"
           :aria-label="`Close ${tab.title}`"
@@ -137,6 +140,21 @@ const isCharacterActive = (charData?: CharData): boolean => {
       >
         +
       </button>
+      <details v-if="!isEmbedMode && deadSourceTabs.length" class="source-tab-restore-menu">
+        <summary class="source-tab-restore-summary">Recently closed</summary>
+        <div class="source-tab-restore-list">
+          <button
+            v-for="tab in deadSourceTabs"
+            :key="tab.id"
+            class="source-tab-restore-button"
+            type="button"
+            :title="`Restore ${tab.title}`"
+            @click="emit('selectSourceCodeTab', tab.index)"
+          >
+            {{ tab.title }}
+          </button>
+        </div>
+      </details>
     </div>
     <label class="source-label" for="source-code">Source code</label>
     <div

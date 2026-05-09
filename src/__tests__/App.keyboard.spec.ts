@@ -293,6 +293,8 @@ describe('App source editor keyboard shortcuts', () => {
       { title: 'first', alive: true, active: true },
       { title: 'second', alive: false, active: false },
     ])
+    expect(wrapper.findAll('[role="tab"]')).toHaveLength(1)
+    expect(wrapper.get('.source-tab-restore-summary').text()).toBe('Recently closed')
 
     await wrapper.get('button[title="Restore second"]').trigger('click')
     await flushPromises()
@@ -345,6 +347,8 @@ describe('App source editor keyboard shortcuts', () => {
       { title: 'first', alive: false, active: false },
       { title: 'second', alive: false, active: false },
     ])
+    expect(wrapper.findAll('[role="tab"]')).toHaveLength(1)
+    expect(wrapper.get('.source-tab-restore-summary').text()).toBe('Recently closed')
     expect(store.isPlaying).toBe(true)
 
     await wrapper.get('button[title="Restore first"]').trigger('click')
