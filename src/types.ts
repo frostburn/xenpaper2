@@ -16,6 +16,13 @@ export type SourceDisplayToken =
       index: number
     }
 
+export type SourceTab = {
+  id: number
+  title: string
+  active: boolean
+  alive: boolean
+}
+
 export type SourceHistory = {
   past: string[]
   present: string

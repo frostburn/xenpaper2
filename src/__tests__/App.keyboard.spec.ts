@@ -278,6 +278,132 @@ describe('App source editor keyboard shortcuts', () => {
     expect(wrapper.get<HTMLTextAreaElement>('textarea').element.value).toBe('second')
   })
 
+  it('shows and restores a recently closed source code tab', async () => {
+    const { store, wrapper } = await mountApp('#first')
+
+    await wrapper.get('button[aria-label="Add source code"]').trigger('click')
+    await wrapper.get<HTMLTextAreaElement>('textarea').setValue('second')
+    await flushPromises()
+
+    await store.closeSourceCodeTab(store.sourceTabs[1]!.id)
+    await flushPromises()
+
+    expect(store.sourceCodes).toEqual(['first'])
+    expect(store.sourceTabs).toMatchObject([
+      { title: 'first', alive: true, active: true },
+      { title: 'second', alive: false, active: false },
+    ])
+    expect(wrapper.findAll('[role="tab"]')).toHaveLength(1)
+    expect(wrapper.get('.source-tab-restore-summary').text()).toBe('Recently closed')
+
+    await wrapper.get('button[title="Restore second"]').trigger('click')
+    await flushPromises()
+
+    expect(store.sourceCodes).toEqual(['first', 'second'])
+    expect(store.sourceTabs.every((tab) => tab.alive)).toBe(true)
+    expect(store.activeSourceCodeTabIndex).toBe(1)
+    expect(wrapper.findAll('[role="tab"]')).toHaveLength(2)
+    expect(wrapper.get<HTMLTextAreaElement>('textarea').element.value).toBe('second')
+  })
+
+  it('stops playback when restoring a recently closed source code tab', async () => {
+    const { store, wrapper } = await mountApp('#0_2')
+
+    await wrapper.get('button[aria-label="Add source code"]').trigger('click')
+    await wrapper.get<HTMLTextAreaElement>('textarea').setValue('4_5')
+    await flushPromises()
+
+    await store.closeSourceCodeTab(store.sourceTabs[1]!.id)
+    await flushPromises()
+
+    await store.restartPlaybackFromStart()
+    expect(store.isPlaying).toBe(true)
+    expect(wrapper.get('.play-pause-button').text()).toContain('Pause')
+
+    await wrapper.get('button[title="Restore 4_5"]').trigger('click')
+    await flushPromises()
+
+    expect(store.isPlaying).toBe(false)
+    expect(wrapper.get('.play-pause-button').text()).toContain('Play')
+    expect(store.activeSourceCodeTabIndex).toBe(1)
+    expect(wrapper.get<HTMLTextAreaElement>('textarea').element.value).toBe('4_5')
+  })
+
+  it('closes the recently closed menu when clicking outside it', async () => {
+    const { store, wrapper } = await mountApp('#first')
+
+    await wrapper.get('button[aria-label="Add source code"]').trigger('click')
+    await wrapper.get<HTMLTextAreaElement>('textarea').setValue('second')
+    await flushPromises()
+
+    await store.closeSourceCodeTab(store.sourceTabs[1]!.id)
+    await flushPromises()
+
+    const restoreMenu = wrapper.get<HTMLDetailsElement>('.source-tab-restore-menu').element
+    restoreMenu.open = true
+
+    document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    await flushPromises()
+
+    expect(restoreMenu.open).toBe(false)
+  })
+
+  it('does not duplicate a recently closed tab when close is triggered twice', async () => {
+    const { store } = await mountApp('#first')
+
+    store.addSourceCodeTab()
+    store.setSourceCode('second')
+    const tabId = store.sourceTabs[1]!.id
+
+    const firstClose = store.closeSourceCodeTab(tabId)
+    const secondClose = store.closeSourceCodeTab(tabId)
+
+    expect(store.sourceCodes).toEqual(['first'])
+
+    await Promise.all([firstClose, secondClose])
+
+    expect(store.sourceTabs).toMatchObject([
+      { title: 'first', alive: true, active: true },
+      { title: 'second', alive: false, active: false },
+    ])
+
+    store.selectSourceCodeTab(1)
+
+    expect(store.sourceCodes).toEqual(['first', 'second'])
+    expect(store.sourceTabs.every((tab) => tab.alive)).toBe(true)
+  })
+
+  it('keeps replaced project tabs available as recently closed tabs after selecting a demo tune', async () => {
+    const { store, wrapper } = await mountApp('#first')
+
+    await wrapper.get('button[aria-label="Add source code"]').trigger('click')
+    await wrapper.get<HTMLTextAreaElement>('textarea').setValue('second')
+    await flushPromises()
+
+    await store.setDemoTune('4 5')
+    await flushPromises()
+
+    expect(store.sourceCodes).toEqual(['4 5'])
+    expect(store.sourceTabs).toMatchObject([
+      { title: '4 5', alive: true, active: true },
+      { title: 'first', alive: false, active: false },
+      { title: 'second', alive: false, active: false },
+    ])
+    expect(wrapper.findAll('[role="tab"]')).toHaveLength(1)
+    expect(wrapper.get('.source-tab-restore-summary').text()).toBe('Recently closed')
+    expect(store.isPlaying).toBe(true)
+
+    await wrapper.get('button[title="Restore first"]').trigger('click')
+    await flushPromises()
+    await wrapper.get('button[title="Restore second"]').trigger('click')
+    await flushPromises()
+
+    expect(store.sourceCodes).toEqual(['4 5', 'first', 'second'])
+    expect(store.sourceTabs.every((tab) => tab.alive)).toBe(true)
+    expect(store.activeSourceCodeTabIndex).toBe(2)
+    expect(wrapper.get<HTMLTextAreaElement>('textarea').element.value).toBe('second')
+  })
+
   it('resets playback state when closing a tab during playback', async () => {
     const { store, wrapper } = await mountApp('#0_2')
 
@@ -289,7 +415,7 @@ describe('App source editor keyboard shortcuts', () => {
     expect(store.isPlaying).toBe(true)
     expect(wrapper.get('.play-pause-button').text()).toContain('Pause')
 
-    await store.closeSourceCodeTab(1)
+    await store.closeSourceCodeTab(store.sourceTabs[1]!.id)
     await flushPromises()
 
     expect(store.isPlaying).toBe(false)
@@ -308,7 +434,9 @@ describe('App source editor keyboard shortcuts', () => {
     await store.setDemoTune('4 5')
     await flushPromises()
 
-    expect(store.sourceTabs).toHaveLength(1)
+    expect(store.sourceCodes).toEqual(['4 5'])
+    expect(store.sourceTabs).toHaveLength(3)
+    expect(store.sourceTabs.filter((tab) => !tab.alive)).toHaveLength(2)
     expect(store.sourceCode).toBe('4 5')
     expect(store.activeSourceCodeTabIndex).toBe(0)
     expect(store.isPlaying).toBe(true)

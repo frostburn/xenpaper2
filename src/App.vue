@@ -213,13 +213,15 @@ onUnmounted(() => {
 }
 
 .source-tabs {
+  position: relative;
+  z-index: 3;
   flex: 0 0 auto;
   display: flex;
   align-items: stretch;
   gap: 0.25rem;
   min-height: 2.5rem;
   padding: 0 1rem 0.25rem 2rem;
-  overflow-x: auto;
+  overflow: visible;
 }
 
 .source-tab {
@@ -232,7 +234,9 @@ onUnmounted(() => {
 
 .source-tab-button,
 .source-tab-close,
-.source-tab-add {
+.source-tab-add,
+.source-tab-restore-summary,
+.source-tab-restore-button {
   border: 0;
   cursor: pointer;
   background: var(--xenpaper-bg-light);
@@ -266,12 +270,50 @@ onUnmounted(() => {
   color: var(--xenpaper-cyan);
 }
 
+.source-tab-restore-menu {
+  position: relative;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+.source-tab-restore-summary {
+  display: block;
+  padding: 0.5rem 0.75rem;
+  color: var(--xenpaper-placeholder);
+  list-style: none;
+}
+
+.source-tab-restore-summary::-webkit-details-marker {
+  display: none;
+}
+
+.source-tab-restore-list {
+  position: absolute;
+  z-index: 2;
+  right: 0;
+  display: flex;
+  min-width: 12rem;
+  flex-direction: column;
+  background: var(--xenpaper-bg-light);
+  box-shadow: 0 0.25rem 1rem rgb(0 0 0 / 30%);
+}
+
+.source-tab-restore-button {
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  white-space: nowrap;
+}
+
 .source-tab-button:hover,
 .source-tab-button:focus-visible,
 .source-tab-close:hover,
 .source-tab-close:focus-visible,
 .source-tab-add:hover,
-.source-tab-add:focus-visible {
+.source-tab-add:focus-visible,
+.source-tab-restore-summary:hover,
+.source-tab-restore-summary:focus-visible,
+.source-tab-restore-button:hover,
+.source-tab-restore-button:focus-visible {
   background: var(--xenpaper-focus);
   color: var(--xenpaper-text);
 }

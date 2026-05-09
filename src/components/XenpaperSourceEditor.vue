@@ -1,15 +1,9 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 import type { CharData } from '../grammars/grammar-to-chars'
 import { getSourceLineAtOffset } from '../source-display'
-import type { SourceDisplayToken } from '../types'
-
-type SourceTab = {
-  id: number
-  title: string
-  active: boolean
-}
+import type { SourceDisplayToken, SourceTab } from '../types'
 
 const props = defineProps<{
   isEmbedMode: boolean
@@ -33,7 +27,7 @@ const emit = defineEmits<{
   setSelectedLine: [line: number]
   addSourceCodeTab: []
   selectSourceCodeTab: [index: number]
-  closeSourceCodeTab: [index: number]
+  closeSourceCodeTab: [id: number]
 }>()
 
 const handleSourceInput = (event: Event): void => {
@@ -80,7 +74,42 @@ const handleSourceKeydown = (event: KeyboardEvent): void => {
   }
 }
 
+const restoreMenu = ref<HTMLDetailsElement>()
+
 const activeSourceTab = computed(() => props.sourceTabs[props.activeSourceCodeTabIndex])
+const liveSourceTabs = computed(() => props.sourceTabs.filter((tab) => tab.alive))
+const deadSourceTabs = computed(() =>
+  props.sourceTabs.map((tab, index) => ({ ...tab, index })).filter((tab) => !tab.alive),
+)
+const liveSourceTabCount = computed(() => liveSourceTabs.value.length)
+
+const closeRestoreMenu = (): void => {
+  if (!restoreMenu.value) return
+
+  restoreMenu.value.open = false
+}
+
+const restoreSourceCodeTab = (index: number): void => {
+  emit('selectSourceCodeTab', index)
+  closeRestoreMenu()
+}
+
+const handleDocumentPointerdown = (event: PointerEvent): void => {
+  if (!restoreMenu.value?.open) return
+
+  const target = event.target
+  if (!(target instanceof Node) || restoreMenu.value.contains(target)) return
+
+  closeRestoreMenu()
+}
+
+onMounted(() => {
+  document.addEventListener('pointerdown', handleDocumentPointerdown)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('pointerdown', handleDocumentPointerdown)
+})
 
 const isCharacterActive = (charData?: CharData): boolean => {
   const [start, end] = charData?.playTime ?? []
@@ -98,12 +127,12 @@ const isCharacterActive = (charData?: CharData): boolean => {
 <template>
   <main class="xenpaper-app" :class="{ 'xenpaper-app-embed': isEmbedMode }">
     <div
-      v-if="!isEmbedMode || sourceTabs.length > 1"
+      v-if="!isEmbedMode || liveSourceTabs.length > 1"
       class="source-tabs"
       role="tablist"
       aria-label="Source codes"
     >
-      <div v-for="(tab, index) in sourceTabs" :key="tab.id" class="source-tab">
+      <div v-for="(tab, index) in liveSourceTabs" :key="tab.id" class="source-tab">
         <button
           class="source-tab-button"
           :class="{ active: tab.active }"
@@ -116,11 +145,11 @@ const isCharacterActive = (charData?: CharData): boolean => {
           {{ tab.title }}
         </button>
         <button
-          v-if="!isEmbedMode && sourceTabs.length > 1"
+          v-if="!isEmbedMode && liveSourceTabCount > 1"
           class="source-tab-close"
           type="button"
           :aria-label="`Close ${tab.title}`"
-          @click="emit('closeSourceCodeTab', index)"
+          @click="emit('closeSourceCodeTab', tab.id)"
         >
           ×
         </button>
@@ -134,6 +163,25 @@ const isCharacterActive = (charData?: CharData): boolean => {
       >
         +
       </button>
+      <details
+        v-if="!isEmbedMode && deadSourceTabs.length"
+        ref="restoreMenu"
+        class="source-tab-restore-menu"
+      >
+        <summary class="source-tab-restore-summary">Recently closed</summary>
+        <div class="source-tab-restore-list">
+          <button
+            v-for="tab in deadSourceTabs"
+            :key="tab.id"
+            class="source-tab-restore-button"
+            type="button"
+            :title="`Restore ${tab.title}`"
+            @click="restoreSourceCodeTab(tab.index)"
+          >
+            {{ tab.title }}
+          </button>
+        </div>
+      </details>
     </div>
     <label class="source-label" for="source-code">Source code</label>
     <div
