@@ -95,8 +95,22 @@ export class SoundEngineTonejs extends SoundEngine {
 
   _synth: PolySynth<Synth> | undefined
 
+  _clearScheduledEvents(): void {
+    this._transportEventIds.forEach((id) => Tone.Transport.clear(id))
+    this._transportEventIds = []
+  }
+
   _releaseActiveNotes(time?: number): void {
     this.getSynth().releaseAll(time)
+    this._clearActiveNoteEvents()
+  }
+
+  _releaseActiveNotesIfSynthExists(time?: number): void {
+    this._synth?.releaseAll(time)
+    this._clearActiveNoteEvents()
+  }
+
+  _clearActiveNoteEvents(): void {
     this._activeNoteEvents.forEach((noteMs) => {
       this._triggerEvent('note', noteMs, false)
     })
@@ -157,9 +171,14 @@ export class SoundEngineTonejs extends SoundEngine {
   }
 
   async pause(): Promise<void> {
-    await this.start()
     Tone.Transport.pause()
-    this._releaseActiveNotes()
+    this._releaseActiveNotesIfSynthExists()
+  }
+
+  stopSilently(): void {
+    Tone.Transport.pause()
+    this._releaseActiveNotesIfSynthExists()
+    this._clearScheduledEvents()
   }
 
   async gotoMs(ms: number): Promise<void> {
@@ -190,10 +209,9 @@ export class SoundEngineTonejs extends SoundEngine {
 
     // clear this engine's previous notes from tone transport without
     // disturbing other score engines that share the same transport clock
-    this._transportEventIds.forEach((id) => Tone.Transport.clear(id))
-    this._transportEventIds = []
+    this._clearScheduledEvents()
     this._endMs = scoreMs.lengthMs
-    this._releaseActiveNotes()
+    this._releaseActiveNotesIfSynthExists()
 
     // add all new notes to tone transport
     this.scoreMs.sequence.forEach((item): void => {
