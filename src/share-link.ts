@@ -4,7 +4,8 @@ const ESCAPED_UNDERSCORE = '%_'
 const hasBrowserWindow = (): boolean => typeof window !== 'undefined'
 
 const EMBED_PREFIX = 'embed:'
-const SOURCE_SEPARATOR = ':'
+const SOURCE_SEPARATOR = '~'
+const ESCAPED_SOURCE_SEPARATOR = '%7E'
 
 const removeHashPrefix = (hash: string): string => (hash.startsWith('#') ? hash.slice(1) : hash)
 
@@ -57,12 +58,15 @@ export const decodeSharedSource = (encodedSource: string): string => {
     .join('_')
 }
 
+const encodeSharedSourceForMultiSourceHash = (sourceCode: string): string =>
+  encodeSharedSource(sourceCode).replace(/~/g, ESCAPED_SOURCE_SEPARATOR)
+
 export const encodeSharedSources = (sourceCodes: string[]): string => {
   const normalizedSourceCodes = normalizeSourceCodes(sourceCodes)
 
   return normalizedSourceCodes.length === 1
     ? encodeSharedSource(normalizedSourceCodes[0] ?? '')
-    : normalizedSourceCodes.map(encodeSharedSource).join(SOURCE_SEPARATOR)
+    : normalizedSourceCodes.map(encodeSharedSourceForMultiSourceHash).join(SOURCE_SEPARATOR)
 }
 
 export const decodeSharedSources = (encodedSources: string): string[] => {

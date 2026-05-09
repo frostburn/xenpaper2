@@ -50,18 +50,27 @@ describe('share-link', () => {
   })
 
   it('builds and restores multi-source hash fragments in order', () => {
-    const sources = ['first tab', 'second:tab with_under', 'third\nline']
+    const sources = ['first tab', 'second:tab with_under', 'third\nline', 'tilde~tab']
     const hash = getShareHash(sources)
 
-    expect(hash).toBe('#first_tab:second%3Atab_with%_under:third\nline')
+    expect(hash).toBe('#first_tab~second%3Atab_with%_under~third\nline~tilde%7Etab')
     expect(getSharedSourceCodes(hash)).toEqual(sources)
     expect(getSharedSourceCode(hash)).toBe('first tab')
   })
 
   it('builds embedded multi-source hash fragments', () => {
-    expect(getEmbedShareHash(['one', 'two'])).toBe('#embed:one:two')
+    expect(getEmbedShareHash(['one', 'two'])).toBe('#embed:one~two')
     expect(isEmbedHash(getEmbedShareHash(['one', 'two']))).toBe(true)
     expect(getSharedSourceCodes(getEmbedShareHash(['one', 'two']))).toEqual(['one', 'two'])
+  })
+
+  it('does not split embed source colons into tab fragments', () => {
+    const sources = ['10:12:15', '4:5']
+    const hash = getEmbedShareHash(sources)
+
+    expect(hash).toBe('#embed:10%3A12%3A15~4%3A5')
+    expect(getSharedSourceCodes(hash)).toEqual(sources)
+    expect(getSharedSourceCodes('#embed:10:12:15~4:5')).toEqual(sources)
   })
 
   it('encodes control characters before hash fragments are used in absolute URLs', () => {
