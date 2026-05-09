@@ -213,13 +213,15 @@ onUnmounted(() => {
 }
 
 .source-tabs {
+  position: relative;
+  z-index: 3;
   flex: 0 0 auto;
   display: flex;
   align-items: stretch;
   gap: 0.25rem;
   min-height: 2.5rem;
   padding: 0 1rem 0.25rem 2rem;
-  overflow-x: auto;
+  overflow: visible;
 }
 
 .source-tab {
