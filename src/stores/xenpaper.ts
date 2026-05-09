@@ -219,8 +219,8 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     return getPlayableScoreEngines()
   }
 
-  const pauseAllSoundEngines = async (): Promise<void> => {
-    await Promise.all(scoreEngines.value.map((engine) => engine.soundEngine.pause()))
+  const pauseAllSoundEngines = async (time?: number): Promise<void> => {
+    await Promise.all(scoreEngines.value.map((engine) => engine.soundEngine.pause(time)))
   }
 
   const clearScoreEngine = async (engine: ScoreEngine): Promise<void> => {
@@ -467,10 +467,10 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     await restartPlaybackFromLine(0)
   }
 
-  const togglePlayback = async (): Promise<void> => {
+  const togglePlayback = async (time?: number): Promise<void> => {
     if (isPlaying.value) {
       resetPlaybackState()
-      await pauseAllSoundEngines()
+      await pauseAllSoundEngines(time)
       return
     }
 
@@ -505,7 +505,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     )
   }
 
-  const handleSoundEngineEnd = async (): Promise<void> => {
+  const handleSoundEngineEnd = async (time?: number): Promise<void> => {
     const playableEngines = getPlayableScoreEngines()
     if (!playableEngines.length) {
       resetPlaybackState()
@@ -519,18 +519,13 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     if (!allEnginesEnded) return
 
     resetPlaybackState()
-    await pauseAllSoundEngines()
+    await pauseAllSoundEngines(time)
   }
 
   const startSoundEngineListeners = (): void => {
     scoreEngines.value.forEach((engine) => {
       if (!cancelOnEndByEngine.has(engine.id)) {
-        cancelOnEndByEngine.set(
-          engine.id,
-          engine.soundEngine.onEnd(() => {
-            void handleSoundEngineEnd()
-          }),
-        )
+        cancelOnEndByEngine.set(engine.id, engine.soundEngine.onEnd(handleSoundEngineEnd))
       }
 
       if (!cancelOnNoteByEngine.has(engine.id)) {

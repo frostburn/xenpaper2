@@ -219,7 +219,7 @@ export const scoreToMs = (score: MoscScore): MoscScoreMs => {
 // soud engine base class
 //
 
-type SoundEngineEndEventCallback = () => void
+type SoundEngineEndEventCallback = (time?: number) => void
 type SoundEngineNoteEventCallback = (noteMs: MoscNoteMs, on: boolean) => void
 type SoundEngineEventCallbackCancel = () => void
 
@@ -262,11 +262,11 @@ export class SoundEngine {
     note: new Set<SoundEngineNoteEventCallback>(),
   }
 
-  _triggerEvent(type: 'end'): void
+  _triggerEvent(type: 'end', time?: number): void
   _triggerEvent(type: 'note', noteMs: MoscNoteMs, on: boolean): void
-  _triggerEvent(type: 'end' | 'note', noteMs?: MoscNoteMs, on?: boolean): void {
+  _triggerEvent(type: 'end' | 'note', noteMs?: number | MoscNoteMs, on?: boolean): void {
     if (type === 'end') {
-      this.events.end.forEach((cb) => cb())
+      this.events.end.forEach((cb) => cb(noteMs as number))
       return
     }
 
@@ -274,7 +274,7 @@ export class SoundEngine {
       throw new Error('Note event requires a note and on/off state.')
     }
 
-    this.events.note.forEach((cb) => cb(noteMs, on))
+    this.events.note.forEach((cb) => cb(noteMs as MoscNoteMs, on))
   }
 
   onEnd(callback: SoundEngineEndEventCallback): SoundEngineEventCallbackCancel {

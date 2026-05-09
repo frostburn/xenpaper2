@@ -170,14 +170,14 @@ export class SoundEngineTonejs extends SoundEngine {
     Tone.Transport.start()
   }
 
-  async pause(): Promise<void> {
-    Tone.Transport.pause()
-    this._releaseActiveNotesIfSynthExists()
+  async pause(time?: number): Promise<void> {
+    Tone.Transport.pause(time)
+    this._releaseActiveNotesIfSynthExists(time)
   }
 
-  stopSilently(): void {
-    Tone.Transport.pause()
-    this._releaseActiveNotesIfSynthExists()
+  stopSilently(time?: number): void {
+    Tone.Transport.pause(time)
+    this._releaseActiveNotesIfSynthExists(time)
     this._clearScheduledEvents()
   }
 
@@ -286,7 +286,7 @@ export class SoundEngineTonejs extends SoundEngine {
           if (Tone.Transport.loop) return
 
           this._releaseActiveNotes(time)
-          this._triggerEvent('end')
+          this._triggerEvent('end', time)
         }, this._endMs * 0.001)
 
         this._transportEventIds.push(endEventId)
