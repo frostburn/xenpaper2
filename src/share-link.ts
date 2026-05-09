@@ -83,12 +83,7 @@ const decodeModernPayload = async (encodedSources: string): Promise<unknown | un
   try {
     const payload = decodeBase64Url(encodedSources.slice(MODERN_SOURCE_PREFIX.length))
 
-    try {
-      return JSON.parse(await decompressString(payload))
-    } catch {
-      // Keep decoding the uncompressed v2 format from pre-compression builds.
-      return JSON.parse(new TextDecoder().decode(payload))
-    }
+    return JSON.parse(await decompressString(payload))
   } catch {
     return undefined
   }

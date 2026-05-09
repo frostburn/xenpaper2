@@ -264,7 +264,7 @@ describe('App source editor keyboard shortcuts', () => {
     const sharedHash = await getShareHash(['first', 'second_tab'])
 
     expect(store.sourceCodes).toEqual(['first', 'second_tab'])
-    expect(store.routeHash).toBe(sharedHash)
+    await vi.waitFor(() => expect(store.routeHash).toBe(sharedHash))
     expect(store.routeHash).not.toContain('%_')
     await vi.waitFor(() => expect(router.currentRoute.value.hash).toBe(sharedHash))
 

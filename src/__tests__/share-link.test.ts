@@ -13,15 +13,7 @@ import {
   saveSourceCodes,
 } from '../share-link'
 
-const encodeUncompressedV2Payload = (value: unknown): string => {
-  const bytes = new TextEncoder().encode(JSON.stringify(value))
-  let binary = ''
-  bytes.forEach((byte) => {
-    binary += String.fromCharCode(byte)
-  })
-
-  return `v2:${btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '')}`
-}
+const encodeRawJsonPayload = (value: unknown): string => encodeURIComponent(JSON.stringify(value))
 
 describe('share-link', () => {
   afterEach(async () => {
@@ -65,16 +57,10 @@ describe('share-link', () => {
     const repeatedSource = Array.from({ length: 40 }, () => '0_2 4_5 7_8').join('\n')
     const sources = [repeatedSource, repeatedSource.replace(/0/gu, '1')]
     const hash = await getShareHash(sources)
-    const uncompressedHash = `#${encodeUncompressedV2Payload(sources)}`
+    const rawJsonHash = `#${encodeRawJsonPayload(sources)}`
 
-    expect(hash.length).toBeLessThan(uncompressedHash.length)
+    expect(hash.length).toBeLessThan(rawJsonHash.length)
     expect(await getSharedSourceCodes(hash)).toEqual(sources)
-  })
-
-  it('continues to decode pre-compression v2 hash fragments', async () => {
-    const hash = `#${encodeUncompressedV2Payload(['old v2 source'])}`
-
-    expect(await getSharedSourceCodes(hash)).toEqual(['old v2 source'])
   })
 
   it('builds and restores multi-source hash fragments in order', async () => {
