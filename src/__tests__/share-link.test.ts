@@ -13,6 +13,16 @@ import {
   saveSourceCodes,
 } from '../share-link'
 
+const encodeUncompressedV2Payload = (value: unknown): string => {
+  const bytes = new TextEncoder().encode(JSON.stringify(value))
+  let binary = ''
+  bytes.forEach((byte) => {
+    binary += String.fromCharCode(byte)
+  })
+
+  return `v2:${btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '')}`
+}
+
 describe('share-link', () => {
   afterEach(() => {
     window.localStorage.clear()
@@ -47,6 +57,22 @@ describe('share-link', () => {
     expect(getShareHash(`"0-\`0-100%`)).toMatch(/^#v2:[A-Za-z0-9_-]+$/u)
     expect(getShareHash(['linked tune'])).toBe(getShareHash('linked tune'))
     expect(getSharedSourceCodes(getShareHash('embed:linked tune'))).toEqual(['embed:linked tune'])
+  })
+
+  it('compresses modern hash fragments', () => {
+    const repeatedSource = Array.from({ length: 40 }, () => '0_2 4_5 7_8').join('\n')
+    const sources = [repeatedSource, repeatedSource.replace(/0/gu, '1')]
+    const hash = getShareHash(sources)
+    const uncompressedHash = `#${encodeUncompressedV2Payload(sources)}`
+
+    expect(hash.length).toBeLessThan(uncompressedHash.length)
+    expect(getSharedSourceCodes(hash)).toEqual(sources)
+  })
+
+  it('continues to decode pre-compression v2 hash fragments', () => {
+    const hash = `#${encodeUncompressedV2Payload(['old v2 source'])}`
+
+    expect(getSharedSourceCodes(hash)).toEqual(['old v2 source'])
   })
 
   it('builds and restores multi-source hash fragments in order', () => {
