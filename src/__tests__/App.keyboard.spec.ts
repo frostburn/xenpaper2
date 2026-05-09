@@ -4,6 +4,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import App from '../App.vue'
+import { getShareHash } from '../share-link'
 import { useXenpaperStore } from '../stores/xenpaper'
 import HomeView from '../views/HomeView.vue'
 
@@ -247,11 +248,14 @@ describe('App source editor keyboard shortcuts', () => {
     await wrapper.get<HTMLTextAreaElement>('textarea').setValue('second_tab')
     await flushPromises()
 
-    expect(store.sourceCodes).toEqual(['first', 'second_tab'])
-    expect(store.routeHash).toBe('#first~second%_tab')
-    await vi.waitFor(() => expect(router.currentRoute.value.hash).toBe('#first~second%_tab'))
+    const sharedHash = getShareHash(['first', 'second_tab'])
 
-    const { store: restoredStore } = await mountApp('#first~second%_tab~third')
+    expect(store.sourceCodes).toEqual(['first', 'second_tab'])
+    expect(store.routeHash).toBe(sharedHash)
+    expect(store.routeHash).not.toContain('%_')
+    await vi.waitFor(() => expect(router.currentRoute.value.hash).toBe(sharedHash))
+
+    const { store: restoredStore } = await mountApp(getShareHash(['first', 'second_tab', 'third']))
 
     expect(restoredStore.sourceCodes).toEqual(['first', 'second_tab', 'third'])
     expect(restoredStore.sourceTabs).toHaveLength(3)

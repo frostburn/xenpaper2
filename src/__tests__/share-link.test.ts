@@ -31,31 +31,47 @@ describe('share-link', () => {
     expect(getSharedSourceCodes(legacyHash)).toEqual([sourceCode])
   })
 
-  it('uses underscores for spaces while preserving literal underscores', () => {
+  it('uses a versioned URL-safe source encoding while supporting legacy underscores', () => {
     const encoded = encodeSharedSource('pitch_name with space')
 
-    expect(encoded).toBe('pitch%_name_with_space')
+    expect(encoded).toMatch(/^v2:[A-Za-z0-9_-]+$/u)
+    expect(encoded).not.toContain('%_')
     expect(decodeSharedSource(encoded)).toBe('pitch_name with space')
+    expect(decodeSharedSource('pitch%_name_with_space')).toBe('pitch_name with space')
   })
 
-  it('builds hash fragments for shared and embedded source code', () => {
-    expect(getShareHash('linked tune')).toBe('#linked_tune')
-    expect(getShareHash('embed:linked tune')).toBe('#embed%3Alinked_tune')
-    expect(getEmbedShareHash('linked tune')).toBe('#embed:linked_tune')
-    expect(getShareHash(`"0-\`0-100%`)).toBe('#"0-`0-100%25')
-    expect(getShareHash(['linked tune'])).toBe('#linked_tune')
+  it('builds versioned hash fragments for shared and embedded source code', () => {
+    expect(getShareHash('linked tune')).toMatch(/^#v2:[A-Za-z0-9_-]+$/u)
+    expect(getShareHash('embed:linked tune')).toMatch(/^#v2:[A-Za-z0-9_-]+$/u)
+    expect(getEmbedShareHash('linked tune')).toMatch(/^#embed:v2:[A-Za-z0-9_-]+$/u)
+    expect(getShareHash(`"0-\`0-100%`)).toMatch(/^#v2:[A-Za-z0-9_-]+$/u)
+    expect(getShareHash(['linked tune'])).toBe(getShareHash('linked tune'))
+    expect(getSharedSourceCodes(getShareHash('embed:linked tune'))).toEqual(['embed:linked tune'])
   })
 
   it('builds and restores multi-source hash fragments in order', () => {
     const sources = ['first tab', 'second:tab with_under', 'third\nline', 'tilde~tab']
     const hash = getShareHash(sources)
 
-    expect(hash).toBe('#first_tab~second%3Atab_with%_under~third\nline~tilde%7Etab')
+    expect(hash).toMatch(/^#v2:[A-Za-z0-9_-]+$/u)
+    expect(hash).not.toContain('%_')
+    expect(hash).not.toContain('~')
     expect(getSharedSourceCodes(hash)).toEqual(sources)
+    expect(
+      getSharedSourceCodes('#first_tab~second%3Atab_with%_under~third\nline~tilde%7Etab'),
+    ).toEqual(sources)
+  })
+
+  it('continues to restore legacy malformed multi-source hashes', () => {
+    expect(getSharedSourceCodes('#first~second%_tab~third')).toEqual([
+      'first',
+      'second_tab',
+      'third',
+    ])
   })
 
   it('builds embedded multi-source hash fragments', () => {
-    expect(getEmbedShareHash(['one', 'two'])).toBe('#embed:one~two')
+    expect(getEmbedShareHash(['one', 'two'])).toMatch(/^#embed:v2:[A-Za-z0-9_-]+$/u)
     expect(isEmbedHash(getEmbedShareHash(['one', 'two']))).toBe(true)
     expect(getSharedSourceCodes(getEmbedShareHash(['one', 'two']))).toEqual(['one', 'two'])
   })
@@ -64,13 +80,13 @@ describe('share-link', () => {
     const sources = ['10:12:15', '4:5']
     const hash = getEmbedShareHash(sources)
 
-    expect(hash).toBe('#embed:10%3A12%3A15~4%3A5')
+    expect(hash).toMatch(/^#embed:v2:[A-Za-z0-9_-]+$/u)
     expect(getSharedSourceCodes(hash)).toEqual(sources)
     expect(getSharedSourceCodes('#embed:10:12:15~4:5')).toEqual(sources)
   })
 
   it('encodes control characters before hash fragments are used in absolute URLs', () => {
-    const hash = getShareHash('0_2\n4_5\t6_7')
+    const hash = '#0%_2\n4%_5\t6%_7'
 
     expect(encodeShareHashForUrl(hash)).toBe('#0%_2%0A4%_5%096%_7')
     expect(new URL(encodeShareHashForUrl(hash), 'https://example.test/').hash).toBe(

@@ -1,11 +1,8 @@
-const SPACE_TOKEN = '_'
-const ESCAPED_UNDERSCORE = '%_'
-
 const hasBrowserWindow = (): boolean => typeof window !== 'undefined'
 
 const EMBED_PREFIX = 'embed:'
+const MODERN_SOURCE_PREFIX = 'v2:'
 const SOURCE_SEPARATOR = '~'
-const ESCAPED_SOURCE_SEPARATOR = '%7E'
 
 const removeHashPrefix = (hash: string): string => (hash.startsWith('#') ? hash.slice(1) : hash)
 
@@ -30,14 +27,39 @@ const parseStoredSourceCodes = (storedSourceCodes: string | null): string[] | un
   }
 }
 
-export const encodeSharedSource = (sourceCode: string): string =>
-  sourceCode
-    .replace(/%/g, '%25')
-    .replace(/:/g, '%3A')
-    .replace(/_/g, ESCAPED_UNDERSCORE)
-    .replace(/ /g, SPACE_TOKEN)
+const encodeBase64Url = (value: string): string => {
+  const bytes = new TextEncoder().encode(value)
+  let binary = ''
+  bytes.forEach((byte) => {
+    binary += String.fromCharCode(byte)
+  })
 
-export const decodeSharedSource = (encodedSource: string): string => {
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '')
+}
+
+const decodeBase64Url = (encodedValue: string): string => {
+  const base64 = encodedValue.replace(/-/g, '+').replace(/_/g, '/')
+  const paddedBase64 = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=')
+  const binary = atob(paddedBase64)
+  const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0))
+
+  return new TextDecoder().decode(bytes)
+}
+
+const encodeModernPayload = (value: unknown): string =>
+  `${MODERN_SOURCE_PREFIX}${encodeBase64Url(JSON.stringify(value))}`
+
+const decodeModernPayload = (encodedSources: string): unknown | undefined => {
+  if (!encodedSources.startsWith(MODERN_SOURCE_PREFIX)) return undefined
+
+  try {
+    return JSON.parse(decodeBase64Url(encodedSources.slice(MODERN_SOURCE_PREFIX.length)))
+  } catch {
+    return undefined
+  }
+}
+
+const decodeLegacySharedSource = (encodedSource: string): string => {
   const percentPlaceholder = '\0percent\0'
   const underscorePlaceholder = '\0underscore\0'
   let restoredSource = encodedSource
@@ -58,21 +80,29 @@ export const decodeSharedSource = (encodedSource: string): string => {
     .join('_')
 }
 
-const encodeSharedSourceForMultiSourceHash = (sourceCode: string): string =>
-  encodeSharedSource(sourceCode).replace(/~/g, ESCAPED_SOURCE_SEPARATOR)
+export const encodeSharedSource = (sourceCode: string): string => encodeModernPayload(sourceCode)
 
-export const encodeSharedSources = (sourceCodes: string[]): string => {
-  const normalizedSourceCodes = normalizeSourceCodes(sourceCodes)
+export const decodeSharedSource = (encodedSource: string): string => {
+  const modernSource = decodeModernPayload(encodedSource)
 
-  return normalizedSourceCodes.length === 1
-    ? encodeSharedSource(normalizedSourceCodes[0] ?? '')
-    : normalizedSourceCodes.map(encodeSharedSourceForMultiSourceHash).join(SOURCE_SEPARATOR)
+  return typeof modernSource === 'string' ? modernSource : decodeLegacySharedSource(encodedSource)
 }
 
+export const encodeSharedSources = (sourceCodes: string[]): string =>
+  encodeModernPayload(normalizeSourceCodes(sourceCodes))
+
 export const decodeSharedSources = (encodedSources: string): string[] => {
+  const modernSources = decodeModernPayload(encodedSources)
+  if (
+    Array.isArray(modernSources) &&
+    modernSources.every((sourceCode) => typeof sourceCode === 'string')
+  ) {
+    return normalizeSourceCodes(modernSources)
+  }
+
   const encodedSourceCodes = encodedSources.split(SOURCE_SEPARATOR)
 
-  return normalizeSourceCodes(encodedSourceCodes.map(decodeSharedSource))
+  return normalizeSourceCodes(encodedSourceCodes.map(decodeLegacySharedSource))
 }
 
 export const encodeShareHashForUrl = (hash: string): string =>
@@ -85,10 +115,10 @@ export const encodeShareHashForUrl = (hash: string): string =>
   }).join('')
 
 export const getShareHash = (sourceCode: string | string[]): string =>
-  `#${Array.isArray(sourceCode) ? encodeSharedSources(sourceCode) : encodeSharedSource(sourceCode)}`
+  `#${encodeSharedSources(Array.isArray(sourceCode) ? sourceCode : [sourceCode])}`
 
 export const getEmbedShareHash = (sourceCode: string | string[]): string =>
-  `#${EMBED_PREFIX}${Array.isArray(sourceCode) ? encodeSharedSources(sourceCode) : encodeSharedSource(sourceCode)}`
+  `#${EMBED_PREFIX}${encodeSharedSources(Array.isArray(sourceCode) ? sourceCode : [sourceCode])}`
 
 export const isEmbedHash = (hash: unknown): boolean => {
   return typeof hash === 'string' && removeHashPrefix(hash).startsWith(EMBED_PREFIX)
