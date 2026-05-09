@@ -273,6 +273,7 @@ onUnmounted(() => {
 .source-tab-restore-menu {
   position: relative;
   flex: 0 0 auto;
+  margin-left: auto;
 }
 
 .source-tab-restore-summary {

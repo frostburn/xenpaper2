@@ -306,6 +306,25 @@ describe('App source editor keyboard shortcuts', () => {
     expect(wrapper.get<HTMLTextAreaElement>('textarea').element.value).toBe('second')
   })
 
+  it('closes the recently closed menu when clicking outside it', async () => {
+    const { store, wrapper } = await mountApp('#first')
+
+    await wrapper.get('button[aria-label="Add source code"]').trigger('click')
+    await wrapper.get<HTMLTextAreaElement>('textarea').setValue('second')
+    await flushPromises()
+
+    await store.closeSourceCodeTab(store.sourceTabs[1]!.id)
+    await flushPromises()
+
+    const restoreMenu = wrapper.get<HTMLDetailsElement>('.source-tab-restore-menu').element
+    restoreMenu.open = true
+
+    document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    await flushPromises()
+
+    expect(restoreMenu.open).toBe(false)
+  })
+
   it('does not duplicate a recently closed tab when close is triggered twice', async () => {
     const { store } = await mountApp('#first')
 

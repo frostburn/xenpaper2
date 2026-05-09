@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 import type { CharData } from '../grammars/grammar-to-chars'
 import { getSourceLineAtOffset } from '../source-display'
@@ -81,12 +81,42 @@ const handleSourceKeydown = (event: KeyboardEvent): void => {
   }
 }
 
+const restoreMenu = ref<HTMLDetailsElement>()
+
 const activeSourceTab = computed(() => props.sourceTabs[props.activeSourceCodeTabIndex])
 const liveSourceTabs = computed(() => props.sourceTabs.filter((tab) => tab.alive))
 const deadSourceTabs = computed(() =>
   props.sourceTabs.map((tab, index) => ({ ...tab, index })).filter((tab) => !tab.alive),
 )
 const liveSourceTabCount = computed(() => liveSourceTabs.value.length)
+
+const closeRestoreMenu = (): void => {
+  if (!restoreMenu.value) return
+
+  restoreMenu.value.open = false
+}
+
+const restoreSourceCodeTab = (index: number): void => {
+  emit('selectSourceCodeTab', index)
+  closeRestoreMenu()
+}
+
+const handleDocumentPointerdown = (event: PointerEvent): void => {
+  if (!restoreMenu.value?.open) return
+
+  const target = event.target
+  if (!(target instanceof Node) || restoreMenu.value.contains(target)) return
+
+  closeRestoreMenu()
+}
+
+onMounted(() => {
+  document.addEventListener('pointerdown', handleDocumentPointerdown)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('pointerdown', handleDocumentPointerdown)
+})
 
 const isCharacterActive = (charData?: CharData): boolean => {
   const [start, end] = charData?.playTime ?? []
@@ -140,7 +170,11 @@ const isCharacterActive = (charData?: CharData): boolean => {
       >
         +
       </button>
-      <details v-if="!isEmbedMode && deadSourceTabs.length" class="source-tab-restore-menu">
+      <details
+        v-if="!isEmbedMode && deadSourceTabs.length"
+        ref="restoreMenu"
+        class="source-tab-restore-menu"
+      >
         <summary class="source-tab-restore-summary">Recently closed</summary>
         <div class="source-tab-restore-list">
           <button
@@ -149,7 +183,7 @@ const isCharacterActive = (charData?: CharData): boolean => {
             class="source-tab-restore-button"
             type="button"
             :title="`Restore ${tab.title}`"
-            @click="emit('selectSourceCodeTab', tab.index)"
+            @click="restoreSourceCodeTab(tab.index)"
           >
             {{ tab.title }}
           </button>
