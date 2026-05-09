@@ -1,5 +1,6 @@
+// Swap spaces and underscores when encoding
 const SPACE_TOKEN = '_'
-const ESCAPED_UNDERSCORE = '%_'
+const UNDERSCORE_TOKEN = '%20'
 
 const hasBrowserWindow = (): boolean => typeof window !== 'undefined'
 
@@ -34,7 +35,7 @@ export const encodeSharedSource = (sourceCode: string): string =>
   sourceCode
     .replace(/%/g, '%25')
     .replace(/:/g, '%3A')
-    .replace(/_/g, ESCAPED_UNDERSCORE)
+    .replace(/_/g, UNDERSCORE_TOKEN)
     .replace(/ /g, SPACE_TOKEN)
 
 export const decodeSharedSource = (encodedSource: string): string => {
@@ -42,7 +43,9 @@ export const decodeSharedSource = (encodedSource: string): string => {
   const underscorePlaceholder = '\0underscore\0'
   let restoredSource = encodedSource
     .replace(/%25/g, percentPlaceholder)
-    .replace(/%_/g, underscorePlaceholder)
+    .replace(/%_/g, underscorePlaceholder) // Old URLs use an illegal URI scheme
+    .replace(/ /g, underscorePlaceholder) // Say hi to Vue Router
+    .replace(/%20/g, underscorePlaceholder)
 
   try {
     restoredSource = decodeURIComponent(restoredSource)

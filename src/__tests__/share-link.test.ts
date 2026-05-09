@@ -34,7 +34,7 @@ describe('share-link', () => {
   it('uses underscores for spaces while preserving literal underscores', () => {
     const encoded = encodeSharedSource('pitch_name with space')
 
-    expect(encoded).toBe('pitch%_name_with_space')
+    expect(encoded).toBe('pitch%20name_with_space')
     expect(decodeSharedSource(encoded)).toBe('pitch_name with space')
   })
 
@@ -50,7 +50,7 @@ describe('share-link', () => {
     const sources = ['first tab', 'second:tab with_under', 'third\nline', 'tilde~tab']
     const hash = getShareHash(sources)
 
-    expect(hash).toBe('#first_tab~second%3Atab_with%_under~third\nline~tilde%7Etab')
+    expect(hash).toBe('#first_tab~second%3Atab_with%20under~third\nline~tilde%7Etab')
     expect(getSharedSourceCodes(hash)).toEqual(sources)
   })
 
@@ -72,9 +72,9 @@ describe('share-link', () => {
   it('encodes control characters before hash fragments are used in absolute URLs', () => {
     const hash = getShareHash('0_2\n4_5\t6_7')
 
-    expect(encodeShareHashForUrl(hash)).toBe('#0%_2%0A4%_5%096%_7')
+    expect(encodeShareHashForUrl(hash)).toBe('#0%202%0A4%205%096%207')
     expect(new URL(encodeShareHashForUrl(hash), 'https://example.test/').hash).toBe(
-      '#0%_2%0A4%_5%096%_7',
+      '#0%202%0A4%205%096%207',
     )
   })
 
