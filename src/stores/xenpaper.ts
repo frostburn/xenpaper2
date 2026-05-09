@@ -32,6 +32,7 @@ import {
 } from '../utils'
 
 const DEFAULT_LOCATION_HREF = 'http://localhost/'
+const EMPTY_SCORE_MS = { sequence: [], lengthMs: 0 }
 const TAB_TITLE_LENGTH = 18
 
 type ScoreEngine = ReturnType<typeof useScoreEngine>
@@ -216,6 +217,21 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     await Promise.all(scoreEngines.value.map((engine) => engine.soundEngine.pause()))
   }
 
+  const clearScoreEngine = async (engine: ScoreEngine): Promise<void> => {
+    await engine.soundEngine.pause()
+    await engine.soundEngine.setScore(EMPTY_SCORE_MS)
+    engine.scoreLoaded.value = false
+  }
+
+  const clearScoreEngines = async (engines: ScoreEngine[]): Promise<void> => {
+    await Promise.all(engines.map((engine) => clearScoreEngine(engine)))
+  }
+
+  const resetPlaybackState = (): void => {
+    isPlaying.value = false
+    playbackPositionMs.value = -1
+  }
+
   const updateParsedSourceCode = async (): Promise<void> => {
     const engine = activeScoreEngine.value
     const sourcePlayable = await engine.updateParsedSourceCode()
@@ -244,6 +260,8 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
 
   const initializeSourceCode = (sharedHash: string): void => {
     const source = getSavedSourceCode(sharedHash)
+    stopSoundEngineListeners()
+    void clearScoreEngines(scoreEngines.value)
     scoreEngines.value = [useScoreEngine(1)]
     activeScoreEngineIndex.value = 0
     nextScoreEngineId = 2
@@ -251,6 +269,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     activeScoreEngine.value.sourceCode.value = source
     isEmbedMode.value = isEmbedHash(sharedHash)
     shouldApplyInitialSidebarMode = true
+    startSoundEngineListeners()
   }
 
   const initializeLocation = (href: string): void => {
@@ -288,7 +307,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     activeScoreEngineIndex.value = index
   }
 
-  const closeSourceCodeTab = (index: number): void => {
+  const closeSourceCodeTab = async (index: number): Promise<void> => {
     if (scoreEngines.value.length <= 1 || index < 0 || index >= scoreEngines.value.length) return
 
     const nextScoreEngines = scoreEngines.value.slice()
@@ -299,8 +318,14 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     cancelOnEndByEngine.delete(removed.id)
     cancelOnNoteByEngine.get(removed.id)?.()
     cancelOnNoteByEngine.delete(removed.id)
-    void removed.soundEngine.pause()
-    void removed.soundEngine.setScore({ sequence: [], lengthMs: 0 })
+
+    if (isPlaying.value) {
+      resetPlaybackState()
+      await pauseAllSoundEngines()
+    } else {
+      await removed.soundEngine.pause()
+    }
+    await removed.soundEngine.setScore(EMPTY_SCORE_MS)
 
     scoreEngines.value = nextScoreEngines
 
@@ -312,21 +337,31 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   }
 
   const setDemoTune = async (source: string): Promise<void> => {
-    const engine = activeScoreEngine.value
-    const sourceChanged = source !== sourceCode.value
-    engine.applySourceCode(source)
+    const previousScoreEngines = scoreEngines.value
+    stopSoundEngineListeners()
+    resetPlaybackState()
+    await clearScoreEngines(previousScoreEngines)
 
-    if (
-      sourceChanged ||
-      !engine.scoreLoaded.value ||
-      engine.soundEngine.position() >= engine.soundEngine.endPosition()
-    ) {
-      await engine.updateParsedSourceCode()
-      if (!engine.scoreLoaded.value) return
+    const engine = useScoreEngine(1)
+    engine.sourceHistory.value = createSourceHistory(source)
+    engine.sourceCode.value = source
+
+    await engine.updateParsedSourceCode()
+    if (!engine.scoreLoaded.value) {
+      scoreEngines.value = [engine]
+      activeScoreEngineIndex.value = 0
+      nextScoreEngineId = 2
+      startSoundEngineListeners()
+      return
     }
 
-    await Promise.all(scoreEngines.value.map((item) => item.soundEngine.gotoMs(0)))
-    await Promise.all(scoreEngines.value.map((item) => item.soundEngine.play()))
+    scoreEngines.value = [engine]
+    activeScoreEngineIndex.value = 0
+    nextScoreEngineId = 2
+    startSoundEngineListeners()
+    engine.soundEngine.setLoopActive(isLooping.value)
+    await engine.soundEngine.gotoMs(0)
+    await engine.soundEngine.play()
     isPlaying.value = true
   }
 
@@ -356,9 +391,8 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
 
   const togglePlayback = async (): Promise<void> => {
     if (isPlaying.value) {
+      resetPlaybackState()
       await pauseAllSoundEngines()
-      isPlaying.value = false
-      playbackPositionMs.value = -1
       return
     }
 
@@ -396,7 +430,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   const handleSoundEngineEnd = async (): Promise<void> => {
     const playableEngines = getPlayableScoreEngines()
     if (!playableEngines.length) {
-      isPlaying.value = false
+      resetPlaybackState()
       return
     }
 
@@ -406,8 +440,8 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
 
     if (!allEnginesEnded) return
 
+    resetPlaybackState()
     await pauseAllSoundEngines()
-    isPlaying.value = false
   }
 
   const startSoundEngineListeners = (): void => {
