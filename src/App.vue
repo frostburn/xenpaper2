@@ -14,6 +14,7 @@ const router = useRouter()
 let playbackAnimationFrame: number | undefined
 let stopTitleWatcher: WatchStopHandle | undefined
 let stopSourceWatcher: WatchStopHandle | undefined
+let stopShareRouteWatcher: WatchStopHandle | undefined
 let stopLoopStartWatcher: WatchStopHandle | undefined
 let stopRouteHashWatcher: WatchStopHandle | undefined
 let stopPlaybackWatcher: WatchStopHandle | undefined
@@ -83,8 +84,14 @@ const startWatchers = (): void => {
   stopSourceWatcher = watch(
     () => xenpaper.sourceCode,
     () => {
-      void replaceShareRoute()
       void xenpaper.updateParsedSourceCode()
+    },
+  )
+
+  stopShareRouteWatcher = watch(
+    () => xenpaper.routeHash,
+    () => {
+      void replaceShareRoute()
     },
   )
 
@@ -115,11 +122,13 @@ const startWatchers = (): void => {
 const stopWatchers = (): void => {
   stopTitleWatcher?.()
   stopSourceWatcher?.()
+  stopShareRouteWatcher?.()
   stopLoopStartWatcher?.()
   stopRouteHashWatcher?.()
   stopPlaybackWatcher?.()
   stopTitleWatcher = undefined
   stopSourceWatcher = undefined
+  stopShareRouteWatcher = undefined
   stopLoopStartWatcher = undefined
   stopRouteHashWatcher = undefined
   stopPlaybackWatcher = undefined

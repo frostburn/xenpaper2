@@ -6,11 +6,14 @@ import {
   encodeSharedSource,
   getEmbedShareHash,
   getSavedSourceCode,
+  getSavedSourceCodes,
   getShareHash,
   getSharedSourceCode,
+  getSharedSourceCodes,
   hasSharedSourceCode,
   isEmbedHash,
   saveSourceCode,
+  saveSourceCodes,
 } from '../share-link'
 
 describe('share-link', () => {
@@ -43,6 +46,21 @@ describe('share-link', () => {
     expect(getShareHash('embed:linked tune')).toBe('#embed%3Alinked_tune')
     expect(getEmbedShareHash('linked tune')).toBe('#embed:linked_tune')
     expect(getShareHash(`"0-\`0-100%`)).toBe('#"0-`0-100%25')
+  })
+
+  it('builds and restores multi-source hash fragments in order', () => {
+    const sources = ['first tab', 'second:tab with_under', 'third\nline']
+    const hash = getShareHash(sources)
+
+    expect(hash).toBe('#tabs:first_tab:second%3Atab_with%_under:third\nline')
+    expect(getSharedSourceCodes(hash)).toEqual(sources)
+    expect(getSharedSourceCode(hash)).toBe('first tab')
+  })
+
+  it('builds embedded multi-source hash fragments', () => {
+    expect(getEmbedShareHash(['one', 'two'])).toBe('#embed:tabs:one:two')
+    expect(isEmbedHash(getEmbedShareHash(['one', 'two']))).toBe(true)
+    expect(getSharedSourceCodes(getEmbedShareHash(['one', 'two']))).toEqual(['one', 'two'])
   })
 
   it('encodes control characters before hash fragments are used in absolute URLs', () => {
@@ -81,11 +99,20 @@ describe('share-link', () => {
 
     expect(hasSharedSourceCode('')).toBe(false)
     expect(getSavedSourceCode('')).toBe('stored tune')
+    expect(getSavedSourceCodes('')).toEqual(['stored tune'])
   })
 
   it('remembers the latest tune without touching URL hash state', () => {
     saveSourceCode('shared tune')
 
     expect(window.localStorage.getItem('lasttune')).toBe('shared tune')
+    expect(getSavedSourceCodes('')).toEqual(['shared tune'])
+  })
+
+  it('remembers multiple latest tunes in browser storage', () => {
+    saveSourceCodes(['first tune', 'second tune'])
+
+    expect(window.localStorage.getItem('lasttune')).toBe('first tune')
+    expect(getSavedSourceCodes('')).toEqual(['first tune', 'second tune'])
   })
 })

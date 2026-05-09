@@ -240,6 +240,23 @@ describe('App source editor keyboard shortcuts', () => {
     expect(wrapper.get<HTMLTextAreaElement>('textarea').element.value).toBe('0_2')
   })
 
+  it('encodes all source tabs in the route hash and restores them in order', async () => {
+    const { router, store, wrapper } = await mountApp('#first')
+
+    await wrapper.get('button[aria-label="Add source code"]').trigger('click')
+    await wrapper.get<HTMLTextAreaElement>('textarea').setValue('second_tab')
+    await flushPromises()
+
+    expect(store.sourceCodes).toEqual(['first', 'second_tab'])
+    expect(store.routeHash).toBe('#tabs:first:second%_tab')
+    await vi.waitFor(() => expect(router.currentRoute.value.hash).toBe('#tabs:first:second%_tab'))
+
+    const { store: restoredStore } = await mountApp('#tabs:first:second%_tab:third')
+
+    expect(restoredStore.sourceCodes).toEqual(['first', 'second_tab', 'third'])
+    expect(restoredStore.sourceTabs).toHaveLength(3)
+  })
+
   it('resets playback state when closing a tab during playback', async () => {
     const { store, wrapper } = await mountApp('#0_2')
 
@@ -275,5 +292,4 @@ describe('App source editor keyboard shortcuts', () => {
     expect(store.activeSourceCodeTabIndex).toBe(0)
     expect(store.isPlaying).toBe(true)
   })
-
 })

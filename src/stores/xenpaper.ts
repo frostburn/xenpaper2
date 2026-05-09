@@ -14,12 +14,12 @@ import {
 import {
   encodeShareHashForUrl,
   getEmbedShareHash,
-  getSavedSourceCode,
+  getSavedSourceCodes,
   getShareHash,
-  getSharedSourceCode,
+  getSharedSourceCodes,
   hasSharedSourceCode,
   isEmbedHash,
-  saveSourceCode,
+  saveSourceCodes,
 } from '../share-link'
 import { SoundEngineTonejs } from '../sound-engine-tonejs'
 import { createSourceDisplayTokens } from '../source-display'
@@ -136,6 +136,9 @@ function useScoreEngine(id: number) {
   }
 }
 
+const sourceCodesEqual = (a: string[], b: string[]): boolean =>
+  a.length === b.length && a.every((sourceCode, index) => sourceCode === b[index])
+
 const getSourceTabTitle = (source: string, index: number): string => {
   const firstContentLine = source
     .split('\n')
@@ -178,12 +181,13 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     get: () => activeScoreEngine.value.sourceCode.value,
     set: (source: string) => activeScoreEngine.value.applySourceCode(source),
   })
+  const sourceCodes = computed(() => scoreEngines.value.map((engine) => engine.sourceCode.value))
   const soundEngine = computed(() => activeScoreEngine.value.soundEngine)
 
   const htmlTitle = computed(() => createHtmlTitle(sourceCode.value))
 
-  const shareHash = computed(() => getShareHash(sourceCode.value))
-  const embedHash = computed(() => getEmbedShareHash(sourceCode.value))
+  const shareHash = computed(() => getShareHash(sourceCodes.value))
+  const embedHash = computed(() => getEmbedShareHash(sourceCodes.value))
   const routeHash = computed(() => (isEmbedMode.value ? embedHash.value : shareHash.value))
   const shareUrl = computed(() =>
     new URL(encodeShareHashForUrl(shareHash.value), locationHref.value).toString(),
@@ -232,6 +236,26 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     playbackPositionMs.value = -1
   }
 
+  const createScoreEngineFromSource = (source: string, id: number): ScoreEngine => {
+    const engine = useScoreEngine(id)
+    engine.sourceHistory.value = createSourceHistory(source)
+    engine.sourceCode.value = source
+
+    return engine
+  }
+
+  const replaceScoreEnginesWithSources = (sources: string[]): void => {
+    stopSoundEngineListeners()
+    void clearScoreEngines(scoreEngines.value)
+    const nextSources = sources.length ? sources : ['']
+    scoreEngines.value = nextSources.map((source, index) =>
+      createScoreEngineFromSource(source, index + 1),
+    )
+    activeScoreEngineIndex.value = 0
+    nextScoreEngineId = scoreEngines.value.length + 1
+    startSoundEngineListeners()
+  }
+
   const updateParsedSourceCode = async (): Promise<void> => {
     const engine = activeScoreEngine.value
     const sourcePlayable = await engine.updateParsedSourceCode()
@@ -259,17 +283,9 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   }
 
   const initializeSourceCode = (sharedHash: string): void => {
-    const source = getSavedSourceCode(sharedHash)
-    stopSoundEngineListeners()
-    void clearScoreEngines(scoreEngines.value)
-    scoreEngines.value = [useScoreEngine(1)]
-    activeScoreEngineIndex.value = 0
-    nextScoreEngineId = 2
-    activeScoreEngine.value.sourceHistory.value = createSourceHistory(source)
-    activeScoreEngine.value.sourceCode.value = source
+    replaceScoreEnginesWithSources(getSavedSourceCodes(sharedHash))
     isEmbedMode.value = isEmbedHash(sharedHash)
     shouldApplyInitialSidebarMode = true
-    startSoundEngineListeners()
   }
 
   const initializeLocation = (href: string): void => {
@@ -277,18 +293,21 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   }
 
   const saveSourceCodeToBrowser = (): void => {
-    saveSourceCode(sourceCode.value)
+    saveSourceCodes(sourceCodes.value)
   }
 
   const applySharedHash = (sharedHash: string): void => {
-    const sharedSourceCode = getSharedSourceCode(sharedHash)
+    const sharedSourceCodes = getSharedSourceCodes(sharedHash)
 
     if (hasSharedSourceCode(sharedHash)) {
       isEmbedMode.value = isEmbedHash(sharedHash)
     }
 
-    if (hasSharedSourceCode(sharedHash) && sharedSourceCode !== sourceCode.value) {
-      activeScoreEngine.value.applySourceCode(sharedSourceCode, false)
+    if (
+      hasSharedSourceCode(sharedHash) &&
+      !sourceCodesEqual(sharedSourceCodes, sourceCodes.value)
+    ) {
+      replaceScoreEnginesWithSources(sharedSourceCodes)
     }
   }
 
@@ -342,9 +361,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     resetPlaybackState()
     await clearScoreEngines(previousScoreEngines)
 
-    const engine = useScoreEngine(1)
-    engine.sourceHistory.value = createSourceHistory(source)
-    engine.sourceCode.value = source
+    const engine = createScoreEngineFromSource(source, 1)
 
     await engine.updateParsedSourceCode()
     if (!engine.scoreLoaded.value) {
@@ -483,6 +500,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
 
   return {
     sourceCode,
+    sourceCodes,
     sourceTabs,
     activeSourceCodeTabIndex: activeScoreEngineIndex,
     sourceDisplayTokens: computed(() => activeScoreEngine.value.sourceDisplayTokens.value),
