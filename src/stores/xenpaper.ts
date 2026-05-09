@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, ref, shallowRef } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
 
 import { type CharData } from '../grammars/grammar-to-chars'
 import { type MoscNoteMs } from '../mosc'
@@ -34,6 +34,7 @@ import {
 const DEFAULT_LOCATION_HREF = 'http://localhost/'
 const EMPTY_SCORE_MS = { sequence: [], lengthMs: 0 }
 const TAB_TITLE_LENGTH = 18
+const EMBED_PLACEHOLDER_PREFIX = 'embed:'
 
 type ScoreEngine = ReturnType<typeof useScoreEngine>
 
@@ -186,8 +187,8 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
 
   const htmlTitle = computed(() => createHtmlTitle(sourceCode.value))
 
-  const shareHash = computed(() => getShareHash(sourceCodes.value))
-  const embedHash = computed(() => getEmbedShareHash(sourceCodes.value))
+  const shareHash = ref('#')
+  const embedHash = ref(`#${EMBED_PLACEHOLDER_PREFIX}`)
   const routeHash = computed(() => (isEmbedMode.value ? embedHash.value : shareHash.value))
   const shareUrl = computed(() =>
     new URL(encodeShareHashForUrl(shareHash.value), locationHref.value).toString(),
@@ -208,6 +209,26 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   const canRedoSourceCode = computed(() =>
     canRedoSourceChange(activeScoreEngine.value.sourceHistory.value),
   )
+
+  let shareHashVersion = 0
+
+  const updateShareHashes = async (): Promise<void> => {
+    const version = ++shareHashVersion
+    const nextSourceCodes = sourceCodes.value
+    const [nextShareHash, nextEmbedHash] = await Promise.all([
+      getShareHash(nextSourceCodes),
+      getEmbedShareHash(nextSourceCodes),
+    ])
+
+    if (version !== shareHashVersion) return
+
+    shareHash.value = nextShareHash
+    embedHash.value = nextEmbedHash
+  }
+
+  watch(sourceCodes, () => {
+    void updateShareHashes()
+  })
 
   const getPlayableScoreEngines = (): ScoreEngine[] =>
     scoreEngines.value.filter((engine) => engine.scoreLoaded.value)
@@ -282,10 +303,11 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     playbackPositionMs.value = -1
   }
 
-  const initializeSourceCode = (sharedHash: string): void => {
-    replaceScoreEnginesWithSources(getSavedSourceCodes(sharedHash))
+  const initializeSourceCode = async (sharedHash: string): Promise<void> => {
+    replaceScoreEnginesWithSources(await getSavedSourceCodes(sharedHash))
     isEmbedMode.value = isEmbedHash(sharedHash)
     shouldApplyInitialSidebarMode = true
+    await updateShareHashes()
   }
 
   const initializeLocation = (href: string): void => {
@@ -296,8 +318,8 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     saveSourceCodes(sourceCodes.value)
   }
 
-  const applySharedHash = (sharedHash: string): void => {
-    const sharedSourceCodes = getSharedSourceCodes(sharedHash)
+  const applySharedHash = async (sharedHash: string): Promise<void> => {
+    const sharedSourceCodes = await getSharedSourceCodes(sharedHash)
 
     if (hasSharedSourceCode(sharedHash)) {
       isEmbedMode.value = isEmbedHash(sharedHash)
@@ -308,6 +330,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
       !sourceCodesEqual(sharedSourceCodes, sourceCodes.value)
     ) {
       replaceScoreEnginesWithSources(sharedSourceCodes)
+      await updateShareHashes()
     }
   }
 

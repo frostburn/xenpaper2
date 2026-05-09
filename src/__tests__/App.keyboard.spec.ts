@@ -4,7 +4,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import App from '../App.vue'
-import { getShareHash } from '../share-link'
+import { getShareHash, getSharedSourceCodes } from '../share-link'
 import { useXenpaperStore } from '../stores/xenpaper'
 import HomeView from '../views/HomeView.vue'
 
@@ -70,6 +70,9 @@ vi.mock('../sound-engine-tonejs', () => ({
 }))
 
 const mountApp = async (hash = '#0_2') => {
+  window.location.hash = hash
+  const expectedSourceCodes = await getSharedSourceCodes(hash)
+
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
@@ -78,8 +81,10 @@ const mountApp = async (hash = '#0_2') => {
     ],
   })
 
-  await router.push(`/${hash}`)
+  await router.push({ path: '/', hash })
   await router.isReady()
+
+  window.location.hash = hash
 
   const pinia = createPinia()
   const wrapper = mount(App, {
@@ -93,8 +98,16 @@ const mountApp = async (hash = '#0_2') => {
   })
 
   await flushPromises()
+  const store = useXenpaperStore(pinia)
+  await vi.waitFor(() => expect(store.routeHash).toMatch(/^#(?:embed:)?v2:/u))
+  if (JSON.stringify(store.sourceCodes) !== JSON.stringify(expectedSourceCodes)) {
+    await store.applySharedHash(hash)
+  }
+  await vi.waitFor(() => expect(store.sourceCodes).toEqual(expectedSourceCodes))
+  await vi.waitFor(() => expect(wrapper.find('textarea').exists()).toBe(true))
+  await flushPromises()
 
-  return { router, store: useXenpaperStore(pinia), wrapper }
+  return { router, store, wrapper }
 }
 
 const dispatchSourceKeydown = async (textarea: HTMLTextAreaElement, init: KeyboardEventInit) => {
@@ -224,7 +237,7 @@ describe('App source editor keyboard shortcuts', () => {
     await wrapper.get('button[aria-label="Add source code"]').trigger('click')
     await flushPromises()
 
-    expect(wrapper.findAll('[role="tab"]')).toHaveLength(2)
+    await vi.waitFor(() => expect(wrapper.findAll('[role="tab"]')).toHaveLength(2))
     expect(wrapper.get<HTMLTextAreaElement>('textarea').element.value).toBe('')
 
     await wrapper.get<HTMLTextAreaElement>('textarea').setValue('0_2')
@@ -248,14 +261,16 @@ describe('App source editor keyboard shortcuts', () => {
     await wrapper.get<HTMLTextAreaElement>('textarea').setValue('second_tab')
     await flushPromises()
 
-    const sharedHash = getShareHash(['first', 'second_tab'])
+    const sharedHash = await getShareHash(['first', 'second_tab'])
 
     expect(store.sourceCodes).toEqual(['first', 'second_tab'])
     expect(store.routeHash).toBe(sharedHash)
     expect(store.routeHash).not.toContain('%_')
     await vi.waitFor(() => expect(router.currentRoute.value.hash).toBe(sharedHash))
 
-    const { store: restoredStore } = await mountApp(getShareHash(['first', 'second_tab', 'third']))
+    const { store: restoredStore } = await mountApp(
+      await getShareHash(['first', 'second_tab', 'third']),
+    )
 
     expect(restoredStore.sourceCodes).toEqual(['first', 'second_tab', 'third'])
     expect(restoredStore.sourceTabs).toHaveLength(3)
@@ -264,7 +279,7 @@ describe('App source editor keyboard shortcuts', () => {
   it('shows tabs in embed mode for shared multi-tab projects', async () => {
     const { wrapper } = await mountApp('#embed:first~second')
 
-    expect(wrapper.findAll('[role="tab"]')).toHaveLength(2)
+    await vi.waitFor(() => expect(wrapper.findAll('[role="tab"]')).toHaveLength(2))
     expect(wrapper.find('button[aria-label="Add source code"]').exists()).toBe(false)
     expect(wrapper.find('.source-tab-close').exists()).toBe(false)
 

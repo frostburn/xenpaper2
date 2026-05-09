@@ -102,7 +102,7 @@ const startWatchers = (): void => {
   stopRouteHashWatcher = watch(
     () => route.hash,
     (sharedHash) => {
-      xenpaper.applySharedHash(sharedHash)
+      void xenpaper.applySharedHash(sharedHash)
     },
   )
 
@@ -134,13 +134,17 @@ const stopWatchers = (): void => {
   stopPlaybackWatcher = undefined
 }
 
-onMounted(() => {
+const initializeApp = async (): Promise<void> => {
   xenpaper.initializeLocation(window.location.href)
-  xenpaper.initializeSourceCode(initialRouteHash())
+  await xenpaper.initializeSourceCode(initialRouteHash())
   xenpaper.startSoundEngineListeners()
   startWatchers()
-  void replaceShareRoute()
-  void xenpaper.updateParsedSourceCode()
+  await replaceShareRoute()
+  await xenpaper.updateParsedSourceCode()
+}
+
+onMounted(() => {
+  void initializeApp()
 })
 
 onUnmounted(() => {

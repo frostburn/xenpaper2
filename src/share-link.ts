@@ -3,6 +3,7 @@ const hasBrowserWindow = (): boolean => typeof window !== 'undefined'
 const EMBED_PREFIX = 'embed:'
 const MODERN_SOURCE_PREFIX = 'v2:'
 const SOURCE_SEPARATOR = '~'
+const COMPRESSION_FORMAT = 'gzip'
 
 const removeHashPrefix = (hash: string): string => (hash.startsWith('#') ? hash.slice(1) : hash)
 
@@ -27,9 +28,6 @@ const parseStoredSourceCodes = (storedSourceCodes: string | null): string[] | un
   }
 }
 
-const LZW_FIRST_DICTIONARY_CODE = 256
-const LZW_MAX_DICTIONARY_CODE = 0xffff
-
 const bytesToBinaryString = (bytes: Uint8Array): string => {
   let binary = ''
   bytes.forEach((byte) => {
@@ -52,103 +50,41 @@ const decodeBase64Url = (encodedValue: string): Uint8Array => {
   return binaryStringToBytes(atob(paddedBase64))
 }
 
-const compressBinaryString = (value: string): Uint16Array => {
-  if (!value) return new Uint16Array()
+const transformBytes = async (
+  bytes: Uint8Array,
+  transformer: CompressionStream | DecompressionStream,
+): Promise<Uint8Array> => {
+  const stream = new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.enqueue(bytes)
+      controller.close()
+    },
+  }).pipeThrough(transformer as unknown as ReadableWritablePair<Uint8Array, Uint8Array>)
+  const transformedBuffer = await new Response(stream).arrayBuffer()
 
-  const dictionary = new Map<string, number>()
-  const codes: number[] = []
-  let nextCode = LZW_FIRST_DICTIONARY_CODE
-  let phrase = value[0]!
-
-  for (let index = 1; index < value.length; index++) {
-    const character = value[index]!
-    const combinedPhrase = phrase + character
-
-    if (dictionary.has(combinedPhrase)) {
-      phrase = combinedPhrase
-      continue
-    }
-
-    codes.push(phrase.length === 1 ? phrase.charCodeAt(0) : dictionary.get(phrase)!)
-    if (nextCode <= LZW_MAX_DICTIONARY_CODE) {
-      dictionary.set(combinedPhrase, nextCode++)
-    }
-    phrase = character
-  }
-
-  codes.push(phrase.length === 1 ? phrase.charCodeAt(0) : dictionary.get(phrase)!)
-
-  return Uint16Array.from(codes)
+  return new Uint8Array(transformedBuffer)
 }
 
-const decompressBinaryString = (codes: Uint16Array): string => {
-  if (!codes.length) return ''
+const compressString = async (value: string): Promise<Uint8Array> =>
+  transformBytes(new TextEncoder().encode(value), new CompressionStream(COMPRESSION_FORMAT))
 
-  const dictionary = new Map<number, string>()
-  let nextCode = LZW_FIRST_DICTIONARY_CODE
-  let previousPhrase = String.fromCharCode(codes[0]!)
-  let result = previousPhrase
-
-  for (let index = 1; index < codes.length; index++) {
-    const code = codes[index]!
-    let phrase = code < LZW_FIRST_DICTIONARY_CODE ? String.fromCharCode(code) : dictionary.get(code)
-
-    if (phrase === undefined) {
-      if (code !== nextCode) throw new Error('Invalid compressed share payload')
-      phrase = previousPhrase + previousPhrase[0]!
-    }
-
-    result += phrase
-    if (nextCode <= LZW_MAX_DICTIONARY_CODE) {
-      dictionary.set(nextCode++, previousPhrase + phrase[0]!)
-    }
-    previousPhrase = phrase
-  }
-
-  return result
-}
-
-const codesToBytes = (codes: Uint16Array): Uint8Array => {
-  const bytes = new Uint8Array(codes.length * 2)
-  codes.forEach((code, index) => {
-    bytes[index * 2] = code >> 8
-    bytes[index * 2 + 1] = code & 0xff
-  })
-
-  return bytes
-}
-
-const bytesToCodes = (bytes: Uint8Array): Uint16Array => {
-  if (bytes.length % 2 !== 0) throw new Error('Invalid compressed share payload length')
-
-  const codes = new Uint16Array(bytes.length / 2)
-  codes.forEach((_, index) => {
-    codes[index] = (bytes[index * 2]! << 8) | bytes[index * 2 + 1]!
-  })
-
-  return codes
-}
-
-const compressString = (value: string): Uint8Array =>
-  codesToBytes(compressBinaryString(bytesToBinaryString(new TextEncoder().encode(value))))
-
-const decompressString = (bytes: Uint8Array): string => {
-  const decompressedBytes = binaryStringToBytes(decompressBinaryString(bytesToCodes(bytes)))
+const decompressString = async (bytes: Uint8Array): Promise<string> => {
+  const decompressedBytes = await transformBytes(bytes, new DecompressionStream(COMPRESSION_FORMAT))
 
   return new TextDecoder().decode(decompressedBytes)
 }
 
-const encodeModernPayload = (value: unknown): string =>
-  `${MODERN_SOURCE_PREFIX}${encodeBase64Url(compressString(JSON.stringify(value)))}`
+const encodeModernPayload = async (value: unknown): Promise<string> =>
+  `${MODERN_SOURCE_PREFIX}${encodeBase64Url(await compressString(JSON.stringify(value)))}`
 
-const decodeModernPayload = (encodedSources: string): unknown | undefined => {
+const decodeModernPayload = async (encodedSources: string): Promise<unknown | undefined> => {
   if (!encodedSources.startsWith(MODERN_SOURCE_PREFIX)) return undefined
 
   try {
     const payload = decodeBase64Url(encodedSources.slice(MODERN_SOURCE_PREFIX.length))
 
     try {
-      return JSON.parse(decompressString(payload))
+      return JSON.parse(await decompressString(payload))
     } catch {
       // Keep decoding the uncompressed v2 format from pre-compression builds.
       return JSON.parse(new TextDecoder().decode(payload))
@@ -179,19 +115,20 @@ const decodeLegacySharedSource = (encodedSource: string): string => {
     .join('_')
 }
 
-export const encodeSharedSource = (sourceCode: string): string => encodeModernPayload(sourceCode)
+export const encodeSharedSource = (sourceCode: string): Promise<string> =>
+  encodeModernPayload(sourceCode)
 
-export const decodeSharedSource = (encodedSource: string): string => {
-  const modernSource = decodeModernPayload(encodedSource)
+export const decodeSharedSource = async (encodedSource: string): Promise<string> => {
+  const modernSource = await decodeModernPayload(encodedSource)
 
   return typeof modernSource === 'string' ? modernSource : decodeLegacySharedSource(encodedSource)
 }
 
-export const encodeSharedSources = (sourceCodes: string[]): string =>
+export const encodeSharedSources = (sourceCodes: string[]): Promise<string> =>
   encodeModernPayload(normalizeSourceCodes(sourceCodes))
 
-export const decodeSharedSources = (encodedSources: string): string[] => {
-  const modernSources = decodeModernPayload(encodedSources)
+export const decodeSharedSources = async (encodedSources: string): Promise<string[]> => {
+  const modernSources = await decodeModernPayload(encodedSources)
   if (
     Array.isArray(modernSources) &&
     modernSources.every((sourceCode) => typeof sourceCode === 'string')
@@ -213,11 +150,11 @@ export const encodeShareHashForUrl = (hash: string): string =>
       : character
   }).join('')
 
-export const getShareHash = (sourceCode: string | string[]): string =>
-  `#${encodeSharedSources(Array.isArray(sourceCode) ? sourceCode : [sourceCode])}`
+export const getShareHash = async (sourceCode: string | string[]): Promise<string> =>
+  `#${await encodeSharedSources(Array.isArray(sourceCode) ? sourceCode : [sourceCode])}`
 
-export const getEmbedShareHash = (sourceCode: string | string[]): string =>
-  `#${EMBED_PREFIX}${encodeSharedSources(Array.isArray(sourceCode) ? sourceCode : [sourceCode])}`
+export const getEmbedShareHash = async (sourceCode: string | string[]): Promise<string> =>
+  `#${EMBED_PREFIX}${await encodeSharedSources(Array.isArray(sourceCode) ? sourceCode : [sourceCode])}`
 
 export const isEmbedHash = (hash: unknown): boolean => {
   return typeof hash === 'string' && removeHashPrefix(hash).startsWith(EMBED_PREFIX)
@@ -227,13 +164,13 @@ export const hasSharedSourceCode = (hash: unknown): boolean => {
   return typeof hash === 'string' && removeHashPrefix(hash) !== ''
 }
 
-export const getSharedSourceCodes = (hash: unknown): string[] => {
+export const getSharedSourceCodes = async (hash: unknown): Promise<string[]> => {
   if (!hasSharedSourceCode(hash)) return ['']
 
   return decodeSharedSources(removeEmbedPrefix(removeHashPrefix(hash as string)))
 }
 
-export const getSavedSourceCodes = (hash: unknown): string[] => {
+export const getSavedSourceCodes = async (hash: unknown): Promise<string[]> => {
   if (hasSharedSourceCode(hash)) return getSharedSourceCodes(hash)
   if (!hasBrowserWindow()) return ['']
 
