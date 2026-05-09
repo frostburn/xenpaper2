@@ -410,9 +410,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
 
     if (isPlaying.value) {
       resetPlaybackState()
-      previousScoreEngines.forEach((engine) => engine.soundEngine.stopSilently())
-    } else {
-      removed.soundEngine.stopSilently()
+      await Promise.all(previousScoreEngines.map((engine) => engine.soundEngine.pause()))
     }
     await clearScoreEngine(removed)
     rememberDeadScoreEngines([removed])

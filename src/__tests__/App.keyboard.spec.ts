@@ -469,10 +469,17 @@ describe('App source editor keyboard shortcuts', () => {
     await wrapper.get('button[aria-label="Add source code"]').trigger('click')
     await flushPromises()
 
+    const remainingEngine = soundEngineMock.instances[soundEngineMock.instances.length - 2]!
+    const removedEngine = soundEngineMock.instances[soundEngineMock.instances.length - 1]!
+
     store.selectSourceCodeTab(0)
     await store.restartPlaybackFromStart()
     expect(store.isPlaying).toBe(true)
     expect(wrapper.get('.play-pause-button').text()).toContain('Pause')
+    remainingEngine.pause.mockClear()
+    remainingEngine.stopSilently.mockClear()
+    removedEngine.pause.mockClear()
+    removedEngine.stopSilently.mockClear()
 
     await store.closeSourceCodeTab(store.sourceTabs[1]!.id)
     await flushPromises()
@@ -480,6 +487,10 @@ describe('App source editor keyboard shortcuts', () => {
     expect(store.isPlaying).toBe(false)
     expect(store.playbackPositionMs).toBe(-1)
     expect(wrapper.get('.play-pause-button').text()).toContain('Play')
+    expect(remainingEngine.pause).toHaveBeenCalledTimes(1)
+    expect(remainingEngine.stopSilently).not.toHaveBeenCalled()
+    expect(removedEngine.pause).toHaveBeenCalledTimes(1)
+    expect(removedEngine.stopSilently).toHaveBeenCalled()
   })
 
   it('resets the project to one source tab when selecting a demo', async () => {
