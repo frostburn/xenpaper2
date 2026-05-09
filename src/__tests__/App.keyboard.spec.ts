@@ -285,7 +285,7 @@ describe('App source editor keyboard shortcuts', () => {
     await wrapper.get<HTMLTextAreaElement>('textarea').setValue('second')
     await flushPromises()
 
-    await store.closeSourceCodeTab(1)
+    await store.closeSourceCodeTab(store.sourceTabs[1]!.id)
     await flushPromises()
 
     expect(store.sourceCodes).toEqual(['first'])
@@ -302,6 +302,31 @@ describe('App source editor keyboard shortcuts', () => {
     expect(store.activeSourceCodeTabIndex).toBe(1)
     expect(wrapper.findAll('[role="tab"]')).toHaveLength(2)
     expect(wrapper.get<HTMLTextAreaElement>('textarea').element.value).toBe('second')
+  })
+
+  it('does not duplicate a recently closed tab when close is triggered twice', async () => {
+    const { store } = await mountApp('#first')
+
+    store.addSourceCodeTab()
+    store.setSourceCode('second')
+    const tabId = store.sourceTabs[1]!.id
+
+    const firstClose = store.closeSourceCodeTab(tabId)
+    const secondClose = store.closeSourceCodeTab(tabId)
+
+    expect(store.sourceCodes).toEqual(['first'])
+
+    await Promise.all([firstClose, secondClose])
+
+    expect(store.sourceTabs).toMatchObject([
+      { title: 'first', alive: true, active: true },
+      { title: 'second', alive: false, active: false },
+    ])
+
+    store.selectSourceCodeTab(1)
+
+    expect(store.sourceCodes).toEqual(['first', 'second'])
+    expect(store.sourceTabs.every((tab) => tab.alive)).toBe(true)
   })
 
   it('keeps replaced project tabs available as recently closed tabs after selecting a demo tune', async () => {
@@ -344,7 +369,7 @@ describe('App source editor keyboard shortcuts', () => {
     expect(store.isPlaying).toBe(true)
     expect(wrapper.get('.play-pause-button').text()).toContain('Pause')
 
-    await store.closeSourceCodeTab(1)
+    await store.closeSourceCodeTab(store.sourceTabs[1]!.id)
     await flushPromises()
 
     expect(store.isPlaying).toBe(false)

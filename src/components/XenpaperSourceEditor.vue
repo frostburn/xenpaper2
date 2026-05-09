@@ -34,7 +34,7 @@ const emit = defineEmits<{
   setSelectedLine: [line: number]
   addSourceCodeTab: []
   selectSourceCodeTab: [index: number]
-  closeSourceCodeTab: [index: number]
+  closeSourceCodeTab: [id: number]
 }>()
 
 const handleSourceInput = (event: Event): void => {
@@ -123,7 +123,7 @@ const isCharacterActive = (charData?: CharData): boolean => {
           class="source-tab-close"
           type="button"
           :aria-label="`Close ${tab.title}`"
-          @click="emit('closeSourceCodeTab', index)"
+          @click="emit('closeSourceCodeTab', tab.id)"
         >
           ×
         </button>

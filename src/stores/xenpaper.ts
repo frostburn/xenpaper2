@@ -260,16 +260,26 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   }
 
   const rememberDeadScoreEngines = (engines: ScoreEngine[]): void => {
-    if (!engines.length) return
+    const rememberedIds = new Set([
+      ...scoreEngines.value.map((engine) => engine.id),
+      ...deadScoreEngines.value.map((engine) => engine.id),
+    ])
+    const enginesToRemember = engines.filter((engine) => {
+      if (rememberedIds.has(engine.id)) return false
 
-    engines.forEach((engine) => {
+      rememberedIds.add(engine.id)
+      return true
+    })
+    if (!enginesToRemember.length) return
+
+    enginesToRemember.forEach((engine) => {
       cancelOnEndByEngine.get(engine.id)?.()
       cancelOnEndByEngine.delete(engine.id)
       cancelOnNoteByEngine.get(engine.id)?.()
       cancelOnNoteByEngine.delete(engine.id)
     })
 
-    deadScoreEngines.value = [...engines, ...deadScoreEngines.value]
+    deadScoreEngines.value = [...enginesToRemember, ...deadScoreEngines.value]
     trimDeadScoreEngines()
   }
 
@@ -383,22 +393,15 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     activeScoreEngineIndex.value = index
   }
 
-  const closeSourceCodeTab = async (index: number): Promise<void> => {
-    if (scoreEngines.value.length <= 1 || index < 0 || index >= scoreEngines.value.length) return
+  const closeSourceCodeTab = async (id: number): Promise<void> => {
+    const index = scoreEngines.value.findIndex((engine) => engine.id === id)
+    if (scoreEngines.value.length <= 1 || index < 0) return
 
+    const previousScoreEngines = scoreEngines.value
     const nextScoreEngines = scoreEngines.value.slice()
     const [removed] = nextScoreEngines.splice(index, 1)
     if (!removed) return
 
-    if (isPlaying.value) {
-      resetPlaybackState()
-      await pauseAllSoundEngines()
-    } else {
-      await removed.soundEngine.pause()
-    }
-    await clearScoreEngine(removed)
-
-    rememberDeadScoreEngines([removed])
     scoreEngines.value = nextScoreEngines
 
     if (activeScoreEngineIndex.value >= scoreEngines.value.length) {
@@ -406,6 +409,15 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     } else if (activeScoreEngineIndex.value > index) {
       activeScoreEngineIndex.value--
     }
+
+    if (isPlaying.value) {
+      resetPlaybackState()
+      await Promise.all(previousScoreEngines.map((engine) => engine.soundEngine.pause()))
+    } else {
+      await removed.soundEngine.pause()
+    }
+    await clearScoreEngine(removed)
+    rememberDeadScoreEngines([removed])
   }
 
   const setDemoTune = async (source: string): Promise<void> => {
