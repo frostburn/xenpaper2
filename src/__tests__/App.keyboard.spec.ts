@@ -4,6 +4,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import App from '../App.vue'
+import { useXenpaperStore } from '../stores/xenpaper'
 import HomeView from '../views/HomeView.vue'
 
 type MockSoundEngine = {
@@ -49,7 +50,7 @@ vi.mock('../sound-engine-tonejs', () => ({
       }),
       setLoopActive: vi.fn<(active: boolean) => void>(),
       setLoopStart: vi.fn<(ms?: number) => void>(),
-      setScore: vi.fn<() => Promise<void>>(async () => {}),
+      setScore: vi.fn<(...args: unknown[]) => Promise<void>>(async () => {}),
       onEnd: vi.fn<(callback: () => void) => () => void>((callback: () => void) => {
         engine.endCallback = callback
         return vi.fn<() => void>()
@@ -79,12 +80,12 @@ const mountApp = async (hash = '#0_2') => {
   await router.push(`/${hash}`)
   await router.isReady()
 
+  const pinia = createPinia()
   const wrapper = mount(App, {
     global: {
-      plugins: [createPinia(), router],
+      plugins: [pinia, router],
       stubs: {
         PitchRuler: true,
-        PlayPauseButton: true,
         TutorialSidebar: true,
       },
     },
@@ -92,7 +93,7 @@ const mountApp = async (hash = '#0_2') => {
 
   await flushPromises()
 
-  return { router, wrapper }
+  return { router, store: useXenpaperStore(pinia), wrapper }
 }
 
 const dispatchSourceKeydown = async (textarea: HTMLTextAreaElement, init: KeyboardEventInit) => {
@@ -214,5 +215,94 @@ describe('App source editor keyboard shortcuts', () => {
     expect(wrapper.find('[aria-label="Playback controls"]').exists()).toBe(true)
     expect(wrapper.find('.loop-button').exists()).toBe(true)
     expect(soundEngineMock.instances).toHaveLength(instanceCount)
+  })
+
+  it('adds source code tabs with isolated editor contents', async () => {
+    const { wrapper } = await mountApp('#0_2%0A4_5')
+
+    await wrapper.get('button[aria-label="Add source code"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.findAll('[role="tab"]')).toHaveLength(2)
+    expect(wrapper.get<HTMLTextAreaElement>('textarea').element.value).toBe('')
+
+    await wrapper.get<HTMLTextAreaElement>('textarea').setValue('0_2')
+    await flushPromises()
+
+    await wrapper.findAll('[role="tab"]')[0]!.trigger('click')
+    await flushPromises()
+
+    expect(wrapper.get<HTMLTextAreaElement>('textarea').element.value).toBe('0 2\n4 5')
+
+    await wrapper.findAll('[role="tab"]')[1]!.trigger('click')
+    await flushPromises()
+
+    expect(wrapper.get<HTMLTextAreaElement>('textarea').element.value).toBe('0_2')
+  })
+
+  it('encodes all source tabs in the route hash and restores them in order', async () => {
+    const { router, store, wrapper } = await mountApp('#first')
+
+    await wrapper.get('button[aria-label="Add source code"]').trigger('click')
+    await wrapper.get<HTMLTextAreaElement>('textarea').setValue('second_tab')
+    await flushPromises()
+
+    expect(store.sourceCodes).toEqual(['first', 'second_tab'])
+    expect(store.routeHash).toBe('#first~second%_tab')
+    await vi.waitFor(() => expect(router.currentRoute.value.hash).toBe('#first~second%_tab'))
+
+    const { store: restoredStore } = await mountApp('#first~second%_tab~third')
+
+    expect(restoredStore.sourceCodes).toEqual(['first', 'second_tab', 'third'])
+    expect(restoredStore.sourceTabs).toHaveLength(3)
+  })
+
+  it('shows tabs in embed mode for shared multi-tab projects', async () => {
+    const { wrapper } = await mountApp('#embed:first~second')
+
+    expect(wrapper.findAll('[role="tab"]')).toHaveLength(2)
+    expect(wrapper.find('button[aria-label="Add source code"]').exists()).toBe(false)
+    expect(wrapper.find('.source-tab-close').exists()).toBe(false)
+
+    await wrapper.findAll('[role="tab"]')[1]!.trigger('click')
+    await flushPromises()
+
+    expect(wrapper.get<HTMLTextAreaElement>('textarea').element.value).toBe('second')
+  })
+
+  it('resets playback state when closing a tab during playback', async () => {
+    const { store, wrapper } = await mountApp('#0_2')
+
+    await wrapper.get('button[aria-label="Add source code"]').trigger('click')
+    await flushPromises()
+
+    store.selectSourceCodeTab(0)
+    await store.restartPlaybackFromStart()
+    expect(store.isPlaying).toBe(true)
+    expect(wrapper.get('.play-pause-button').text()).toContain('Pause')
+
+    await store.closeSourceCodeTab(1)
+    await flushPromises()
+
+    expect(store.isPlaying).toBe(false)
+    expect(store.playbackPositionMs).toBe(-1)
+    expect(wrapper.get('.play-pause-button').text()).toContain('Play')
+  })
+
+  it('resets the project to one source tab when selecting a demo', async () => {
+    const { store, wrapper } = await mountApp('#0_2')
+
+    await wrapper.get('button[aria-label="Add source code"]').trigger('click')
+    await flushPromises()
+
+    expect(store.sourceTabs).toHaveLength(2)
+
+    await store.setDemoTune('4 5')
+    await flushPromises()
+
+    expect(store.sourceTabs).toHaveLength(1)
+    expect(store.sourceCode).toBe('4 5')
+    expect(store.activeSourceCodeTabIndex).toBe(0)
+    expect(store.isPlaying).toBe(true)
   })
 })

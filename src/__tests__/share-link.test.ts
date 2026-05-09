@@ -6,11 +6,14 @@ import {
   encodeSharedSource,
   getEmbedShareHash,
   getSavedSourceCode,
+  getSavedSourceCodes,
   getShareHash,
   getSharedSourceCode,
+  getSharedSourceCodes,
   hasSharedSourceCode,
   isEmbedHash,
   saveSourceCode,
+  saveSourceCodes,
 } from '../share-link'
 
 describe('share-link', () => {
@@ -43,6 +46,31 @@ describe('share-link', () => {
     expect(getShareHash('embed:linked tune')).toBe('#embed%3Alinked_tune')
     expect(getEmbedShareHash('linked tune')).toBe('#embed:linked_tune')
     expect(getShareHash(`"0-\`0-100%`)).toBe('#"0-`0-100%25')
+    expect(getShareHash(['linked tune'])).toBe('#linked_tune')
+  })
+
+  it('builds and restores multi-source hash fragments in order', () => {
+    const sources = ['first tab', 'second:tab with_under', 'third\nline', 'tilde~tab']
+    const hash = getShareHash(sources)
+
+    expect(hash).toBe('#first_tab~second%3Atab_with%_under~third\nline~tilde%7Etab')
+    expect(getSharedSourceCodes(hash)).toEqual(sources)
+    expect(getSharedSourceCode(hash)).toBe('first tab')
+  })
+
+  it('builds embedded multi-source hash fragments', () => {
+    expect(getEmbedShareHash(['one', 'two'])).toBe('#embed:one~two')
+    expect(isEmbedHash(getEmbedShareHash(['one', 'two']))).toBe(true)
+    expect(getSharedSourceCodes(getEmbedShareHash(['one', 'two']))).toEqual(['one', 'two'])
+  })
+
+  it('does not split embed source colons into tab fragments', () => {
+    const sources = ['10:12:15', '4:5']
+    const hash = getEmbedShareHash(sources)
+
+    expect(hash).toBe('#embed:10%3A12%3A15~4%3A5')
+    expect(getSharedSourceCodes(hash)).toEqual(sources)
+    expect(getSharedSourceCodes('#embed:10:12:15~4:5')).toEqual(sources)
   })
 
   it('encodes control characters before hash fragments are used in absolute URLs', () => {
@@ -81,11 +109,20 @@ describe('share-link', () => {
 
     expect(hasSharedSourceCode('')).toBe(false)
     expect(getSavedSourceCode('')).toBe('stored tune')
+    expect(getSavedSourceCodes('')).toEqual(['stored tune'])
   })
 
   it('remembers the latest tune without touching URL hash state', () => {
     saveSourceCode('shared tune')
 
     expect(window.localStorage.getItem('lasttune')).toBe('shared tune')
+    expect(getSavedSourceCodes('')).toEqual(['shared tune'])
+  })
+
+  it('remembers multiple latest tunes in browser storage', () => {
+    saveSourceCodes(['first tune', 'second tune'])
+
+    expect(window.localStorage.getItem('lasttune')).toBe('first tune')
+    expect(getSavedSourceCodes('')).toEqual(['first tune', 'second tune'])
   })
 })

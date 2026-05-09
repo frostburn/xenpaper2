@@ -14,6 +14,7 @@ const router = useRouter()
 let playbackAnimationFrame: number | undefined
 let stopTitleWatcher: WatchStopHandle | undefined
 let stopSourceWatcher: WatchStopHandle | undefined
+let stopShareRouteWatcher: WatchStopHandle | undefined
 let stopLoopStartWatcher: WatchStopHandle | undefined
 let stopRouteHashWatcher: WatchStopHandle | undefined
 let stopPlaybackWatcher: WatchStopHandle | undefined
@@ -83,8 +84,14 @@ const startWatchers = (): void => {
   stopSourceWatcher = watch(
     () => xenpaper.sourceCode,
     () => {
-      void replaceShareRoute()
       void xenpaper.updateParsedSourceCode()
+    },
+  )
+
+  stopShareRouteWatcher = watch(
+    () => xenpaper.routeHash,
+    () => {
+      void replaceShareRoute()
     },
   )
 
@@ -115,11 +122,13 @@ const startWatchers = (): void => {
 const stopWatchers = (): void => {
   stopTitleWatcher?.()
   stopSourceWatcher?.()
+  stopShareRouteWatcher?.()
   stopLoopStartWatcher?.()
   stopRouteHashWatcher?.()
   stopPlaybackWatcher?.()
   stopTitleWatcher = undefined
   stopSourceWatcher = undefined
+  stopShareRouteWatcher = undefined
   stopLoopStartWatcher = undefined
   stopRouteHashWatcher = undefined
   stopPlaybackWatcher = undefined
@@ -201,6 +210,70 @@ onUnmounted(() => {
   height: 100%;
   overflow: auto;
   padding: 1.5rem 0 0 1rem;
+}
+
+.source-tabs {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: stretch;
+  gap: 0.25rem;
+  min-height: 2.5rem;
+  padding: 0 1rem 0.25rem 2rem;
+  overflow-x: auto;
+}
+
+.source-tab {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: stretch;
+  max-width: 18rem;
+  background: var(--xenpaper-bg-light);
+}
+
+.source-tab-button,
+.source-tab-close,
+.source-tab-add {
+  border: 0;
+  cursor: pointer;
+  background: var(--xenpaper-bg-light);
+  color: var(--xenpaper-text);
+  font-family: var(--xenpaper-font-mono);
+  outline: none;
+}
+
+.source-tab-button {
+  max-width: 14rem;
+  padding: 0.5rem 0.75rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.source-tab-button.active {
+  color: var(--xenpaper-bg);
+  background: var(--xenpaper-cyan);
+}
+
+.source-tab-close {
+  width: 2rem;
+  padding: 0 0.5rem;
+  color: var(--xenpaper-placeholder);
+}
+
+.source-tab-add {
+  flex: 0 0 auto;
+  width: 2.5rem;
+  color: var(--xenpaper-cyan);
+}
+
+.source-tab-button:hover,
+.source-tab-button:focus-visible,
+.source-tab-close:hover,
+.source-tab-close:focus-visible,
+.source-tab-add:hover,
+.source-tab-add:focus-visible {
+  background: var(--xenpaper-focus);
+  color: var(--xenpaper-text);
 }
 
 .source-label {
