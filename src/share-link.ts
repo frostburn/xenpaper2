@@ -111,8 +111,13 @@ export const getSavedSourceCodes = (hash: unknown): string[] => {
   if (hasSharedSourceCode(hash)) return getSharedSourceCodes(hash)
   if (!hasBrowserWindow()) return ['']
 
-  const storedSourceCodes = parseStoredSourceCodes(window.localStorage?.getItem('lasttunes'))
-  if (storedSourceCodes) return storedSourceCodes
+  try {
+    const storedSourceCodes = parseStoredSourceCodes(window.localStorage?.getItem('lasttunes'))
+    if (storedSourceCodes) return storedSourceCodes
+  } catch {
+    // Local storage access may throw SecurityError in some contexts
+    console.warn('Failed to load previous tune')
+  }
 
   return ['']
 }
@@ -121,5 +126,10 @@ export const saveSourceCodes = (sourceCodes: string[]): void => {
   if (!hasBrowserWindow()) return
 
   const normalizedSourceCodes = normalizeSourceCodes(sourceCodes)
-  window.localStorage?.setItem('lasttunes', JSON.stringify(normalizedSourceCodes))
+  try {
+    window.localStorage?.setItem('lasttunes', JSON.stringify(normalizedSourceCodes))
+  } catch {
+    // Local storage access may throw SecurityError in some contexts
+    console.warn('Failed to save current tune')
+  }
 }
