@@ -28,6 +28,7 @@ type MockSoundEngine = {
   setScore: MockFn<(...args: unknown[]) => Promise<void>>
   onEnd: MockFn<(callback: () => void) => () => void>
   onNote: MockFn<(callback: (...args: unknown[]) => void) => () => void>
+  dispose: MockFn<() => void>
 }
 
 const soundEngineMock = vi.hoisted(() => ({
@@ -70,6 +71,7 @@ vi.mock('../sound-engine-tonejs', () => ({
           return vi.fn<() => void>()
         },
       ),
+      dispose: vi.fn<() => void>(),
     }
 
     soundEngineMock.instances.push(engine)
@@ -461,6 +463,33 @@ describe('App source editor keyboard shortcuts', () => {
     expect(store.sourceTabs.every((tab) => tab.alive)).toBe(true)
     expect(store.activeSourceCodeTabIndex).toBe(2)
     expect(wrapper.get<HTMLTextAreaElement>('textarea').element.value).toBe('second')
+  })
+
+  it('disposes recently closed tab engines when the dead tab limit is exceeded', async () => {
+    const { store } = await mountApp('#first')
+
+    for (let i = 0; i < 12; i++) {
+      store.addSourceCodeTab()
+      store.setSourceCode(`tab ${i}`)
+    }
+    await flushPromises()
+
+    const addedEngines = soundEngineMock.instances.slice(-12)
+    soundEngineMock.instances.forEach((engine) => engine.dispose.mockClear())
+    const tabIdsToClose = store.sourceTabs.slice(1).map((tab) => tab.id)
+
+    for (const id of tabIdsToClose) {
+      await store.closeSourceCodeTab(id)
+      await flushPromises()
+    }
+    await flushPromises()
+
+    expect(store.sourceTabs.filter((tab) => !tab.alive)).toHaveLength(10)
+    expect(addedEngines[0]!.dispose).toHaveBeenCalledTimes(1)
+    expect(addedEngines[1]!.dispose).toHaveBeenCalledTimes(1)
+    addedEngines.slice(2).forEach((engine) => {
+      expect(engine.dispose).not.toHaveBeenCalled()
+    })
   })
 
   it('resets playback state when closing a tab during playback', async () => {
