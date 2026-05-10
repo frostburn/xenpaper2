@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
+import packageJson from '../../package.json'
+
 import {
   createXenpaperScoreFile,
   parseXenpaperScoreFile,
@@ -18,7 +20,7 @@ describe('xenpaper-file', () => {
     expect(file).toEqual({
       format: 'xenpaper',
       version: 1,
-      xenpaperVersion: '2.0.0-alpha.1',
+      xenpaperVersion: packageJson.version,
       createdAt: '2026-05-10T00:00:00.000Z',
       scores: [{ source: 'first score' }, { source: 'second score' }],
     })

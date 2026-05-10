@@ -1,3 +1,5 @@
+import packageJson from '../package.json'
+
 const XENPAPER_FILE_FORMAT = 'xenpaper'
 const XENPAPER_FILE_FORMAT_VERSION = 1
 
@@ -17,8 +19,6 @@ type XenpaperScoreFileScore = {
   source: string
 }
 
-const APP_VERSION = '2.0.0-alpha.1'
-
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null
 
@@ -31,7 +31,7 @@ export const createXenpaperScoreFile = (
 ): XenpaperScoreFile => ({
   format: XENPAPER_FILE_FORMAT,
   version: XENPAPER_FILE_FORMAT_VERSION,
-  xenpaperVersion: APP_VERSION,
+  xenpaperVersion: packageJson.version,
   createdAt,
   scores: normalizeSourceCodes(sourceCodes).map((source) => ({ source })),
 })

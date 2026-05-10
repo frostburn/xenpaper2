@@ -17,6 +17,19 @@ import TutorialSidebar from './TutorialSidebar.vue'
 
 const COPY_FEEDBACK_MS = 2000
 
+type SaveFilePicker = (options?: {
+  suggestedName?: string
+  types?: {
+    description?: string
+    accept: Record<string, string[]>
+  }[]
+}) => Promise<{
+  createWritable: () => Promise<{
+    write: (data: Blob) => Promise<void>
+    close: () => Promise<void>
+  }>
+}>
+
 const props = defineProps<{
   isEmbedMode: boolean
   sidebarMode: SidebarMode
@@ -86,10 +99,7 @@ const copyEmbedCode = async (): Promise<void> => {
   setCopiedEmbedCode(await copyText(props.embedCode))
 }
 
-const downloadSourceCodes = (): void => {
-  const blob = new Blob([serializeXenpaperScoreFile(props.sourceCodes)], {
-    type: XENPAPER_FILE_MIME_TYPE,
-  })
+const downloadBlob = (blob: Blob): void => {
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
@@ -98,6 +108,38 @@ const downloadSourceCodes = (): void => {
   link.click()
   link.remove()
   URL.revokeObjectURL(url)
+}
+
+const exportSourceCodes = async (): Promise<void> => {
+  const blob = new Blob([serializeXenpaperScoreFile(props.sourceCodes)], {
+    type: XENPAPER_FILE_MIME_TYPE,
+  })
+  const showSaveFilePicker = (window as Window & { showSaveFilePicker?: SaveFilePicker })
+    .showSaveFilePicker
+
+  if (!showSaveFilePicker) {
+    downloadBlob(blob)
+    return
+  }
+
+  try {
+    const fileHandle = await showSaveFilePicker({
+      suggestedName: XENPAPER_FILE_NAME,
+      types: [
+        {
+          description: 'Xenpaper score file',
+          accept: { [XENPAPER_FILE_MIME_TYPE]: [XENPAPER_FILE_EXTENSION] },
+        },
+      ],
+    })
+    const writable = await fileHandle.createWritable()
+    await writable.write(blob)
+    await writable.close()
+  } catch (error) {
+    if (!(error instanceof DOMException && error.name === 'AbortError')) {
+      throw error
+    }
+  }
 }
 
 const selectSourceFile = (): void => {
@@ -176,17 +218,17 @@ onUnmounted(() => {
           {{ copiedShareLink ? 'Copied' : 'Copy link' }}
         </button>
 
-        <h2 class="file-heading">Download / upload</h2>
+        <h2 class="file-heading">Import / export</h2>
         <p>
-          Save or restore all open source tabs as a versioned
+          Export or import all open source tabs as a versioned
           <code>{{ XENPAPER_FILE_EXTENSION }}</code> file.
         </p>
         <div class="file-actions">
-          <button class="panel-button" type="button" @click="downloadSourceCodes">
-            Download scores
+          <button class="panel-button" type="button" @click="exportSourceCodes">
+            Export scores
           </button>
           <button class="panel-button" type="button" @click="selectSourceFile">
-            Upload scores
+            Import scores
           </button>
         </div>
         <input
