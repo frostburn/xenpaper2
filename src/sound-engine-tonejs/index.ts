@@ -89,7 +89,6 @@ export const OSC_TYPES = flatMap(OSC_TYPES_EXPANDED, (type) => [
 export class SoundEngineTonejs extends SoundEngine {
   _started = false
   _endMs = 0
-  _loopEndMs = 0
   _activeNoteEvents = new Set<MoscNoteMs>()
   _transportEventIds: number[] = []
 
@@ -185,25 +184,6 @@ export class SoundEngineTonejs extends SoundEngine {
     Tone.Transport.seconds = ms * 0.001
   }
 
-  setLoop(loop: boolean, startMs: number = 0, endMs: number = 0): void {
-    this.setLoopActive(loop)
-    this.setLoopStart(startMs)
-    this.setLoopEnd(endMs)
-  }
-
-  setLoopActive(loop: boolean = true): void {
-    Tone.Transport.loop = loop
-  }
-
-  setLoopStart(ms: number = 0): void {
-    Tone.Transport.loopStart = ms * 0.001
-  }
-
-  setLoopEnd(ms: number = 0): void {
-    this._loopEndMs = ms
-    Tone.Transport.loopEnd = (ms === 0 ? this._endMs : ms) * 0.001
-  }
-
   async setScore(scoreMs: MoscScoreMs): Promise<void> {
     this.scoreMs = scoreMs
 
@@ -278,9 +258,6 @@ export class SoundEngineTonejs extends SoundEngine {
 
       if (item.type === 'END_MS') {
         this._endMs = item.ms
-        if (this._loopEndMs === 0) {
-          this.setLoopEnd(0)
-        }
 
         const endEventId = Tone.Transport.schedule((time?: number) => {
           if (Tone.Transport.loop) return

@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
-import { computed, ref, shallowRef } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
+import * as Tone from 'tone'
 
 import { type CharData } from '../grammars/grammar-to-chars'
 import { type MoscNoteMs } from '../mosc'
@@ -214,9 +215,18 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   const getPlayableScoreEngines = (): ScoreEngine[] =>
     scoreEngines.value.filter((engine) => engine.scoreLoaded.value)
 
+  const getSharedLoopEndMs = (engines: ScoreEngine[]): number =>
+    Math.max(0, ...engines.map((engine) => engine.soundEngine.endPosition()))
+
+  const applySharedTransportLoop = (engines: ScoreEngine[] = getPlayableScoreEngines()): void => {
+    Tone.Transport.loopEnd = getSharedLoopEndMs(engines) * 0.001
+  }
+
   const preparePlayableScoreEngines = async (): Promise<ScoreEngine[]> => {
     await Promise.all(scoreEngines.value.map((engine) => engine.preparePlayableScore()))
-    return getPlayableScoreEngines()
+    const engines = getPlayableScoreEngines()
+    applySharedTransportLoop(engines)
+    return engines
   }
 
   const pauseAllSoundEngines = async (time?: number): Promise<void> => {
@@ -316,7 +326,6 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   const updateParsedSourceCode = async (): Promise<void> => {
     const engine = activeScoreEngine.value
     const sourcePlayable = await engine.updateParsedSourceCode()
-
     const source = engine.parsedSource.value
 
     if (shouldApplyInitialSidebarMode) {
@@ -331,11 +340,12 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
       }
     }
 
+    applySharedTransportLoop()
+
     if (!sourcePlayable) {
       return
     }
 
-    engine.soundEngine.setLoopActive(isLooping.value)
     playbackPositionMs.value = -1
   }
 
@@ -414,6 +424,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     }
     await clearScoreEngine(removed)
     rememberDeadScoreEngines([removed])
+    applySharedTransportLoop()
   }
 
   const setDemoTune = async (source: string): Promise<void> => {
@@ -437,7 +448,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     activeScoreEngineIndex.value = 0
     rememberDeadScoreEngines(previousScoreEngines)
     startSoundEngineListeners()
-    engine.soundEngine.setLoopActive(isLooping.value)
+    applySharedTransportLoop([engine])
     await engine.soundEngine.gotoMs(0)
     await engine.soundEngine.play()
     isPlaying.value = true
@@ -445,7 +456,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
 
   const updateLoopStart = (): void => {
     const loopStartMs = activeScoreEngine.value.getSelectedLineStartMs()
-    scoreEngines.value.forEach((engine) => engine.soundEngine.setLoopStart(loopStartMs))
+    Tone.Transport.loopStart = loopStartMs * 0.001
   }
 
   const restartPlaybackFromSelectedLine = async (): Promise<void> => {
@@ -479,7 +490,6 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
 
   const toggleLoop = (): void => {
     isLooping.value = !isLooping.value
-    scoreEngines.value.forEach((engine) => engine.soundEngine.setLoopActive(isLooping.value))
   }
 
   const syncPlaybackPosition = (): void => {
@@ -553,6 +563,8 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   const closeSidebar = (): void => {
     sidebarMode.value = 'none'
   }
+
+  watch(isLooping, (newValue) => (Tone.Transport.loop = newValue), { immediate: true })
 
   return {
     sourceCode,

@@ -248,11 +248,6 @@ export class SoundEngine {
 
   async gotoMs(_ms: number): Promise<void> {}
 
-  setLoop(_loop: boolean, _startMs: number = 0, _endMs: number = 0): void {}
-  setLoopActive(_loop: boolean): void {}
-  setLoopStart(_ms: number = 0): void {}
-  setLoopEnd(_ms: number = 0): void {}
-
   async setScore(_scoreMs: MoscScoreMs): Promise<void> {}
 
   // events
