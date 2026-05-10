@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import type { MoscNoteMs } from '../mosc'
 import type { InitialRulerState } from '../grammars/process-grammar'
@@ -12,23 +12,11 @@ import {
   XENPAPER_FILE_MIME_TYPE,
   XENPAPER_FILE_NAME,
 } from '../xenpaper-file'
+import BlobDownloadLink from './BlobDownloadLink.vue'
 import PitchRuler from './PitchRuler.vue'
 import TutorialSidebar from './TutorialSidebar.vue'
 
 const COPY_FEEDBACK_MS = 2000
-
-type SaveFilePicker = (options?: {
-  suggestedName?: string
-  types?: {
-    description?: string
-    accept: Record<string, string[]>
-  }[]
-}) => Promise<{
-  createWritable: () => Promise<{
-    write: (data: Blob) => Promise<void>
-    close: () => Promise<void>
-  }>
-}>
 
 const props = defineProps<{
   isEmbedMode: boolean
@@ -52,6 +40,7 @@ const copiedShareLink = ref(false)
 const copiedEmbedCode = ref(false)
 const fileInput = ref<HTMLInputElement>()
 const importError = ref('')
+const serializedSourceFile = computed(() => serializeXenpaperScoreFile(props.sourceCodes))
 let shareLinkResetTimeout: number | undefined
 let embedCodeResetTimeout: number | undefined
 
@@ -97,58 +86,6 @@ const copyShareLink = async (): Promise<void> => {
 
 const copyEmbedCode = async (): Promise<void> => {
   setCopiedEmbedCode(await copyText(props.embedCode))
-}
-
-const triggerDownload = (link: HTMLAnchorElement): void => {
-  link.dispatchEvent(
-    new MouseEvent('click', {
-      bubbles: true,
-      cancelable: true,
-      view: window,
-    }),
-  )
-}
-
-const downloadBlob = (blob: Blob): void => {
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = XENPAPER_FILE_NAME
-  document.body.append(link)
-  triggerDownload(link)
-  link.remove()
-  URL.revokeObjectURL(url)
-}
-
-const exportSourceCodes = async (): Promise<void> => {
-  const blob = new Blob([serializeXenpaperScoreFile(props.sourceCodes)], {
-    type: XENPAPER_FILE_MIME_TYPE,
-  })
-  const savePickerWindow = window as Window & { showSaveFilePicker?: SaveFilePicker }
-
-  if (!savePickerWindow.showSaveFilePicker) {
-    downloadBlob(blob)
-    return
-  }
-
-  try {
-    const fileHandle = await savePickerWindow.showSaveFilePicker({
-      suggestedName: XENPAPER_FILE_NAME,
-      types: [
-        {
-          description: 'Xenpaper score file',
-          accept: { [XENPAPER_FILE_MIME_TYPE]: [XENPAPER_FILE_EXTENSION] },
-        },
-      ],
-    })
-    const writable = await fileHandle.createWritable()
-    await writable.write(blob)
-    await writable.close()
-  } catch (error) {
-    if (!(error instanceof DOMException && error.name === 'AbortError')) {
-      throw error
-    }
-  }
 }
 
 const selectSourceFile = (): void => {
@@ -233,9 +170,14 @@ onUnmounted(() => {
           <code>{{ XENPAPER_FILE_EXTENSION }}</code> file.
         </p>
         <div class="file-actions">
-          <button class="panel-button" type="button" @click="exportSourceCodes">
+          <BlobDownloadLink
+            class="panel-button"
+            :filename="XENPAPER_FILE_NAME"
+            :contents="serializedSourceFile"
+            :mime-type="XENPAPER_FILE_MIME_TYPE"
+          >
             Export scores
-          </button>
+          </BlobDownloadLink>
           <button class="panel-button" type="button" @click="selectSourceFile">
             Import scores
           </button>
