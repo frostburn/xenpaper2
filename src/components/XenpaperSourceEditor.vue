@@ -132,37 +132,39 @@ const isCharacterActive = (charData?: CharData): boolean => {
       role="tablist"
       aria-label="Source codes"
     >
-      <div v-for="(tab, index) in liveSourceTabs" :key="tab.id" class="source-tab">
+      <div class="source-tab-list">
+        <div v-for="(tab, index) in liveSourceTabs" :key="tab.id" class="source-tab">
+          <button
+            class="source-tab-button"
+            :class="{ active: tab.active }"
+            type="button"
+            role="tab"
+            :aria-selected="tab.active"
+            :aria-controls="`source-code-panel-${tab.id}`"
+            @click="emit('selectSourceCodeTab', index)"
+          >
+            {{ tab.title }}
+          </button>
+          <button
+            v-if="!isEmbedMode && liveSourceTabCount > 1"
+            class="source-tab-close"
+            type="button"
+            :aria-label="`Close ${tab.title}`"
+            @click="emit('closeSourceCodeTab', tab.id)"
+          >
+            ×
+          </button>
+        </div>
         <button
-          class="source-tab-button"
-          :class="{ active: tab.active }"
+          v-if="!isEmbedMode"
+          class="source-tab-add"
           type="button"
-          role="tab"
-          :aria-selected="tab.active"
-          :aria-controls="`source-code-panel-${tab.id}`"
-          @click="emit('selectSourceCodeTab', index)"
+          aria-label="Add source code"
+          @click="emit('addSourceCodeTab')"
         >
-          {{ tab.title }}
-        </button>
-        <button
-          v-if="!isEmbedMode && liveSourceTabCount > 1"
-          class="source-tab-close"
-          type="button"
-          :aria-label="`Close ${tab.title}`"
-          @click="emit('closeSourceCodeTab', tab.id)"
-        >
-          ×
+          +
         </button>
       </div>
-      <button
-        v-if="!isEmbedMode"
-        class="source-tab-add"
-        type="button"
-        aria-label="Add source code"
-        @click="emit('addSourceCodeTab')"
-      >
-        +
-      </button>
       <details
         v-if="!isEmbedMode && deadSourceTabs.length"
         ref="restoreMenu"

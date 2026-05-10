@@ -222,9 +222,21 @@ onUnmounted(() => {
   display: flex;
   align-items: stretch;
   gap: 0.25rem;
+  min-width: 0;
   min-height: 2.5rem;
   padding: 0 1rem 0.25rem 2rem;
   overflow: visible;
+}
+
+.source-tab-list {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  align-items: stretch;
+  gap: 0.25rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-gutter: stable;
 }
 
 .source-tab {
@@ -276,7 +288,6 @@ onUnmounted(() => {
 .source-tab-restore-menu {
   position: relative;
   flex: 0 0 auto;
-  margin-left: auto;
 }
 
 .source-tab-restore-summary {
