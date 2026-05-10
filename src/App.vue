@@ -146,6 +146,7 @@ onMounted(() => {
 onUnmounted(() => {
   stopWatchers()
   xenpaper.stopSoundEngineListeners()
+  xenpaper.disposeSoundEngines()
   stopPlaybackAnimation()
 })
 </script>

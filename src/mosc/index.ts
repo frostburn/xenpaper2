@@ -250,6 +250,8 @@ export class SoundEngine {
 
   async setScore(_scoreMs: MoscScoreMs): Promise<void> {}
 
+  dispose(): void {}
+
   // events
 
   events = {

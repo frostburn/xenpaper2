@@ -243,6 +243,18 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     await Promise.all(engines.map((engine) => clearScoreEngine(engine)))
   }
 
+  const disposeScoreEngines = (engines: ScoreEngine[]): void => {
+    engines.forEach((engine) => engine.soundEngine.dispose())
+  }
+
+  const clearAndDisposeScoreEngines = async (engines: ScoreEngine[]): Promise<void> => {
+    try {
+      await clearScoreEngines(engines)
+    } finally {
+      disposeScoreEngines(engines)
+    }
+  }
+
   const resetPlaybackState = (): void => {
     isPlaying.value = false
     playbackPositionMs.value = -1
@@ -259,7 +271,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   const trimDeadScoreEngines = (): void => {
     const enginesToRemove = deadScoreEngines.value.slice(MAX_DEAD_SOURCE_TABS)
     deadScoreEngines.value = deadScoreEngines.value.slice(0, MAX_DEAD_SOURCE_TABS)
-    void clearScoreEngines(enginesToRemove)
+    void clearAndDisposeScoreEngines(enginesToRemove)
   }
 
   const rememberDeadScoreEngines = (engines: ScoreEngine[]): void => {
@@ -287,13 +299,14 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   }
 
   const clearDeadScoreEngines = (): void => {
-    void clearScoreEngines(deadScoreEngines.value)
+    const enginesToRemove = deadScoreEngines.value
     deadScoreEngines.value = []
+    void clearAndDisposeScoreEngines(enginesToRemove)
   }
 
   const replaceScoreEnginesWithSources = (sources: string[]): void => {
     stopSoundEngineListeners()
-    void clearScoreEngines(scoreEngines.value)
+    void clearAndDisposeScoreEngines(scoreEngines.value)
     const nextSources = sources.length ? sources : ['']
     scoreEngines.value = nextSources.map((source, index) =>
       createScoreEngineFromSource(source, index + 1),
@@ -556,6 +569,10 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     cancelOnNoteByEngine.clear()
   }
 
+  const disposeSoundEngines = (): void => {
+    disposeScoreEngines([...scoreEngines.value, ...deadScoreEngines.value])
+  }
+
   const showSidebar = (mode: OpenSidebarMode): void => {
     sidebarMode.value = sidebarMode.value === mode ? 'none' : mode
   }
@@ -612,6 +629,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     isCharacterActive,
     startSoundEngineListeners,
     stopSoundEngineListeners,
+    disposeSoundEngines,
     showSidebar,
     closeSidebar,
     setSelectedLine: (line: number) => activeScoreEngine.value.setSelectedLine(line),
