@@ -99,13 +99,23 @@ const copyEmbedCode = async (): Promise<void> => {
   setCopiedEmbedCode(await copyText(props.embedCode))
 }
 
+const triggerDownload = (link: HTMLAnchorElement): void => {
+  link.dispatchEvent(
+    new MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
+      view: window,
+    }),
+  )
+}
+
 const downloadBlob = (blob: Blob): void => {
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
   link.download = XENPAPER_FILE_NAME
   document.body.append(link)
-  link.click()
+  triggerDownload(link)
   link.remove()
   URL.revokeObjectURL(url)
 }
@@ -114,16 +124,15 @@ const exportSourceCodes = async (): Promise<void> => {
   const blob = new Blob([serializeXenpaperScoreFile(props.sourceCodes)], {
     type: XENPAPER_FILE_MIME_TYPE,
   })
-  const showSaveFilePicker = (window as Window & { showSaveFilePicker?: SaveFilePicker })
-    .showSaveFilePicker
+  const savePickerWindow = window as Window & { showSaveFilePicker?: SaveFilePicker }
 
-  if (!showSaveFilePicker) {
+  if (!savePickerWindow.showSaveFilePicker) {
     downloadBlob(blob)
     return
   }
 
   try {
-    const fileHandle = await showSaveFilePicker({
+    const fileHandle = await savePickerWindow.showSaveFilePicker({
       suggestedName: XENPAPER_FILE_NAME,
       types: [
         {
