@@ -28,8 +28,14 @@ import { centsToRatio, octaveDivisionToRatio, timeToMs, ratioToCents } from '../
 // utils
 //
 
+const assertFinitePositive = (name: string, value: number): void => {
+  if (!Number.isFinite(value) || value <= 0) {
+    throw new Error(`${name} must be a finite positive number, got ${value}`)
+  }
+}
+
 const limit = (name: string, value: number, min: number, max: number): void => {
-  if (value < min || value > max) {
+  if (!Number.isFinite(value) || value < min || value > max) {
     throw new Error(`${name} must be between ${min} and ${max}, got ${value}`)
   }
 }
@@ -40,6 +46,7 @@ const limit = (name: string, value: number, min: number, max: number): void => {
 
 export const pitchToRatio = (pitch: PitchType, context: Context): number => {
   const { scale, octaveSize } = context
+  assertFinitePositive('context.octaveSize', octaveSize)
   limit('Equave size', octaveSize, -20, 20)
 
   const { type } = pitch.value
@@ -47,6 +54,7 @@ export const pitchToRatio = (pitch: PitchType, context: Context): number => {
 
   if (type === 'PitchRatio') {
     const { numerator, denominator } = pitch.value
+    assertFinitePositive('PitchRatio.denominator', denominator)
     const ratio = numerator / denominator
     limit('Pitch ratio', ratio, 0, 100)
     return ratio * octaveMulti
@@ -60,6 +68,8 @@ export const pitchToRatio = (pitch: PitchType, context: Context): number => {
 
   if (type === 'PitchOctaveDivision') {
     const { numerator, denominator, octaveSize } = pitch.value
+    assertFinitePositive('PitchOctaveDivision.denominator', denominator)
+    assertFinitePositive('PitchOctaveDivision.octaveSize', octaveSize)
     return octaveDivisionToRatio(numerator, denominator, octaveSize) * octaveMulti
   }
 
@@ -98,6 +108,7 @@ const pitchDegreeWrap = (degree: number, scale: number[]): [number, number] => {
 }
 
 const pitchDegreeToRatio = (degree: number, scale: number[], octaveSize: number): number => {
+  assertFinitePositive('context.octaveSize', octaveSize)
   limit('Equave size', octaveSize, -20, 20)
 
   if (scale.length === 0) {
@@ -110,8 +121,11 @@ const pitchDegreeToRatio = (degree: number, scale: number[], octaveSize: number)
 
 const pitchToHz = (pitch: PitchType, context: Context): number => {
   if (pitch.value.type === 'PitchHz') {
+    assertFinitePositive('PitchHz.hz', pitch.value.hz)
+    assertFinitePositive('context.octaveSize', context.octaveSize)
     const octaveMulti = Math.pow(context.octaveSize, pitch.octave?.octave ?? 0)
     const hz = pitch.value.hz * octaveMulti
+    assertFinitePositive('Hz', hz)
     limit('Hz', hz, 0, 20000)
     return hz
   }
@@ -126,6 +140,7 @@ const tailToTime = (
 
   const duration = tail?.type === 'Hold' ? tail.length + 1 : 1
 
+  assertFinitePositive('context.subdivision', context.subdivision)
   context.time += duration * context.subdivision
   const timeEnd = context.time
 
@@ -140,6 +155,7 @@ const tailToTime = (
 //
 
 const ratioWrap = (ratio: number, octaveSize: number): number => {
+  assertFinitePositive('ratioWrap.octaveSize', octaveSize)
   while (ratio < 1) {
     ratio *= octaveSize
   }
@@ -273,9 +289,7 @@ const chordToMosc = (chord: ChordType | RatioChordType, context: Context): MoscN
     return pitchTypes
   }
 
-  if (firstDenominator <= 0) {
-    throw new Error(`Chords cannot contain a ratio of ${firstDenominator}`)
-  }
+  assertFinitePositive('Ratio denominator', firstDenominator)
 
   const ratioPitchTypes: MoscNote[] = []
   const addRatioPitchType = (numerator: number): void => {
@@ -295,9 +309,7 @@ const chordToMosc = (chord: ChordType | RatioChordType, context: Context): MoscN
   chordPitches.forEach((pitch) => {
     if (isRatioChordPitchType(pitch)) {
       const numerator = pitch.pitch
-      if (numerator <= 0) {
-        throw new Error(`Chords cannot contain a ratio of ${numerator}`)
-      }
+      assertFinitePositive('Ratio numerator', numerator)
 
       if (colons == 2) {
         while (lastNumerator < numerator - 1) {
@@ -374,6 +386,8 @@ const setScale = (setScale: SetScaleType, context: Context): void => {
 
   if (type === 'EdoScale') {
     const { divisions, octaveSize } = scale
+    assertFinitePositive('EdoScale.divisions', divisions)
+    assertFinitePositive('EdoScale.octaveSize', octaveSize)
     context.scale = edoToRatios(divisions, octaveSize)
     context.scaleLabels = edoToLabels(divisions, context.scale, octaveSize)
     context.octaveSize = octaveSize
@@ -405,8 +419,11 @@ const setScale = (setScale: SetScaleType, context: Context): void => {
 
       const numerator = pitch.pitch
       if (firstDenominator === -1) {
+        assertFinitePositive('Ratio denominator', numerator)
         firstDenominator = numerator
       }
+
+      assertFinitePositive('Ratio numerator', numerator)
 
       if (colons === 2) {
         while (lastNumerator < numerator - 1) {
@@ -438,6 +455,7 @@ const setterToMosc = (setter: SetterType | DelimiterType, context: Context): Mos
 
   if (type === 'SetBpm') {
     const { bpm } = setter
+    assertFinitePositive('SetBpm.bpm', bpm)
     return [
       {
         type: 'TEMPO',
@@ -450,6 +468,7 @@ const setterToMosc = (setter: SetterType | DelimiterType, context: Context): Mos
 
   if (type === 'SetBms') {
     const { bms } = setter
+    assertFinitePositive('SetBms.bms', bms)
     return [
       {
         type: 'TEMPO',
@@ -462,7 +481,12 @@ const setterToMosc = (setter: SetterType | DelimiterType, context: Context): Mos
 
   if (type === 'SetSubdivision') {
     const { subdivision, denominator } = setter
+    assertFinitePositive('SetSubdivision.subdivision', subdivision)
+    if (denominator !== undefined) {
+      assertFinitePositive('SetSubdivision.denominator', denominator)
+    }
     context.subdivision = (denominator ?? 1) / subdivision
+    assertFinitePositive('context.subdivision', context.subdivision)
     return []
   }
 
@@ -654,6 +678,7 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
     if (type === 'Rest') {
       const { time } = context
       const rest = item
+      assertFinitePositive('context.subdivision', context.subdivision)
       context.time += rest.length * context.subdivision
       // mutate ast node to add time
       const arr: [number, number] = [time, context.time]
