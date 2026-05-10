@@ -5,6 +5,13 @@ import type { MoscNoteMs } from '../mosc'
 import type { InitialRulerState } from '../grammars/process-grammar'
 import type { SidebarMode } from '../types'
 import { copyText } from '../utils'
+import {
+  parseXenpaperScoreFile,
+  serializeXenpaperScoreFile,
+  XENPAPER_FILE_EXTENSION,
+  XENPAPER_FILE_MIME_TYPE,
+  XENPAPER_FILE_NAME,
+} from '../xenpaper-file'
 import PitchRuler from './PitchRuler.vue'
 import TutorialSidebar from './TutorialSidebar.vue'
 
@@ -16,18 +23,22 @@ const props = defineProps<{
   shareUrl: string
   embedCode: string
   embedUrl: string
+  sourceCodes: string[]
   initialRulerState?: InitialRulerState
 }>()
 
 const emit = defineEmits<{
   closeSidebar: []
   setTune: [source: string]
+  importSourceCodes: [sourceCodes: string[]]
   activeNoteHandlerChange: [handler?: (note: MoscNoteMs, on: boolean) => void]
 }>()
 
 const pitchRuler = ref<InstanceType<typeof PitchRuler>>()
 const copiedShareLink = ref(false)
 const copiedEmbedCode = ref(false)
+const fileInput = ref<HTMLInputElement>()
+const importError = ref('')
 let shareLinkResetTimeout: number | undefined
 let embedCodeResetTimeout: number | undefined
 
@@ -73,6 +84,40 @@ const copyShareLink = async (): Promise<void> => {
 
 const copyEmbedCode = async (): Promise<void> => {
   setCopiedEmbedCode(await copyText(props.embedCode))
+}
+
+const downloadSourceCodes = (): void => {
+  const blob = new Blob([serializeXenpaperScoreFile(props.sourceCodes)], {
+    type: XENPAPER_FILE_MIME_TYPE,
+  })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = XENPAPER_FILE_NAME
+  document.body.append(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(url)
+}
+
+const selectSourceFile = (): void => {
+  importError.value = ''
+  fileInput.value?.click()
+}
+
+const importSourceFile = async (event: Event): Promise<void> => {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+
+  try {
+    emit('importSourceCodes', parseXenpaperScoreFile(await file.text()))
+    importError.value = ''
+  } catch (error) {
+    importError.value = error instanceof Error ? error.message : 'Failed to import Xenpaper scores.'
+  } finally {
+    input.value = ''
+  }
 }
 
 watch(() => props.shareUrl, resetCopiedShareLink)
@@ -130,6 +175,28 @@ onUnmounted(() => {
         <button class="panel-button" type="button" @click="copyShareLink">
           {{ copiedShareLink ? 'Copied' : 'Copy link' }}
         </button>
+
+        <h2 class="file-heading">Download / upload</h2>
+        <p>
+          Save or restore all open source tabs as a versioned
+          <code>{{ XENPAPER_FILE_EXTENSION }}</code> file.
+        </p>
+        <div class="file-actions">
+          <button class="panel-button" type="button" @click="downloadSourceCodes">
+            Download scores
+          </button>
+          <button class="panel-button" type="button" @click="selectSourceFile">
+            Upload scores
+          </button>
+        </div>
+        <input
+          ref="fileInput"
+          class="file-input"
+          type="file"
+          :accept="`${XENPAPER_FILE_EXTENSION},application/json,${XENPAPER_FILE_MIME_TYPE}`"
+          @change="importSourceFile"
+        />
+        <p v-if="importError" class="file-error" role="alert">{{ importError }}</p>
 
         <h2 class="embed-heading">Embed</h2>
         <p>Copy this HTML to embed the current tune in another page.</p>

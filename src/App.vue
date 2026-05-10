@@ -175,9 +175,11 @@ onUnmounted(() => {
         :share-url="xenpaper.shareUrl"
         :embed-code="xenpaper.embedCode"
         :embed-url="xenpaper.embedUrl"
+        :source-codes="xenpaper.sourceCodes"
         :initial-ruler-state="xenpaper.initialRulerState"
         @close-sidebar="xenpaper.closeSidebar"
         @set-tune="xenpaper.setDemoTune"
+        @import-source-codes="xenpaper.importSourceCodes"
         @active-note-handler-change="xenpaper.setActiveNoteHandler"
       />
     </div>
@@ -703,7 +705,8 @@ onUnmounted(() => {
   font-weight: 400;
 }
 
-.sidebar-content .embed-heading {
+.sidebar-content .embed-heading,
+.sidebar-content .file-heading {
   margin-top: 2.5rem;
 }
 
@@ -755,6 +758,30 @@ onUnmounted(() => {
 .panel-button:focus,
 .panel-button:active {
   opacity: 1;
+}
+
+.file-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.file-error {
+  color: #ff541e;
+  overflow-wrap: anywhere;
 }
 
 .embed-preview {

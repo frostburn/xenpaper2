@@ -397,6 +397,19 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     activeScoreEngine.value.applySourceCode(source)
   }
 
+  const importSourceCodes = async (sources: string[]): Promise<void> => {
+    const previousScoreEngines = scoreEngines.value
+
+    if (isPlaying.value) {
+      resetPlaybackState()
+      await Promise.all(previousScoreEngines.map((engine) => engine.soundEngine.pause()))
+    }
+
+    clearDeadScoreEngines()
+    replaceScoreEnginesWithSources(sources)
+    applySharedTransportLoop()
+  }
+
   const addSourceCodeTab = (): void => {
     scoreEngines.value = [...scoreEngines.value, useScoreEngine(nextScoreEngineId++)]
     activeScoreEngineIndex.value = scoreEngines.value.length - 1
@@ -613,6 +626,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     saveSourceCodeToBrowser,
     applySharedHash,
     setSourceCode,
+    importSourceCodes,
     addSourceCodeTab,
     selectSourceCodeTab,
     closeSourceCodeTab,
