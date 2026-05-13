@@ -28,7 +28,7 @@ const emit = defineEmits<{
   addSourceCodeTab: []
   selectSourceCodeTab: [index: number]
   toggleSourceCodeTabMute: [index: number]
-  toggleSourceCodeTabSolo: [index: number]
+  toggleSourceCodeTabSolo: [index: number, preserveOtherSolos?: boolean]
   closeSourceCodeTab: [id: number]
 }>()
 
@@ -98,7 +98,7 @@ const restoreSourceCodeTab = (index: number): void => {
 
 const handleSourceTabClick = (event: MouseEvent, index: number): void => {
   if (event.ctrlKey || event.metaKey) {
-    emit('toggleSourceCodeTabSolo', index)
+    emit('toggleSourceCodeTabSolo', index, event.altKey)
     return
   }
 
@@ -218,7 +218,7 @@ const isCharacterActive = (charData?: CharData): boolean => {
           :aria-label="`Solo ${activeSourceTab.title}`"
           :aria-pressed="activeSourceTab.soloed"
           :title="`${activeSourceTab.soloed ? 'Unsolo' : 'Solo'} ${activeSourceTab.title}`"
-          @click="emit('toggleSourceCodeTabSolo', activeSourceCodeTabIndex)"
+          @click="emit('toggleSourceCodeTabSolo', activeSourceCodeTabIndex, $event.ctrlKey || $event.metaKey)"
         >
           Solo
         </button>

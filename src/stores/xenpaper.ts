@@ -448,11 +448,24 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     syncScoreEngineGains()
   }
 
-  const toggleSourceCodeTabSolo = (index: number): void => {
+  const toggleSourceCodeTabSolo = (index: number, preserveOtherSolos = false): void => {
     const engine = scoreEngines.value[index]
     if (!engine) return
 
-    engine.soloed.value = !engine.soloed.value
+    if (preserveOtherSolos) {
+      engine.soloed.value = true
+      syncScoreEngineGains()
+      return
+    }
+
+    const hasOtherSoloedEngine = scoreEngines.value.some(
+      (scoreEngine) => scoreEngine !== engine && scoreEngine.soloed.value,
+    )
+    const shouldSolo = !engine.soloed.value || hasOtherSoloedEngine
+    scoreEngines.value.forEach((scoreEngine) => {
+      scoreEngine.soloed.value = false
+    })
+    engine.soloed.value = shouldSolo
     syncScoreEngineGains()
   }
 

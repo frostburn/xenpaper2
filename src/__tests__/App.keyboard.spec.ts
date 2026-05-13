@@ -366,6 +366,62 @@ describe('App source editor keyboard shortcuts', () => {
     expect(secondEngine.play).toHaveBeenCalledTimes(1)
   })
 
+  it('plain solo replaces other soloed source tabs', async () => {
+    const { store, wrapper } = await mountApp('#first')
+
+    await wrapper.get('button[aria-label="Add source code"]').trigger('click')
+    await wrapper.get<HTMLTextAreaElement>('textarea').setValue('second')
+    await flushPromises()
+
+    await wrapper.findAll('[role="tab"]')[0]!.trigger('click', { ctrlKey: true, altKey: true })
+    await flushPromises()
+    await wrapper.findAll('.source-editor-tab-control')[0]!.trigger('click')
+    await flushPromises()
+
+    expect(store.sourceTabs).toMatchObject([
+      { title: 'first', soloed: false },
+      { title: 'second', soloed: true },
+    ])
+  })
+
+  it('modified solo adds a source tab to the solo set', async () => {
+    const { store, wrapper } = await mountApp('#first')
+
+    await wrapper.get('button[aria-label="Add source code"]').trigger('click')
+    await wrapper.get<HTMLTextAreaElement>('textarea').setValue('second')
+    await flushPromises()
+
+    await wrapper.findAll('.source-editor-tab-control')[0]!.trigger('click')
+    await flushPromises()
+    await wrapper.findAll('[role="tab"]')[0]!.trigger('click', { ctrlKey: true, altKey: true })
+    await flushPromises()
+
+    expect(store.sourceTabs).toMatchObject([
+      { title: 'first', soloed: true },
+      { title: 'second', soloed: true },
+    ])
+
+    await wrapper.findAll('[role="tab"]')[1]!.trigger('click')
+    await flushPromises()
+    await wrapper.findAll('.source-editor-tab-control')[0]!.trigger('click')
+    await flushPromises()
+
+    expect(store.sourceTabs).toMatchObject([
+      { title: 'first', soloed: false },
+      { title: 'second', soloed: true },
+    ])
+
+    await wrapper.findAll('[role="tab"]')[0]!.trigger('click')
+    await flushPromises()
+    await wrapper.findAll('.source-editor-tab-control')[0]!.trigger('click', { ctrlKey: true })
+    await flushPromises()
+
+    expect(store.sourceTabs).toMatchObject([
+      { title: 'first', soloed: true },
+      { title: 'second', soloed: true },
+    ])
+  })
+
   it('mutes a source code tab from the editor controls by silencing it', async () => {
     const { store, wrapper } = await mountApp('#0_2%0A4_5')
     const firstEngine = soundEngineMock.instances[soundEngineMock.instances.length - 1]!
