@@ -384,7 +384,7 @@ describe('App source editor keyboard shortcuts', () => {
     ])
   })
 
-  it('modified solo adds a source tab to the solo set', async () => {
+  it('modified solo toggles source tab membership in the solo set', async () => {
     const { store, wrapper } = await mountApp('#first')
 
     await wrapper.get('button[aria-label="Add source code"]').trigger('click')
@@ -420,6 +420,34 @@ describe('App source editor keyboard shortcuts', () => {
       { title: 'first', soloed: true },
       { title: 'second', soloed: true },
     ])
+
+    await wrapper.findAll('.source-editor-tab-control')[0]!.trigger('click', { ctrlKey: true })
+    await flushPromises()
+
+    expect(store.sourceTabs).toMatchObject([
+      { title: 'first', soloed: false },
+      { title: 'second', soloed: true },
+    ])
+  })
+
+  it('solo overrides mute gain behavior', async () => {
+    const { store, wrapper } = await mountApp('#0_2%0A4_5')
+    const firstEngine = soundEngineMock.instances[soundEngineMock.instances.length - 1]!
+
+    await wrapper.get('button[aria-label="Add source code"]').trigger('click')
+    await wrapper.get<HTMLTextAreaElement>('textarea').setValue('0 2\n4 5')
+    await flushPromises()
+
+    const secondEngine = soundEngineMock.instances[soundEngineMock.instances.length - 1]!
+
+    await wrapper.findAll('.source-editor-tab-control')[1]!.trigger('click')
+    await flushPromises()
+    await wrapper.findAll('.source-editor-tab-control')[0]!.trigger('click')
+    await flushPromises()
+
+    expect(store.sourceTabs[1]).toMatchObject({ soloed: true, muted: true })
+    expect(firstEngine.setOutputGain).toHaveBeenLastCalledWith(0)
+    expect(secondEngine.setOutputGain).toHaveBeenLastCalledWith(1)
   })
 
   it('mutes a source code tab from the editor controls by silencing it', async () => {

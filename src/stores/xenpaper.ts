@@ -223,7 +223,9 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   const getScoreEngineGain = (engine: ScoreEngine): number => {
     const hasSoloedScoreEngine = scoreEngines.value.some((scoreEngine) => scoreEngine.soloed.value)
 
-    return !engine.muted.value && (!hasSoloedScoreEngine || engine.soloed.value) ? 1 : 0
+    if (hasSoloedScoreEngine) return engine.soloed.value ? 1 : 0
+
+    return engine.muted.value ? 0 : 1
   }
 
   const syncScoreEngineGains = (): void => {
@@ -453,7 +455,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     if (!engine) return
 
     if (preserveOtherSolos) {
-      engine.soloed.value = true
+      engine.soloed.value = !engine.soloed.value
       syncScoreEngineGains()
       return
     }
