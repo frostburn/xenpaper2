@@ -152,7 +152,7 @@ const isCharacterActive = (charData?: CharData): boolean => {
         <div v-for="(tab, index) in liveSourceTabs" :key="tab.id" class="source-tab">
           <button
             class="source-tab-button"
-            :class="{ active: tab.active }"
+            :class="{ active: tab.active, muted: tab.muted, soloed: tab.soloed }"
             type="button"
             role="tab"
             :aria-selected="tab.active"

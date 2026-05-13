@@ -346,6 +346,7 @@ describe('App source editor keyboard shortcuts', () => {
 
     expect(store.sourceTabs[0]).toMatchObject({ active: true, soloed: true, muted: false })
     expect(store.sourceTabs[1]).toMatchObject({ active: false, soloed: false, muted: false })
+    expect(wrapper.findAll('[role="tab"]')[0]!.classes()).toContain('soloed')
     expect(wrapper.findAll('[role="tab"]')[0]!.attributes('aria-label')).toBe('0 2, soloed')
     expect(wrapper.findAll('.source-editor-tab-control')[0]!.classes()).toContain('enabled')
     expect(wrapper.findAll('.source-editor-tab-control')[0]!.attributes('aria-pressed')).toBe('true')
@@ -380,6 +381,7 @@ describe('App source editor keyboard shortcuts', () => {
 
     expect(store.sourceTabs[0]).toMatchObject({ active: false, soloed: false, muted: false })
     expect(store.sourceTabs[1]).toMatchObject({ active: true, soloed: false, muted: true })
+    expect(wrapper.findAll('[role="tab"]')[1]!.classes()).toContain('muted')
     expect(wrapper.findAll('[role="tab"]')[1]!.attributes('aria-label')).toBe('0 2, muted')
     expect(wrapper.findAll('.source-editor-tab-control')[1]!.classes()).toContain('enabled')
     expect(wrapper.findAll('.source-editor-tab-control')[1]!.attributes('aria-pressed')).toBe('true')
