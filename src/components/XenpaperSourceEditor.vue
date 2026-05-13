@@ -27,6 +27,8 @@ const emit = defineEmits<{
   setSelectedLine: [line: number]
   addSourceCodeTab: []
   selectSourceCodeTab: [index: number]
+  toggleSourceCodeTabMute: [index: number]
+  toggleSourceCodeTabSolo: [index: number]
   closeSourceCodeTab: [id: number]
 }>()
 
@@ -94,6 +96,20 @@ const restoreSourceCodeTab = (index: number): void => {
   closeRestoreMenu()
 }
 
+const handleSourceTabClick = (event: MouseEvent, index: number): void => {
+  if (event.ctrlKey || event.metaKey) {
+    emit('toggleSourceCodeTabSolo', index)
+    return
+  }
+
+  if (event.shiftKey) {
+    emit('toggleSourceCodeTabMute', index)
+    return
+  }
+
+  emit('selectSourceCodeTab', index)
+}
+
 const handleDocumentPointerdown = (event: PointerEvent): void => {
   if (!restoreMenu.value?.open) return
 
@@ -136,12 +152,15 @@ const isCharacterActive = (charData?: CharData): boolean => {
         <div v-for="(tab, index) in liveSourceTabs" :key="tab.id" class="source-tab">
           <button
             class="source-tab-button"
-            :class="{ active: tab.active }"
+            :class="{ active: tab.active, muted: tab.muted, soloed: tab.soloed }"
             type="button"
             role="tab"
             :aria-selected="tab.active"
+            :aria-pressed="tab.soloed || tab.muted"
+            :title="`${tab.title}${tab.soloed ? ' (solo)' : ''}${tab.muted ? ' (muted)' : ''}`"
+            :aria-label="`${tab.title}${tab.soloed ? ', soloed' : ''}${tab.muted ? ', muted' : ''}`"
             :aria-controls="`source-code-panel-${tab.id}`"
-            @click="emit('selectSourceCodeTab', index)"
+            @click="handleSourceTabClick($event, index)"
           >
             {{ tab.title }}
           </button>

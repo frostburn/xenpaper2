@@ -326,6 +326,66 @@ describe('App source editor keyboard shortcuts', () => {
     expect(restoredStore.sourceTabs).toHaveLength(3)
   })
 
+  it('solos a source code tab on Ctrl+Click and plays only soloed tabs', async () => {
+    const { store, wrapper } = await mountApp('#0_2%0A4_5')
+    const firstEngine = soundEngineMock.instances[soundEngineMock.instances.length - 1]!
+
+    await wrapper.get('button[aria-label="Add source code"]').trigger('click')
+    await wrapper.get<HTMLTextAreaElement>('textarea').setValue('4_5\n6_7')
+    await flushPromises()
+
+    const secondEngine = soundEngineMock.instances[soundEngineMock.instances.length - 1]!
+
+    await wrapper.findAll('[role="tab"]')[0]!.trigger('click', { ctrlKey: true })
+    await flushPromises()
+
+    expect(store.sourceTabs[0]).toMatchObject({ active: false, soloed: true, muted: false })
+    expect(store.sourceTabs[1]).toMatchObject({ active: true, soloed: false, muted: false })
+    expect(wrapper.findAll('[role="tab"]')[0]!.classes()).toContain('soloed')
+    expect(wrapper.findAll('[role="tab"]')[0]!.attributes('aria-label')).toBe('0 2, soloed')
+
+    firstEngine.play.mockClear()
+    secondEngine.play.mockClear()
+
+    await dispatchSourceKeydown(wrapper.get<HTMLTextAreaElement>('textarea').element, {
+      key: 'Enter',
+      ctrlKey: true,
+    })
+
+    expect(firstEngine.play).toHaveBeenCalledTimes(1)
+    expect(secondEngine.play).not.toHaveBeenCalled()
+  })
+
+  it('mutes a source code tab on Shift+Click and excludes it from playback', async () => {
+    const { store, wrapper } = await mountApp('#0_2%0A4_5')
+    const firstEngine = soundEngineMock.instances[soundEngineMock.instances.length - 1]!
+
+    await wrapper.get('button[aria-label="Add source code"]').trigger('click')
+    await wrapper.get<HTMLTextAreaElement>('textarea').setValue('4_5\n6_7')
+    await flushPromises()
+
+    const secondEngine = soundEngineMock.instances[soundEngineMock.instances.length - 1]!
+
+    await wrapper.findAll('[role="tab"]')[1]!.trigger('click', { shiftKey: true })
+    await flushPromises()
+
+    expect(store.sourceTabs[0]).toMatchObject({ active: false, soloed: false, muted: false })
+    expect(store.sourceTabs[1]).toMatchObject({ active: true, soloed: false, muted: true })
+    expect(wrapper.findAll('[role="tab"]')[1]!.classes()).toContain('muted')
+    expect(wrapper.findAll('[role="tab"]')[1]!.attributes('aria-label')).toBe('4_5, muted')
+
+    firstEngine.play.mockClear()
+    secondEngine.play.mockClear()
+
+    await dispatchSourceKeydown(wrapper.get<HTMLTextAreaElement>('textarea').element, {
+      key: 'Enter',
+      ctrlKey: true,
+    })
+
+    expect(firstEngine.play).toHaveBeenCalledTimes(1)
+    expect(secondEngine.play).not.toHaveBeenCalled()
+  })
+
   it('shows tabs in embed mode for shared multi-tab projects', async () => {
     const { wrapper } = await mountApp('#embed:first~second')
 

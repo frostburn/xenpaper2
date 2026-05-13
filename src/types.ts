@@ -21,6 +21,8 @@ export type SourceTab = {
   title: string
   active: boolean
   alive: boolean
+  muted: boolean
+  soloed: boolean
 }
 
 export type SourceHistory = {

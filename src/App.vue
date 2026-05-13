@@ -273,6 +273,19 @@ onUnmounted(() => {
   background: var(--xenpaper-cyan);
 }
 
+.source-tab-button.muted {
+  color: var(--xenpaper-placeholder);
+  text-decoration: line-through;
+}
+
+.source-tab-button.soloed {
+  box-shadow: inset 0 -0.2rem 0 var(--xenpaper-solo);
+}
+
+.source-tab-button.active.muted {
+  color: var(--xenpaper-bg-light);
+}
+
 .source-tab-close {
   width: 2rem;
   padding: 0 0.5rem;
