@@ -156,13 +156,34 @@ const isCharacterActive = (charData?: CharData): boolean => {
             type="button"
             role="tab"
             :aria-selected="tab.active"
-            :aria-pressed="tab.soloed || tab.muted"
             :title="`${tab.title}${tab.soloed ? ' (solo)' : ''}${tab.muted ? ' (muted)' : ''}`"
             :aria-label="`${tab.title}${tab.soloed ? ', soloed' : ''}${tab.muted ? ', muted' : ''}`"
             :aria-controls="`source-code-panel-${tab.id}`"
             @click="handleSourceTabClick($event, index)"
           >
             {{ tab.title }}
+          </button>
+          <button
+            class="source-tab-control"
+            :class="{ enabled: tab.soloed }"
+            type="button"
+            :aria-label="`Solo ${tab.title}`"
+            :aria-pressed="tab.soloed"
+            :title="`${tab.soloed ? 'Unsolo' : 'Solo'} ${tab.title}`"
+            @click.stop="emit('toggleSourceCodeTabSolo', index)"
+          >
+            S
+          </button>
+          <button
+            class="source-tab-control"
+            :class="{ enabled: tab.muted }"
+            type="button"
+            :aria-label="`Mute ${tab.title}`"
+            :aria-pressed="tab.muted"
+            :title="`${tab.muted ? 'Unmute' : 'Mute'} ${tab.title}`"
+            @click.stop="emit('toggleSourceCodeTabMute', index)"
+          >
+            M
           </button>
           <button
             v-if="!isEmbedMode && liveSourceTabCount > 1"

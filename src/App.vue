@@ -248,6 +248,7 @@ onUnmounted(() => {
 }
 
 .source-tab-button,
+.source-tab-control,
 .source-tab-close,
 .source-tab-add,
 .source-tab-restore-summary,
@@ -261,7 +262,7 @@ onUnmounted(() => {
 }
 
 .source-tab-button {
-  max-width: 14rem;
+  max-width: 10rem;
   padding: 0.5rem 0.75rem;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -286,10 +287,20 @@ onUnmounted(() => {
   color: var(--xenpaper-bg-light);
 }
 
+.source-tab-control,
 .source-tab-close {
   width: 2rem;
   padding: 0 0.5rem;
   color: var(--xenpaper-placeholder);
+}
+
+.source-tab-control.enabled {
+  color: var(--xenpaper-bg);
+  background: var(--xenpaper-solo);
+}
+
+.source-tab-control[aria-label^='Mute'].enabled {
+  background: var(--xenpaper-placeholder);
 }
 
 .source-tab-add {
@@ -333,6 +344,8 @@ onUnmounted(() => {
 
 .source-tab-button:hover,
 .source-tab-button:focus-visible,
+.source-tab-control:hover,
+.source-tab-control:focus-visible,
 .source-tab-close:hover,
 .source-tab-close:focus-visible,
 .source-tab-add:hover,
