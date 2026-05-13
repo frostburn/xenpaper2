@@ -248,7 +248,6 @@ onUnmounted(() => {
 }
 
 .source-tab-button,
-.source-tab-control,
 .source-tab-close,
 .source-tab-add,
 .source-tab-restore-summary,
@@ -262,7 +261,7 @@ onUnmounted(() => {
 }
 
 .source-tab-button {
-  max-width: 10rem;
+  max-width: 14rem;
   padding: 0.5rem 0.75rem;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -274,33 +273,10 @@ onUnmounted(() => {
   background: var(--xenpaper-cyan);
 }
 
-.source-tab-button.muted {
-  color: var(--xenpaper-placeholder);
-  text-decoration: line-through;
-}
-
-.source-tab-button.soloed {
-  box-shadow: inset 0 -0.2rem 0 var(--xenpaper-solo);
-}
-
-.source-tab-button.active.muted {
-  color: var(--xenpaper-bg-light);
-}
-
-.source-tab-control,
 .source-tab-close {
   width: 2rem;
   padding: 0 0.5rem;
   color: var(--xenpaper-placeholder);
-}
-
-.source-tab-control.enabled {
-  color: var(--xenpaper-bg);
-  background: var(--xenpaper-solo);
-}
-
-.source-tab-control[aria-label^='Mute'].enabled {
-  background: var(--xenpaper-placeholder);
 }
 
 .source-tab-add {
@@ -344,8 +320,6 @@ onUnmounted(() => {
 
 .source-tab-button:hover,
 .source-tab-button:focus-visible,
-.source-tab-control:hover,
-.source-tab-control:focus-visible,
 .source-tab-close:hover,
 .source-tab-close:focus-visible,
 .source-tab-add:hover,
@@ -394,6 +368,42 @@ onUnmounted(() => {
   background-color: var(--xenpaper-focus);
 }
 
+.source-editor-tab-controls {
+  position: absolute;
+  z-index: 2;
+  top: 0.75rem;
+  right: 1rem;
+  display: flex;
+  gap: 0.25rem;
+}
+
+.source-editor-tab-control {
+  border: 0;
+  cursor: pointer;
+  background: var(--xenpaper-bg-light);
+  color: var(--xenpaper-placeholder);
+  font-family: var(--xenpaper-font-mono);
+  font-size: 0.75rem;
+  line-height: 1;
+  outline: none;
+  padding: 0.35rem 0.5rem;
+}
+
+.source-editor-tab-control.enabled {
+  color: var(--xenpaper-bg);
+  background: var(--xenpaper-solo);
+}
+
+.source-editor-tab-control[aria-label^='Mute'].enabled {
+  background: var(--xenpaper-placeholder);
+}
+
+.source-editor-tab-control:hover,
+.source-editor-tab-control:focus-visible {
+  background: var(--xenpaper-focus);
+  color: var(--xenpaper-text);
+}
+
 .source-input,
 .source-highlights {
   box-sizing: border-box;
@@ -409,7 +419,7 @@ onUnmounted(() => {
   white-space: pre-wrap;
   word-break: keep-all;
   overflow-wrap: break-word;
-  padding: 1rem 1rem 1rem 2rem;
+  padding: 1rem 8rem 1rem 2rem;
 }
 
 .source-input {

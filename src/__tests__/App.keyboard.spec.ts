@@ -328,7 +328,7 @@ describe('App source editor keyboard shortcuts', () => {
     expect(restoredStore.sourceTabs).toHaveLength(3)
   })
 
-  it('solos a source code tab from its tab button by silencing other tabs', async () => {
+  it('solos a source code tab from the editor controls by silencing other tabs', async () => {
     const { store, wrapper } = await mountApp('#0_2%0A4_5')
     const firstEngine = soundEngineMock.instances[soundEngineMock.instances.length - 1]!
 
@@ -338,15 +338,17 @@ describe('App source editor keyboard shortcuts', () => {
 
     const secondEngine = soundEngineMock.instances[soundEngineMock.instances.length - 1]!
 
-    await wrapper.findAll('.source-tab-control')[0]!.trigger('click')
+    await wrapper.findAll('[role="tab"]')[0]!.trigger('click')
     await flushPromises()
 
-    expect(store.sourceTabs[0]).toMatchObject({ active: false, soloed: true, muted: false })
-    expect(store.sourceTabs[1]).toMatchObject({ active: true, soloed: false, muted: false })
-    expect(wrapper.findAll('[role="tab"]')[0]!.classes()).toContain('soloed')
+    await wrapper.findAll('.source-editor-tab-control')[0]!.trigger('click')
+    await flushPromises()
+
+    expect(store.sourceTabs[0]).toMatchObject({ active: true, soloed: true, muted: false })
+    expect(store.sourceTabs[1]).toMatchObject({ active: false, soloed: false, muted: false })
     expect(wrapper.findAll('[role="tab"]')[0]!.attributes('aria-label')).toBe('0 2, soloed')
-    expect(wrapper.findAll('.source-tab-control')[0]!.classes()).toContain('enabled')
-    expect(wrapper.findAll('.source-tab-control')[0]!.attributes('aria-pressed')).toBe('true')
+    expect(wrapper.findAll('.source-editor-tab-control')[0]!.classes()).toContain('enabled')
+    expect(wrapper.findAll('.source-editor-tab-control')[0]!.attributes('aria-pressed')).toBe('true')
 
     expect(firstEngine.setOutputGain).toHaveBeenLastCalledWith(1)
     expect(secondEngine.setOutputGain).toHaveBeenLastCalledWith(0)
@@ -363,7 +365,7 @@ describe('App source editor keyboard shortcuts', () => {
     expect(secondEngine.play).toHaveBeenCalledTimes(1)
   })
 
-  it('mutes a source code tab from its tab button by silencing it', async () => {
+  it('mutes a source code tab from the editor controls by silencing it', async () => {
     const { store, wrapper } = await mountApp('#0_2%0A4_5')
     const firstEngine = soundEngineMock.instances[soundEngineMock.instances.length - 1]!
 
@@ -373,15 +375,14 @@ describe('App source editor keyboard shortcuts', () => {
 
     const secondEngine = soundEngineMock.instances[soundEngineMock.instances.length - 1]!
 
-    await wrapper.findAll('.source-tab-control')[3]!.trigger('click')
+    await wrapper.findAll('.source-editor-tab-control')[1]!.trigger('click')
     await flushPromises()
 
     expect(store.sourceTabs[0]).toMatchObject({ active: false, soloed: false, muted: false })
     expect(store.sourceTabs[1]).toMatchObject({ active: true, soloed: false, muted: true })
-    expect(wrapper.findAll('[role="tab"]')[1]!.classes()).toContain('muted')
     expect(wrapper.findAll('[role="tab"]')[1]!.attributes('aria-label')).toBe('0 2, muted')
-    expect(wrapper.findAll('.source-tab-control')[3]!.classes()).toContain('enabled')
-    expect(wrapper.findAll('.source-tab-control')[3]!.attributes('aria-pressed')).toBe('true')
+    expect(wrapper.findAll('.source-editor-tab-control')[1]!.classes()).toContain('enabled')
+    expect(wrapper.findAll('.source-editor-tab-control')[1]!.attributes('aria-pressed')).toBe('true')
 
     expect(firstEngine.setOutputGain).toHaveBeenLastCalledWith(1)
     expect(secondEngine.setOutputGain).toHaveBeenLastCalledWith(0)
