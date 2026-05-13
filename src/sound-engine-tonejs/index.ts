@@ -94,6 +94,7 @@ export class SoundEngineTonejs extends SoundEngine {
   _onTransportEnd: ((time: number) => void) | undefined
 
   _synth: PolySynth<Synth> | undefined
+  _outputGain: Tone.Gain | undefined
 
   _clearScheduledEvents(): void {
     this._transportEventIds.forEach((id) => Tone.Transport.clear(id))
@@ -117,6 +118,12 @@ export class SoundEngineTonejs extends SoundEngine {
     this._activeNoteEvents.clear()
   }
 
+  getOutputGain(): Tone.Gain {
+    this._outputGain ??= new Tone.Gain(1).connect(Tone.Destination)
+
+    return this._outputGain
+  }
+
   getSynth(): PolySynth<Synth> {
     this._synth ??= new Tone.PolySynth(Tone.Synth, {
       oscillator: {
@@ -129,7 +136,7 @@ export class SoundEngineTonejs extends SoundEngine {
         decay: 0.25,
         release: 0.5,
       },
-    }).chain(Tone.Destination)
+    }).connect(this.getOutputGain())
 
     return this._synth
   }
@@ -175,7 +182,9 @@ export class SoundEngineTonejs extends SoundEngine {
     this._clearScheduledEvents()
     this._releaseActiveNotesIfSynthExists()
     this._synth?.dispose()
+    this._outputGain?.dispose()
     this._synth = undefined
+    this._outputGain = undefined
     this._started = false
   }
 
@@ -197,6 +206,10 @@ export class SoundEngineTonejs extends SoundEngine {
 
   async gotoMs(ms: number): Promise<void> {
     Tone.Transport.seconds = ms * 0.001
+  }
+
+  setOutputGain(gain: number): void {
+    this.getOutputGain().gain.value = gain
   }
 
   async setScore(scoreMs: MoscScoreMs): Promise<void> {

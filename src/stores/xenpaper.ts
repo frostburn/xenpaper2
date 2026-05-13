@@ -220,17 +220,20 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   const canRedoSourceCode = computed(() =>
     canRedoSourceChange(activeScoreEngine.value.sourceHistory.value),
   )
-  const isScoreEngineAudible = (engine: ScoreEngine): boolean => {
+  const getScoreEngineGain = (engine: ScoreEngine): number => {
     const hasSoloedScoreEngine = scoreEngines.value.some((scoreEngine) => scoreEngine.soloed.value)
 
-    return !engine.muted.value && (!hasSoloedScoreEngine || engine.soloed.value)
+    return !engine.muted.value && (!hasSoloedScoreEngine || engine.soloed.value) ? 1 : 0
   }
 
-  const getAudibleScoreEngines = (): ScoreEngine[] =>
-    scoreEngines.value.filter((engine) => isScoreEngineAudible(engine))
+  const syncScoreEngineGains = (): void => {
+    scoreEngines.value.forEach((engine) => {
+      engine.soundEngine.setOutputGain(getScoreEngineGain(engine))
+    })
+  }
 
   const getPlayableScoreEngines = (): ScoreEngine[] =>
-    getAudibleScoreEngines().filter((engine) => engine.scoreLoaded.value)
+    scoreEngines.value.filter((engine) => engine.scoreLoaded.value)
 
   const getSharedLoopEndMs = (engines: ScoreEngine[]): number =>
     Math.max(0, ...engines.map((engine) => engine.soundEngine.endPosition()))
@@ -240,7 +243,8 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   }
 
   const preparePlayableScoreEngines = async (): Promise<ScoreEngine[]> => {
-    await Promise.all(getAudibleScoreEngines().map((engine) => engine.preparePlayableScore()))
+    syncScoreEngineGains()
+    await Promise.all(scoreEngines.value.map((engine) => engine.preparePlayableScore()))
     const engines = getPlayableScoreEngines()
     applySharedTransportLoop(engines)
     return engines
@@ -336,6 +340,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
         0,
       ) + 1
     startSoundEngineListeners()
+    syncScoreEngineGains()
   }
 
   const restoreDeadSourceCodeTab = (deadIndex: number): void => {
@@ -351,6 +356,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     scoreEngines.value = [...scoreEngines.value, restored]
     activeScoreEngineIndex.value = scoreEngines.value.length - 1
     startSoundEngineListeners()
+    syncScoreEngineGains()
   }
 
   const updateParsedSourceCode = async (): Promise<void> => {
@@ -431,27 +437,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     scoreEngines.value = [...scoreEngines.value, useScoreEngine(nextScoreEngineId++)]
     activeScoreEngineIndex.value = scoreEngines.value.length - 1
     startSoundEngineListeners()
-  }
-
-  const syncScoreEngineAudibility = async (): Promise<void> => {
-    applySharedTransportLoop()
-
-    if (!isPlaying.value) return
-
-    const audibleEngines = getAudibleScoreEngines()
-    const mutedEngines = scoreEngines.value.filter((engine) => !isScoreEngineAudible(engine))
-    const positionMs = Math.max(0, activeScoreEngine.value.soundEngine.position())
-
-    await Promise.all(mutedEngines.map((engine) => engine.soundEngine.pause()))
-    await Promise.all(audibleEngines.map((engine) => engine.preparePlayableScore()))
-    await Promise.all(
-      getPlayableScoreEngines().map(async (engine) => {
-        await engine.soundEngine.gotoMs(positionMs)
-        if (!engine.soundEngine.playing()) {
-          await engine.soundEngine.play()
-        }
-      }),
-    )
+    syncScoreEngineGains()
   }
 
   const toggleSourceCodeTabMute = (index: number): void => {
@@ -459,7 +445,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     if (!engine) return
 
     engine.muted.value = !engine.muted.value
-    void syncScoreEngineAudibility()
+    syncScoreEngineGains()
   }
 
   const toggleSourceCodeTabSolo = (index: number): void => {
@@ -467,7 +453,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     if (!engine) return
 
     engine.soloed.value = !engine.soloed.value
-    void syncScoreEngineAudibility()
+    syncScoreEngineGains()
   }
 
   const selectSourceCodeTab = (index: number): void => {

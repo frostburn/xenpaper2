@@ -26,6 +26,7 @@ type MockSoundEngine = {
   setLoopActive: MockFn<(active: boolean) => void>
   setLoopStart: MockFn<(ms?: number) => void>
   setScore: MockFn<(...args: unknown[]) => Promise<void>>
+  setOutputGain: MockFn<(gain: number) => void>
   onEnd: MockFn<(callback: () => void) => () => void>
   onNote: MockFn<(callback: (...args: unknown[]) => void) => () => void>
   dispose: MockFn<() => void>
@@ -61,6 +62,7 @@ vi.mock('../sound-engine-tonejs', () => ({
       setLoopActive: vi.fn<(active: boolean) => void>(),
       setLoopStart: vi.fn<(ms?: number) => void>(),
       setScore: vi.fn<(...args: unknown[]) => Promise<void>>(async () => {}),
+      setOutputGain: vi.fn<(gain: number) => void>(),
       onEnd: vi.fn<(callback: () => void) => () => void>((callback: () => void) => {
         engine.endCallback = callback
         return vi.fn<() => void>()
@@ -326,12 +328,12 @@ describe('App source editor keyboard shortcuts', () => {
     expect(restoredStore.sourceTabs).toHaveLength(3)
   })
 
-  it('solos a source code tab on Ctrl+Click and plays only soloed tabs', async () => {
+  it('solos a source code tab on Ctrl+Click by silencing other tabs', async () => {
     const { store, wrapper } = await mountApp('#0_2%0A4_5')
     const firstEngine = soundEngineMock.instances[soundEngineMock.instances.length - 1]!
 
     await wrapper.get('button[aria-label="Add source code"]').trigger('click')
-    await wrapper.get<HTMLTextAreaElement>('textarea').setValue('4_5\n6_7')
+    await wrapper.get<HTMLTextAreaElement>('textarea').setValue('0 2\n4 5')
     await flushPromises()
 
     const secondEngine = soundEngineMock.instances[soundEngineMock.instances.length - 1]!
@@ -344,6 +346,9 @@ describe('App source editor keyboard shortcuts', () => {
     expect(wrapper.findAll('[role="tab"]')[0]!.classes()).toContain('soloed')
     expect(wrapper.findAll('[role="tab"]')[0]!.attributes('aria-label')).toBe('0 2, soloed')
 
+    expect(firstEngine.setOutputGain).toHaveBeenLastCalledWith(1)
+    expect(secondEngine.setOutputGain).toHaveBeenLastCalledWith(0)
+
     firstEngine.play.mockClear()
     secondEngine.play.mockClear()
 
@@ -353,15 +358,15 @@ describe('App source editor keyboard shortcuts', () => {
     })
 
     expect(firstEngine.play).toHaveBeenCalledTimes(1)
-    expect(secondEngine.play).not.toHaveBeenCalled()
+    expect(secondEngine.play).toHaveBeenCalledTimes(1)
   })
 
-  it('mutes a source code tab on Shift+Click and excludes it from playback', async () => {
+  it('mutes a source code tab on Shift+Click by silencing it', async () => {
     const { store, wrapper } = await mountApp('#0_2%0A4_5')
     const firstEngine = soundEngineMock.instances[soundEngineMock.instances.length - 1]!
 
     await wrapper.get('button[aria-label="Add source code"]').trigger('click')
-    await wrapper.get<HTMLTextAreaElement>('textarea').setValue('4_5\n6_7')
+    await wrapper.get<HTMLTextAreaElement>('textarea').setValue('0 2\n4 5')
     await flushPromises()
 
     const secondEngine = soundEngineMock.instances[soundEngineMock.instances.length - 1]!
@@ -372,7 +377,10 @@ describe('App source editor keyboard shortcuts', () => {
     expect(store.sourceTabs[0]).toMatchObject({ active: false, soloed: false, muted: false })
     expect(store.sourceTabs[1]).toMatchObject({ active: true, soloed: false, muted: true })
     expect(wrapper.findAll('[role="tab"]')[1]!.classes()).toContain('muted')
-    expect(wrapper.findAll('[role="tab"]')[1]!.attributes('aria-label')).toBe('4_5, muted')
+    expect(wrapper.findAll('[role="tab"]')[1]!.attributes('aria-label')).toBe('0 2, muted')
+
+    expect(firstEngine.setOutputGain).toHaveBeenLastCalledWith(1)
+    expect(secondEngine.setOutputGain).toHaveBeenLastCalledWith(0)
 
     firstEngine.play.mockClear()
     secondEngine.play.mockClear()
@@ -383,7 +391,7 @@ describe('App source editor keyboard shortcuts', () => {
     })
 
     expect(firstEngine.play).toHaveBeenCalledTimes(1)
-    expect(secondEngine.play).not.toHaveBeenCalled()
+    expect(secondEngine.play).toHaveBeenCalledTimes(1)
   })
 
   it('shows tabs in embed mode for shared multi-tab projects', async () => {
