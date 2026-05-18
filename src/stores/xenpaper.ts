@@ -45,6 +45,8 @@ function useScoreEngine(id: number) {
   const sourceCode = ref('')
   const sourceHistory = ref(createSourceHistory(''))
   const scoreLoaded = ref(false)
+  const muted = ref(false)
+  const soloed = ref(false)
   const selectedLine = ref(0)
   let parseVersion = 0
 
@@ -116,6 +118,8 @@ function useScoreEngine(id: number) {
     sourceCode,
     sourceHistory,
     scoreLoaded,
+    muted,
+    soloed,
     selectedLine,
     parsedSource,
     chars,
@@ -172,12 +176,16 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
       title: getSourceTabTitle(engine.sourceCode.value, index),
       active: index === activeScoreEngineIndex.value,
       alive: true,
+      muted: engine.muted.value,
+      soloed: engine.soloed.value,
     })),
     ...deadScoreEngines.value.map((engine, index) => ({
       id: engine.id,
       title: getSourceTabTitle(engine.sourceCode.value, index),
       active: false,
       alive: false,
+      muted: engine.muted.value,
+      soloed: engine.soloed.value,
     })),
   ])
 
@@ -212,6 +220,20 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   const canRedoSourceCode = computed(() =>
     canRedoSourceChange(activeScoreEngine.value.sourceHistory.value),
   )
+  const getScoreEngineGain = (engine: ScoreEngine): number => {
+    const hasSoloedScoreEngine = scoreEngines.value.some((scoreEngine) => scoreEngine.soloed.value)
+
+    if (hasSoloedScoreEngine) return engine.soloed.value ? 1 : 0
+
+    return engine.muted.value ? 0 : 1
+  }
+
+  const syncScoreEngineGains = (): void => {
+    scoreEngines.value.forEach((engine) => {
+      engine.soundEngine.setOutputGain(getScoreEngineGain(engine))
+    })
+  }
+
   const getPlayableScoreEngines = (): ScoreEngine[] =>
     scoreEngines.value.filter((engine) => engine.scoreLoaded.value)
 
@@ -223,6 +245,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   }
 
   const preparePlayableScoreEngines = async (): Promise<ScoreEngine[]> => {
+    syncScoreEngineGains()
     await Promise.all(scoreEngines.value.map((engine) => engine.preparePlayableScore()))
     const engines = getPlayableScoreEngines()
     applySharedTransportLoop(engines)
@@ -319,6 +342,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
         0,
       ) + 1
     startSoundEngineListeners()
+    syncScoreEngineGains()
   }
 
   const restoreDeadSourceCodeTab = (deadIndex: number): void => {
@@ -334,6 +358,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     scoreEngines.value = [...scoreEngines.value, restored]
     activeScoreEngineIndex.value = scoreEngines.value.length - 1
     startSoundEngineListeners()
+    syncScoreEngineGains()
   }
 
   const updateParsedSourceCode = async (): Promise<void> => {
@@ -414,6 +439,36 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     scoreEngines.value = [...scoreEngines.value, useScoreEngine(nextScoreEngineId++)]
     activeScoreEngineIndex.value = scoreEngines.value.length - 1
     startSoundEngineListeners()
+    syncScoreEngineGains()
+  }
+
+  const toggleSourceCodeTabMute = (index: number): void => {
+    const engine = scoreEngines.value[index]
+    if (!engine) return
+
+    engine.muted.value = !engine.muted.value
+    syncScoreEngineGains()
+  }
+
+  const toggleSourceCodeTabSolo = (index: number, preserveOtherSolos = false): void => {
+    const engine = scoreEngines.value[index]
+    if (!engine) return
+
+    if (preserveOtherSolos) {
+      engine.soloed.value = !engine.soloed.value
+      syncScoreEngineGains()
+      return
+    }
+
+    const hasOtherSoloedEngine = scoreEngines.value.some(
+      (scoreEngine) => scoreEngine !== engine && scoreEngine.soloed.value,
+    )
+    const shouldSolo = !engine.soloed.value || hasOtherSoloedEngine
+    scoreEngines.value.forEach((scoreEngine) => {
+      scoreEngine.soloed.value = false
+    })
+    engine.soloed.value = shouldSolo
+    syncScoreEngineGains()
   }
 
   const selectSourceCodeTab = (index: number): void => {
@@ -630,6 +685,8 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     addSourceCodeTab,
     selectSourceCodeTab,
     closeSourceCodeTab,
+    toggleSourceCodeTabMute,
+    toggleSourceCodeTabSolo,
     setDemoTune,
     updateLoopStart,
     restartPlaybackFromSelectedLine,

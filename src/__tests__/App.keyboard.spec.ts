@@ -26,6 +26,7 @@ type MockSoundEngine = {
   setLoopActive: MockFn<(active: boolean) => void>
   setLoopStart: MockFn<(ms?: number) => void>
   setScore: MockFn<(...args: unknown[]) => Promise<void>>
+  setOutputGain: MockFn<(gain: number) => void>
   onEnd: MockFn<(callback: () => void) => () => void>
   onNote: MockFn<(callback: (...args: unknown[]) => void) => () => void>
   dispose: MockFn<() => void>
@@ -61,6 +62,7 @@ vi.mock('../sound-engine-tonejs', () => ({
       setLoopActive: vi.fn<(active: boolean) => void>(),
       setLoopStart: vi.fn<(ms?: number) => void>(),
       setScore: vi.fn<(...args: unknown[]) => Promise<void>>(async () => {}),
+      setOutputGain: vi.fn<(gain: number) => void>(),
       onEnd: vi.fn<(callback: () => void) => () => void>((callback: () => void) => {
         engine.endCallback = callback
         return vi.fn<() => void>()
@@ -324,6 +326,163 @@ describe('App source editor keyboard shortcuts', () => {
 
     expect(restoredStore.sourceCodes).toEqual(['first', 'second_tab', 'third'])
     expect(restoredStore.sourceTabs).toHaveLength(3)
+  })
+
+  it('solos a source code tab from the editor controls by silencing other tabs', async () => {
+    const { store, wrapper } = await mountApp('#0_2%0A4_5')
+    const firstEngine = soundEngineMock.instances[soundEngineMock.instances.length - 1]!
+
+    await wrapper.get('button[aria-label="Add source code"]').trigger('click')
+    await wrapper.get<HTMLTextAreaElement>('textarea').setValue('0 2\n4 5')
+    await flushPromises()
+
+    const secondEngine = soundEngineMock.instances[soundEngineMock.instances.length - 1]!
+
+    await wrapper.findAll('[role="tab"]')[0]!.trigger('click')
+    await flushPromises()
+
+    await wrapper.findAll('.source-editor-tab-control')[0]!.trigger('click')
+    await flushPromises()
+
+    expect(store.sourceTabs[0]).toMatchObject({ active: true, soloed: true, muted: false })
+    expect(store.sourceTabs[1]).toMatchObject({ active: false, soloed: false, muted: false })
+    expect(wrapper.findAll('[role="tab"]')[0]!.classes()).toContain('soloed')
+    expect(wrapper.findAll('[role="tab"]')[0]!.attributes('aria-label')).toBe('0 2, soloed')
+    expect(wrapper.findAll('.source-editor-tab-control')[0]!.classes()).toContain('enabled')
+    expect(wrapper.findAll('.source-editor-tab-control')[0]!.attributes('aria-pressed')).toBe('true')
+
+    expect(firstEngine.setOutputGain).toHaveBeenLastCalledWith(1)
+    expect(secondEngine.setOutputGain).toHaveBeenLastCalledWith(0)
+
+    firstEngine.play.mockClear()
+    secondEngine.play.mockClear()
+
+    await dispatchSourceKeydown(wrapper.get<HTMLTextAreaElement>('textarea').element, {
+      key: 'Enter',
+      ctrlKey: true,
+    })
+
+    expect(firstEngine.play).toHaveBeenCalledTimes(1)
+    expect(secondEngine.play).toHaveBeenCalledTimes(1)
+  })
+
+  it('plain solo replaces other soloed source tabs', async () => {
+    const { store, wrapper } = await mountApp('#first')
+
+    await wrapper.get('button[aria-label="Add source code"]').trigger('click')
+    await wrapper.get<HTMLTextAreaElement>('textarea').setValue('second')
+    await flushPromises()
+
+    await wrapper.findAll('[role="tab"]')[0]!.trigger('click', { ctrlKey: true, altKey: true })
+    await flushPromises()
+    await wrapper.findAll('.source-editor-tab-control')[0]!.trigger('click')
+    await flushPromises()
+
+    expect(store.sourceTabs).toMatchObject([
+      { title: 'first', soloed: false },
+      { title: 'second', soloed: true },
+    ])
+  })
+
+  it('modified solo toggles source tab membership in the solo set', async () => {
+    const { store, wrapper } = await mountApp('#first')
+
+    await wrapper.get('button[aria-label="Add source code"]').trigger('click')
+    await wrapper.get<HTMLTextAreaElement>('textarea').setValue('second')
+    await flushPromises()
+
+    await wrapper.findAll('.source-editor-tab-control')[0]!.trigger('click')
+    await flushPromises()
+    await wrapper.findAll('[role="tab"]')[0]!.trigger('click', { ctrlKey: true, altKey: true })
+    await flushPromises()
+
+    expect(store.sourceTabs).toMatchObject([
+      { title: 'first', soloed: true },
+      { title: 'second', soloed: true },
+    ])
+
+    await wrapper.findAll('[role="tab"]')[1]!.trigger('click')
+    await flushPromises()
+    await wrapper.findAll('.source-editor-tab-control')[0]!.trigger('click')
+    await flushPromises()
+
+    expect(store.sourceTabs).toMatchObject([
+      { title: 'first', soloed: false },
+      { title: 'second', soloed: true },
+    ])
+
+    await wrapper.findAll('[role="tab"]')[0]!.trigger('click')
+    await flushPromises()
+    await wrapper.findAll('.source-editor-tab-control')[0]!.trigger('click', { ctrlKey: true })
+    await flushPromises()
+
+    expect(store.sourceTabs).toMatchObject([
+      { title: 'first', soloed: true },
+      { title: 'second', soloed: true },
+    ])
+
+    await wrapper.findAll('.source-editor-tab-control')[0]!.trigger('click', { ctrlKey: true })
+    await flushPromises()
+
+    expect(store.sourceTabs).toMatchObject([
+      { title: 'first', soloed: false },
+      { title: 'second', soloed: true },
+    ])
+  })
+
+  it('solo overrides mute gain behavior', async () => {
+    const { store, wrapper } = await mountApp('#0_2%0A4_5')
+    const firstEngine = soundEngineMock.instances[soundEngineMock.instances.length - 1]!
+
+    await wrapper.get('button[aria-label="Add source code"]').trigger('click')
+    await wrapper.get<HTMLTextAreaElement>('textarea').setValue('0 2\n4 5')
+    await flushPromises()
+
+    const secondEngine = soundEngineMock.instances[soundEngineMock.instances.length - 1]!
+
+    await wrapper.findAll('.source-editor-tab-control')[1]!.trigger('click')
+    await flushPromises()
+    await wrapper.findAll('.source-editor-tab-control')[0]!.trigger('click')
+    await flushPromises()
+
+    expect(store.sourceTabs[1]).toMatchObject({ soloed: true, muted: true })
+    expect(firstEngine.setOutputGain).toHaveBeenLastCalledWith(0)
+    expect(secondEngine.setOutputGain).toHaveBeenLastCalledWith(1)
+  })
+
+  it('mutes a source code tab from the editor controls by silencing it', async () => {
+    const { store, wrapper } = await mountApp('#0_2%0A4_5')
+    const firstEngine = soundEngineMock.instances[soundEngineMock.instances.length - 1]!
+
+    await wrapper.get('button[aria-label="Add source code"]').trigger('click')
+    await wrapper.get<HTMLTextAreaElement>('textarea').setValue('0 2\n4 5')
+    await flushPromises()
+
+    const secondEngine = soundEngineMock.instances[soundEngineMock.instances.length - 1]!
+
+    await wrapper.findAll('.source-editor-tab-control')[1]!.trigger('click')
+    await flushPromises()
+
+    expect(store.sourceTabs[0]).toMatchObject({ active: false, soloed: false, muted: false })
+    expect(store.sourceTabs[1]).toMatchObject({ active: true, soloed: false, muted: true })
+    expect(wrapper.findAll('[role="tab"]')[1]!.classes()).toContain('muted')
+    expect(wrapper.findAll('[role="tab"]')[1]!.attributes('aria-label')).toBe('0 2, muted')
+    expect(wrapper.findAll('.source-editor-tab-control')[1]!.classes()).toContain('enabled')
+    expect(wrapper.findAll('.source-editor-tab-control')[1]!.attributes('aria-pressed')).toBe('true')
+
+    expect(firstEngine.setOutputGain).toHaveBeenLastCalledWith(1)
+    expect(secondEngine.setOutputGain).toHaveBeenLastCalledWith(0)
+
+    firstEngine.play.mockClear()
+    secondEngine.play.mockClear()
+
+    await dispatchSourceKeydown(wrapper.get<HTMLTextAreaElement>('textarea').element, {
+      key: 'Enter',
+      ctrlKey: true,
+    })
+
+    expect(firstEngine.play).toHaveBeenCalledTimes(1)
+    expect(secondEngine.play).toHaveBeenCalledTimes(1)
   })
 
   it('shows tabs in embed mode for shared multi-tab projects', async () => {

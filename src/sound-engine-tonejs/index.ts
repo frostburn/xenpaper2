@@ -129,7 +129,7 @@ export class SoundEngineTonejs extends SoundEngine {
         decay: 0.25,
         release: 0.5,
       },
-    }).chain(Tone.Destination)
+    }).toDestination()
 
     return this._synth
   }
@@ -197,6 +197,10 @@ export class SoundEngineTonejs extends SoundEngine {
 
   async gotoMs(ms: number): Promise<void> {
     Tone.Transport.seconds = ms * 0.001
+  }
+
+  setOutputGain(gain: number): void {
+    this.getSynth().volume.value = gain <= 0 ? -Infinity : 20 * Math.log10(gain)
   }
 
   async setScore(scoreMs: MoscScoreMs): Promise<void> {

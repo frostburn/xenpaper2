@@ -27,6 +27,8 @@ const emit = defineEmits<{
   setSelectedLine: [line: number]
   addSourceCodeTab: []
   selectSourceCodeTab: [index: number]
+  toggleSourceCodeTabMute: [index: number]
+  toggleSourceCodeTabSolo: [index: number, preserveOtherSolos?: boolean]
   closeSourceCodeTab: [id: number]
 }>()
 
@@ -94,6 +96,20 @@ const restoreSourceCodeTab = (index: number): void => {
   closeRestoreMenu()
 }
 
+const handleSourceTabClick = (event: MouseEvent, index: number): void => {
+  if (event.ctrlKey || event.metaKey) {
+    emit('toggleSourceCodeTabSolo', index, event.altKey)
+    return
+  }
+
+  if (event.shiftKey) {
+    emit('toggleSourceCodeTabMute', index)
+    return
+  }
+
+  emit('selectSourceCodeTab', index)
+}
+
 const handleDocumentPointerdown = (event: PointerEvent): void => {
   if (!restoreMenu.value?.open) return
 
@@ -136,12 +152,14 @@ const isCharacterActive = (charData?: CharData): boolean => {
         <div v-for="(tab, index) in liveSourceTabs" :key="tab.id" class="source-tab">
           <button
             class="source-tab-button"
-            :class="{ active: tab.active }"
+            :class="{ active: tab.active, muted: tab.muted, soloed: tab.soloed }"
             type="button"
             role="tab"
             :aria-selected="tab.active"
+            :title="`${tab.title}${tab.soloed ? ' (solo)' : ''}${tab.muted ? ' (muted)' : ''}`"
+            :aria-label="`${tab.title}${tab.soloed ? ', soloed' : ''}${tab.muted ? ', muted' : ''}`"
             :aria-controls="`source-code-panel-${tab.id}`"
-            @click="emit('selectSourceCodeTab', index)"
+            @click="handleSourceTabClick($event, index)"
           >
             {{ tab.title }}
           </button>
@@ -192,6 +210,30 @@ const isCharacterActive = (charData?: CharData): boolean => {
       role="tabpanel"
       :class="{ 'source-editor-embed': isEmbedMode }"
     >
+      <div v-if="activeSourceTab && liveSourceTabCount > 1" class="source-editor-tab-controls">
+        <button
+          class="source-editor-tab-control"
+          :class="{ enabled: activeSourceTab.soloed }"
+          type="button"
+          :aria-label="`Solo ${activeSourceTab.title}`"
+          :aria-pressed="activeSourceTab.soloed"
+          :title="`${activeSourceTab.soloed ? 'Unsolo' : 'Solo'} ${activeSourceTab.title}`"
+          @click="emit('toggleSourceCodeTabSolo', activeSourceCodeTabIndex, $event.ctrlKey || $event.metaKey)"
+        >
+          Solo
+        </button>
+        <button
+          class="source-editor-tab-control"
+          :class="{ enabled: activeSourceTab.muted }"
+          type="button"
+          :aria-label="`Mute ${activeSourceTab.title}`"
+          :aria-pressed="activeSourceTab.muted"
+          :title="`${activeSourceTab.muted ? 'Unmute' : 'Mute'} ${activeSourceTab.title}`"
+          @click="emit('toggleSourceCodeTabMute', activeSourceCodeTabIndex)"
+        >
+          Mute
+        </button>
+      </div>
       <textarea
         id="source-code"
         :value="sourceCode"

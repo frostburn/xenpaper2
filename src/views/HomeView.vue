@@ -25,6 +25,8 @@ const xenpaper = useXenpaperStore()
     @set-selected-line="xenpaper.setSelectedLine"
     @add-source-code-tab="xenpaper.addSourceCodeTab"
     @select-source-code-tab="xenpaper.selectSourceCodeTab"
+    @toggle-source-code-tab-mute="xenpaper.toggleSourceCodeTabMute"
+    @toggle-source-code-tab-solo="xenpaper.toggleSourceCodeTabSolo"
     @close-source-code-tab="xenpaper.closeSourceCodeTab"
   />
 </template>
