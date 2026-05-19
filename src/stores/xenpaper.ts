@@ -435,7 +435,12 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     applySharedTransportLoop()
   }
 
-  const addSourceCodeTab = (): void => {
+  const addSourceCodeTab = async (): Promise<void> => {
+    if (isPlaying.value) {
+      resetPlaybackState()
+      await pauseAllSoundEngines()
+    }
+
     scoreEngines.value = [...scoreEngines.value, useScoreEngine(nextScoreEngineId++)]
     activeScoreEngineIndex.value = scoreEngines.value.length - 1
     startSoundEngineListeners()

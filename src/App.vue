@@ -82,7 +82,7 @@ const startWatchers = (): void => {
   stopTitleWatcher = watch(() => xenpaper.htmlTitle, syncDocumentTitle, { immediate: true })
 
   stopSourceWatcher = watch(
-    () => xenpaper.sourceCode,
+    () => xenpaper.sourceCodes,
     () => {
       void xenpaper.updateParsedSourceCode()
     },
