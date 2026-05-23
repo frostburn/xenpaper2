@@ -115,8 +115,8 @@ const tempoTimeToMs = (bpm1: number, bpm2: number, duration: number): number => 
   const u = bpm1 / 60
   const v = bpm2 / 60
   const s = duration
-  if (u === v) return (s / v) * 1000
-  return ((2 * s * (v - u)) / (v * v - u * u)) * 1000
+  if (u === v) return s / v
+  return (2 * s * (v - u)) / (v * v - u * u)
 }
 
 type TempoChange = {

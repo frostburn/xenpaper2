@@ -162,31 +162,31 @@ describe('scoreToMs', () => {
         {
           type: 'NOTE_MS',
           ms: 0,
-          msEnd: 500,
+          msEnd: 0.5,
           hz: 440,
           label: '440',
         },
         {
           type: 'NOTE_MS',
-          ms: 500,
-          msEnd: 1000,
+          ms: 0.5,
+          msEnd: 1,
           hz: 550,
           label: '550',
         },
         {
           type: 'NOTE_MS',
-          ms: 1000,
-          msEnd: 1666.6666666666665,
+          ms: 1,
+          msEnd: 1.6666666666666665,
           hz: 660,
           label: '660',
         },
         {
           type: 'PARAM_MS',
-          ms: 2333.333333333333,
+          ms: 2.333333333333333,
           value: [1, 2, 3],
         },
       ],
-      lengthMs: 63000,
+      lengthMs: 63,
     })
   })
 
@@ -254,41 +254,41 @@ describe('scoreToMs', () => {
       sequence: [
         {
           type: 'NOTE_MS',
-          ms: 500,
-          msEnd: 500,
+          ms: 0.5,
+          msEnd: 0.5,
           hz: 440,
           label: '440',
         },
         {
           type: 'NOTE_MS',
-          ms: 1166.6666666666665,
-          msEnd: 1166.6666666666665,
+          ms: 1.1666666666666665,
+          msEnd: 1.1666666666666665,
           hz: 550,
           label: '550',
         },
         {
           type: 'NOTE_MS',
-          ms: 1833.3333333333333,
-          msEnd: 1833.3333333333333,
+          ms: 1.8333333333333333,
+          msEnd: 1.8333333333333333,
           hz: 660,
           label: '660',
         },
         {
           type: 'NOTE_MS',
-          ms: 2500,
-          msEnd: 2500,
+          ms: 2.5,
+          msEnd: 2.5,
           hz: 770,
           label: '770',
         },
         {
           type: 'NOTE_MS',
-          ms: 3500,
-          msEnd: 3500,
+          ms: 3.5,
+          msEnd: 3.5,
           hz: 880,
           label: '880',
         },
       ],
-      lengthMs: 3500,
+      lengthMs: 3.5,
     })
   })
 })

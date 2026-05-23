@@ -105,7 +105,7 @@ function useScoreEngine(id: number) {
   }
 
   const preparePlayableScore = async (): Promise<boolean> => {
-    if (!scoreLoaded.value || Tone.Transport.seconds * 1000 >= soundEngine.endPosition()) {
+    if (!scoreLoaded.value || Tone.Transport.seconds >= soundEngine.endPosition()) {
       await updateParsedSourceCode()
     }
 
@@ -237,13 +237,13 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   const getPlayableScoreEngines = (): ScoreEngine[] =>
     scoreEngines.value.filter((engine) => engine.scoreLoaded.value)
 
-  const getTransportPositionMs = (): number => Tone.Transport.seconds * 1000
+  const getTransportPositionMs = (): number => Tone.Transport.seconds
 
   const getSharedLoopEndMs = (engines: ScoreEngine[]): number =>
     Math.max(0, ...engines.map((engine) => engine.soundEngine.endPosition()))
 
   const applySharedTransportLoop = (engines: ScoreEngine[] = getPlayableScoreEngines()): void => {
-    Tone.Transport.loopEnd = getSharedLoopEndMs(engines) * 0.001
+    Tone.Transport.loopEnd = getSharedLoopEndMs(engines)
   }
 
   const preparePlayableScoreEngines = async (): Promise<ScoreEngine[]> => {
@@ -546,7 +546,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
 
   const updateLoopStart = (): void => {
     const loopStartMs = activeScoreEngine.value.getSelectedLineStartMs()
-    Tone.Transport.loopStart = loopStartMs * 0.001
+    Tone.Transport.loopStart = loopStartMs
   }
 
   const restartPlaybackFromSelectedLine = async (): Promise<void> => {
@@ -555,7 +555,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
 
     const startMs = activeScoreEngine.value.getSelectedLineStartMs()
     await Promise.all(playableEngines.map((engine) => engine.soundEngine.start()))
-    Tone.Transport.seconds = startMs * 0.001
+    Tone.Transport.seconds = startMs
     Tone.Transport.start?.()
     isPlaying.value = true
   }

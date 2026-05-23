@@ -178,13 +178,13 @@ export class SoundEngineTonejs extends SoundEngine {
           (time: number) => {
             this.getSynth().triggerAttackRelease(
               noteMs.hz,
-              noteMs.msEnd * 0.001 - noteMs.ms * 0.001,
+              noteMs.msEnd - noteMs.ms,
               time,
             )
             this._activeNoteEvents.add(noteMs)
             this._triggerEvent('note', noteMs, true)
           },
-          noteMs.ms * 0.001 + 0.1,
+          noteMs.ms + 0.1,
         ) // schedule in the future slightly to avoid double note playing at end
 
         const noteEndEventId = Tone.Transport.schedule(
@@ -192,7 +192,7 @@ export class SoundEngineTonejs extends SoundEngine {
             this._activeNoteEvents.delete(noteMs)
             this._triggerEvent('note', noteMs, false)
           },
-          noteMs.msEnd * 0.001 + 0.1,
+          noteMs.msEnd + 0.1,
         )
 
         this._transportEventIds.push(noteStartEventId, noteEndEventId)
@@ -226,7 +226,7 @@ export class SoundEngineTonejs extends SoundEngine {
               },
             })
           }
-        }, paramMs.ms * 0.001)
+        }, paramMs.ms)
 
         this._transportEventIds.push(paramEventId)
 
@@ -241,7 +241,7 @@ export class SoundEngineTonejs extends SoundEngine {
 
           this._releaseActiveNotes(time)
           this._triggerEvent('end', time)
-        }, this._endMs * 0.001)
+        }, this._endMs)
 
         this._transportEventIds.push(endEventId)
 
