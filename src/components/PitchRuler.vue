@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 
-import { centsToRatio, ratioToCents, type MoscNoteMs } from '../mosc'
+import { centsToRatio, ratioToCents, type MoscNoteTime } from '../mosc'
 import type { InitialRulerState } from '../grammars/process-grammar'
 
 export type RulerColourMode = 'gradient' | 'proxnotes' | `proxplot${number}`
 
 export type RulerState = {
-  notes: Map<string, MoscNoteMs>
-  notesActive: Map<string, MoscNoteMs>
+  notes: Map<string, MoscNoteTime>
+  notesActive: Map<string, MoscNoteTime>
   collect: boolean
   viewPan: number
   viewZoom: number
@@ -17,7 +17,7 @@ export type RulerState = {
   colourModeSoft: boolean
   rootHz?: number
   octaveSize?: number
-  plots: MoscNoteMs[][]
+  plots: MoscNoteTime[][]
 }
 
 const LOW_HZ_LIMIT = 20
@@ -125,7 +125,7 @@ const colourModeOptions = computed(() => [
 ])
 
 const noteSetColumns = computed(() => {
-  const columns: Array<{ key: string; notes: MoscNoteMs[]; x: number; active?: boolean }> = []
+  const columns: Array<{ key: string; notes: MoscNoteTime[]; x: number; active?: boolean }> = []
 
   if (rulerState.collect) {
     columns.push({
@@ -156,7 +156,7 @@ const noteSetColumns = computed(() => {
 const getY = (hz: number): number =>
   panToPx(hzToPan(hz), rulerState.viewPan, rulerState.viewZoom, rulerHeight.value)
 
-const getGradientColorFromNote = (note: MoscNoteMs): string => {
+const getGradientColorFromNote = (note: MoscNoteTime): string => {
   const matched = note.label.match(/([\d.]+)c/)
   if (!matched) return hsl(0, 100, 66)
 
@@ -165,8 +165,8 @@ const getGradientColorFromNote = (note: MoscNoteMs): string => {
 }
 
 const getColorFromNoteProximity = (
-  note: MoscNoteMs,
-  proxNotes: MoscNoteMs[],
+  note: MoscNoteTime,
+  proxNotes: MoscNoteTime[],
   threshold: number,
   hard: boolean,
 ): string => {
@@ -185,10 +185,10 @@ const getColorFromNoteProximity = (
   return hsl(360 - Math.min(distance, 2) * 80, 100, Math.max(1 - distance * 0.5, 0) * 50 + 10)
 }
 
-const getNoteColor = (note: MoscNoteMs): string => {
+const getNoteColor = (note: MoscNoteTime): string => {
   if (rulerState.colourMode === 'gradient') return getGradientColorFromNote(note)
 
-  let compare: MoscNoteMs[] = []
+  let compare: MoscNoteTime[] = []
   if (rulerState.colourMode === 'proxnotes') {
     compare = Array.from(rulerState.notes.values())
   } else if (rulerState.colourMode.startsWith('proxplot')) {
@@ -249,7 +249,7 @@ const centsGridLines = computed(() => {
   return lines
 })
 
-const visibleNotesForColumn = (notes: MoscNoteMs[]) => {
+const visibleNotesForColumn = (notes: MoscNoteTime[]) => {
   return notes.filter((note) => hzInRange(note.hz, visibleRange.value))
 }
 
@@ -257,18 +257,18 @@ const clearCollectedNotes = (): void => {
   rulerState.notes.clear()
 }
 
-const addNote = (note: MoscNoteMs): void => {
-  rulerState.notesActive.set(`${note.ms}-${note.hz}-${note.label}`, note)
+const addNote = (note: MoscNoteTime): void => {
+  rulerState.notesActive.set(`${note.time}-${note.hz}-${note.label}`, note)
   if (rulerState.collect) {
     rulerState.notes.set(`${note.hz}-${note.label}`, note)
   }
 }
 
-const removeNote = (note: MoscNoteMs): void => {
-  rulerState.notesActive.delete(`${note.ms}-${note.hz}-${note.label}`)
+const removeNote = (note: MoscNoteTime): void => {
+  rulerState.notesActive.delete(`${note.time}-${note.hz}-${note.label}`)
 }
 
-const setActiveNote = (note: MoscNoteMs, on: boolean): void => {
+const setActiveNote = (note: MoscNoteTime, on: boolean): void => {
   if (on) {
     addNote(note)
     return

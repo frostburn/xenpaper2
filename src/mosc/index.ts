@@ -10,10 +10,10 @@ export type MoscNote = {
   label: string
 }
 
-export type MoscNoteMs = {
-  type: 'NOTE_MS'
-  ms: number
-  msEnd: number
+export type MoscNoteTime = {
+  type: 'NOTE_TIME_VALUE'
+  time: number
+  timeEnd: number
   hz: number
   label: string
 }
@@ -24,9 +24,9 @@ export type MoscParam = {
   value: unknown
 }
 
-export type MoscParamMs = {
-  type: 'PARAM_MS'
-  ms: number
+export type MoscParamTime = {
+  type: 'PARAM_TIME_VALUE'
+  time: number
   value: unknown
 }
 
@@ -42,9 +42,9 @@ export type MoscEnd = {
   time: number
 }
 
-export type MoscEndMs = {
-  type: 'END_MS'
-  ms: number
+export type MoscEndTime = {
+  type: 'END_TIME_VALUE'
+  time: number
 }
 
 export type MoscItem = MoscNote | MoscTempo | MoscParam | MoscEnd
@@ -54,11 +54,11 @@ export type MoscScore = {
   lengthTime: number
 }
 
-export type MoscItemMs = MoscNoteMs | MoscParamMs | MoscEndMs
+export type MoscItemTime = MoscNoteTime | MoscParamTime | MoscEndTime
 
-export type MoscScoreMs = {
-  sequence: MoscItemMs[]
-  lengthMs: number
+export type MoscScoreTime = {
+  sequence: MoscItemTime[]
+  lengthTime: number
 }
 
 //
@@ -99,19 +99,19 @@ export const sortByTime = <T extends { time: number }>(items: T[]): T[] => {
   })
 }
 
-export const sortByMs = (items: Array<MoscNoteMs>): Array<MoscNoteMs> => {
+export const sortByTimeValue = (items: Array<MoscNoteTime>): Array<MoscNoteTime> => {
   return items.slice().sort((a, b) => {
-    if (a.ms < b.ms) return -1
-    if (a.ms > b.ms) return 1
+    if (a.time < b.time) return -1
+    if (a.time > b.time) return 1
     return 0
   })
 }
 
 //
-// time-based to ms-based conversion
+// beat-time to real-time conversion
 //
 
-const tempoTimeToMs = (bpm1: number, bpm2: number, duration: number): number => {
+const tempoTimeToTime = (bpm1: number, bpm2: number, duration: number): number => {
   const u = bpm1 / 60
   const v = bpm2 / 60
   const s = duration
@@ -123,7 +123,7 @@ type TempoChange = {
   bpm: number
   bpmEnd: number
   time: number
-  ms: number
+  timeValue: number
 }
 
 const findTempoRangeForTime = (tempoChanges: TempoChange[], time: number): TempoChange => {
@@ -138,13 +138,13 @@ const findTempoRangeForTime = (tempoChanges: TempoChange[], time: number): Tempo
   throw new Error('No tempo changes found.')
 }
 
-export const timeToMs = (items: MoscItem[]): ((time: number) => number) => {
+export const timeToTime = (items: MoscItem[]): ((time: number) => number) => {
   const tempoChanges: TempoChange[] = []
   tempoChanges.push({
     bpm: 60,
     bpmEnd: 60,
     time: 0,
-    ms: 0,
+    timeValue: 0,
   })
 
   const tempoItems: MoscTempo[] = items.filter(
@@ -155,63 +155,65 @@ export const timeToMs = (items: MoscItem[]): ((time: number) => number) => {
     const lastChange = tempoChanges[tempoChanges.length - 1] as TempoChange
     const nextTempo: MoscTempo | undefined = all[index + 1]
 
-    const ms =
-      tempoTimeToMs(lastChange.bpm, lastChange.bpmEnd, tempo.time - lastChange.time) + lastChange.ms
+    const timeValue =
+      tempoTimeToTime(lastChange.bpm, lastChange.bpmEnd, tempo.time - lastChange.time) +
+      lastChange.timeValue
     const bpmEnd = nextTempo && nextTempo.lerp ? nextTempo.bpm : tempo.bpm
 
     tempoChanges.push({
       bpm: tempo.bpm,
       bpmEnd,
       time: tempo.time,
-      ms,
+      timeValue,
     })
   })
 
   return (time: number): number => {
     const tempoChange: TempoChange = findTempoRangeForTime(tempoChanges, time)
     return (
-      tempoTimeToMs(tempoChange.bpm, tempoChange.bpmEnd, time - tempoChange.time) + tempoChange.ms
+      tempoTimeToTime(tempoChange.bpm, tempoChange.bpmEnd, time - tempoChange.time) +
+      tempoChange.timeValue
     )
   }
 }
 
-export const scoreToMs = (score: MoscScore): MoscScoreMs => {
-  const thisTimeToMs = timeToMs(score.sequence)
+export const scoreToTime = (score: MoscScore): MoscScoreTime => {
+  const thisTimeToTime = timeToTime(score.sequence)
 
-  const sequence: MoscItemMs[] = sortByTime(score.sequence)
-    .map((item: MoscItem): MoscItemMs | undefined => {
+  const sequence: MoscItemTime[] = sortByTime(score.sequence)
+    .map((item: MoscItem): MoscItemTime | undefined => {
       if (item.type === 'NOTE_TIME') {
         const note = item as MoscNote
         return {
-          type: 'NOTE_MS',
+          type: 'NOTE_TIME_VALUE',
           hz: note.hz,
           label: note.label,
-          ms: thisTimeToMs(note.time),
-          msEnd: thisTimeToMs(note.timeEnd),
+          time: thisTimeToTime(note.time),
+          timeEnd: thisTimeToTime(note.timeEnd),
         }
       }
       if (item.type === 'PARAM_TIME') {
         const param = item as MoscParam
         return {
-          type: 'PARAM_MS',
+          type: 'PARAM_TIME_VALUE',
           value: param.value,
-          ms: thisTimeToMs(param.time),
+          time: thisTimeToTime(param.time),
         }
       }
       if (item.type === 'END_TIME') {
         const end = item as MoscEnd
         return {
-          type: 'END_MS',
-          ms: thisTimeToMs(end.time),
+          type: 'END_TIME_VALUE',
+          time: thisTimeToTime(end.time),
         }
       }
       return undefined
     })
-    .filter((item): item is MoscItemMs => !!item)
+    .filter((item): item is MoscItemTime => !!item)
 
   return {
     sequence,
-    lengthMs: thisTimeToMs(score.lengthTime),
+    lengthTime: thisTimeToTime(score.lengthTime),
   }
 }
 
@@ -220,11 +222,11 @@ export const scoreToMs = (score: MoscScore): MoscScoreMs => {
 //
 
 type SoundEngineEndEventCallback = (time?: number) => void
-type SoundEngineNoteEventCallback = (noteMs: MoscNoteMs, on: boolean) => void
+type SoundEngineNoteEventCallback = (noteTime: MoscNoteTime, on: boolean) => void
 type SoundEngineEventCallbackCancel = () => void
 
 export class SoundEngine {
-  scoreMs?: MoscScoreMs
+  scoreTime?: MoscScoreTime
 
   endPosition(): number {
     return 0
@@ -232,7 +234,7 @@ export class SoundEngine {
 
   cutActiveNotes(_time?: number): void {}
 
-  async setScore(_scoreMs: MoscScoreMs): Promise<void> {}
+  async setScore(_scoreTime: MoscScoreTime): Promise<void> {}
 
   setOutputGain(_gain: number): void {}
 
@@ -246,18 +248,18 @@ export class SoundEngine {
   }
 
   _triggerEvent(type: 'end', time?: number): void
-  _triggerEvent(type: 'note', noteMs: MoscNoteMs, on: boolean): void
-  _triggerEvent(type: 'end' | 'note', noteMs?: number | MoscNoteMs, on?: boolean): void {
+  _triggerEvent(type: 'note', noteTime: MoscNoteTime, on: boolean): void
+  _triggerEvent(type: 'end' | 'note', noteTime?: number | MoscNoteTime, on?: boolean): void {
     if (type === 'end') {
-      this.events.end.forEach((cb) => cb(noteMs as number))
+      this.events.end.forEach((cb) => cb(noteTime as number))
       return
     }
 
-    if (!noteMs || typeof on !== 'boolean') {
+    if (!noteTime || typeof on !== 'boolean') {
       throw new Error('Note event requires a note and on/off state.')
     }
 
-    this.events.note.forEach((cb) => cb(noteMs as MoscNoteMs, on))
+    this.events.note.forEach((cb) => cb(noteTime as MoscNoteTime, on))
   }
 
   onEnd(callback: SoundEngineEndEventCallback): SoundEngineEventCallbackCancel {
