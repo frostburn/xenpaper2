@@ -22,6 +22,7 @@ import {
   saveSourceCodes,
 } from '../share-link'
 import { SoundEngineSwSeq } from '../sound-engine-sw-seq'
+import { Bank } from '../sw-seq/bank'
 import { Transport } from '../sw-seq/transport'
 import { createSourceDisplayTokens } from '../source-display'
 import type { OpenSidebarMode, SidebarMode, SourceDisplayToken, SourceTab } from '../types'
@@ -55,10 +56,11 @@ const createTransportContext = (): BaseAudioContext => {
 }
 
 const swSeqTransport = new Transport(createTransportContext())
+const swSeqBank = new Bank(swSeqTransport.context)
 
 // Coupling of a sound engine to a source code with history
 function useScoreEngine(id: number) {
-  const soundEngine = new SoundEngineSwSeq(swSeqTransport)
+  const soundEngine = new SoundEngineSwSeq(swSeqTransport, swSeqBank)
   const sourceCode = ref('')
   const sourceHistory = ref(createSourceHistory(''))
   const scoreLoaded = ref(false)

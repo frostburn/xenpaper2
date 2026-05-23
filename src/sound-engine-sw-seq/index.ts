@@ -1,8 +1,8 @@
 import type { MoscNoteTime, MoscScoreTime } from '../mosc'
 import { SoundEngine } from '../mosc'
-import { Bank } from '../sw-seq/bank'
+import type { Bank } from '../sw-seq/bank'
 import { PolySynth } from '../sw-seq/polysynth'
-import { Transport } from '../sw-seq/transport'
+import type { Transport } from '../sw-seq/transport'
 
 const OSC_VOLUME = 0.125
 const OSC_TYPES = ['sine', 'square', 'triangle', 'sawtooth'] as const
@@ -37,13 +37,13 @@ export class SoundEngineSwSeq extends SoundEngine {
     envelope: { attack: 0.01, decay: 0.3, sustain: 0.8, release: 0.01 },
   }
 
-  constructor(transport: Transport) {
+  constructor(transport: Transport, bank: Bank) {
     super()
     this.transport = transport
     this.destination = transport.context.createGain()
     this.destination.gain.value = OSC_VOLUME
     this.destination.connect(transport.context.destination)
-    this.synth = new PolySynth(new Bank(transport.context), this.destination, {
+    this.synth = new PolySynth(bank, this.destination, {
       oscillator: { type: this.patch.oscillator.type },
       envelope: this.patch.envelope,
     })

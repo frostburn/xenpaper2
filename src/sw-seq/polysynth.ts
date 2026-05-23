@@ -1,4 +1,4 @@
-import type { Bank } from './bank'
+import type { Bank, EnvelopedOscillator } from './bank'
 
 const TIME_CONSTANT = 0.5
 
@@ -59,7 +59,7 @@ export class PolySynth {
   }
 
   trigger(frequency: number) {
-    let oscillator: OscillatorNode | null = null
+    let oscillator: EnvelopedOscillator | null = null
     let startTime = NaN
     let attackTime = NaN
     let decayTime = NaN
