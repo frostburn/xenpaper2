@@ -544,7 +544,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   }
 
   const setDemoTune = async (source: string): Promise<void> => {
-    swSeqTransport.stop?.()
+    await pauseAllSoundEngines()
     const previousScoreEngines = scoreEngines.value
     stopSoundEngineListeners()
     resetPlaybackState()
