@@ -153,24 +153,8 @@ export class SoundEngineTonejs extends SoundEngine {
     this._started = false
   }
 
-  async play(): Promise<void> {
-    await this.start()
-    Tone.Transport.start()
-  }
-
-  async pause(time?: number): Promise<void> {
-    Tone.Transport.pause(time)
+  cutActiveNotes(time?: number): void {
     this._releaseActiveNotesIfSynthExists(time)
-  }
-
-  stopSilently(time?: number): void {
-    Tone.Transport.pause(time)
-    this._releaseActiveNotesIfSynthExists(time)
-    this._clearScheduledEvents()
-  }
-
-  async gotoMs(ms: number): Promise<void> {
-    Tone.Transport.seconds = ms * 0.001
   }
 
   setOutputGain(gain: number): void {

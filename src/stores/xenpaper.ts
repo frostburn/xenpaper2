@@ -75,7 +75,7 @@ function useScoreEngine(id: number) {
     await soundEngine.setScore(source.scoreMs)
     if (version !== parseVersion) return false
 
-    await soundEngine.gotoMs(0)
+    Tone.Transport.seconds = 0
     scoreLoaded.value = true
 
     return true
@@ -255,11 +255,12 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   }
 
   const pauseAllSoundEngines = async (time?: number): Promise<void> => {
-    await Promise.all(scoreEngines.value.map((engine) => engine.soundEngine.pause(time)))
+    Tone.Transport.pause?.(time)
+    scoreEngines.value.forEach((engine) => engine.soundEngine.cutActiveNotes(time))
   }
 
   const clearScoreEngine = async (engine: ScoreEngine): Promise<void> => {
-    engine.soundEngine.stopSilently()
+    engine.soundEngine.cutActiveNotes()
     await engine.soundEngine.setScore(EMPTY_SCORE_MS)
     engine.scoreLoaded.value = false
   }
@@ -429,7 +430,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
 
     if (isPlaying.value) {
       resetPlaybackState()
-      await Promise.all(previousScoreEngines.map((engine) => engine.soundEngine.pause()))
+      await pauseAllSoundEngines()
     }
 
     clearDeadScoreEngines()
@@ -508,7 +509,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
 
     if (isPlaying.value) {
       resetPlaybackState()
-      await Promise.all(previousScoreEngines.map((engine) => engine.soundEngine.pause()))
+      await pauseAllSoundEngines()
     }
     await clearScoreEngine(removed)
     rememberDeadScoreEngines([removed])
@@ -537,8 +538,9 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     rememberDeadScoreEngines(previousScoreEngines)
     startSoundEngineListeners()
     applySharedTransportLoop([engine])
-    await engine.soundEngine.gotoMs(0)
-    await engine.soundEngine.play()
+    await engine.soundEngine.start()
+    Tone.Transport.seconds = 0
+    Tone.Transport.start?.()
     isPlaying.value = true
   }
 
@@ -552,8 +554,9 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     if (!playableEngines.length) return
 
     const startMs = activeScoreEngine.value.getSelectedLineStartMs()
-    await Promise.all(playableEngines.map((engine) => engine.soundEngine.gotoMs(startMs)))
-    await Promise.all(playableEngines.map((engine) => engine.soundEngine.play()))
+    await Promise.all(playableEngines.map((engine) => engine.soundEngine.start()))
+    Tone.Transport.seconds = startMs * 0.001
+    Tone.Transport.start?.()
     isPlaying.value = true
   }
 

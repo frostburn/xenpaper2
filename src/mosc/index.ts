@@ -226,23 +226,11 @@ type SoundEngineEventCallbackCancel = () => void
 export class SoundEngine {
   scoreMs?: MoscScoreMs
 
-  playing(): boolean {
-    return false
-  }
-
-  looping(): boolean {
-    return false
-  }
-
   endPosition(): number {
     return 0
   }
 
-  async play(): Promise<void> {}
-
-  async pause(_time?: number): Promise<void> {}
-
-  async gotoMs(_ms: number): Promise<void> {}
+  cutActiveNotes(_time?: number): void {}
 
   async setScore(_scoreMs: MoscScoreMs): Promise<void> {}
 
