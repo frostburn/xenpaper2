@@ -21,7 +21,8 @@ import {
   isEmbedHash,
   saveSourceCodes,
 } from '../share-link'
-import { SoundEngineSwSeq, swSeqTransport } from '../sound-engine-sw-seq'
+import { SoundEngineSwSeq } from '../sound-engine-sw-seq'
+import { Transport } from '../sw-seq/transport'
 import { createSourceDisplayTokens } from '../source-display'
 import type { OpenSidebarMode, SidebarMode, SourceDisplayToken, SourceTab } from '../types'
 import {
@@ -38,9 +39,26 @@ const MAX_DEAD_SOURCE_TABS = 10
 
 type ScoreEngine = ReturnType<typeof useScoreEngine>
 
+const createTransportContext = (): BaseAudioContext => {
+  if (typeof AudioContext !== 'undefined') {
+    return new AudioContext()
+  }
+
+  return {
+    currentTime: 0,
+    createConstantSource: () => ({
+      onended: null,
+      start: () => undefined,
+      stop: () => undefined,
+    }),
+  } as unknown as BaseAudioContext
+}
+
+const swSeqTransport = new Transport(createTransportContext())
+
 // Coupling of a sound engine to a source code with history
 function useScoreEngine(id: number) {
-  const soundEngine = new SoundEngineSwSeq()
+  const soundEngine = new SoundEngineSwSeq(swSeqTransport)
   const sourceCode = ref('')
   const sourceHistory = ref(createSourceHistory(''))
   const scoreLoaded = ref(false)

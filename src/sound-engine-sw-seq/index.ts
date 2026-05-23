@@ -20,8 +20,6 @@ const isOscParam = (value: unknown): value is SoundEngineOscParam =>
 const isEnvParam = (value: unknown): value is SoundEngineEnvParam =>
   isRecord(value) && value.type === 'env' && typeof value.a === 'number' && typeof value.d === 'number' && typeof value.s === 'number' && typeof value.r === 'number'
 
-export const swSeqTransport = new Transport(new AudioContext())
-
 type SynthPatch = {
   oscillator: { type: OscillatorType }
   envelope: { attack: number; decay: number; sustain: number; release: number }
@@ -39,7 +37,7 @@ export class SoundEngineSwSeq extends SoundEngine {
     envelope: { attack: 0.01, decay: 0.3, sustain: 0.8, release: 0.01 },
   }
 
-  constructor(transport: Transport = swSeqTransport) {
+  constructor(transport: Transport) {
     super()
     this.transport = transport
     this.destination = transport.context.createGain()
