@@ -14,15 +14,14 @@ type TransportEvent = {
  */
 export class Transport {
   readonly context: AudioContext
+  active: boolean
   seconds = 0
   loop = false
   loopStart = 0
   loopEnd = 0
-  state: 'started' | 'stopped' = 'stopped'
 
   private interval: number
   private lookAhead: number
-  private active: boolean
   private startTime: number
   private lastTick: number
   private parametricEventsById: Map<number, ParametricEvent>
@@ -58,7 +57,6 @@ export class Transport {
     this.parametricQueue.sort((a, b) => a.when - b.when)
     this.eventQueue.sort((a, b) => a.when - b.when)
     this.active = true
-    this.state = 'started'
     this.lastTick = this.context.currentTime
     this.onInterval()
   }
@@ -77,7 +75,6 @@ export class Transport {
       const event = this.parametricQueue.shift()!
       if (!this.parametricEventsById.has(event.id)) continue
       event.callback(event.when + this.lookAhead)
-      this.parametricEventsById.delete(event.id)
     }
 
     while (this.eventQueue.length && this.eventQueue[0]!.when < this.lastTick) {
@@ -87,7 +84,6 @@ export class Transport {
       timer.onended = () => {
         if (!this.eventsById.has(event.id)) return
         event.callback()
-        this.eventsById.delete(event.id)
       }
       timer.start(this.context.currentTime)
       timer.stop(event.when + this.lookAhead)
@@ -96,11 +92,6 @@ export class Transport {
 
   stop() {
     this.active = false
-    this.state = 'stopped'
-  }
-
-  pause(_time?: number) {
-    this.stop()
   }
 
   clear(id: number) {
@@ -120,12 +111,24 @@ export class Transport {
   scheduleParametric(callback: (time: number) => void, when: number) {
     const id = this.nextEventId++
     this.parametricEventsById.set(id, { id, callback, when })
+
+    if (this.active) {
+      this.parametricQueue.push({id, callback, when: when + this.startTime })
+      this.parametricQueue.sort((a, b) => a.when - b.when)
+    }
+
     return id
   }
 
   scheduleEvent(callback: () => void, when: number) {
     const id = this.nextEventId++
     this.eventsById.set(id, { id, callback, when })
+
+    if (this.active) {
+      this.eventQueue.push({id, callback, when: when + this.startTime})
+      this.eventQueue.sort((a, b) => a.when - b.when)
+    }
+
     return id
   }
 }

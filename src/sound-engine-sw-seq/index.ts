@@ -1,7 +1,7 @@
 import type { MoscNoteTime, MoscScoreTime } from '../mosc'
 import { SoundEngine } from '../mosc'
 import type { Bank } from '../sw-seq/bank'
-import { PolySynth } from '../sw-seq/polysynth'
+import { PolySynth, type SynthParams } from '../sw-seq/polysynth'
 import type { Transport } from '../sw-seq/transport'
 
 const OSC_VOLUME = 0.125
@@ -20,11 +20,6 @@ const isOscParam = (value: unknown): value is SoundEngineOscParam =>
 const isEnvParam = (value: unknown): value is SoundEngineEnvParam =>
   isRecord(value) && value.type === 'env' && typeof value.a === 'number' && typeof value.d === 'number' && typeof value.s === 'number' && typeof value.r === 'number'
 
-type SynthPatch = {
-  oscillator: { type: OscillatorType }
-  envelope: { attack: number; decay: number; sustain: number; release: number }
-}
-
 export class SoundEngineSwSeq extends SoundEngine {
   private endTime = 0
   private activeNoteEvents = new Set<MoscNoteTime>()
@@ -32,10 +27,6 @@ export class SoundEngineSwSeq extends SoundEngine {
   private synth: PolySynth
   private transport: Transport
   private transportEventIds = new Map<number, true>()
-  private patch: SynthPatch = {
-    oscillator: { type: 'sine' },
-    envelope: { attack: 0.01, decay: 0.3, sustain: 0.8, release: 0.01 },
-  }
 
   constructor(transport: Transport, bank: Bank) {
     super()
@@ -43,10 +34,7 @@ export class SoundEngineSwSeq extends SoundEngine {
     this.destination = transport.context.createGain()
     this.destination.gain.value = OSC_VOLUME
     this.destination.connect(transport.context.destination)
-    this.synth = new PolySynth(bank, this.destination, {
-      oscillator: { type: this.patch.oscillator.type },
-      envelope: this.patch.envelope,
-    })
+    this.synth = new PolySynth(bank, this.destination)
   }
 
   private clearScheduledEvents(): void {
@@ -55,7 +43,6 @@ export class SoundEngineSwSeq extends SoundEngine {
   }
 
   endPosition(): number { return this.endTime }
-  async start(): Promise<void> { await this.transport.context.resume() }
 
   dispose(): void {
     this.clearScheduledEvents()
@@ -76,39 +63,45 @@ export class SoundEngineSwSeq extends SoundEngine {
     this.clearScheduledEvents()
     this.endTime = scoreTime.lengthTime
 
+    const patch: SynthParams = {
+      oscillator: {
+        type: 'triangle',
+      },
+      envelope: {
+        attack: 0.01,
+        sustain: 0.5,
+        decay: 0.25,
+        release: 0.5,
+      },
+    }
+
     scoreTime.sequence.forEach((item) => {
       if (item.type === 'NOTE_TIME') {
-        const noteHandle = this.synth.trigger(item.hz)
+        const noteHandle = this.synth.trigger(item.hz, patch)
         const noteStartId = this.transport.scheduleParametric((time) => {
           noteHandle.noteOn(time)
           this.activeNoteEvents.add(item)
           this._triggerEvent('note', item, true)
-        }, item.time + 0.1)
+        }, item.time)
         const noteEndId = this.transport.scheduleParametric((time) => {
           noteHandle.noteOff(time)
           this.activeNoteEvents.delete(item)
           this._triggerEvent('note', item, false)
-        }, item.timeEnd + 0.1)
+        }, item.timeEnd)
         this.transportEventIds.set(noteStartId, true)
         this.transportEventIds.set(noteEndId, true)
       } else if (item.type === 'PARAM_TIME') {
         const paramId = this.transport.scheduleEvent(() => {
           if (isOscParam(item.value)) {
-            this.patch.oscillator.type = item.value.osc
-            this.synth.set({
-              oscillator: { type: this.patch.oscillator.type },
-            })
+            patch.oscillator.type = item.value.osc
           }
           if (isEnvParam(item.value)) {
-            this.patch.envelope = {
+            patch.envelope = {
               attack: item.value.a,
               decay: item.value.d,
               sustain: item.value.s,
               release: item.value.r,
             }
-            this.synth.set({
-              envelope: this.patch.envelope,
-            })
           }
         }, item.time)
         this.transportEventIds.set(paramId, true)

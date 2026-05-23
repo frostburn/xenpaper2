@@ -7,17 +7,13 @@ const DEFAULT_DECAY = 0.3
 const DEFAULT_SUSTAIN = 0.8
 const DEFAULT_RELEASE = 0.01
 
-type SynthOscillatorOptions = {
-  type?: OscillatorType
-}
-
-export type SynthOptions = {
-  oscillator?: SynthOscillatorOptions
-  envelope?: {
-    attack?: number
-    decay?: number
-    sustain?: number
-    release?: number
+export type SynthParams = {
+  oscillator: {type: OscillatorType}
+  envelope: {
+    attack: number
+    decay: number
+    sustain: number
+    release: number
   }
 }
 
@@ -28,63 +24,39 @@ export class PolySynth {
   private bank: Bank
   private destination: AudioNode
 
-  oscillatorType: OscillatorType
-  attackTime: number
-  decayTime: number
-  sustainLevel: number
-  releaseTime: number
-
-  constructor(bank: Bank, destination: AudioNode, opts?: SynthOptions) {
+  constructor(bank: Bank, destination: AudioNode) {
     this.bank = bank
     this.destination = destination
-    this.oscillatorType = opts?.oscillator?.type ?? 'sine'
-    this.attackTime = opts?.envelope?.attack ?? DEFAULT_ATTACK
-    this.decayTime = opts?.envelope?.decay ?? DEFAULT_DECAY
-    this.sustainLevel = opts?.envelope?.sustain ?? DEFAULT_SUSTAIN
-    this.releaseTime = opts?.envelope?.release ?? DEFAULT_RELEASE
   }
 
   get context() {
     return this.bank.context
   }
 
-  set(opts: SynthOptions) {
-    if (opts.oscillator?.type) this.oscillatorType = opts.oscillator.type
-    if (opts.envelope) {
-      if (opts.envelope.attack !== undefined) this.attackTime = opts.envelope.attack
-      if (opts.envelope.decay !== undefined) this.decayTime = opts.envelope.decay
-      if (opts.envelope.sustain !== undefined) this.sustainLevel = opts.envelope.sustain
-      if (opts.envelope.release !== undefined) this.releaseTime = opts.envelope.release
-    }
-  }
-
-  trigger(frequency: number) {
+  trigger(frequency: number, params: SynthParams) {
     let oscillator: EnvelopedOscillator | null = null
-    let startTime = NaN
-    let attackTime = NaN
-    let decayTime = NaN
-    let sustainLevel = NaN
-    let releaseTime = NaN
+
+    let startTime = NaN;
+    const type = params.oscillator.type
+    const attackTime = params.envelope.attack
+    const decayTime = params.envelope.decay
+    const sustainLevel = params.envelope.sustain
+    const releaseTime = params.envelope.release
 
     const noteOn = (time: number) => {
       oscillator = this.bank.allocateOscillator()
       if (oscillator === null) return
 
       startTime = time
-      oscillator.type = this.oscillatorType
+      oscillator.type = type
       oscillator.frequency.setValueAtTime(frequency, time)
       oscillator.connect(this.destination)
       oscillator.gain.setValueAtTime(0, startTime)
 
-      attackTime = this.attackTime
-      decayTime = this.decayTime
-      sustainLevel = this.sustainLevel
-      releaseTime = this.releaseTime
-
       if (attackTime <= 0) oscillator.gain.setValueAtTime(1, startTime)
       else oscillator.gain.linearRampToValueAtTime(1, startTime + attackTime)
 
-      if (this.decayTime <= 0) oscillator.gain.setValueAtTime(sustainLevel, startTime + attackTime)
+      if (decayTime <= 0) oscillator.gain.setValueAtTime(sustainLevel, startTime + attackTime)
       else oscillator.gain.setTargetAtTime(sustainLevel, startTime + attackTime, decayTime * TIME_CONSTANT)
     }
 
@@ -92,6 +64,7 @@ export class PolySynth {
       if (oscillator === null) return
 
       oscillator.gain.cancelScheduledValues(endTime)
+      // Manually hold linear ramp if needed
       if (endTime < startTime + attackTime) {
         oscillator.gain.setValueAtTime((endTime - startTime) / attackTime, endTime)
       }

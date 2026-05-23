@@ -8,7 +8,7 @@ export class EnvelopedOscillator {
   constructor(context: BaseAudioContext) {
     this.oscillator = context.createOscillator();
     this._gain = context.createGain();
-    this._gain.gain.value = 0;
+    this._gain.gain.setValueAtTime(0, context.currentTime);
     this.oscillator.connect(this._gain);
   }
 
@@ -61,7 +61,6 @@ export class Bank {
   private maxPolyphony: number;
   // Negative age indicates that the node is reserved
   private oscillators: {node: EnvelopedOscillator, age: number}[];
-  // private gains: {node: GainNode, reserved: boolean}[];
 
   constructor(context: AudioContext, maxPolyphony=32) {
     this.context = context;
@@ -72,7 +71,7 @@ export class Bank {
   allocateOscillator() {
     if (this.oscillators.length < this.maxPolyphony) {
       const osc = {node: new EnvelopedOscillator(this.context), age: -1};
-      osc.node.start();
+      osc.node.start(this.context.currentTime);
       this.oscillators.push(osc);
       return osc.node;
     }
@@ -105,28 +104,6 @@ export class Bank {
       }
     });
   }
-
-  /*
-  allocateGain() {
-    let gn = this.oscillators.find((g) => !g.reserved);
-    if (gn === undefined) {
-      // No polyphony limits enforced here.
-
-      gn = {node: this.context.createGain(), reserved: true};
-      this.gains.push(gn);
-    }
-    gn.reserved = true;
-    return gn.node;
-  }
-
-  freeGain(node: GainNode) {
-    const gn = this.gains.find((g) => g.node === node);
-    if (gn === undefined) {
-      throw new Error('Attempting to free unallocated gain.');
-    }
-    gn.reserved = false;
-  }
-  */
 
   stop() {
     this.oscillators.forEach((o) => {

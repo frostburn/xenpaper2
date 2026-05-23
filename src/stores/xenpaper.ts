@@ -284,8 +284,9 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   }
 
   const pauseAllSoundEngines = async (time?: number): Promise<void> => {
-    swSeqTransport.pause?.(time)
+    swSeqTransport.stop?.()
     scoreEngines.value.forEach((engine) => engine.soundEngine.cutActiveNotes(time))
+    swSeqBank.stop?.()
   }
 
   const clearScoreEngine = async (engine: ScoreEngine): Promise<void> => {
@@ -543,6 +544,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   }
 
   const setDemoTune = async (source: string): Promise<void> => {
+    swSeqTransport.stop?.()
     const previousScoreEngines = scoreEngines.value
     stopSoundEngineListeners()
     resetPlaybackState()
@@ -564,7 +566,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     rememberDeadScoreEngines(previousScoreEngines)
     startSoundEngineListeners()
     applySharedTransportLoop([engine])
-    await engine.soundEngine.start()
+    // await engine.soundEngine.start()
     swSeqTransport.seconds = 0
     swSeqTransport.start?.()
     isPlaying.value = true
@@ -580,7 +582,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     if (!playableEngines.length) return
 
     const startTime = activeScoreEngine.value.getSelectedLineStartTime()
-    await Promise.all(playableEngines.map((engine) => engine.soundEngine.start()))
+    // await Promise.all(playableEngines.map((engine) => engine.soundEngine.start()))
     swSeqTransport.seconds = startTime
     swSeqTransport.start?.()
     isPlaying.value = true
@@ -611,7 +613,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
 
   const syncPlaybackPosition = (): void => {
     playbackPositionTime.value =
-      swSeqTransport.state === 'started' ? getTransportPositionTime() : -1
+      swSeqTransport.active ? getTransportPositionTime() : -1
   }
 
   const resetPlaybackPosition = (): void => {
