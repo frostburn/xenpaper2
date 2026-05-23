@@ -194,7 +194,6 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     set: (source: string) => activeScoreEngine.value.applySourceCode(source),
   })
   const sourceCodes = computed(() => scoreEngines.value.map((engine) => engine.sourceCode.value))
-  const soundEngine = computed(() => activeScoreEngine.value.soundEngine)
 
   const htmlTitle = computed(() => createHtmlTitle(sourceCode.value))
 
@@ -426,8 +425,6 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   }
 
   const importSourceCodes = async (sources: string[]): Promise<void> => {
-    const previousScoreEngines = scoreEngines.value
-
     if (isPlaying.value) {
       resetPlaybackState()
       await pauseAllSoundEngines()
@@ -494,7 +491,6 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     const index = scoreEngines.value.findIndex((engine) => engine.id === id)
     if (scoreEngines.value.length <= 1 || index < 0) return
 
-    const previousScoreEngines = scoreEngines.value
     const nextScoreEngines = scoreEngines.value.slice()
     const [removed] = nextScoreEngines.splice(index, 1)
     if (!removed) return
@@ -584,7 +580,8 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   }
 
   const syncPlaybackPosition = (): void => {
-    playbackPositionTime.value = Tone.Transport.state === 'started' ? getTransportPositionTime() : -1
+    playbackPositionTime.value =
+      Tone.Transport.state === 'started' ? getTransportPositionTime() : -1
   }
 
   const resetPlaybackPosition = (): void => {

@@ -175,7 +175,6 @@ describe('App source editor keyboard shortcuts', () => {
     const engine = soundEngineMock.instances[soundEngineMock.instances.length - 1]!
     const textarea = wrapper.get<HTMLTextAreaElement>('textarea').element
 
-
     await dispatchSourceKeydown(textarea, { key: 'Enter', metaKey: true })
     await dispatchSourceKeydown(textarea, { key: 'Enter', metaKey: true })
 
@@ -298,7 +297,9 @@ describe('App source editor keyboard shortcuts', () => {
     expect(wrapper.findAll('[role="tab"]')[0]!.classes()).toContain('soloed')
     expect(wrapper.findAll('[role="tab"]')[0]!.attributes('aria-label')).toBe('0 2, soloed')
     expect(wrapper.findAll('.source-editor-tab-control')[0]!.classes()).toContain('enabled')
-    expect(wrapper.findAll('.source-editor-tab-control')[0]!.attributes('aria-pressed')).toBe('true')
+    expect(wrapper.findAll('.source-editor-tab-control')[0]!.attributes('aria-pressed')).toBe(
+      'true',
+    )
 
     expect(firstEngine.setOutputGain).toHaveBeenLastCalledWith(1)
     expect(secondEngine.setOutputGain).toHaveBeenLastCalledWith(0)
@@ -417,7 +418,9 @@ describe('App source editor keyboard shortcuts', () => {
     expect(wrapper.findAll('[role="tab"]')[1]!.classes()).toContain('muted')
     expect(wrapper.findAll('[role="tab"]')[1]!.attributes('aria-label')).toBe('0 2, muted')
     expect(wrapper.findAll('.source-editor-tab-control')[1]!.classes()).toContain('enabled')
-    expect(wrapper.findAll('.source-editor-tab-control')[1]!.attributes('aria-pressed')).toBe('true')
+    expect(wrapper.findAll('.source-editor-tab-control')[1]!.attributes('aria-pressed')).toBe(
+      'true',
+    )
 
     expect(firstEngine.setOutputGain).toHaveBeenLastCalledWith(1)
     expect(secondEngine.setOutputGain).toHaveBeenLastCalledWith(0)

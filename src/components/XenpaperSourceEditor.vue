@@ -218,7 +218,13 @@ const isCharacterActive = (charData?: CharData): boolean => {
           :aria-label="`Solo ${activeSourceTab.title}`"
           :aria-pressed="activeSourceTab.soloed"
           :title="`${activeSourceTab.soloed ? 'Unsolo' : 'Solo'} ${activeSourceTab.title}`"
-          @click="emit('toggleSourceCodeTabSolo', activeSourceCodeTabIndex, $event.ctrlKey || $event.metaKey)"
+          @click="
+            emit(
+              'toggleSourceCodeTabSolo',
+              activeSourceCodeTabIndex,
+              $event.ctrlKey || $event.metaKey,
+            )
+          "
         >
           Solo
         </button>
