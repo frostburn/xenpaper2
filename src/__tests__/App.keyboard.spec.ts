@@ -10,19 +10,12 @@ import HomeView from '../views/HomeView.vue'
 type MockFn<T extends (...args: never[]) => unknown> = ReturnType<typeof vi.fn<T>>
 
 type MockSoundEngine = {
-  currentPosition: number
-  playingState: boolean
   endMs: number
   endCallback?: () => void
   noteCallback?: (...args: unknown[]) => void
-  playing: MockFn<() => boolean>
-  position: MockFn<() => number>
   endPosition: MockFn<() => number>
   start: MockFn<() => Promise<void>>
-  play: MockFn<() => Promise<void>>
-  pause: MockFn<() => Promise<void>>
-  stopSilently: MockFn<() => void>
-  gotoMs: MockFn<(ms: number) => Promise<void>>
+  cutActiveNotes: MockFn<(time?: number) => void>
   setLoopActive: MockFn<(active: boolean) => void>
   setLoopStart: MockFn<(ms?: number) => void>
   setScore: MockFn<(...args: unknown[]) => Promise<void>>
@@ -39,26 +32,10 @@ const soundEngineMock = vi.hoisted(() => ({
 vi.mock('../sound-engine-tonejs', () => ({
   SoundEngineTonejs: vi.fn<() => MockSoundEngine>(function () {
     const engine: MockSoundEngine = {
-      currentPosition: 0,
-      playingState: false,
       endMs: 10_000,
-      playing: vi.fn<() => boolean>(() => engine.playingState),
-      position: vi.fn<() => number>(() => engine.currentPosition),
       endPosition: vi.fn<() => number>(() => engine.endMs),
       start: vi.fn<() => Promise<void>>(async () => {}),
-      play: vi.fn<() => Promise<void>>(async () => {
-        await engine.start()
-        engine.playingState = true
-      }),
-      pause: vi.fn<() => Promise<void>>(async () => {
-        engine.playingState = false
-      }),
-      stopSilently: vi.fn<() => void>(() => {
-        engine.playingState = false
-      }),
-      gotoMs: vi.fn<(ms: number) => Promise<void>>(async (ms: number) => {
-        engine.currentPosition = ms
-      }),
+      cutActiveNotes: vi.fn<(time?: number) => void>(),
       setLoopActive: vi.fn<(active: boolean) => void>(),
       setLoopStart: vi.fn<(ms?: number) => void>(),
       setScore: vi.fn<(...args: unknown[]) => Promise<void>>(async () => {}),
@@ -141,8 +118,6 @@ describe('App source editor keyboard shortcuts', () => {
     expect(enginesAfterMount).not.toHaveLength(0)
     enginesAfterMount.forEach((engine) => {
       expect(engine.start).not.toHaveBeenCalled()
-      expect(engine.play).not.toHaveBeenCalled()
-      expect(engine.pause).not.toHaveBeenCalled()
     })
 
     await wrapper.get('button.play-pause-button').trigger('click')
@@ -158,9 +133,7 @@ describe('App source editor keyboard shortcuts', () => {
 
     soundEngineMock.instances.forEach((engine) => {
       engine.start.mockClear()
-      engine.play.mockClear()
-      engine.pause.mockClear()
-      engine.stopSilently.mockClear()
+      engine.cutActiveNotes.mockClear()
     })
 
     await router.push('/#4_5')
@@ -169,11 +142,9 @@ describe('App source editor keyboard shortcuts', () => {
     const enginesAfterHashReplacement = soundEngineMock.instances.slice()
     enginesAfterHashReplacement.forEach((engine) => {
       expect(engine.start).not.toHaveBeenCalled()
-      expect(engine.play).not.toHaveBeenCalled()
-      expect(engine.pause).not.toHaveBeenCalled()
     })
     expect(
-      enginesAfterHashReplacement.some((engine) => engine.stopSilently.mock.calls.length > 0),
+      enginesAfterHashReplacement.some((engine) => engine.cutActiveNotes.mock.calls.length > 0),
     ).toBe(true)
 
     await wrapper.get('button.play-pause-button').trigger('click')
@@ -189,9 +160,6 @@ describe('App source editor keyboard shortcuts', () => {
     const textarea = wrapper.get<HTMLTextAreaElement>('textarea').element
 
     await wrapper.get('button[aria-label="Start playback at line 2"]').trigger('click')
-    engine.gotoMs.mockClear()
-    engine.play.mockClear()
-    engine.pause.mockClear()
 
     const { preventDefault } = await dispatchSourceKeydown(textarea, {
       key: 'Enter',
@@ -199,9 +167,7 @@ describe('App source editor keyboard shortcuts', () => {
     })
 
     expect(preventDefault).toHaveBeenCalledTimes(1)
-    expect(engine.gotoMs).toHaveBeenCalledWith(0)
-    expect(engine.play).toHaveBeenCalledTimes(1)
-    expect(engine.pause).not.toHaveBeenCalled()
+    expect(engine.start).toHaveBeenCalledTimes(1)
   })
 
   it('resets playback instead of pausing when Cmd+Enter is pressed while playing', async () => {
@@ -209,18 +175,11 @@ describe('App source editor keyboard shortcuts', () => {
     const engine = soundEngineMock.instances[soundEngineMock.instances.length - 1]!
     const textarea = wrapper.get<HTMLTextAreaElement>('textarea').element
 
-    engine.gotoMs.mockClear()
-    engine.play.mockClear()
-    engine.pause.mockClear()
 
     await dispatchSourceKeydown(textarea, { key: 'Enter', metaKey: true })
     await dispatchSourceKeydown(textarea, { key: 'Enter', metaKey: true })
 
-    expect(engine.gotoMs).toHaveBeenCalledTimes(2)
-    expect(engine.gotoMs).toHaveBeenNthCalledWith(1, 0)
-    expect(engine.gotoMs).toHaveBeenNthCalledWith(2, 0)
-    expect(engine.play).toHaveBeenCalledTimes(2)
-    expect(engine.pause).not.toHaveBeenCalled()
+    expect(engine.start).toHaveBeenCalledTimes(2)
   })
 
   it('plays from the current source line for Ctrl+Space', async () => {
@@ -229,9 +188,6 @@ describe('App source editor keyboard shortcuts', () => {
     const textarea = wrapper.get<HTMLTextAreaElement>('textarea').element
 
     textarea.setSelectionRange(textarea.value.indexOf('\n') + 1, textarea.value.indexOf('\n') + 1)
-    engine.gotoMs.mockClear()
-    engine.play.mockClear()
-    engine.pause.mockClear()
 
     const { preventDefault } = await dispatchSourceKeydown(textarea, {
       key: ' ',
@@ -240,9 +196,7 @@ describe('App source editor keyboard shortcuts', () => {
     })
 
     expect(preventDefault).toHaveBeenCalledTimes(1)
-    expect(engine.gotoMs).toHaveBeenCalledWith(500)
-    expect(engine.play).toHaveBeenCalledTimes(1)
-    expect(engine.pause).not.toHaveBeenCalled()
+    expect(engine.start).toHaveBeenCalledTimes(1)
   })
 
   it('plays from the current source line for Cmd+Space', async () => {
@@ -251,9 +205,6 @@ describe('App source editor keyboard shortcuts', () => {
     const textarea = wrapper.get<HTMLTextAreaElement>('textarea').element
 
     textarea.setSelectionRange(textarea.value.indexOf('\n') + 1, textarea.value.indexOf('\n') + 1)
-    engine.gotoMs.mockClear()
-    engine.play.mockClear()
-    engine.pause.mockClear()
 
     const { preventDefault } = await dispatchSourceKeydown(textarea, {
       key: ' ',
@@ -262,9 +213,7 @@ describe('App source editor keyboard shortcuts', () => {
     })
 
     expect(preventDefault).toHaveBeenCalledTimes(1)
-    expect(engine.gotoMs).toHaveBeenCalledWith(500)
-    expect(engine.play).toHaveBeenCalledTimes(1)
-    expect(engine.pause).not.toHaveBeenCalled()
+    expect(engine.start).toHaveBeenCalledTimes(1)
   })
 
   it('keeps playback controls and sound engine alive on the About route', async () => {
@@ -354,16 +303,16 @@ describe('App source editor keyboard shortcuts', () => {
     expect(firstEngine.setOutputGain).toHaveBeenLastCalledWith(1)
     expect(secondEngine.setOutputGain).toHaveBeenLastCalledWith(0)
 
-    firstEngine.play.mockClear()
-    secondEngine.play.mockClear()
+    firstEngine.start.mockClear()
+    secondEngine.start.mockClear()
 
     await dispatchSourceKeydown(wrapper.get<HTMLTextAreaElement>('textarea').element, {
       key: 'Enter',
       ctrlKey: true,
     })
 
-    expect(firstEngine.play).toHaveBeenCalledTimes(1)
-    expect(secondEngine.play).toHaveBeenCalledTimes(1)
+    expect(firstEngine.start).toHaveBeenCalledTimes(1)
+    expect(secondEngine.start).toHaveBeenCalledTimes(1)
   })
 
   it('plain solo replaces other soloed source tabs', async () => {
@@ -473,16 +422,16 @@ describe('App source editor keyboard shortcuts', () => {
     expect(firstEngine.setOutputGain).toHaveBeenLastCalledWith(1)
     expect(secondEngine.setOutputGain).toHaveBeenLastCalledWith(0)
 
-    firstEngine.play.mockClear()
-    secondEngine.play.mockClear()
+    firstEngine.start.mockClear()
+    secondEngine.start.mockClear()
 
     await dispatchSourceKeydown(wrapper.get<HTMLTextAreaElement>('textarea').element, {
       key: 'Enter',
       ctrlKey: true,
     })
 
-    expect(firstEngine.play).toHaveBeenCalledTimes(1)
-    expect(secondEngine.play).toHaveBeenCalledTimes(1)
+    expect(firstEngine.start).toHaveBeenCalledTimes(1)
+    expect(secondEngine.start).toHaveBeenCalledTimes(1)
   })
 
   it('shows tabs in embed mode for shared multi-tab projects', async () => {
@@ -664,10 +613,8 @@ describe('App source editor keyboard shortcuts', () => {
     await store.restartPlaybackFromStart()
     expect(store.isPlaying).toBe(true)
     expect(wrapper.get('.play-pause-button').text()).toContain('Pause')
-    remainingEngine.pause.mockClear()
-    remainingEngine.stopSilently.mockClear()
-    removedEngine.pause.mockClear()
-    removedEngine.stopSilently.mockClear()
+    remainingEngine.cutActiveNotes.mockClear()
+    removedEngine.cutActiveNotes.mockClear()
 
     await store.closeSourceCodeTab(store.sourceTabs[1]!.id)
     await flushPromises()
@@ -675,10 +622,8 @@ describe('App source editor keyboard shortcuts', () => {
     expect(store.isPlaying).toBe(false)
     expect(store.playbackPositionMs).toBe(-1)
     expect(wrapper.get('.play-pause-button').text()).toContain('Play')
-    expect(remainingEngine.pause).toHaveBeenCalledTimes(1)
-    expect(remainingEngine.stopSilently).not.toHaveBeenCalled()
-    expect(removedEngine.pause).toHaveBeenCalledTimes(1)
-    expect(removedEngine.stopSilently).toHaveBeenCalled()
+    expect(remainingEngine.cutActiveNotes).toHaveBeenCalledTimes(1)
+    expect(removedEngine.cutActiveNotes).toHaveBeenCalledTimes(1)
   })
 
   it('resets the project to one source tab when selecting a demo', async () => {
