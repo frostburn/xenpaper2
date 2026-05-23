@@ -3,7 +3,7 @@ import { computed, ref, shallowRef, watch } from 'vue'
 import * as Tone from 'tone'
 
 import { type CharData } from '../grammars/grammar-to-chars'
-import { type MoscNoteMs } from '../mosc'
+import { type MoscNoteTime } from '../mosc'
 import {
   canRedoSourceChange,
   canUndoSourceChange,
@@ -33,7 +33,7 @@ import {
 } from '../utils'
 
 const DEFAULT_LOCATION_HREF = 'http://localhost/'
-const EMPTY_SCORE_MS = { sequence: [], lengthMs: 0 }
+const EMPTY_SCORE_TIME = { sequence: [], lengthTime: 0 }
 const TAB_TITLE_LENGTH = 18
 const MAX_DEAD_SOURCE_TABS = 10
 
@@ -60,7 +60,7 @@ function useScoreEngine(id: number) {
     createSourceDisplayTokens(sourceCode.value),
   )
 
-  const getSelectedLineStartMs = (): number =>
+  const getSelectedLineStartTime = (): number =>
     getMsAtLine(sourceCode.value, chars.value, selectedLine.value)
 
   const updateParsedSourceCode = async (): Promise<boolean> => {
@@ -72,7 +72,7 @@ function useScoreEngine(id: number) {
       return false
     }
 
-    await soundEngine.setScore(source.scoreMs)
+    await soundEngine.setScore(source.scoreTime)
     if (version !== parseVersion) return false
 
     Tone.Transport.seconds = 0
@@ -105,7 +105,7 @@ function useScoreEngine(id: number) {
   }
 
   const preparePlayableScore = async (): Promise<boolean> => {
-    if (!scoreLoaded.value || Tone.Transport.seconds * 1000 >= soundEngine.endPosition()) {
+    if (!scoreLoaded.value || Tone.Transport.seconds >= soundEngine.endPosition()) {
       await updateParsedSourceCode()
     }
 
@@ -126,7 +126,7 @@ function useScoreEngine(id: number) {
     lastError,
     initialRulerState,
     sourceDisplayTokens,
-    getSelectedLineStartMs,
+    getSelectedLineStartTime,
     updateParsedSourceCode,
     applySourceCode,
     setSelectedLine,
@@ -155,7 +155,7 @@ const getSourceTabTitle = (source: string, index: number): string => {
 export const useXenpaperStore = defineStore('xenpaper', () => {
   const isPlaying = ref(false)
   const isLooping = ref(false)
-  const playbackPositionMs = ref(-1)
+  const playbackPositionTime = ref(-1)
   const scoreEngines = shallowRef<ScoreEngine[]>([useScoreEngine(1)])
   const activeScoreEngineIndex = ref(0)
   const isEmbedMode = ref(false)
@@ -166,7 +166,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   let shouldApplyInitialSidebarMode = true
   const cancelOnEndByEngine = new Map<number, () => void>()
   const cancelOnNoteByEngine = new Map<number, () => void>()
-  let activeNoteHandler: ((note: MoscNoteMs, on: boolean) => void) | undefined
+  let activeNoteHandler: ((note: MoscNoteTime, on: boolean) => void) | undefined
 
   const activeScoreEngine = computed(() => scoreEngines.value[activeScoreEngineIndex.value]!)
 
@@ -237,13 +237,13 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   const getPlayableScoreEngines = (): ScoreEngine[] =>
     scoreEngines.value.filter((engine) => engine.scoreLoaded.value)
 
-  const getTransportPositionMs = (): number => Tone.Transport.seconds * 1000
+  const getTransportPositionTime = (): number => Tone.Transport.seconds
 
-  const getSharedLoopEndMs = (engines: ScoreEngine[]): number =>
+  const getSharedLoopEndTime = (engines: ScoreEngine[]): number =>
     Math.max(0, ...engines.map((engine) => engine.soundEngine.endPosition()))
 
   const applySharedTransportLoop = (engines: ScoreEngine[] = getPlayableScoreEngines()): void => {
-    Tone.Transport.loopEnd = getSharedLoopEndMs(engines) * 0.001
+    Tone.Transport.loopEnd = getSharedLoopEndTime(engines)
   }
 
   const preparePlayableScoreEngines = async (): Promise<ScoreEngine[]> => {
@@ -261,7 +261,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
 
   const clearScoreEngine = async (engine: ScoreEngine): Promise<void> => {
     engine.soundEngine.cutActiveNotes()
-    await engine.soundEngine.setScore(EMPTY_SCORE_MS)
+    await engine.soundEngine.setScore(EMPTY_SCORE_TIME)
     engine.scoreLoaded.value = false
   }
 
@@ -283,7 +283,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
 
   const resetPlaybackState = (): void => {
     isPlaying.value = false
-    playbackPositionMs.value = -1
+    playbackPositionTime.value = -1
   }
 
   const createScoreEngineFromSource = (source: string, id: number): ScoreEngine => {
@@ -387,7 +387,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
       return
     }
 
-    playbackPositionMs.value = -1
+    playbackPositionTime.value = -1
   }
 
   const initializeSourceCode = (sharedHash: string): void => {
@@ -545,17 +545,17 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   }
 
   const updateLoopStart = (): void => {
-    const loopStartMs = activeScoreEngine.value.getSelectedLineStartMs()
-    Tone.Transport.loopStart = loopStartMs * 0.001
+    const loopStartTime = activeScoreEngine.value.getSelectedLineStartTime()
+    Tone.Transport.loopStart = loopStartTime
   }
 
   const restartPlaybackFromSelectedLine = async (): Promise<void> => {
     const playableEngines = await preparePlayableScoreEngines()
     if (!playableEngines.length) return
 
-    const startMs = activeScoreEngine.value.getSelectedLineStartMs()
+    const startTime = activeScoreEngine.value.getSelectedLineStartTime()
     await Promise.all(playableEngines.map((engine) => engine.soundEngine.start()))
-    Tone.Transport.seconds = startMs * 0.001
+    Tone.Transport.seconds = startTime
     Tone.Transport.start?.()
     isPlaying.value = true
   }
@@ -584,14 +584,14 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   }
 
   const syncPlaybackPosition = (): void => {
-    playbackPositionMs.value = Tone.Transport.state === 'started' ? getTransportPositionMs() : -1
+    playbackPositionTime.value = Tone.Transport.state === 'started' ? getTransportPositionTime() : -1
   }
 
   const resetPlaybackPosition = (): void => {
-    playbackPositionMs.value = -1
+    playbackPositionTime.value = -1
   }
 
-  const setActiveNoteHandler = (handler?: (note: MoscNoteMs, on: boolean) => void): void => {
+  const setActiveNoteHandler = (handler?: (note: MoscNoteTime, on: boolean) => void): void => {
     activeNoteHandler = handler
   }
 
@@ -601,8 +601,8 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
       isPlaying.value &&
       start !== undefined &&
       end !== undefined &&
-      playbackPositionMs.value >= start &&
-      playbackPositionMs.value < end
+      playbackPositionTime.value >= start &&
+      playbackPositionTime.value < end
     )
   }
 
@@ -614,7 +614,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     }
 
     const allEnginesEnded = playableEngines.every(
-      (engine) => getTransportPositionMs() >= engine.soundEngine.endPosition(),
+      (engine) => getTransportPositionTime() >= engine.soundEngine.endPosition(),
     )
 
     if (!allEnginesEnded) return
@@ -632,7 +632,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
       if (!cancelOnNoteByEngine.has(engine.id)) {
         cancelOnNoteByEngine.set(
           engine.id,
-          engine.soundEngine.onNote((note: MoscNoteMs, on: boolean) => {
+          engine.soundEngine.onNote((note: MoscNoteTime, on: boolean) => {
             activeNoteHandler?.(note, on)
           }),
         )
@@ -682,7 +682,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     lastError: computed(() => activeScoreEngine.value.lastError.value),
     chars: computed(() => activeScoreEngine.value.chars.value),
     initialRulerState: computed(() => activeScoreEngine.value.initialRulerState.value),
-    playbackPositionMs,
+    playbackPositionTime,
     isEmbedMode,
     sidebarMode,
     updateParsedSourceCode,

@@ -17,7 +17,7 @@ type MockSoundEngine = {
   start: MockFn<() => Promise<void>>
   cutActiveNotes: MockFn<(time?: number) => void>
   setLoopActive: MockFn<(active: boolean) => void>
-  setLoopStart: MockFn<(ms?: number) => void>
+  setLoopStart: MockFn<(time?: number) => void>
   setScore: MockFn<(...args: unknown[]) => Promise<void>>
   setOutputGain: MockFn<(gain: number) => void>
   onEnd: MockFn<(callback: () => void) => () => void>
@@ -620,7 +620,7 @@ describe('App source editor keyboard shortcuts', () => {
     await flushPromises()
 
     expect(store.isPlaying).toBe(false)
-    expect(store.playbackPositionMs).toBe(-1)
+    expect(store.playbackPositionTime).toBe(-1)
     expect(wrapper.get('.play-pause-button').text()).toContain('Play')
     expect(remainingEngine.cutActiveNotes).toHaveBeenCalledTimes(1)
     expect(removedEngine.cutActiveNotes).toHaveBeenCalledTimes(1)

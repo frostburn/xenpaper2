@@ -13,7 +13,7 @@ const props = defineProps<{
   chars: CharData[]
   lastError: string
   isPlaying: boolean
-  playbackPositionMs: number
+  playbackPositionTime: number
   sourceTabs: SourceTab[]
   activeSourceCodeTabIndex: number
 }>()
@@ -134,8 +134,8 @@ const isCharacterActive = (charData?: CharData): boolean => {
     props.isPlaying &&
     start !== undefined &&
     end !== undefined &&
-    props.playbackPositionMs >= start &&
-    props.playbackPositionMs < end
+    props.playbackPositionTime >= start &&
+    props.playbackPositionTime < end
   )
 }
 </script>

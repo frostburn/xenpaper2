@@ -1,7 +1,7 @@
 import type { XenpaperAST } from './grammars/grammar.generated'
 import type { CharData } from './grammars/grammar-to-chars'
 import type { InitialRulerState } from './grammars/process-grammar'
-import type { MoscScoreMs } from './mosc'
+import type { MoscScoreTime } from './mosc'
 
 export type SourceDisplayToken =
   | {
@@ -55,7 +55,7 @@ export type UnplayableProcessedSource = ProcessedSource & {
 
 export type PlayableParsedSource = ProcessedSource & {
   playable: true
-  scoreMs: MoscScoreMs
+  scoreTime: MoscScoreTime
 }
 
 export type ParsedSource = ParseFailedSource | UnplayableProcessedSource | PlayableParsedSource

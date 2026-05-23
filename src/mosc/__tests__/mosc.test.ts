@@ -5,7 +5,7 @@ import {
   ratioToCents,
   ratioToOctaveDivision,
   sortByTime,
-  scoreToMs,
+  scoreToTime,
 } from '..'
 
 describe('centsToRatio', () => {
@@ -105,10 +105,10 @@ describe('sortByTime', () => {
   })
 })
 
-describe('scoreToMs', () => {
-  it('should convert mosc items from beat time to real time (ms)', () => {
+describe('scoreToTime', () => {
+  it('should convert mosc items from beat time to real time', () => {
     expect(
-      scoreToMs({
+      scoreToTime({
         sequence: [
           {
             type: 'TEMPO',
@@ -160,39 +160,39 @@ describe('scoreToMs', () => {
     ).toEqual({
       sequence: [
         {
-          type: 'NOTE_MS',
-          ms: 0,
-          msEnd: 500,
+          type: 'NOTE_TIME',
+          time: 0,
+          timeEnd: 0.5,
           hz: 440,
           label: '440',
         },
         {
-          type: 'NOTE_MS',
-          ms: 500,
-          msEnd: 1000,
+          type: 'NOTE_TIME',
+          time: 0.5,
+          timeEnd: 1,
           hz: 550,
           label: '550',
         },
         {
-          type: 'NOTE_MS',
-          ms: 1000,
-          msEnd: 1666.6666666666665,
+          type: 'NOTE_TIME',
+          time: 1,
+          timeEnd: 1.6666666666666665,
           hz: 660,
           label: '660',
         },
         {
-          type: 'PARAM_MS',
-          ms: 2333.333333333333,
+          type: 'PARAM_TIME',
+          time: 2.333333333333333,
           value: [1, 2, 3],
         },
       ],
-      lengthMs: 63000,
+      lengthTime: 63,
     })
   })
 
-  it('should convert mosc items from beat time to real time (ms) with interpolation', () => {
+  it('should convert mosc items from beat time to real time with interpolation', () => {
     expect(
-      scoreToMs({
+      scoreToTime({
         sequence: [
           {
             type: 'TEMPO',
@@ -253,42 +253,42 @@ describe('scoreToMs', () => {
     ).toEqual({
       sequence: [
         {
-          type: 'NOTE_MS',
-          ms: 500,
-          msEnd: 500,
+          type: 'NOTE_TIME',
+          time: 0.5,
+          timeEnd: 0.5,
           hz: 440,
           label: '440',
         },
         {
-          type: 'NOTE_MS',
-          ms: 1166.6666666666665,
-          msEnd: 1166.6666666666665,
+          type: 'NOTE_TIME',
+          time: 1.1666666666666665,
+          timeEnd: 1.1666666666666665,
           hz: 550,
           label: '550',
         },
         {
-          type: 'NOTE_MS',
-          ms: 1833.3333333333333,
-          msEnd: 1833.3333333333333,
+          type: 'NOTE_TIME',
+          time: 1.8333333333333333,
+          timeEnd: 1.8333333333333333,
           hz: 660,
           label: '660',
         },
         {
-          type: 'NOTE_MS',
-          ms: 2500,
-          msEnd: 2500,
+          type: 'NOTE_TIME',
+          time: 2.5,
+          timeEnd: 2.5,
           hz: 770,
           label: '770',
         },
         {
-          type: 'NOTE_MS',
-          ms: 3500,
-          msEnd: 3500,
+          type: 'NOTE_TIME',
+          time: 3.5,
+          timeEnd: 3.5,
           hz: 880,
           label: '880',
         },
       ],
-      lengthMs: 3500,
+      lengthTime: 3.5,
     })
   })
 })

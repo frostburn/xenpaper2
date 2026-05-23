@@ -1,4 +1,4 @@
-import type { MoscScoreMs, MoscNoteMs } from '../mosc'
+import type { MoscScoreTime, MoscNoteTime } from '../mosc'
 import { SoundEngine } from '../mosc'
 import * as Tone from 'tone'
 import type { PolySynth, Synth, SynthOptions, ToneOscillatorType } from 'tone'
@@ -88,8 +88,8 @@ export const OSC_TYPES = flatMap(OSC_TYPES_EXPANDED, (type) => [
 
 export class SoundEngineTonejs extends SoundEngine {
   _started = false
-  _endMs = 0
-  _activeNoteEvents = new Set<MoscNoteMs>()
+  _endTime = 0
+  _activeNoteEvents = new Set<MoscNoteTime>()
   _transportEventIds: number[] = []
 
   _synth: PolySynth<Synth> | undefined
@@ -110,8 +110,8 @@ export class SoundEngineTonejs extends SoundEngine {
   }
 
   _clearActiveNoteEvents(): void {
-    this._activeNoteEvents.forEach((noteMs) => {
-      this._triggerEvent('note', noteMs, false)
+    this._activeNoteEvents.forEach((noteTime) => {
+      this._triggerEvent('note', noteTime, false)
     })
     this._activeNoteEvents.clear()
   }
@@ -134,7 +134,7 @@ export class SoundEngineTonejs extends SoundEngine {
   }
 
   endPosition(): number {
-    return this._endMs
+    return this._endTime
   }
 
   async start(): Promise<void> {
@@ -161,38 +161,38 @@ export class SoundEngineTonejs extends SoundEngine {
     this.getSynth().volume.value = gain <= 0 ? -Infinity : 20 * Math.log10(gain)
   }
 
-  async setScore(scoreMs: MoscScoreMs): Promise<void> {
-    this.scoreMs = scoreMs
+  async setScore(scoreTime: MoscScoreTime): Promise<void> {
+    this.scoreTime = scoreTime
 
     // clear this engine's previous notes from tone transport without
     // disturbing other score engines that share the same transport clock
     this._clearScheduledEvents()
-    this._endMs = scoreMs.lengthMs
+    this._endTime = scoreTime.lengthTime
     this._releaseActiveNotesIfSynthExists()
 
     // add all new notes to tone transport
-    this.scoreMs.sequence.forEach((item): void => {
-      if (item.type === 'NOTE_MS') {
-        const noteMs = item
+    this.scoreTime.sequence.forEach((item): void => {
+      if (item.type === 'NOTE_TIME') {
+        const noteTime = item
         const noteStartEventId = Tone.Transport.schedule(
           (time: number) => {
             this.getSynth().triggerAttackRelease(
-              noteMs.hz,
-              noteMs.msEnd * 0.001 - noteMs.ms * 0.001,
+              noteTime.hz,
+              noteTime.timeEnd - noteTime.time,
               time,
             )
-            this._activeNoteEvents.add(noteMs)
-            this._triggerEvent('note', noteMs, true)
+            this._activeNoteEvents.add(noteTime)
+            this._triggerEvent('note', noteTime, true)
           },
-          noteMs.ms * 0.001 + 0.1,
+          noteTime.time + 0.1,
         ) // schedule in the future slightly to avoid double note playing at end
 
         const noteEndEventId = Tone.Transport.schedule(
           () => {
-            this._activeNoteEvents.delete(noteMs)
-            this._triggerEvent('note', noteMs, false)
+            this._activeNoteEvents.delete(noteTime)
+            this._triggerEvent('note', noteTime, false)
           },
-          noteMs.msEnd * 0.001 + 0.1,
+          noteTime.timeEnd + 0.1,
         )
 
         this._transportEventIds.push(noteStartEventId, noteEndEventId)
@@ -200,48 +200,48 @@ export class SoundEngineTonejs extends SoundEngine {
         return
       }
 
-      if (item.type === 'PARAM_MS') {
-        const paramMs = item
+      if (item.type === 'PARAM_TIME') {
+        const paramTime = item
         const paramEventId = Tone.Transport.schedule(() => {
           // this is inaccurate
           // as tonejs calls these callbacks several ms ahead of schedule
           // and relies on scheduled events to pass the provided time
           // to schedule correctly, but param changes cannot accept
           // the time argument
-          if (isOscParam(paramMs.value)) {
+          if (isOscParam(paramTime.value)) {
             this.getSynth().set({
               oscillator: {
-                type: paramMs.value.osc,
+                type: paramTime.value.osc,
                 volume: OSC_VOLUME,
               } as Partial<SynthOptions['oscillator']>,
             })
           }
-          if (isEnvParam(paramMs.value)) {
+          if (isEnvParam(paramTime.value)) {
             this.getSynth().set({
               envelope: {
-                attack: paramMs.value.a,
-                decay: paramMs.value.d,
-                sustain: paramMs.value.s,
-                release: paramMs.value.r,
+                attack: paramTime.value.a,
+                decay: paramTime.value.d,
+                sustain: paramTime.value.s,
+                release: paramTime.value.r,
               },
             })
           }
-        }, paramMs.ms * 0.001)
+        }, paramTime.time)
 
         this._transportEventIds.push(paramEventId)
 
         return
       }
 
-      if (item.type === 'END_MS') {
-        this._endMs = item.ms
+      if (item.type === 'END_TIME') {
+        this._endTime = item.time
 
         const endEventId = Tone.Transport.schedule((time?: number) => {
           if (Tone.Transport.loop) return
 
           this._releaseActiveNotes(time)
           this._triggerEvent('end', time)
-        }, this._endMs * 0.001)
+        }, this._endTime)
 
         this._transportEventIds.push(endEventId)
 

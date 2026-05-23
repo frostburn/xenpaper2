@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
-import type { MoscNoteMs } from '../mosc'
+import type { MoscNoteTime } from '../mosc'
 import type { InitialRulerState } from '../grammars/process-grammar'
 import type { SidebarMode } from '../types'
 import { copyText } from '../utils'
@@ -32,7 +32,7 @@ const emit = defineEmits<{
   closeSidebar: []
   setTune: [source: string]
   importSourceCodes: [sourceCodes: string[]]
-  activeNoteHandlerChange: [handler?: (note: MoscNoteMs, on: boolean) => void]
+  activeNoteHandlerChange: [handler?: (note: MoscNoteTime, on: boolean) => void]
 }>()
 
 const pitchRuler = ref<InstanceType<typeof PitchRuler>>()

@@ -1,7 +1,7 @@
 import { parse } from './grammars/grammar.generated.js'
 import { grammarToChars, type CharData } from './grammars/grammar-to-chars'
 import { processGrammar } from './grammars/process-grammar'
-import { scoreToMs } from './mosc'
+import { scoreToTime } from './mosc'
 import type { ParsedSource } from './types'
 
 const DEFAULT_DOCUMENT_TITLE = 'Xenpaper 2'
@@ -79,7 +79,7 @@ export const parseAndProcessSourceCode = (source: string): ParsedSource => {
       error: '',
       playable: true,
       initialRulerState,
-      scoreMs: scoreToMs(score),
+      scoreTime: scoreToTime(score),
     }
   } catch (error) {
     const chars: CharData[] = []

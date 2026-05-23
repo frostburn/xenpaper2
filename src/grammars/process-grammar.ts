@@ -16,13 +16,13 @@ import type {
   MoscScore,
   MoscItem,
   MoscNote,
-  MoscNoteMs,
+  MoscNoteTime,
   MoscTempo,
   MoscParam,
   MoscEnd,
 } from '../mosc'
 
-import { centsToRatio, octaveDivisionToRatio, timeToMs, ratioToCents } from '../mosc'
+import { centsToRatio, octaveDivisionToRatio, timeToTime, ratioToCents } from '../mosc'
 
 //
 // utils
@@ -546,7 +546,7 @@ type BuildingInitialRulerState = {
   highHz?: number
   rootHz?: number
   octaveSize?: number
-  plots: MoscNoteMs[][]
+  plots: MoscNoteTime[][]
 }
 
 export type InitialRulerState = BuildingInitialRulerState & {
@@ -565,10 +565,10 @@ const setterToRulerState = (
 
   if (type === 'SetRulerPlot') {
     const newPlot = context.scale.map(
-      (ratio, i): MoscNoteMs => ({
-        type: 'NOTE_MS',
-        ms: context.time,
-        msEnd: context.time,
+      (ratio, i): MoscNoteTime => ({
+        type: 'NOTE_TIME',
+        time: context.time,
+        timeEnd: context.time,
         hz: ratio * context.rootHz,
         label: context.scaleLabels[i]!,
       }),
@@ -723,7 +723,7 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
   ]
 
   // translate times from steps to ms
-  const thisTimeToMs = timeToMs(sequence)
+  const thisTimeToMs = timeToTime(sequence)
 
   // omg are we really mutating many time items throughout the AST tree via mutations? golly!
   times.forEach((time) => {
