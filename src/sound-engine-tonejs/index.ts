@@ -172,7 +172,7 @@ export class SoundEngineTonejs extends SoundEngine {
 
     // add all new notes to tone transport
     this.scoreTime.sequence.forEach((item): void => {
-      if (item.type === 'NOTE_TIME_VALUE') {
+      if (item.type === 'NOTE_TIME') {
         const noteTime = item
         const noteStartEventId = Tone.Transport.schedule(
           (time: number) => {
@@ -200,7 +200,7 @@ export class SoundEngineTonejs extends SoundEngine {
         return
       }
 
-      if (item.type === 'PARAM_TIME_VALUE') {
+      if (item.type === 'PARAM_TIME') {
         const paramTime = item
         const paramEventId = Tone.Transport.schedule(() => {
           // this is inaccurate
@@ -233,7 +233,7 @@ export class SoundEngineTonejs extends SoundEngine {
         return
       }
 
-      if (item.type === 'END_TIME_VALUE') {
+      if (item.type === 'END_TIME') {
         this._endTime = item.time
 
         const endEventId = Tone.Transport.schedule((time?: number) => {

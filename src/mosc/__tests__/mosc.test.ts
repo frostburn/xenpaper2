@@ -160,28 +160,28 @@ describe('scoreToTime', () => {
     ).toEqual({
       sequence: [
         {
-          type: 'NOTE_TIME_VALUE',
+          type: 'NOTE_TIME',
           time: 0,
           timeEnd: 0.5,
           hz: 440,
           label: '440',
         },
         {
-          type: 'NOTE_TIME_VALUE',
+          type: 'NOTE_TIME',
           time: 0.5,
           timeEnd: 1,
           hz: 550,
           label: '550',
         },
         {
-          type: 'NOTE_TIME_VALUE',
+          type: 'NOTE_TIME',
           time: 1,
           timeEnd: 1.6666666666666665,
           hz: 660,
           label: '660',
         },
         {
-          type: 'PARAM_TIME_VALUE',
+          type: 'PARAM_TIME',
           time: 2.333333333333333,
           value: [1, 2, 3],
         },
@@ -253,35 +253,35 @@ describe('scoreToTime', () => {
     ).toEqual({
       sequence: [
         {
-          type: 'NOTE_TIME_VALUE',
+          type: 'NOTE_TIME',
           time: 0.5,
           timeEnd: 0.5,
           hz: 440,
           label: '440',
         },
         {
-          type: 'NOTE_TIME_VALUE',
+          type: 'NOTE_TIME',
           time: 1.1666666666666665,
           timeEnd: 1.1666666666666665,
           hz: 550,
           label: '550',
         },
         {
-          type: 'NOTE_TIME_VALUE',
+          type: 'NOTE_TIME',
           time: 1.8333333333333333,
           timeEnd: 1.8333333333333333,
           hz: 660,
           label: '660',
         },
         {
-          type: 'NOTE_TIME_VALUE',
+          type: 'NOTE_TIME',
           time: 2.5,
           timeEnd: 2.5,
           hz: 770,
           label: '770',
         },
         {
-          type: 'NOTE_TIME_VALUE',
+          type: 'NOTE_TIME',
           time: 3.5,
           timeEnd: 3.5,
           hz: 880,

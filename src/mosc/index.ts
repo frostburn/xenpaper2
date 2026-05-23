@@ -11,7 +11,7 @@ export type MoscNote = {
 }
 
 export type MoscNoteTime = {
-  type: 'NOTE_TIME_VALUE'
+  type: 'NOTE_TIME'
   time: number
   timeEnd: number
   hz: number
@@ -25,7 +25,7 @@ export type MoscParam = {
 }
 
 export type MoscParamTime = {
-  type: 'PARAM_TIME_VALUE'
+  type: 'PARAM_TIME'
   time: number
   value: unknown
 }
@@ -43,7 +43,7 @@ export type MoscEnd = {
 }
 
 export type MoscEndTime = {
-  type: 'END_TIME_VALUE'
+  type: 'END_TIME'
   time: number
 }
 
@@ -185,7 +185,7 @@ export const scoreToTime = (score: MoscScore): MoscScoreTime => {
       if (item.type === 'NOTE_TIME') {
         const note = item as MoscNote
         return {
-          type: 'NOTE_TIME_VALUE',
+          type: 'NOTE_TIME',
           hz: note.hz,
           label: note.label,
           time: thisTimeToTime(note.time),
@@ -195,7 +195,7 @@ export const scoreToTime = (score: MoscScore): MoscScoreTime => {
       if (item.type === 'PARAM_TIME') {
         const param = item as MoscParam
         return {
-          type: 'PARAM_TIME_VALUE',
+          type: 'PARAM_TIME',
           value: param.value,
           time: thisTimeToTime(param.time),
         }
@@ -203,7 +203,7 @@ export const scoreToTime = (score: MoscScore): MoscScoreTime => {
       if (item.type === 'END_TIME') {
         const end = item as MoscEnd
         return {
-          type: 'END_TIME_VALUE',
+          type: 'END_TIME',
           time: thisTimeToTime(end.time),
         }
       }

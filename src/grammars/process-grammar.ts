@@ -566,7 +566,7 @@ const setterToRulerState = (
   if (type === 'SetRulerPlot') {
     const newPlot = context.scale.map(
       (ratio, i): MoscNoteTime => ({
-        type: 'NOTE_TIME_VALUE',
+        type: 'NOTE_TIME',
         time: context.time,
         timeEnd: context.time,
         hz: ratio * context.rootHz,
