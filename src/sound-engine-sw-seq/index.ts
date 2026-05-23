@@ -95,6 +95,9 @@ export class SoundEngineSwSeq extends SoundEngine {
         const paramId = this.transport.scheduleEvent(() => {
           if (isOscParam(item.value)) {
             this.patch.oscillator.type = item.value.osc
+            this.synth.set({
+              oscillator: { type: this.patch.oscillator.type },
+            })
           }
           if (isEnvParam(item.value)) {
             this.patch.envelope = {
@@ -104,7 +107,6 @@ export class SoundEngineSwSeq extends SoundEngine {
               release: item.value.r,
             }
             this.synth.set({
-              oscillator: { type: this.patch.oscillator.type },
               envelope: this.patch.envelope,
             })
           }
