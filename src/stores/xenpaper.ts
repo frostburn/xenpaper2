@@ -566,7 +566,6 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     rememberDeadScoreEngines(previousScoreEngines)
     startSoundEngineListeners()
     applySharedTransportLoop([engine])
-    // await engine.soundEngine.start()
     swSeqTransport.seconds = 0
     swSeqTransport.start?.()
     isPlaying.value = true
@@ -582,7 +581,6 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     if (!playableEngines.length) return
 
     const startTime = activeScoreEngine.value.getSelectedLineStartTime()
-    // await Promise.all(playableEngines.map((engine) => engine.soundEngine.start()))
     swSeqTransport.seconds = startTime
     swSeqTransport.start?.()
     isPlaying.value = true
