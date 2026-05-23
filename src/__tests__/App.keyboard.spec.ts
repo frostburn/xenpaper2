@@ -29,8 +29,8 @@ const soundEngineMock = vi.hoisted(() => ({
   instances: [] as MockSoundEngine[],
 }))
 
-vi.mock('../sound-engine-tonejs', () => ({
-  SoundEngineTonejs: vi.fn<() => MockSoundEngine>(function () {
+vi.mock('../sound-engine-sw-seq', () => ({
+  SoundEngineSwSeq: vi.fn<() => MockSoundEngine>(function () {
     const engine: MockSoundEngine = {
       endMs: 10_000,
       endPosition: vi.fn<() => number>(() => engine.endMs),
@@ -56,6 +56,15 @@ vi.mock('../sound-engine-tonejs', () => ({
     soundEngineMock.instances.push(engine)
     return engine
   }),
+  swSeqTransport: {
+    seconds: 0,
+    loop: false,
+    loopStart: 0,
+    loopEnd: 0,
+    state: "stopped",
+    start: vi.fn<() => void>(() => {}),
+    pause: vi.fn<() => void>(() => {}),
+  },
 }))
 
 const mountApp = async (hash = '#0_2') => {

@@ -19,6 +19,14 @@ export class EnvelopedOscillator {
     return this.oscillator.frequency;
   }
 
+  get type() {
+    return this.oscillator.type;
+  }
+
+  set type(value: OscillatorType) {
+    this.oscillator.type = value;
+  }
+
   get gain() {
     return this._gain.gain;
   }

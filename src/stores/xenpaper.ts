@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef, watch } from 'vue'
-import * as Tone from 'tone'
 
 import { type CharData } from '../grammars/grammar-to-chars'
 import { type MoscNoteTime } from '../mosc'
@@ -22,7 +21,7 @@ import {
   isEmbedHash,
   saveSourceCodes,
 } from '../share-link'
-import { SoundEngineTonejs } from '../sound-engine-tonejs'
+import { SoundEngineSwSeq, swSeqTransport } from '../sound-engine-sw-seq'
 import { createSourceDisplayTokens } from '../source-display'
 import type { OpenSidebarMode, SidebarMode, SourceDisplayToken, SourceTab } from '../types'
 import {
@@ -41,7 +40,7 @@ type ScoreEngine = ReturnType<typeof useScoreEngine>
 
 // Coupling of a sound engine to a source code with history
 function useScoreEngine(id: number) {
-  const soundEngine = new SoundEngineTonejs()
+  const soundEngine = new SoundEngineSwSeq()
   const sourceCode = ref('')
   const sourceHistory = ref(createSourceHistory(''))
   const scoreLoaded = ref(false)
@@ -75,7 +74,7 @@ function useScoreEngine(id: number) {
     await soundEngine.setScore(source.scoreTime)
     if (version !== parseVersion) return false
 
-    Tone.Transport.seconds = 0
+    swSeqTransport.seconds = 0
     scoreLoaded.value = true
 
     return true
@@ -105,7 +104,7 @@ function useScoreEngine(id: number) {
   }
 
   const preparePlayableScore = async (): Promise<boolean> => {
-    if (!scoreLoaded.value || Tone.Transport.seconds >= soundEngine.endPosition()) {
+    if (!scoreLoaded.value || swSeqTransport.seconds >= soundEngine.endPosition()) {
       await updateParsedSourceCode()
     }
 
@@ -236,13 +235,13 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   const getPlayableScoreEngines = (): ScoreEngine[] =>
     scoreEngines.value.filter((engine) => engine.scoreLoaded.value)
 
-  const getTransportPositionTime = (): number => Tone.Transport.seconds
+  const getTransportPositionTime = (): number => swSeqTransport.seconds
 
   const getSharedLoopEndTime = (engines: ScoreEngine[]): number =>
     Math.max(0, ...engines.map((engine) => engine.soundEngine.endPosition()))
 
   const applySharedTransportLoop = (engines: ScoreEngine[] = getPlayableScoreEngines()): void => {
-    Tone.Transport.loopEnd = getSharedLoopEndTime(engines)
+    swSeqTransport.loopEnd = getSharedLoopEndTime(engines)
   }
 
   const preparePlayableScoreEngines = async (): Promise<ScoreEngine[]> => {
@@ -254,7 +253,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   }
 
   const pauseAllSoundEngines = async (time?: number): Promise<void> => {
-    Tone.Transport.pause?.(time)
+    swSeqTransport.pause?.(time)
     scoreEngines.value.forEach((engine) => engine.soundEngine.cutActiveNotes(time))
   }
 
@@ -535,14 +534,14 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     startSoundEngineListeners()
     applySharedTransportLoop([engine])
     await engine.soundEngine.start()
-    Tone.Transport.seconds = 0
-    Tone.Transport.start?.()
+    swSeqTransport.seconds = 0
+    swSeqTransport.start?.()
     isPlaying.value = true
   }
 
   const updateLoopStart = (): void => {
     const loopStartTime = activeScoreEngine.value.getSelectedLineStartTime()
-    Tone.Transport.loopStart = loopStartTime
+    swSeqTransport.loopStart = loopStartTime
   }
 
   const restartPlaybackFromSelectedLine = async (): Promise<void> => {
@@ -551,8 +550,8 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
 
     const startTime = activeScoreEngine.value.getSelectedLineStartTime()
     await Promise.all(playableEngines.map((engine) => engine.soundEngine.start()))
-    Tone.Transport.seconds = startTime
-    Tone.Transport.start?.()
+    swSeqTransport.seconds = startTime
+    swSeqTransport.start?.()
     isPlaying.value = true
   }
 
@@ -581,7 +580,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
 
   const syncPlaybackPosition = (): void => {
     playbackPositionTime.value =
-      Tone.Transport.state === 'started' ? getTransportPositionTime() : -1
+      swSeqTransport.state === 'started' ? getTransportPositionTime() : -1
   }
 
   const resetPlaybackPosition = (): void => {
@@ -656,7 +655,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     sidebarMode.value = 'none'
   }
 
-  watch(isLooping, (newValue) => (Tone.Transport.loop = newValue), { immediate: true })
+  watch(isLooping, (newValue) => (swSeqTransport.loop = newValue), { immediate: true })
 
   return {
     sourceCode,

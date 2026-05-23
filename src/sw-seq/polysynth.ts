@@ -44,7 +44,7 @@ export class PolySynth {
     return this.bank.context;
   }
 
-  trigger(frequency: number) {
+  trigger(frequency: number, type: OscillatorType = 'sine') {
     let oscillator: OscillatorNode | null = null;
     let startTime = NaN;
     let attackTime = NaN;
@@ -58,6 +58,8 @@ export class PolySynth {
         return;
       }
       startTime = time;
+      oscillator.type = type;
+      oscillator.frequency.setValueAtTime(frequency, time);
       oscillator.connect(this.destination);
       oscillator.gain.setValueAtTime(0, startTime);
 
