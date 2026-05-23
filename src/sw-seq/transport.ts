@@ -46,6 +46,13 @@ export class Transport {
 
   start() {
     this.startTime = this.context.currentTime - this.seconds
+    this.rebuildQueues()
+    this.active = true
+    this.lastTick = this.context.currentTime
+    this.onInterval()
+  }
+
+  private rebuildQueues() {
     this.parametricQueue = []
     this.eventQueue = []
     this.parametricEventsById.forEach((event) => {
@@ -56,9 +63,6 @@ export class Transport {
     })
     this.parametricQueue.sort((a, b) => a.when - b.when)
     this.eventQueue.sort((a, b) => a.when - b.when)
-    this.active = true
-    this.lastTick = this.context.currentTime
-    this.onInterval()
   }
 
   private onInterval() {
@@ -70,6 +74,12 @@ export class Transport {
     ticker.stop(this.lastTick + this.interval)
     this.lastTick += this.interval
     this.seconds = this.lastTick - this.startTime
+
+    if (this.loop && this.loopEnd > this.loopStart && this.seconds >= this.loopEnd) {
+      this.seconds = this.loopStart
+      this.startTime = this.lastTick - this.seconds
+      this.rebuildQueues()
+    }
 
     while (this.parametricQueue.length && this.parametricQueue[0]!.when < this.lastTick) {
       const event = this.parametricQueue.shift()!
