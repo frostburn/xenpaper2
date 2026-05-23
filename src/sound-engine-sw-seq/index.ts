@@ -112,8 +112,8 @@ export class SoundEngineSwSeq extends SoundEngine {
         this.transportEventIds.set(paramId, true)
       } else if (item.type === 'END_TIME') {
         this.endTime = item.time
-        const endId = this.transport.scheduleEvent((transport) => {
-          if (transport.loop) return
+        const endId = this.transport.scheduleEvent(() => {
+          if (this.transport.loop) return
           this.cutActiveNotes()
           this._triggerEvent('end', item.time)
         }, item.time)

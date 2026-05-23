@@ -1,11 +1,11 @@
 type ParametricEvent = {
   id: number
-  callback: (time: number, transport: Transport) => void
+  callback: (time: number) => void
   when: number
 }
 type TransportEvent = {
   id: number
-  callback: (transport: Transport) => void
+  callback: () => void
   when: number
 }
 
@@ -75,7 +75,7 @@ export class Transport {
     while (this.parametricQueue.length && this.parametricQueue[0]!.when < this.lastTick) {
       const event = this.parametricQueue.shift()!
       if (!this.eventsById.has(event.id)) continue
-      event.callback(event.when + this.lookAhead, this)
+      event.callback(event.when + this.lookAhead)
       this.eventsById.delete(event.id)
     }
 
@@ -85,7 +85,7 @@ export class Transport {
       const timer = this.context.createConstantSource()
       timer.onended = () => {
         if (!this.eventsById.has(event.id)) return
-        event.callback(this)
+        event.callback()
         this.eventsById.delete(event.id)
       }
       timer.start(this.context.currentTime)
@@ -110,13 +110,13 @@ export class Transport {
     this.eventQueue = []
   }
 
-  scheduleParametric(callback: (time: number, transport: Transport) => void, when: number) {
+  scheduleParametric(callback: (time: number) => void, when: number) {
     const id = this.nextEventId++
     this.eventsById.set(id, { id, callback, when })
     return id
   }
 
-  scheduleEvent(callback: (transport: Transport) => void, when: number) {
+  scheduleEvent(callback: () => void, when: number) {
     const id = this.nextEventId++
     this.eventsById.set(id, { id, callback, when })
     return id
