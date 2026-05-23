@@ -15,126 +15,111 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null
 
 const isOscParam = (value: unknown): value is SoundEngineOscParam =>
-  isRecord(value) &&
-  value.type === 'osc' &&
-  typeof value.osc === 'string' &&
-  OSC_TYPES.includes(value.osc as SoundEngineOscillatorType)
+  isRecord(value) && value.type === 'osc' && typeof value.osc === 'string' && OSC_TYPES.includes(value.osc as SoundEngineOscillatorType)
 
 const isEnvParam = (value: unknown): value is SoundEngineEnvParam =>
-  isRecord(value) &&
-  value.type === 'env' &&
-  typeof value.a === 'number' &&
-  typeof value.d === 'number' &&
-  typeof value.s === 'number' &&
-  typeof value.r === 'number'
+  isRecord(value) && value.type === 'env' && typeof value.a === 'number' && typeof value.d === 'number' && typeof value.s === 'number' && typeof value.r === 'number'
 
-export class SwSeqTransportController {
-  readonly context = new AudioContext()
-  readonly transport = new Transport(this.context)
-  seconds = 0
-  loop = false
-  loopStart = 0
-  loopEnd = 0
-  state: 'started' | 'stopped' = 'stopped'
+export const swSeqTransport = new Transport(new AudioContext())
 
-  start() {
-    this.transport.start()
-    this.state = 'started'
-  }
-
-  pause() {
-    this.transport.stop()
-    this.state = 'stopped'
-  }
+type SynthPatch = {
+  oscillator: { type: OscillatorType }
+  envelope: { attack: number; decay: number; sustain: number; release: number }
 }
 
-export const swSeqTransport = new SwSeqTransportController()
-
 export class SoundEngineSwSeq extends SoundEngine {
-  _endTime = 0
-  _activeNoteEvents = new Set<MoscNoteTime>()
-  _synth: PolySynth
-  _destination: GainNode
-  _oscType: OscillatorType = 'sine'
-  _transportEventIds: number[] = []
+  private endTime = 0
+  private activeNoteEvents = new Set<MoscNoteTime>()
+  private destination: GainNode
+  private synth: PolySynth
+  private transport: Transport
+  private transportEventIds = new Map<number, true>()
+  private patch: SynthPatch = {
+    oscillator: { type: 'sine' },
+    envelope: { attack: 0.01, decay: 0.3, sustain: 0.8, release: 0.01 },
+  }
 
-  constructor() {
+  constructor(transport: Transport = swSeqTransport) {
     super()
-    this._destination = swSeqTransport.context.createGain()
-    this._destination.gain.value = OSC_VOLUME
-    this._destination.connect(swSeqTransport.context.destination)
-    this._synth = new PolySynth(new Bank(swSeqTransport.context), this._destination)
+    this.transport = transport
+    this.destination = transport.context.createGain()
+    this.destination.gain.value = OSC_VOLUME
+    this.destination.connect(transport.context.destination)
+    this.synth = new PolySynth(new Bank(transport.context), this.destination, {
+      oscillator: { type: this.patch.oscillator.type },
+      envelope: this.patch.envelope,
+    })
   }
 
-  _clearScheduledEvents(): void {
-    this._transportEventIds.forEach((id) => swSeqTransport.transport.clear(id))
-    this._transportEventIds = []
+  private clearScheduledEvents(): void {
+    this.transportEventIds.forEach((_, id) => this.transport.clear(id))
+    this.transportEventIds.clear()
   }
 
-  endPosition(): number {
-    return this._endTime
-  }
-
-  async start(): Promise<void> {
-    await swSeqTransport.context.resume()
-  }
+  endPosition(): number { return this.endTime }
+  async start(): Promise<void> { await this.transport.context.resume() }
 
   dispose(): void {
-    this._clearScheduledEvents()
+    this.clearScheduledEvents()
     this.cutActiveNotes()
   }
 
   cutActiveNotes(): void {
-    this._activeNoteEvents.forEach((note) => this._triggerEvent('note', note, false))
-    this._activeNoteEvents.clear()
+    this.activeNoteEvents.forEach((note) => this._triggerEvent('note', note, false))
+    this.activeNoteEvents.clear()
   }
 
   setOutputGain(gain: number): void {
-    this._destination.gain.value = OSC_VOLUME * gain
+    this.destination.gain.value = OSC_VOLUME * gain
   }
 
   async setScore(scoreTime: MoscScoreTime): Promise<void> {
     this.scoreTime = scoreTime
-    this._clearScheduledEvents()
-    this._endTime = scoreTime.lengthTime
+    this.clearScheduledEvents()
+    this.endTime = scoreTime.lengthTime
 
     scoreTime.sequence.forEach((item) => {
       if (item.type === 'NOTE_TIME') {
-        const noteHandle = this._synth.trigger(item.hz, this._oscType)
-        const noteStartId = swSeqTransport.transport.scheduleParametric((time) => {
+        const noteHandle = this.synth.trigger(item.hz)
+        const noteStartId = this.transport.scheduleParametric((time) => {
           noteHandle.noteOn(time)
-          this._activeNoteEvents.add(item)
+          this.activeNoteEvents.add(item)
           this._triggerEvent('note', item, true)
         }, item.time + 0.1)
-
-        const noteEndId = swSeqTransport.transport.scheduleParametric((time) => {
+        const noteEndId = this.transport.scheduleParametric((time) => {
           noteHandle.noteOff(time)
-          this._activeNoteEvents.delete(item)
+          this.activeNoteEvents.delete(item)
           this._triggerEvent('note', item, false)
         }, item.timeEnd + 0.1)
-
-        this._transportEventIds.push(noteStartId, noteEndId)
+        this.transportEventIds.set(noteStartId, true)
+        this.transportEventIds.set(noteEndId, true)
       } else if (item.type === 'PARAM_TIME') {
-        const paramId = swSeqTransport.transport.scheduleEvent(() => {
-          if (isOscParam(item.value)) this._oscType = item.value.osc
+        const paramId = this.transport.scheduleEvent(() => {
+          if (isOscParam(item.value)) {
+            this.patch.oscillator.type = item.value.osc
+          }
           if (isEnvParam(item.value)) {
-            this._synth.attackTime = item.value.a
-            this._synth.decayTime = item.value.d
-            this._synth.sustainLevel = item.value.s
-            this._synth.releaseTime = item.value.r
+            this.patch.envelope = {
+              attack: item.value.a,
+              decay: item.value.d,
+              sustain: item.value.s,
+              release: item.value.r,
+            }
+            this.synth.set({
+              oscillator: { type: this.patch.oscillator.type },
+              envelope: this.patch.envelope,
+            })
           }
         }, item.time)
-
-        this._transportEventIds.push(paramId)
+        this.transportEventIds.set(paramId, true)
       } else if (item.type === 'END_TIME') {
-        this._endTime = item.time
-        const endId = swSeqTransport.transport.scheduleEvent(() => {
-          if (swSeqTransport.loop) return
+        this.endTime = item.time
+        const endId = this.transport.scheduleEvent((transport) => {
+          if (transport.loop) return
           this.cutActiveNotes()
           this._triggerEvent('end', item.time)
         }, item.time)
-
-        this._transportEventIds.push(endId)
+        this.transportEventIds.set(endId, true)
       }
     })
   }

@@ -1,109 +1,107 @@
-import type {Bank, EnvelopedOscillator} from './bank'
+import type { Bank } from './bank'
 
-const TIME_CONSTANT = 0.5;
-const RECOLLECTION_CONSTANT = 6;
+const TIME_CONSTANT = 0.5
 
-const DEFAULT_ATTACK = 0.01;
-const DEFAULT_DECAY = 0.3;
-const DEFAULT_SUSTAIN = 0.8;
-const DEFAULT_RELEASE = 0.01;
+const DEFAULT_ATTACK = 0.01
+const DEFAULT_DECAY = 0.3
+const DEFAULT_SUSTAIN = 0.8
+const DEFAULT_RELEASE = 0.01
 
-export type SynthOptions = {
-  attackTime?: number;
-  decayTime?: number;
-  sustainLevel?: number;
-  releaseTime?: number;
+type SynthOscillatorOptions = {
+  type?: OscillatorType
 }
 
-function doNothing() {
-  return;
+export type SynthOptions = {
+  oscillator?: SynthOscillatorOptions
+  envelope?: {
+    attack?: number
+    decay?: number
+    sustain?: number
+    release?: number
+  }
 }
 
 /**
  * Polyphonic synth consisting of a basic oscillator and an ADSR envelope.
  */
 export class PolySynth {
-  private bank: Bank;
-  private destination: AudioNode;
+  private bank: Bank
+  private destination: AudioNode
 
-  attackTime: number;
-  decayTime: number;
-  sustainLevel: number;
-  releaseTime: number;
+  oscillatorType: OscillatorType
+  attackTime: number
+  decayTime: number
+  sustainLevel: number
+  releaseTime: number
 
   constructor(bank: Bank, destination: AudioNode, opts?: SynthOptions) {
-    this.bank = bank;
-    this.destination = destination;
-    this.attackTime = opts?.attackTime ?? DEFAULT_ATTACK;
-    this.decayTime = opts?.decayTime ?? DEFAULT_DECAY;
-    this.sustainLevel = opts?.sustainLevel ?? DEFAULT_SUSTAIN;
-    this.releaseTime = opts?.releaseTime ?? DEFAULT_RELEASE;
+    this.bank = bank
+    this.destination = destination
+    this.oscillatorType = opts?.oscillator?.type ?? 'sine'
+    this.attackTime = opts?.envelope?.attack ?? DEFAULT_ATTACK
+    this.decayTime = opts?.envelope?.decay ?? DEFAULT_DECAY
+    this.sustainLevel = opts?.envelope?.sustain ?? DEFAULT_SUSTAIN
+    this.releaseTime = opts?.envelope?.release ?? DEFAULT_RELEASE
   }
 
   get context() {
-    return this.bank.context;
+    return this.bank.context
   }
 
-  trigger(frequency: number, type: OscillatorType = 'sine') {
-    let oscillator: OscillatorNode | null = null;
-    let startTime = NaN;
-    let attackTime = NaN;
-    let decayTime = NaN;
-    let sustainLevel = NaN;
-    let releaseTime = NaN;
+  set(opts: SynthOptions) {
+    if (opts.oscillator?.type) this.oscillatorType = opts.oscillator.type
+    if (opts.envelope) {
+      if (opts.envelope.attack !== undefined) this.attackTime = opts.envelope.attack
+      if (opts.envelope.decay !== undefined) this.decayTime = opts.envelope.decay
+      if (opts.envelope.sustain !== undefined) this.sustainLevel = opts.envelope.sustain
+      if (opts.envelope.release !== undefined) this.releaseTime = opts.envelope.release
+    }
+  }
+
+  trigger(frequency: number) {
+    let oscillator: OscillatorNode | null = null
+    let startTime = NaN
+    let attackTime = NaN
+    let decayTime = NaN
+    let sustainLevel = NaN
+    let releaseTime = NaN
 
     const noteOn = (time: number) => {
-      oscillator = this.bank.allocateOscillator();
-      if (oscillator === null) {
-        return;
-      }
-      startTime = time;
-      oscillator.type = type;
-      oscillator.frequency.setValueAtTime(frequency, time);
-      oscillator.connect(this.destination);
-      oscillator.gain.setValueAtTime(0, startTime);
+      oscillator = this.bank.allocateOscillator()
+      if (oscillator === null) return
 
-      // Xenpaper allows you to change unschedulable params. Store references.
-      attackTime = this.attackTime;
-      decayTime = this.decayTime;
-      sustainLevel = this.sustainLevel;
-      releaseTime = this.releaseTime;
+      startTime = time
+      oscillator.type = this.oscillatorType
+      oscillator.frequency.setValueAtTime(frequency, time)
+      oscillator.connect(this.destination)
+      oscillator.gain.setValueAtTime(0, startTime)
 
-      if (attackTime <= 0) {
-        oscillator.gain.setValueAtTime(1, startTime);
-      } else {
-        oscillator.gain.linearRampToValueAtTime(1, startTime + attackTime);
-      }
+      attackTime = this.attackTime
+      decayTime = this.decayTime
+      sustainLevel = this.sustainLevel
+      releaseTime = this.releaseTime
 
-      if (this.decayTime <= 0) {
-        oscillator.gain.setValueAtTime(sustainLevel, startTime + attackTime);
-      } else {
-        oscillator.gain.setTargetAtTime(sustainLevel, startTime + attackTime, decayTime * TIME_CONSTANT);
-      }
+      if (attackTime <= 0) oscillator.gain.setValueAtTime(1, startTime)
+      else oscillator.gain.linearRampToValueAtTime(1, startTime + attackTime)
+
+      if (this.decayTime <= 0) oscillator.gain.setValueAtTime(sustainLevel, startTime + attackTime)
+      else oscillator.gain.setTargetAtTime(sustainLevel, startTime + attackTime, decayTime * TIME_CONSTANT)
     }
 
     const noteOff = (endTime: number) => {
-      if (oscillator === null) {
-        return;
-      }
-      oscillator.gain.cancelScheduledValues(endTime);
-      // NOTE: Canceling scheduled values doesn't hold intermediate values of linear ramps
+      if (oscillator === null) return
+
+      oscillator.gain.cancelScheduledValues(endTime)
       if (endTime < startTime + attackTime) {
-        // Calculate correct linear ramp hold value
-        oscillator.gain.setValueAtTime((endTime - startTime) / attackTime);
+        oscillator.gain.setValueAtTime((endTime - startTime) / attackTime)
       }
 
-      if (releaseTime <= 0) {
-        oscillator.gain.setValueAtTime(0, endTime);
-      } else {
-        oscillator.gain.setTargetAtTime(0, endTime, releaseTime * TIME_CONSTANT);
-      }
+      if (releaseTime <= 0) oscillator.gain.setValueAtTime(0, endTime)
+      else oscillator.gain.setTargetAtTime(0, endTime, releaseTime * TIME_CONSTANT)
 
-      // Allow eventual re-use.
-      // Can technically glitch out due to look-ahead but we'll tweak it once we run into it.
-      this.bank.freeOscillator(oscillator);
+      this.bank.freeOscillator(oscillator)
     }
 
-    return {noteOn, noteOff};
+    return { noteOn, noteOff }
   }
 }
