@@ -91,7 +91,6 @@ export class SoundEngineTonejs extends SoundEngine {
   _endMs = 0
   _activeNoteEvents = new Set<MoscNoteMs>()
   _transportEventIds: number[] = []
-  _onTransportEnd: ((time: number) => void) | undefined
 
   _synth: PolySynth<Synth> | undefined
 
@@ -134,18 +133,6 @@ export class SoundEngineTonejs extends SoundEngine {
     return this._synth
   }
 
-  playing(): boolean {
-    return Tone.Transport.state === 'started'
-  }
-
-  looping(): boolean {
-    return Tone.Transport.loop
-  }
-
-  position(): number {
-    return Tone.Transport.seconds * 1000
-  }
-
   endPosition(): number {
     return this._endMs
   }
@@ -155,23 +142,10 @@ export class SoundEngineTonejs extends SoundEngine {
       await Tone.start()
       this.getSynth()
       this._started = true
-
-      this._onTransportEnd = (time: number) => {
-        this._releaseActiveNotes(time)
-      }
-
-      Tone.Transport.on('stop', this._onTransportEnd)
-      Tone.Transport.on('loop', this._onTransportEnd)
     }
   }
 
   dispose(): void {
-    if (this._onTransportEnd) {
-      Tone.Transport.off('stop', this._onTransportEnd)
-      Tone.Transport.off('loop', this._onTransportEnd)
-      this._onTransportEnd = undefined
-    }
-
     this._clearScheduledEvents()
     this._releaseActiveNotesIfSynthExists()
     this._synth?.dispose()

@@ -234,17 +234,13 @@ export class SoundEngine {
     return false
   }
 
-  position(): number {
-    return 0
-  }
-
   endPosition(): number {
     return 0
   }
 
   async play(): Promise<void> {}
 
-  async pause(): Promise<void> {}
+  async pause(_time?: number): Promise<void> {}
 
   async gotoMs(_ms: number): Promise<void> {}
 
