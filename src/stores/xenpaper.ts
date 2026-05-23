@@ -40,7 +40,7 @@ const MAX_DEAD_SOURCE_TABS = 10
 
 type ScoreEngine = ReturnType<typeof useScoreEngine>
 
-const createTransportContext = (): BaseAudioContext => {
+const createTransportContext = (): AudioContext => {
   if (typeof AudioContext !== 'undefined') {
     return new AudioContext()
   }
@@ -52,7 +52,18 @@ const createTransportContext = (): BaseAudioContext => {
       start: () => undefined,
       stop: () => undefined,
     }),
-  } as unknown as BaseAudioContext
+    createGain: () => ({ gain: { value: 0 }, connect: () => undefined }),
+    createOscillator: () => ({
+      detune: { cancelScheduledValues: () => undefined },
+      frequency: { setValueAtTime: () => undefined, cancelScheduledValues: () => undefined },
+      type: "sine",
+      connect: () => undefined,
+      start: () => undefined,
+      stop: () => undefined,
+    }),
+    destination: {} as AudioDestinationNode,
+    resume: async () => undefined,
+  } as unknown as AudioContext
 }
 
 const swSeqTransport = new Transport(createTransportContext())

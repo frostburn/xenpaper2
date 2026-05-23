@@ -62,7 +62,7 @@ export class SoundEngineSwSeq extends SoundEngine {
     this.cutActiveNotes()
   }
 
-  cutActiveNotes(): void {
+  cutActiveNotes(_time?: number): void {
     this.activeNoteEvents.forEach((note) => this._triggerEvent('note', note, false))
     this.activeNoteEvents.clear()
   }

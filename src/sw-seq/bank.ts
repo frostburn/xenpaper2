@@ -56,13 +56,13 @@ export class EnvelopedOscillator {
  * but that's not always true unfortunately.
  */
 export class Bank {
-  readonly context: BaseAudioContext;
+  readonly context: AudioContext;
   private maxPolyphony: number;
   // Negative age indicates that the node is reserved
   private oscillators: {node: EnvelopedOscillator, age: number}[];
   // private gains: {node: GainNode, reserved: boolean}[];
 
-  constructor(context: BaseAudioContext, maxPolyphony=32) {
+  constructor(context: AudioContext, maxPolyphony=32) {
     this.context = context;
     this.maxPolyphony = maxPolyphony;
     this.oscillators = [];
@@ -75,12 +75,15 @@ export class Bank {
       this.oscillators.push(osc);
       return osc.node;
     }
-    const maxAge = this.oscillators.reduce((a, b) => Max(a.age, b.age), -1);
+    const maxAge = this.oscillators.reduce((a, b) => Math.max(a, b.age), -1);
     if (maxAge < 0) {
       console.warn('Maximum polyphony reached.');
       return null;
     }
     const osc = this.oscillators.find((o) => o.age === maxAge);
+    if (!osc) {
+      return null;
+    }
     osc.age = -1;
     osc.node.detune.cancelScheduledValues(this.context.currentTime);
     osc.node.frequency.cancelScheduledValues(this.context.currentTime);
@@ -89,7 +92,7 @@ export class Bank {
     return osc.node;
   }
 
-  freeOscillator(node: OscillatorNode) {
+  freeOscillator(node: EnvelopedOscillator) {
     const osc = this.oscillators.find((o) => o.node === node);
     if (osc === undefined) {
       throw new Error('Attempting to free unallocated oscillator.');

@@ -93,7 +93,7 @@ export class PolySynth {
 
       oscillator.gain.cancelScheduledValues(endTime)
       if (endTime < startTime + attackTime) {
-        oscillator.gain.setValueAtTime((endTime - startTime) / attackTime)
+        oscillator.gain.setValueAtTime((endTime - startTime) / attackTime, endTime)
       }
 
       if (releaseTime <= 0) oscillator.gain.setValueAtTime(0, endTime)

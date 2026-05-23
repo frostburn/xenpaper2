@@ -13,7 +13,7 @@ type TransportEvent = {
  * Transport using look-ahead scheduling.
  */
 export class Transport {
-  readonly context: BaseAudioContext
+  readonly context: AudioContext
   seconds = 0
   loop = false
   loopStart = 0
@@ -31,7 +31,7 @@ export class Transport {
   private eventQueue: TransportEvent[]
   private nextEventId: number
 
-  constructor(context: BaseAudioContext, interval = 0.1, lookAhead = 0.2) {
+  constructor(context: AudioContext, interval = 0.1, lookAhead = 0.2) {
     this.context = context
     this.interval = interval
     this.lookAhead = lookAhead
@@ -97,6 +97,10 @@ export class Transport {
   stop() {
     this.active = false
     this.state = 'stopped'
+  }
+
+  pause(_time?: number) {
+    this.stop()
   }
 
   clear(id: number) {
