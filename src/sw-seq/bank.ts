@@ -8,6 +8,7 @@ export class EnvelopedOscillator {
   constructor(context: BaseAudioContext) {
     this.oscillator = context.createOscillator();
     this._gain = context.createGain();
+    this._gain.gain.value = 0;
     this.oscillator.connect(this._gain);
   }
 
