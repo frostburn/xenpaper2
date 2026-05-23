@@ -25,7 +25,8 @@ export class Transport {
   private active: boolean
   private startTime: number
   private lastTick: number
-  private eventsById: Map<number, ParametricEvent | TransportEvent>
+  private parametricEventsById: Map<number, ParametricEvent>
+  private eventsById: Map<number, TransportEvent>
   private parametricQueue: ParametricEvent[]
   private eventQueue: TransportEvent[]
   private nextEventId: number
@@ -37,6 +38,7 @@ export class Transport {
     this.active = false
     this.startTime = NaN
     this.lastTick = NaN
+    this.parametricEventsById = new Map()
     this.eventsById = new Map()
     this.parametricQueue = []
     this.eventQueue = []
@@ -47,12 +49,11 @@ export class Transport {
     this.startTime = this.context.currentTime - this.seconds
     this.parametricQueue = []
     this.eventQueue = []
+    this.parametricEventsById.forEach((event) => {
+      this.parametricQueue.push({ ...event, when: event.when + this.startTime })
+    })
     this.eventsById.forEach((event) => {
-      if ('callback' in event && event.callback.length >= 2) {
-        this.parametricQueue.push({ ...(event as ParametricEvent), when: event.when + this.startTime })
-      } else {
-        this.eventQueue.push({ ...(event as TransportEvent), when: event.when + this.startTime })
-      }
+      this.eventQueue.push({ ...event, when: event.when + this.startTime })
     })
     this.parametricQueue.sort((a, b) => a.when - b.when)
     this.eventQueue.sort((a, b) => a.when - b.when)
@@ -74,9 +75,9 @@ export class Transport {
 
     while (this.parametricQueue.length && this.parametricQueue[0]!.when < this.lastTick) {
       const event = this.parametricQueue.shift()!
-      if (!this.eventsById.has(event.id)) continue
+      if (!this.parametricEventsById.has(event.id)) continue
       event.callback(event.when + this.lookAhead)
-      this.eventsById.delete(event.id)
+      this.parametricEventsById.delete(event.id)
     }
 
     while (this.eventQueue.length && this.eventQueue[0]!.when < this.lastTick) {
@@ -99,12 +100,14 @@ export class Transport {
   }
 
   clear(id: number) {
+    this.parametricEventsById.delete(id)
     this.eventsById.delete(id)
     this.parametricQueue = this.parametricQueue.filter((event) => event.id !== id)
     this.eventQueue = this.eventQueue.filter((event) => event.id !== id)
   }
 
   clearAll() {
+    this.parametricEventsById.clear()
     this.eventsById.clear()
     this.parametricQueue = []
     this.eventQueue = []
@@ -112,7 +115,7 @@ export class Transport {
 
   scheduleParametric(callback: (time: number) => void, when: number) {
     const id = this.nextEventId++
-    this.eventsById.set(id, { id, callback, when })
+    this.parametricEventsById.set(id, { id, callback, when })
     return id
   }
 
