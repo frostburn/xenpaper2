@@ -96,7 +96,7 @@ export const sortByTime = <T extends { time: number }>(items: T[]): T[] => {
 }
 
 export const sortByTimeValue = (items: Array<MoscNoteTime>): Array<MoscNoteTime> => {
-  return items.slice().sort((a, b) => a.time - b.time)
+  return sortByTime(items)
 }
 
 //
