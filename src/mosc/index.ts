@@ -92,19 +92,11 @@ export const ratioToOctaveDivision = (
 }
 
 export const sortByTime = <T extends { time: number }>(items: T[]): T[] => {
-  return items.slice().sort((a, b) => {
-    if (a.time < b.time) return -1
-    if (a.time > b.time) return 1
-    return 0
-  })
+  return items.slice().sort((a, b) => a.time - b.time)
 }
 
 export const sortByTimeValue = (items: Array<MoscNoteTime>): Array<MoscNoteTime> => {
-  return items.slice().sort((a, b) => {
-    if (a.time < b.time) return -1
-    if (a.time > b.time) return 1
-    return 0
-  })
+  return sortByTime(items)
 }
 
 //
