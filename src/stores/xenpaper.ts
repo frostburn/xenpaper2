@@ -565,10 +565,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     activeScoreEngineIndex.value = 0
     rememberDeadScoreEngines(previousScoreEngines)
     startSoundEngineListeners()
-    applySharedTransportLoop([engine])
-    swSeqTransport.seconds = 0
-    swSeqTransport.start?.()
-    isPlaying.value = true
+    await restartPlaybackFromStart()
   }
 
   const updateLoopStart = (): void => {
