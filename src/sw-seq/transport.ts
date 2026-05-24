@@ -17,9 +17,7 @@ type TransportEvent = {
 export class Transport {
   readonly context: AudioContext
   active: boolean
-  loop = false
-  loopStart = 0
-  loopEnd = 0
+  loop: boolean
   onended = () => {/* empty */}
 
   private interval: number
@@ -27,6 +25,8 @@ export class Transport {
   private startTime: number
   private lastTick: number
   private _endTime: number
+  private _loopStart: number
+  private _loopEnd: number
   private parametricEventsById: Map<number, ParametricEvent>
   private eventsById: Map<number, TransportEvent>
   private nextEventId: number
@@ -36,9 +36,12 @@ export class Transport {
     this.interval = round(interval * context.sampleRate)
     this._lookAhead = round(lookAhead * context.sampleRate)
     this.active = false
+    this.loop = false
     this.startTime = NaN
     this.lastTick = NaN
     this._endTime = Infinity
+    this._loopStart = 0
+    this._loopEnd = 0
     this.parametricEventsById = new Map()
     this.eventsById = new Map()
     this.nextEventId = 1
@@ -49,7 +52,15 @@ export class Transport {
   }
 
   get position() {
-    return (this.lastTick - this.startTime) / this.context.sampleRate
+    let pos = this.lastTick - this.startTime
+    const loopLength = this._loopEnd - this._loopStart
+    if (this.loop && loopLength > 0) {
+      while (pos >= this._loopEnd) {
+        pos -= loopLength
+      }
+    }
+
+    return pos / this.context.sampleRate
   }
 
   get endTime() {
@@ -60,6 +71,22 @@ export class Transport {
     this._endTime = round(value * this.context.sampleRate)
   }
 
+  get loopStart() {
+    return this._loopStart / this.context.sampleRate
+  }
+
+  set loopStart(value: number) {
+    this._loopStart = round(value * this.context.sampleRate)
+  }
+
+  get loopEnd() {
+    return this._loopEnd / this.context.sampleRate
+  }
+
+  set loopEnd(value: number) {
+    this._loopEnd = round(value * this.context.sampleRate)
+  }
+
   start(offset = 0) {
     this.startTime = round((this.context.currentTime - offset) * this.context.sampleRate)
     this.active = true
@@ -67,10 +94,35 @@ export class Transport {
     this.onInterval()
   }
 
-  // TODO: Loop
-  private shouldFire(event: ParametricEvent | TransportEvent) {
-    const pos = this.lastTick - this.startTime
-    return (event.when >= pos - this.interval) && (event.when < pos)
+  /**
+   * Compute the audio context time for an event that should fire.
+   */
+  private contextTime(event: ParametricEvent | TransportEvent) {
+    let end = this.lastTick - this.startTime
+    let start = end - this.interval
+
+    const loopLength = this._loopEnd - this._loopStart
+    let loopCount = 0
+    if (this.loop && loopLength > 0) {
+      // XXX: Currently it's not possible to wrap e.g. note-off events across the loop boundary
+      while (start >= this._loopEnd) {
+        start -= loopLength
+        loopCount++
+      }
+      while (end >= this._loopEnd) {
+        end -= loopLength
+      }
+      if (start > end) {
+        // Check from start to boundary if needed (intentionally include boundary)
+        if (event.when >= start && event.when <= this._loopEnd) {
+          return (this.startTime + this._lookAhead + event.when + loopCount * loopLength) / this.context.sampleRate
+        }
+        start = this._loopStart
+      }
+    }
+    if (event.when < start) return NaN
+    if (event.when >= end) return NaN
+    return (this.startTime + this._lookAhead + event.when + loopCount * loopLength) / this.context.sampleRate
   }
 
   private onInterval() {
@@ -85,16 +137,16 @@ export class Transport {
     this.lastTick += this.interval
     ticker.stop(this.lastTick / this.context.sampleRate)
 
-    const offset = this.startTime + this._lookAhead
-
     for (const event of this.parametricEventsById.values()) {
-      if (this.shouldFire(event)) {
-        event.callback((event.when + offset) / this.context.sampleRate)
+      const time = this.contextTime(event)
+      if (!isNaN(time)) {
+        event.callback(time)
       }
     }
 
     for (const event of this.eventsById.values()) {
-      if (!this.shouldFire(event)) {
+      const time = this.contextTime(event)
+      if (isNaN(time)) {
         continue
       }
       const timer = this.context.createConstantSource()
@@ -103,10 +155,12 @@ export class Transport {
         event.callback()
       }
       timer.start(this.context.currentTime)
-      timer.stop((event.when + offset) / this.context.sampleRate)
+      timer.stop(time)
     }
 
-    // Convert from context samples to scheduling samples
+    if (this.loop && this._loopStart < this._loopEnd) {
+      return
+    }
     if (this.lastTick - this.startTime > this._endTime) {
       this.active = false
     }
