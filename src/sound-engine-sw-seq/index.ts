@@ -65,7 +65,7 @@ export class SoundEngineSwSeq extends SoundEngine {
 
     const patch: SynthParams = {
       oscillator: {
-        type: 'triangle',
+        type: 'sine',
       },
       envelope: {
         attack: 0.01,
@@ -91,20 +91,18 @@ export class SoundEngineSwSeq extends SoundEngine {
         this.transportEventIds.set(noteStartId, true)
         this.transportEventIds.set(noteEndId, true)
       } else if (item.type === 'PARAM_TIME') {
-        const paramId = this.transport.scheduleEvent(() => {
-          if (isOscParam(item.value)) {
-            patch.oscillator.type = item.value.osc
+        // No scheduling needed. Change the active patch directly.
+        if (isOscParam(item.value)) {
+          patch.oscillator.type = item.value.osc
+        }
+        if (isEnvParam(item.value)) {
+          patch.envelope = {
+            attack: item.value.a,
+            decay: item.value.d,
+            sustain: item.value.s,
+            release: item.value.r,
           }
-          if (isEnvParam(item.value)) {
-            patch.envelope = {
-              attack: item.value.a,
-              decay: item.value.d,
-              sustain: item.value.s,
-              release: item.value.r,
-            }
-          }
-        }, item.time)
-        this.transportEventIds.set(paramId, true)
+        }
       } else if (item.type === 'END_TIME') {
         this.endTime = item.time
         const endId = this.transport.scheduleEvent(() => {

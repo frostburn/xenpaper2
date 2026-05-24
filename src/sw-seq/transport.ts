@@ -20,22 +20,25 @@ export class Transport {
   loop = false
   loopStart = 0
   loopEnd = 0
+  onended = () => {/* empty */}
 
   private interval: number
   private _lookAhead: number
   private startTime: number
   private lastTick: number
+  private _endTime: number
   private parametricEventsById: Map<number, ParametricEvent>
   private eventsById: Map<number, TransportEvent>
   private nextEventId: number
 
-  constructor(context: AudioContext, interval = 0.2, lookAhead = 0.2) {
+  constructor(context: AudioContext, interval = 0.1, lookAhead = 0.2) {
     this.context = context
     this.interval = round(interval * context.sampleRate)
     this._lookAhead = round(lookAhead * context.sampleRate)
     this.active = false
     this.startTime = NaN
     this.lastTick = NaN
+    this._endTime = Infinity
     this.parametricEventsById = new Map()
     this.eventsById = new Map()
     this.nextEventId = 1
@@ -47,6 +50,14 @@ export class Transport {
 
   get position() {
     return (this.lastTick - this.startTime) / this.context.sampleRate
+  }
+
+  get endTime() {
+    return this._endTime / this.context.sampleRate
+  }
+
+  set endTime(value: number) {
+    this._endTime = round(value * this.context.sampleRate)
   }
 
   start(offset = 0) {
@@ -63,7 +74,10 @@ export class Transport {
   }
 
   private onInterval() {
-    if (!this.active) return
+    if (!this.active) {
+      this.onended()
+      return
+    }
 
     const ticker = this.context.createConstantSource()
     ticker.onended = this.onInterval.bind(this)
@@ -71,7 +85,7 @@ export class Transport {
     this.lastTick += this.interval
     ticker.stop(this.lastTick / this.context.sampleRate)
 
-    const offset = this.startTime + this.lookAhead
+    const offset = this.startTime + this._lookAhead
 
     for (const event of this.parametricEventsById.values()) {
       if (this.shouldFire(event)) {
@@ -81,7 +95,7 @@ export class Transport {
 
     for (const event of this.eventsById.values()) {
       if (!this.shouldFire(event)) {
-        return
+        continue
       }
       const timer = this.context.createConstantSource()
       timer.onended = () => {
@@ -90,6 +104,11 @@ export class Transport {
       }
       timer.start(this.context.currentTime)
       timer.stop((event.when + offset) / this.context.sampleRate)
+    }
+
+    // Convert from context samples to scheduling samples
+    if (this.lastTick - this.startTime > this._endTime) {
+      this.active = false
     }
   }
 

@@ -270,6 +270,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
 
   const applySharedTransportLoop = (engines: ScoreEngine[] = getPlayableScoreEngines()): void => {
     swSeqTransport.loopEnd = getSharedLoopEndTime(engines)
+    swSeqTransport.endTime = swSeqTransport.loopEnd + 1
   }
 
   const preparePlayableScoreEngines = async (): Promise<ScoreEngine[]> => {
