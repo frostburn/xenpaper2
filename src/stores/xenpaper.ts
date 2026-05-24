@@ -105,7 +105,6 @@ function useScoreEngine(id: number) {
     await soundEngine.setScore(source.scoreTime)
     if (version !== parseVersion) return false
 
-    swSeqTransport.seconds = 0
     scoreLoaded.value = true
 
     return true
@@ -135,7 +134,7 @@ function useScoreEngine(id: number) {
   }
 
   const preparePlayableScore = async (): Promise<boolean> => {
-    if (!scoreLoaded.value || swSeqTransport.seconds >= soundEngine.endPosition()) {
+    if (!scoreLoaded.value || swSeqTransport.position >= soundEngine.endPosition()) {
       await updateParsedSourceCode()
     }
 
@@ -265,8 +264,6 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
 
   const getPlayableScoreEngines = (): ScoreEngine[] =>
     scoreEngines.value.filter((engine) => engine.scoreLoaded.value)
-
-  const getTransportPositionTime = (): number => swSeqTransport.seconds
 
   const getSharedLoopEndTime = (engines: ScoreEngine[]): number =>
     Math.max(0, ...engines.map((engine) => engine.soundEngine.endPosition()))
@@ -579,8 +576,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     if (!playableEngines.length) return
 
     const startTime = activeScoreEngine.value.getSelectedLineStartTime()
-    swSeqTransport.seconds = startTime
-    swSeqTransport.start?.()
+    swSeqTransport.start?.(startTime)
     isPlaying.value = true
   }
 
@@ -609,7 +605,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
 
   const syncPlaybackPosition = (): void => {
     playbackPositionTime.value =
-      swSeqTransport.active ? getTransportPositionTime() : -1
+      swSeqTransport.active ? swSeqTransport.position - swSeqTransport.lookAhead : -1
   }
 
   const resetPlaybackPosition = (): void => {
@@ -639,7 +635,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     }
 
     const allEnginesEnded = playableEngines.every(
-      (engine) => getTransportPositionTime() >= engine.soundEngine.endPosition(),
+      (engine) => swSeqTransport.position >= engine.soundEngine.endPosition(),
     )
 
     if (!allEnginesEnded) return
