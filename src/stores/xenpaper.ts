@@ -73,7 +73,6 @@ function useScoreEngine(id: number, transport: Transport, bank: Bank) {
       return false
     }
 
-    soundEngine.cutActiveNotes()
     await soundEngine.setScore(source.score)
     if (version !== parseVersion) return false
 
@@ -257,10 +256,9 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     return engines
   }
 
-  const pauseAllSoundEngines = async (time?: number): Promise<void> => {
-    swSeqTransport.stop?.()
-    scoreEngines.value.forEach((engine) => engine.soundEngine.cutActiveNotes(time))
-    // swSeqBank.stop?.()
+  const pauseAllSoundEngines = () => {
+    swSeqTransport.onended = () => swSeqBank.stop()
+    swSeqTransport.stop()
   }
 
   const clearScoreEngine = async (engine: ScoreEngine): Promise<void> => {
@@ -369,6 +367,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   }
 
   const updateParsedSourceCode = async (): Promise<void> => {
+    scoreEngines.value.forEach((engine) => engine.soundEngine.cutActiveNotes())
     const engine = activeScoreEngine.value
     const sourcePlayable = await engine.updateParsedSourceCode()
     const source = engine.parsedSource.value
@@ -556,8 +555,8 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     if (!playableEngines.length) return
 
     const startTime = activeScoreEngine.value.getSelectedLineStartTime()
-    audioContext.resume?.()
-    swSeqTransport.start?.(startTime)
+    audioContext.resume()
+    swSeqTransport.start(startTime)
     isPlaying.value = true
   }
 
@@ -570,10 +569,10 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     await restartPlaybackFromLine(0)
   }
 
-  const togglePlayback = async (time?: number): Promise<void> => {
+  const togglePlayback = async (): Promise<void> => {
     if (isPlaying.value) {
       resetPlaybackState()
-      await pauseAllSoundEngines(time)
+      pauseAllSoundEngines()
       return
     }
 
@@ -609,7 +608,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     )
   }
 
-  const handleSoundEngineEnd = async (time?: number): Promise<void> => {
+  const handleSoundEngineEnd = async (): Promise<void> => {
     const playableEngines = getPlayableScoreEngines()
     if (!playableEngines.length) {
       resetPlaybackState()
@@ -623,7 +622,6 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     if (!allEnginesEnded) return
 
     resetPlaybackState()
-    await pauseAllSoundEngines(time)
   }
 
   const startSoundEngineListeners = (): void => {
