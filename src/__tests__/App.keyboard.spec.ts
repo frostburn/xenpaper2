@@ -14,7 +14,6 @@ type MockSoundEngine = {
   endCallback?: () => void
   noteCallback?: (...args: unknown[]) => void
   endPosition: MockFn<() => number>
-  start: MockFn<() => Promise<void>>
   cutActiveNotes: MockFn<(time?: number) => void>
   setLoopActive: MockFn<(active: boolean) => void>
   setLoopStart: MockFn<(time?: number) => void>
@@ -25,16 +24,72 @@ type MockSoundEngine = {
   dispose: MockFn<() => void>
 }
 
+vi.stubGlobal(
+  'AudioContext',
+  class MockAudioContext {
+    currentTime = 0
+    createConstantSource() {
+      return {
+        onended: null,
+        start: () => undefined,
+        stop: () => undefined,
+      }
+    }
+    createGain() {
+      return { gain: { value: 0 }, connect: () => undefined }
+    }
+    createOscillator() {
+      return {
+        detune: { cancelScheduledValues: () => undefined },
+        frequency: { setValueAtTime: () => undefined, cancelScheduledValues: () => undefined },
+        type: 'sine',
+        connect: () => undefined,
+        start: () => undefined,
+        stop: () => undefined,
+      }
+    }
+    destination = {} as AudioDestinationNode
+    resume = async () => undefined
+  } as unknown as AudioContext,
+)
+
 const soundEngineMock = vi.hoisted(() => ({
   instances: [] as MockSoundEngine[],
 }))
 
-vi.mock('../sound-engine-tonejs', () => ({
-  SoundEngineTonejs: vi.fn<() => MockSoundEngine>(function () {
+vi.mock('../sw-seq/transport', () => ({
+  Transport: class {
+    seconds = 0
+    loop = false
+    loopStart = 0
+    loopEnd = 0
+    state: 'started' | 'stopped' = 'stopped'
+    context = {}
+    constructor() {}
+    start() {
+      this.state = 'started'
+    }
+    stop() {
+      this.state = 'stopped'
+    }
+    pause() {
+      this.state = 'stopped'
+    }
+    clear() {}
+    scheduleParametric() {
+      return 1
+    }
+    scheduleEvent() {
+      return 1
+    }
+  },
+}))
+
+vi.mock('../sound-engine-sw-seq', () => ({
+  SoundEngineSwSeq: vi.fn<() => MockSoundEngine>(function () {
     const engine: MockSoundEngine = {
       endMs: 10_000,
       endPosition: vi.fn<() => number>(() => engine.endMs),
-      start: vi.fn<() => Promise<void>>(async () => {}),
       cutActiveNotes: vi.fn<(time?: number) => void>(),
       setLoopActive: vi.fn<(active: boolean) => void>(),
       setLoopStart: vi.fn<(ms?: number) => void>(),
@@ -116,23 +171,18 @@ describe('App source editor keyboard shortcuts', () => {
     const enginesAfterMount = soundEngineMock.instances.slice()
 
     expect(enginesAfterMount).not.toHaveLength(0)
-    enginesAfterMount.forEach((engine) => {
-      expect(engine.start).not.toHaveBeenCalled()
-    })
+    expect(wrapper.get('.play-pause-button').text()).toContain('Play')
 
     await wrapper.get('button.play-pause-button').trigger('click')
     await flushPromises()
 
-    expect(soundEngineMock.instances.some((engine) => engine.start.mock.calls.length > 0)).toBe(
-      true,
-    )
+    expect(wrapper.get('.play-pause-button').text()).toContain('Pause')
   })
 
   it('does not start audio while replacing sources from a changed route hash', async () => {
     const { router, wrapper } = await mountApp('#first')
 
     soundEngineMock.instances.forEach((engine) => {
-      engine.start.mockClear()
       engine.cutActiveNotes.mockClear()
     })
 
@@ -140,23 +190,18 @@ describe('App source editor keyboard shortcuts', () => {
     await flushPromises()
 
     const enginesAfterHashReplacement = soundEngineMock.instances.slice()
-    enginesAfterHashReplacement.forEach((engine) => {
-      expect(engine.start).not.toHaveBeenCalled()
-    })
     expect(
       enginesAfterHashReplacement.some((engine) => engine.cutActiveNotes.mock.calls.length > 0),
     ).toBe(true)
 
+    expect(wrapper.get('.play-pause-button').text()).toContain('Play')
     await wrapper.get('button.play-pause-button').trigger('click')
     await flushPromises()
 
-    expect(soundEngineMock.instances.some((engine) => engine.start.mock.calls.length > 0)).toBe(
-      true,
-    )
+    expect(wrapper.get('.play-pause-button').text()).toContain('Pause')
   })
   it('resets to the beginning and plays for Ctrl+Enter', async () => {
     const { wrapper } = await mountApp('#0_2%0A4_5')
-    const engine = soundEngineMock.instances[soundEngineMock.instances.length - 1]!
     const textarea = wrapper.get<HTMLTextAreaElement>('textarea').element
 
     await wrapper.get('button[aria-label="Start playback at line 2"]').trigger('click')
@@ -167,23 +212,21 @@ describe('App source editor keyboard shortcuts', () => {
     })
 
     expect(preventDefault).toHaveBeenCalledTimes(1)
-    expect(engine.start).toHaveBeenCalledTimes(1)
+    expect(wrapper.get('.play-pause-button').text()).toContain('Pause')
   })
 
   it('resets playback instead of pausing when Cmd+Enter is pressed while playing', async () => {
     const { wrapper } = await mountApp()
-    const engine = soundEngineMock.instances[soundEngineMock.instances.length - 1]!
     const textarea = wrapper.get<HTMLTextAreaElement>('textarea').element
 
     await dispatchSourceKeydown(textarea, { key: 'Enter', metaKey: true })
     await dispatchSourceKeydown(textarea, { key: 'Enter', metaKey: true })
 
-    expect(engine.start).toHaveBeenCalledTimes(2)
+    expect(wrapper.get('.play-pause-button').text()).toContain('Pause')
   })
 
   it('plays from the current source line for Ctrl+Space', async () => {
     const { wrapper } = await mountApp('#0_2%0A4_5')
-    const engine = soundEngineMock.instances[soundEngineMock.instances.length - 1]!
     const textarea = wrapper.get<HTMLTextAreaElement>('textarea').element
 
     textarea.setSelectionRange(textarea.value.indexOf('\n') + 1, textarea.value.indexOf('\n') + 1)
@@ -195,12 +238,11 @@ describe('App source editor keyboard shortcuts', () => {
     })
 
     expect(preventDefault).toHaveBeenCalledTimes(1)
-    expect(engine.start).toHaveBeenCalledTimes(1)
+    expect(wrapper.get('.play-pause-button').text()).toContain('Pause')
   })
 
   it('plays from the current source line for Cmd+Space', async () => {
     const { wrapper } = await mountApp('#0_2%0A4_5')
-    const engine = soundEngineMock.instances[soundEngineMock.instances.length - 1]!
     const textarea = wrapper.get<HTMLTextAreaElement>('textarea').element
 
     textarea.setSelectionRange(textarea.value.indexOf('\n') + 1, textarea.value.indexOf('\n') + 1)
@@ -212,7 +254,7 @@ describe('App source editor keyboard shortcuts', () => {
     })
 
     expect(preventDefault).toHaveBeenCalledTimes(1)
-    expect(engine.start).toHaveBeenCalledTimes(1)
+    expect(wrapper.get('.play-pause-button').text()).toContain('Pause')
   })
 
   it('keeps playback controls and sound engine alive on the About route', async () => {
@@ -304,16 +346,12 @@ describe('App source editor keyboard shortcuts', () => {
     expect(firstEngine.setOutputGain).toHaveBeenLastCalledWith(1)
     expect(secondEngine.setOutputGain).toHaveBeenLastCalledWith(0)
 
-    firstEngine.start.mockClear()
-    secondEngine.start.mockClear()
-
     await dispatchSourceKeydown(wrapper.get<HTMLTextAreaElement>('textarea').element, {
       key: 'Enter',
       ctrlKey: true,
     })
 
-    expect(firstEngine.start).toHaveBeenCalledTimes(1)
-    expect(secondEngine.start).toHaveBeenCalledTimes(1)
+    expect(wrapper.get('.play-pause-button').text()).toContain('Pause')
   })
 
   it('plain solo replaces other soloed source tabs', async () => {
@@ -425,16 +463,12 @@ describe('App source editor keyboard shortcuts', () => {
     expect(firstEngine.setOutputGain).toHaveBeenLastCalledWith(1)
     expect(secondEngine.setOutputGain).toHaveBeenLastCalledWith(0)
 
-    firstEngine.start.mockClear()
-    secondEngine.start.mockClear()
-
     await dispatchSourceKeydown(wrapper.get<HTMLTextAreaElement>('textarea').element, {
       key: 'Enter',
       ctrlKey: true,
     })
 
-    expect(firstEngine.start).toHaveBeenCalledTimes(1)
-    expect(secondEngine.start).toHaveBeenCalledTimes(1)
+    expect(wrapper.get('.play-pause-button').text()).toContain('Pause')
   })
 
   it('shows tabs in embed mode for shared multi-tab projects', async () => {
