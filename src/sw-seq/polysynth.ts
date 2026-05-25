@@ -67,8 +67,12 @@ export class PolySynth {
     let oscillator: T | null = null
     let startTime = NaN
 
-    const { attack: attackTime, decay: decayTime, sustain: sustainLevel, release: releaseTime } =
-      envelope
+    const {
+      attack: attackTime,
+      decay: decayTime,
+      sustain: sustainLevel,
+      release: releaseTime,
+    } = envelope
 
     const noteOn = (time: number) => {
       // Loops can cause note-ons to unpair from note-offs. Release previous resources.

@@ -2,7 +2,9 @@ import { UnisonOscillator, type UnisonOscillatorOptions } from 'aperiodic-oscill
 
 type OscillatorLike = OscillatorNode | UnisonOscillator
 
-class EnvelopedOscillatorBase<TOscillator extends OscillatorLike> implements OscillatorNode, GainNode {
+class EnvelopedOscillatorBase<TOscillator extends OscillatorLike>
+  implements OscillatorNode, GainNode
+{
   protected oscillator: TOscillator
   protected gainNode: GainNode
 
