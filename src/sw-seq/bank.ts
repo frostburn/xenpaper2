@@ -1,4 +1,4 @@
-import { EnvelopedOscillator } from './nodes'
+import { EnvelopedOscillator, EnvelopedUnison } from './nodes'
 
 /**
  * Bank of re-usable enveloped oscillator nodes.
@@ -11,11 +11,13 @@ export class Bank {
   private maxPolyphony: number
   // Negative age indicates that the node is reserved
   private oscillators: { node: EnvelopedOscillator; age: number }[]
+  private unisons: { node: EnvelopedUnison; age: number }[]
 
   constructor(context: AudioContext, maxPolyphony = 32) {
     this.context = context
     this.maxPolyphony = maxPolyphony
     this.oscillators = []
+    this.unisons = []
   }
 
   allocateOscillator() {
@@ -55,11 +57,64 @@ export class Bank {
     })
   }
 
+  allocateUnison() {
+    if (this.unisons.length < this.maxPolyphony) {
+      const osc = {
+        node: new EnvelopedUnison(this.context, { spread: 5, numberOfVoices: 3 }, 'detune'),
+        age: -1,
+      }
+      osc.node.start(this.context.currentTime)
+      this.unisons.push(osc)
+      return osc.node
+    }
+    const maxAge = this.unisons.reduce((a, b) => Math.max(a, b.age), -1)
+    if (maxAge < 0) {
+      console.warn('Maximum polyphony reached.')
+      return null
+    }
+    const osc = this.unisons.find((o) => o.age === maxAge)
+    if (!osc) {
+      return null
+    }
+    osc.age = -1
+    osc.node.spread.cancelScheduledValues(this.context.currentTime)
+    osc.node.detune.cancelScheduledValues(this.context.currentTime)
+    osc.node.frequency.cancelScheduledValues(this.context.currentTime)
+    osc.node.gain.cancelScheduledValues(this.context.currentTime)
+    osc.node.gain.setValueAtTime(0, this.context.currentTime)
+    osc.node.disconnect()
+    return osc.node
+  }
+
+  freeUnison(node: EnvelopedUnison) {
+    const osc = this.unisons.find((o) => o.node === node)
+    if (osc === undefined) {
+      throw new Error('Attempting to free unallocated unison oscillator.')
+    }
+    osc.age = 0
+    this.unisons.forEach((o) => {
+      if (o.age >= 0) {
+        o.age++
+      }
+    })
+  }
+
   stop() {
     this.oscillators.forEach((o) => {
       o.node.detune.cancelScheduledValues(this.context.currentTime)
       o.node.frequency.cancelScheduledValues(this.context.currentTime)
       o.node.gain.cancelScheduledValues(this.context.currentTime)
+      o.node.gain.setValueAtTime(0, this.context.currentTime)
+      o.node.disconnect()
+      o.age = 1
+    })
+
+    this.unisons.forEach((o) => {
+      o.node.spread.cancelScheduledValues(this.context.currentTime)
+      o.node.detune.cancelScheduledValues(this.context.currentTime)
+      o.node.frequency.cancelScheduledValues(this.context.currentTime)
+      o.node.gain.cancelScheduledValues(this.context.currentTime)
+      o.node.gain.setValueAtTime(0, this.context.currentTime)
       o.node.disconnect()
       o.age = 1
     })

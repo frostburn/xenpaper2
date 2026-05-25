@@ -1,11 +1,11 @@
 import type { Bank } from './bank'
-import type { EnvelopedOscillator } from './nodes'
+import type { EnvelopedOscillator, EnvelopedUnison } from './nodes'
 
 const TIME_CONSTANT = 0.5
 
 export type SynthParams = {
   velocity: number
-  oscillator: { type: OscillatorType }
+  oscillator: { type: OscillatorType; unison: boolean }
   envelope: {
     attack: number
     decay: number
@@ -31,11 +31,12 @@ export class PolySynth {
   }
 
   trigger(frequency: number, params: SynthParams) {
-    let oscillator: EnvelopedOscillator | null = null
+    let oscillator: EnvelopedOscillator | EnvelopedUnison | null = null
 
     let startTime = NaN
     const velocity = params.velocity
     const type = params.oscillator.type
+    const unison = params.oscillator.unison
     const attackTime = params.envelope.attack
     const decayTime = params.envelope.decay
     const sustainLevel = params.envelope.sustain
@@ -43,9 +44,12 @@ export class PolySynth {
 
     const noteOn = (time: number) => {
       // Loops can cause note-ons to unpair from note-offs. Release previous resources.
-      if (oscillator !== null) this.bank.freeOscillator(oscillator)
+      if (oscillator !== null)
+        void (unison
+          ? this.bank.freeUnison(oscillator as unknown as EnvelopedUnison)
+          : this.bank.freeOscillator(oscillator as unknown as EnvelopedOscillator))
 
-      oscillator = this.bank.allocateOscillator()
+      oscillator = unison ? this.bank.allocateUnison() : this.bank.allocateOscillator()
       if (oscillator === null) return
 
       startTime = time
@@ -83,7 +87,9 @@ export class PolySynth {
       if (releaseTime <= 0) oscillator.gain.setValueAtTime(0, endTime)
       else oscillator.gain.setTargetAtTime(0, endTime, releaseTime * TIME_CONSTANT)
 
-      this.bank.freeOscillator(oscillator)
+      void (unison
+        ? this.bank.freeUnison(oscillator as unknown as EnvelopedUnison)
+        : this.bank.freeOscillator(oscillator as unknown as EnvelopedOscillator))
 
       // Loops can cause note-offs to unpair from note-ons. Prevent double release.
       oscillator = null

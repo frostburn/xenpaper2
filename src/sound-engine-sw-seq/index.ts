@@ -5,7 +5,17 @@ import { PolySynth, type SynthParams } from '../sw-seq/polysynth'
 import type { Transport } from '../sw-seq/transport'
 
 const OSC_VOLUME = 0.125
-const OSC_TYPES = ['sine', 'square', 'triangle', 'sawtooth'] as const
+const BASIC_OSC_TYPES = ['sine', 'square', 'triangle', 'sawtooth'] as const
+const OSC_TYPES = [
+  'sine',
+  'square',
+  'triangle',
+  'sawtooth',
+  'fatsine',
+  'fatsquare',
+  'fattriangle',
+  'fatsawtooth',
+] as const
 
 type SoundEngineOscillatorType = (typeof OSC_TYPES)[number]
 type SoundEngineOscParam = { type: 'osc'; osc: SoundEngineOscillatorType }
@@ -27,6 +37,9 @@ const isEnvParam = (value: unknown): value is SoundEngineEnvParam =>
   typeof value.d === 'number' &&
   typeof value.s === 'number' &&
   typeof value.r === 'number'
+
+const isBasicOsc = (value: SoundEngineOscillatorType): value is (typeof BASIC_OSC_TYPES)[number] =>
+  BASIC_OSC_TYPES.includes(value as (typeof BASIC_OSC_TYPES)[number])
 
 export class SoundEngineSwSeq extends SoundEngine {
   private endTime = 0
@@ -87,6 +100,7 @@ export class SoundEngineSwSeq extends SoundEngine {
       velocity: OSC_VOLUME,
       oscillator: {
         type: 'sine',
+        unison: false,
       },
       envelope: {
         attack: 0.01,
@@ -115,7 +129,14 @@ export class SoundEngineSwSeq extends SoundEngine {
       } else if (item.type === 'PARAM_TIME') {
         // No scheduling needed. Change the active patch directly.
         if (isOscParam(item.value)) {
-          patch.oscillator.type = item.value.osc
+          const type = item.value.osc
+          if (isBasicOsc(type)) {
+            patch.oscillator.type = type
+            patch.oscillator.unison = false
+          } else {
+            patch.oscillator.type = type.slice(3) as OscillatorType
+            patch.oscillator.unison = true
+          }
         }
         if (isEnvParam(item.value)) {
           patch.envelope = {
