@@ -8,6 +8,7 @@ const DEFAULT_SUSTAIN = 0.8
 const DEFAULT_RELEASE = 0.01
 
 export type SynthParams = {
+  velocity: number
   oscillator: {type: OscillatorType}
   envelope: {
     attack: number
@@ -37,6 +38,7 @@ export class PolySynth {
     let oscillator: EnvelopedOscillator | null = null
 
     let startTime = NaN;
+    const velocity = params.velocity
     const type = params.oscillator.type
     const attackTime = params.envelope.attack
     const decayTime = params.envelope.decay
@@ -57,11 +59,11 @@ export class PolySynth {
       oscillator.connect(this.destination)
       oscillator.gain.setValueAtTime(0, startTime)
 
-      if (attackTime <= 0) oscillator.gain.setValueAtTime(1, startTime)
-      else oscillator.gain.linearRampToValueAtTime(1, startTime + attackTime)
+      if (attackTime <= 0) oscillator.gain.setValueAtTime(velocity, startTime)
+      else oscillator.gain.linearRampToValueAtTime(velocity, startTime + attackTime)
 
-      if (decayTime <= 0) oscillator.gain.setValueAtTime(sustainLevel, startTime + attackTime)
-      else oscillator.gain.setTargetAtTime(sustainLevel, startTime + attackTime, decayTime * TIME_CONSTANT)
+      if (decayTime <= 0) oscillator.gain.setValueAtTime(sustainLevel * velocity, startTime + attackTime)
+      else oscillator.gain.setTargetAtTime(sustainLevel * velocity, startTime + attackTime, decayTime * TIME_CONSTANT)
     }
 
     const noteOff = (endTime: number) => {
@@ -71,7 +73,7 @@ export class PolySynth {
       // Manually hold linear ramp if needed
       if (endTime < startTime + attackTime) {
         // Note-offs can be called out-of-schedule so clamping is needed.
-        oscillator.gain.setValueAtTime(Math.max(0, (endTime - startTime) / attackTime), endTime)
+        oscillator.gain.setValueAtTime(Math.max(0, (endTime - startTime) / attackTime) * velocity, endTime)
       }
 
       if (releaseTime <= 0) oscillator.gain.setValueAtTime(0, endTime)

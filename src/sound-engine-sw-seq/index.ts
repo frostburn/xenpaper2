@@ -33,7 +33,7 @@ export class SoundEngineSwSeq extends SoundEngine {
     super()
     this.transport = transport
     this.destination = transport.context.createGain()
-    this.destination.gain.value = OSC_VOLUME
+    this.destination.gain.setValueAtTime(1, transport.context.currentTime)
     this.destination.connect(transport.context.destination)
     this.synth = new PolySynth(bank, this.destination)
   }
@@ -65,7 +65,7 @@ export class SoundEngineSwSeq extends SoundEngine {
   }
 
   setOutputGain(gain: number): void {
-    this.destination.gain.value = OSC_VOLUME * gain
+    this.destination.gain.setValueAtTime(gain, this.transport.context.currentTime)
   }
 
   async setScore(scoreTime: MoscScoreTime): Promise<void> {
@@ -74,6 +74,7 @@ export class SoundEngineSwSeq extends SoundEngine {
     this.endTime = scoreTime.lengthTime
 
     const patch: SynthParams = {
+      velocity: OSC_VOLUME,
       oscillator: {
         type: 'sine',
       },
