@@ -61,10 +61,6 @@ export type MoscScore = {
   lengthTime: number
 }
 
-export type MoscNoteTime = MoscNote
-export type MoscParamTime = MoscParam
-export type MoscEndTime = MoscEnd
-export type MoscItemTime = MoscItem
 
 //
 // utils
