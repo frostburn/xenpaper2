@@ -6,29 +6,28 @@ import type { Transport } from '../sw-seq/transport'
 
 const OSC_VOLUME = 0.125
 const BASIC_OSC_TYPES = ['sine', 'square', 'triangle', 'sawtooth'] as const
-const OSC_TYPES = [
-  'sine',
-  'square',
-  'triangle',
-  'sawtooth',
-  'fatsine',
-  'fatsquare',
-  'fattriangle',
-  'fatsawtooth',
-] as const
+const FAT_OSC_MAP = {
+  fatsine: 'sine',
+  fatsquare: 'square',
+  fattriangle: 'triangle',
+  fatsawtooth: 'sawtooth',
+} as const satisfies Record<string, OscillatorType>
+const OSC_TYPES = [...BASIC_OSC_TYPES, ...Object.keys(FAT_OSC_MAP)] as const
 
-type SoundEngineOscillatorType = (typeof OSC_TYPES)[number]
+type BasicOscillatorType = (typeof BASIC_OSC_TYPES)[number]
+type FatOscillatorType = keyof typeof FAT_OSC_MAP
+type SoundEngineOscillatorType = BasicOscillatorType | FatOscillatorType
 type SoundEngineOscParam = { type: 'osc'; osc: SoundEngineOscillatorType }
 type SoundEngineEnvParam = { type: 'env'; a: number; d: number; s: number; r: number }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null
 
+const isOscillatorType = (value: unknown): value is SoundEngineOscillatorType =>
+  typeof value === 'string' && OSC_TYPES.includes(value as SoundEngineOscillatorType)
+
 const isOscParam = (value: unknown): value is SoundEngineOscParam =>
-  isRecord(value) &&
-  value.type === 'osc' &&
-  typeof value.osc === 'string' &&
-  OSC_TYPES.includes(value.osc as SoundEngineOscillatorType)
+  isRecord(value) && value.type === 'osc' && isOscillatorType(value.osc)
 
 const isEnvParam = (value: unknown): value is SoundEngineEnvParam =>
   isRecord(value) &&
@@ -38,8 +37,8 @@ const isEnvParam = (value: unknown): value is SoundEngineEnvParam =>
   typeof value.s === 'number' &&
   typeof value.r === 'number'
 
-const isBasicOsc = (value: SoundEngineOscillatorType): value is (typeof BASIC_OSC_TYPES)[number] =>
-  BASIC_OSC_TYPES.includes(value as (typeof BASIC_OSC_TYPES)[number])
+const isBasicOsc = (value: SoundEngineOscillatorType): value is BasicOscillatorType =>
+  BASIC_OSC_TYPES.includes(value as BasicOscillatorType)
 
 export class SoundEngineSwSeq extends SoundEngine {
   private endTime = 0
@@ -134,7 +133,7 @@ export class SoundEngineSwSeq extends SoundEngine {
             patch.oscillator.type = type
             patch.oscillator.unison = false
           } else {
-            patch.oscillator.type = type.slice(3) as OscillatorType
+            patch.oscillator.type = FAT_OSC_MAP[type]
             patch.oscillator.unison = true
           }
         }
