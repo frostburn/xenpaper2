@@ -18,7 +18,9 @@ export class Transport {
   readonly context: AudioContext
   active: boolean
   loop: boolean
-  onended = () => {/* empty */}
+  onended = () => {
+    /* empty */
+  }
 
   private interval: number
   private _lookAhead: number
@@ -115,14 +117,20 @@ export class Transport {
       if (start > end) {
         // Check from start to boundary if needed (intentionally include boundary)
         if (event.when >= start && event.when <= this._loopEnd) {
-          return (this.startTime + this._lookAhead + event.when + loopCount * loopLength) / this.context.sampleRate
+          return (
+            (this.startTime + this._lookAhead + event.when + loopCount * loopLength) /
+            this.context.sampleRate
+          )
         }
         start = this._loopStart
       }
     }
     if (event.when < start) return NaN
     if (event.when >= end) return NaN
-    return (this.startTime + this._lookAhead + event.when + loopCount * loopLength) / this.context.sampleRate
+    return (
+      (this.startTime + this._lookAhead + event.when + loopCount * loopLength) /
+      this.context.sampleRate
+    )
   }
 
   private onInterval() {
@@ -182,7 +190,7 @@ export class Transport {
 
   scheduleParametric(callback: (time: number) => void, when: number) {
     const id = this.nextEventId++
-    this.parametricEventsById.set(id, { id, callback, when: round(when * this.context.sampleRate)})
+    this.parametricEventsById.set(id, { id, callback, when: round(when * this.context.sampleRate) })
 
     return id
   }

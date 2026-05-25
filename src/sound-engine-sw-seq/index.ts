@@ -15,10 +15,18 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null
 
 const isOscParam = (value: unknown): value is SoundEngineOscParam =>
-  isRecord(value) && value.type === 'osc' && typeof value.osc === 'string' && OSC_TYPES.includes(value.osc as SoundEngineOscillatorType)
+  isRecord(value) &&
+  value.type === 'osc' &&
+  typeof value.osc === 'string' &&
+  OSC_TYPES.includes(value.osc as SoundEngineOscillatorType)
 
 const isEnvParam = (value: unknown): value is SoundEngineEnvParam =>
-  isRecord(value) && value.type === 'env' && typeof value.a === 'number' && typeof value.d === 'number' && typeof value.s === 'number' && typeof value.r === 'number'
+  isRecord(value) &&
+  value.type === 'env' &&
+  typeof value.a === 'number' &&
+  typeof value.d === 'number' &&
+  typeof value.s === 'number' &&
+  typeof value.r === 'number'
 
 export class SoundEngineSwSeq extends SoundEngine {
   private endTime = 0
@@ -48,7 +56,9 @@ export class SoundEngineSwSeq extends SoundEngine {
     this.noteOffs.length = 0
   }
 
-  endPosition(): number { return this.endTime }
+  endPosition(): number {
+    return this.endTime
+  }
 
   dispose(): void {
     this.clearScheduledEvents()

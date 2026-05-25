@@ -2,14 +2,9 @@ import type { Bank, EnvelopedOscillator } from './bank'
 
 const TIME_CONSTANT = 0.5
 
-const DEFAULT_ATTACK = 0.01
-const DEFAULT_DECAY = 0.3
-const DEFAULT_SUSTAIN = 0.8
-const DEFAULT_RELEASE = 0.01
-
 export type SynthParams = {
   velocity: number
-  oscillator: {type: OscillatorType}
+  oscillator: { type: OscillatorType }
   envelope: {
     attack: number
     decay: number
@@ -37,7 +32,7 @@ export class PolySynth {
   trigger(frequency: number, params: SynthParams) {
     let oscillator: EnvelopedOscillator | null = null
 
-    let startTime = NaN;
+    let startTime = NaN
     const velocity = params.velocity
     const type = params.oscillator.type
     const attackTime = params.envelope.attack
@@ -47,8 +42,7 @@ export class PolySynth {
 
     const noteOn = (time: number) => {
       // Loops can cause note-ons to unpair from note-offs. Release previous resources.
-      if (oscillator !== null)
-        this.bank.freeOscillator(oscillator)
+      if (oscillator !== null) this.bank.freeOscillator(oscillator)
 
       oscillator = this.bank.allocateOscillator()
       if (oscillator === null) return
@@ -62,8 +56,14 @@ export class PolySynth {
       if (attackTime <= 0) oscillator.gain.setValueAtTime(velocity, startTime)
       else oscillator.gain.linearRampToValueAtTime(velocity, startTime + attackTime)
 
-      if (decayTime <= 0) oscillator.gain.setValueAtTime(sustainLevel * velocity, startTime + attackTime)
-      else oscillator.gain.setTargetAtTime(sustainLevel * velocity, startTime + attackTime, decayTime * TIME_CONSTANT)
+      if (decayTime <= 0)
+        oscillator.gain.setValueAtTime(sustainLevel * velocity, startTime + attackTime)
+      else
+        oscillator.gain.setTargetAtTime(
+          sustainLevel * velocity,
+          startTime + attackTime,
+          decayTime * TIME_CONSTANT,
+        )
     }
 
     const noteOff = (endTime: number) => {
@@ -73,7 +73,10 @@ export class PolySynth {
       // Manually hold linear ramp if needed
       if (endTime < startTime + attackTime) {
         // Note-offs can be called out-of-schedule so clamping is needed.
-        oscillator.gain.setValueAtTime(Math.max(0, (endTime - startTime) / attackTime) * velocity, endTime)
+        oscillator.gain.setValueAtTime(
+          Math.max(0, (endTime - startTime) / attackTime) * velocity,
+          endTime,
+        )
       }
 
       if (releaseTime <= 0) oscillator.gain.setValueAtTime(0, endTime)

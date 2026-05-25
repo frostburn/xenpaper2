@@ -56,7 +56,7 @@ const createTransportContext = (): AudioContext => {
     createOscillator: () => ({
       detune: { cancelScheduledValues: () => undefined },
       frequency: { setValueAtTime: () => undefined, cancelScheduledValues: () => undefined },
-      type: "sine",
+      type: 'sine',
       connect: () => undefined,
       start: () => undefined,
       stop: () => undefined,
@@ -605,8 +605,9 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   }
 
   const syncPlaybackPosition = (): void => {
-    playbackPositionTime.value =
-      swSeqTransport.active ? swSeqTransport.position - swSeqTransport.lookAhead : -1
+    playbackPositionTime.value = swSeqTransport.active
+      ? swSeqTransport.position - swSeqTransport.lookAhead
+      : -1
   }
 
   const resetPlaybackPosition = (): void => {

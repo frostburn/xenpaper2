@@ -28,7 +28,6 @@ const soundEngineMock = vi.hoisted(() => ({
   instances: [] as MockSoundEngine[],
 }))
 
-
 vi.mock('../sw-seq/transport', () => ({
   Transport: class {
     seconds = 0
@@ -38,12 +37,22 @@ vi.mock('../sw-seq/transport', () => ({
     state: 'started' | 'stopped' = 'stopped'
     context = {}
     constructor() {}
-    start() { this.state = 'started' }
-    stop() { this.state = 'stopped' }
-    pause() { this.state = 'stopped' }
+    start() {
+      this.state = 'started'
+    }
+    stop() {
+      this.state = 'stopped'
+    }
+    pause() {
+      this.state = 'stopped'
+    }
     clear() {}
-    scheduleParametric() { return 1 }
-    scheduleEvent() { return 1 }
+    scheduleParametric() {
+      return 1
+    }
+    scheduleEvent() {
+      return 1
+    }
   },
 }))
 

@@ -4,7 +4,7 @@ SW Seq is a basic audio sequencer. The scheduled cousin of [sw-synth](https://gi
 
 ## Design
 
-Audio events are scheduled based on `.currentTime` of an AudioContext. This library only handles look-ahead and cleanup in case of a premature stop. Tempo changes are assumed to be *baked in* and there's no way to speed up or slow down what has already been scheduled.
+Audio events are scheduled based on looking slightly ahead of `.currentTime` of an AudioContext. This library only handles loops and cleanup in case of a premature stop. Tempo changes are assumed to be _baked in_ and there's no way to speed up or slow down what has already been scheduled.
 
 ## Motivation
 
