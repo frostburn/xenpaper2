@@ -44,6 +44,10 @@ export class PolySynth {
     const releaseTime = params.envelope.release
 
     const noteOn = (time: number) => {
+      // Loops can cause note-ons to unpair from note-offs. Release previous resources.
+      if (oscillator !== null)
+        this.bank.freeOscillator(oscillator)
+
       oscillator = this.bank.allocateOscillator()
       if (oscillator === null) return
 
@@ -66,13 +70,17 @@ export class PolySynth {
       oscillator.gain.cancelScheduledValues(endTime)
       // Manually hold linear ramp if needed
       if (endTime < startTime + attackTime) {
-        oscillator.gain.setValueAtTime((endTime - startTime) / attackTime, endTime)
+        // Note-offs can be called out-of-schedule so clamping is needed.
+        oscillator.gain.setValueAtTime(Math.max(0, (endTime - startTime) / attackTime), endTime)
       }
 
       if (releaseTime <= 0) oscillator.gain.setValueAtTime(0, endTime)
       else oscillator.gain.setTargetAtTime(0, endTime, releaseTime * TIME_CONSTANT)
 
       this.bank.freeOscillator(oscillator)
+
+      // Loops can cause note-offs to unpair from note-ons. Prevent double release.
+      oscillator = null
     }
 
     return { noteOn, noteOff }

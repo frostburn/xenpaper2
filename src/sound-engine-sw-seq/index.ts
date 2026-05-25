@@ -23,6 +23,7 @@ const isEnvParam = (value: unknown): value is SoundEngineEnvParam =>
 export class SoundEngineSwSeq extends SoundEngine {
   private endTime = 0
   private activeNoteEvents = new Set<MoscNoteTime>()
+  private noteOffs: Array<(time: number) => void> = []
   private destination: GainNode
   private synth: PolySynth
   private transport: Transport
@@ -40,6 +41,11 @@ export class SoundEngineSwSeq extends SoundEngine {
   private clearScheduledEvents(): void {
     this.transportEventIds.forEach((_, id) => this.transport.clear(id))
     this.transportEventIds.clear()
+    for (const callback of this.noteOffs) {
+      // Just release, scheduling be damned
+      callback(this.transport.context.currentTime)
+    }
+    this.noteOffs.length = 0
   }
 
   endPosition(): number { return this.endTime }
@@ -52,6 +58,10 @@ export class SoundEngineSwSeq extends SoundEngine {
   cutActiveNotes(_time?: number): void {
     this.activeNoteEvents.forEach((note) => this._triggerEvent('note', note, false))
     this.activeNoteEvents.clear()
+    for (const callback of this.noteOffs) {
+      // Just release, scheduling be damned
+      callback(this.transport.context.currentTime)
+    }
   }
 
   setOutputGain(gain: number): void {
@@ -90,6 +100,7 @@ export class SoundEngineSwSeq extends SoundEngine {
         }, item.timeEnd)
         this.transportEventIds.set(noteStartId, true)
         this.transportEventIds.set(noteEndId, true)
+        this.noteOffs.push(noteHandle.noteOff)
       } else if (item.type === 'PARAM_TIME') {
         // No scheduling needed. Change the active patch directly.
         if (isOscParam(item.value)) {

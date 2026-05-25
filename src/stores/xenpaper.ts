@@ -284,7 +284,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   const pauseAllSoundEngines = async (time?: number): Promise<void> => {
     swSeqTransport.stop?.()
     scoreEngines.value.forEach((engine) => engine.soundEngine.cutActiveNotes(time))
-    swSeqBank.stop?.()
+    // swSeqBank.stop?.()
   }
 
   const clearScoreEngine = async (engine: ScoreEngine): Promise<void> => {
