@@ -1,4 +1,5 @@
-import type { Bank, EnvelopedOscillator } from './bank'
+import type { Bank } from './bank'
+import type { EnvelopedOscillator } from './nodes'
 
 const TIME_CONSTANT = 0.5
 
