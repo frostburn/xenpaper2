@@ -49,14 +49,14 @@ export type MoscEndTime = {
 
 export type MoscItem = MoscNote | MoscTempo | MoscParam | MoscEnd
 
-export type MoscScore = {
+export type MoscBeatScore = {
   sequence: MoscItem[]
   lengthTime: number
 }
 
 export type MoscItemTime = MoscNoteTime | MoscParamTime | MoscEndTime
 
-export type MoscScoreTime = {
+export type MoscScore = {
   sequence: MoscItemTime[]
   lengthTime: number
 }
@@ -169,7 +169,7 @@ export const timeToTime = (items: MoscItem[]): ((time: number) => number) => {
   }
 }
 
-export const scoreToTime = (score: MoscScore): MoscScoreTime => {
+export const scoreToTime = (score: MoscBeatScore): MoscScore => {
   const thisTimeToTime = timeToTime(score.sequence)
 
   const sequence: MoscItemTime[] = sortByTime(score.sequence)
@@ -218,7 +218,7 @@ type SoundEngineNoteEventCallback = (noteTime: MoscNoteTime, on: boolean) => voi
 type SoundEngineEventCallbackCancel = () => void
 
 export class SoundEngine {
-  scoreTime?: MoscScoreTime
+  score?: MoscScore
 
   endPosition(): number {
     return 0
@@ -226,7 +226,7 @@ export class SoundEngine {
 
   cutActiveNotes(_time?: number): void {}
 
-  async setScore(_scoreTime: MoscScoreTime): Promise<void> {}
+  async setScore(_score: MoscScore): Promise<void> {}
 
   setOutputGain(_gain: number): void {}
 

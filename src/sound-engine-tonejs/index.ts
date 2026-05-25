@@ -1,4 +1,4 @@
-import type { MoscScoreTime, MoscNoteTime } from '../mosc'
+import type { MoscScore, MoscNoteTime } from '../mosc'
 import { SoundEngine } from '../mosc'
 import * as Tone from 'tone'
 import type { PolySynth, Synth, SynthOptions, ToneOscillatorType } from 'tone'
@@ -161,17 +161,17 @@ export class SoundEngineTonejs extends SoundEngine {
     this.getSynth().volume.value = gain <= 0 ? -Infinity : 20 * Math.log10(gain)
   }
 
-  async setScore(scoreTime: MoscScoreTime): Promise<void> {
-    this.scoreTime = scoreTime
+  async setScore(score: MoscScore): Promise<void> {
+    this.score = score
 
     // clear this engine's previous notes from tone transport without
     // disturbing other score engines that share the same transport clock
     this._clearScheduledEvents()
-    this._endTime = scoreTime.lengthTime
+    this._endTime = score.lengthTime
     this._releaseActiveNotesIfSynthExists()
 
     // add all new notes to tone transport
-    this.scoreTime.sequence.forEach((item): void => {
+    this.score.sequence.forEach((item): void => {
       if (item.type === 'NOTE_TIME') {
         const noteTime = item
         const noteStartEventId = Tone.Transport.schedule((time: number) => {

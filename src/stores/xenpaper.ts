@@ -34,7 +34,7 @@ import {
 } from '../utils'
 
 const DEFAULT_LOCATION_HREF = 'http://localhost/'
-const EMPTY_SCORE_TIME = { sequence: [], lengthTime: 0 }
+const EMPTY_SCORE = { sequence: [], lengthTime: 0 }
 const TAB_TITLE_LENGTH = 18
 const MAX_DEAD_SOURCE_TABS = 10
 
@@ -74,7 +74,7 @@ function useScoreEngine(id: number, transport: Transport, bank: Bank) {
     }
 
     soundEngine.cutActiveNotes()
-    await soundEngine.setScore(source.scoreTime)
+    await soundEngine.setScore(source.score)
     if (version !== parseVersion) return false
 
     scoreLoaded.value = true
@@ -265,7 +265,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
 
   const clearScoreEngine = async (engine: ScoreEngine): Promise<void> => {
     engine.soundEngine.cutActiveNotes()
-    await engine.soundEngine.setScore(EMPTY_SCORE_TIME)
+    await engine.soundEngine.setScore(EMPTY_SCORE)
     engine.scoreLoaded.value = false
   }
 

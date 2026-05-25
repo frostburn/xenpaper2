@@ -79,7 +79,7 @@ export const parseAndProcessSourceCode = (source: string): ParsedSource => {
       error: '',
       playable: true,
       initialRulerState,
-      scoreTime: scoreToTime(score),
+      score: scoreToTime(score),
     }
   } catch (error) {
     const chars: CharData[] = []

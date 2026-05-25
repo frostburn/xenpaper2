@@ -1,4 +1,4 @@
-import type { MoscNoteTime, MoscScoreTime } from '../mosc'
+import type { MoscNoteTime, MoscScore } from '../mosc'
 import { SoundEngine } from '../mosc'
 import type { Bank } from '../sw-seq/bank'
 import { PolySynth, type SynthParams } from '../sw-seq/polysynth'
@@ -78,10 +78,10 @@ export class SoundEngineSwSeq extends SoundEngine {
     this.destination.gain.setValueAtTime(gain, this.transport.context.currentTime)
   }
 
-  async setScore(scoreTime: MoscScoreTime): Promise<void> {
-    this.scoreTime = scoreTime
+  async setScore(score: MoscScore): Promise<void> {
+    this.score = score
     this.clearScheduledEvents()
-    this.endTime = scoreTime.lengthTime
+    this.endTime = score.lengthTime
 
     const patch: SynthParams = {
       velocity: OSC_VOLUME,
@@ -96,7 +96,7 @@ export class SoundEngineSwSeq extends SoundEngine {
       },
     }
 
-    scoreTime.sequence.forEach((item) => {
+    score.sequence.forEach((item) => {
       if (item.type === 'NOTE_TIME') {
         const noteHandle = this.synth.trigger(item.hz, patch)
         const noteStartId = this.transport.scheduleParametric((time) => {
