@@ -40,38 +40,9 @@ const MAX_DEAD_SOURCE_TABS = 10
 
 type ScoreEngine = ReturnType<typeof useScoreEngine>
 
-const createTransportContext = (): AudioContext => {
-  if (typeof AudioContext !== 'undefined') {
-    return new AudioContext()
-  }
-
-  return {
-    currentTime: 0,
-    createConstantSource: () => ({
-      onended: null,
-      start: () => undefined,
-      stop: () => undefined,
-    }),
-    createGain: () => ({ gain: { value: 0 }, connect: () => undefined }),
-    createOscillator: () => ({
-      detune: { cancelScheduledValues: () => undefined },
-      frequency: { setValueAtTime: () => undefined, cancelScheduledValues: () => undefined },
-      type: 'sine',
-      connect: () => undefined,
-      start: () => undefined,
-      stop: () => undefined,
-    }),
-    destination: {} as AudioDestinationNode,
-    resume: async () => undefined,
-  } as unknown as AudioContext
-}
-
-const swSeqTransport = new Transport(createTransportContext())
-const swSeqBank = new Bank(swSeqTransport.context)
-
 // Coupling of a sound engine to a source code with history
-function useScoreEngine(id: number) {
-  const soundEngine = new SoundEngineSwSeq(swSeqTransport, swSeqBank)
+function useScoreEngine(id: number, transport: Transport, bank: Bank) {
+  const soundEngine = new SoundEngineSwSeq(transport, bank)
   const sourceCode = ref('')
   const sourceHistory = ref(createSourceHistory(''))
   const scoreLoaded = ref(false)
@@ -134,7 +105,7 @@ function useScoreEngine(id: number) {
   }
 
   const preparePlayableScore = async (): Promise<boolean> => {
-    if (!scoreLoaded.value || swSeqTransport.position >= soundEngine.endPosition()) {
+    if (!scoreLoaded.value || transport.position >= soundEngine.endPosition()) {
       await updateParsedSourceCode()
     }
 
@@ -182,10 +153,14 @@ const getSourceTabTitle = (source: string, index: number): string => {
 }
 
 export const useXenpaperStore = defineStore('xenpaper', () => {
+  const audioContext = new AudioContext()
+  const swSeqTransport = new Transport(audioContext)
+  const swSeqBank = new Bank(audioContext)
+
   const isPlaying = ref(false)
   const isLooping = ref(false)
   const playbackPositionTime = ref(-1)
-  const scoreEngines = shallowRef<ScoreEngine[]>([useScoreEngine(1)])
+  const scoreEngines = shallowRef<ScoreEngine[]>([useScoreEngine(1, swSeqTransport, swSeqBank)])
   const activeScoreEngineIndex = ref(0)
   const isEmbedMode = ref(false)
   const sidebarMode = ref<SidebarMode>('info')
@@ -315,7 +290,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   }
 
   const createScoreEngineFromSource = (source: string, id: number): ScoreEngine => {
-    const engine = useScoreEngine(id)
+    const engine = useScoreEngine(id, swSeqTransport, swSeqBank)
     engine.sourceHistory.value = createSourceHistory(source)
     engine.sourceCode.value = source
 
@@ -470,7 +445,10 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
       await pauseAllSoundEngines()
     }
 
-    scoreEngines.value = [...scoreEngines.value, useScoreEngine(nextScoreEngineId++)]
+    scoreEngines.value = [
+      ...scoreEngines.value,
+      useScoreEngine(nextScoreEngineId++, swSeqTransport, swSeqBank),
+    ]
     activeScoreEngineIndex.value = scoreEngines.value.length - 1
     startSoundEngineListeners()
     syncScoreEngineGains()
@@ -577,6 +555,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     if (!playableEngines.length) return
 
     const startTime = activeScoreEngine.value.getSelectedLineStartTime()
+    audioContext.resume?.()
     swSeqTransport.start?.(startTime)
     isPlaying.value = true
   }

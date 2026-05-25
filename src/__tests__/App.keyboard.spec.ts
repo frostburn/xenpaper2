@@ -24,6 +24,35 @@ type MockSoundEngine = {
   dispose: MockFn<() => void>
 }
 
+vi.stubGlobal(
+  'AudioContext',
+  class MockAudioContext {
+    currentTime = 0
+    createConstantSource() {
+      return {
+        onended: null,
+        start: () => undefined,
+        stop: () => undefined,
+      }
+    }
+    createGain() {
+      return { gain: { value: 0 }, connect: () => undefined }
+    }
+    createOscillator() {
+      return {
+        detune: { cancelScheduledValues: () => undefined },
+        frequency: { setValueAtTime: () => undefined, cancelScheduledValues: () => undefined },
+        type: 'sine',
+        connect: () => undefined,
+        start: () => undefined,
+        stop: () => undefined,
+      }
+    }
+    destination = {} as AudioDestinationNode
+    resume = async () => undefined
+  } as unknown as AudioContext,
+)
+
 const soundEngineMock = vi.hoisted(() => ({
   instances: [] as MockSoundEngine[],
 }))
