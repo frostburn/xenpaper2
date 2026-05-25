@@ -35,11 +35,14 @@ export class EnvelopedOscillator implements OscillatorNode, GainNode {
   connect(destinationNode: AudioNode, output?: number, input?: number): AudioNode
   connect(destinationParam: AudioParam, output?: number): void
   connect(destination: AudioNode | AudioParam, output?: number, input?: number) {
-    if (destination instanceof AudioParam) {
-      this.gainNode.connect(destination, output ?? 0)
-      return
+    if (input === undefined) {
+      const connectNodeOrParam = this.gainNode.connect as (
+        destination: AudioNode | AudioParam,
+        output?: number,
+      ) => void | AudioNode
+      return connectNodeOrParam.call(this.gainNode, destination, output)
     }
-    return this.gainNode.connect(destination, output, input)
+    return this.gainNode.connect(destination as AudioNode, output, input)
   }
 
   disconnect(output?: number): void
@@ -50,13 +53,22 @@ export class EnvelopedOscillator implements OscillatorNode, GainNode {
     output?: number,
     input?: number,
   ) {
-    if (
-      destinationOrOutput === undefined ||
-      typeof destinationOrOutput === 'number' ||
-      destinationOrOutput instanceof AudioNode ||
-      destinationOrOutput instanceof AudioParam
-    ) {
-      ;(this.gainNode.disconnect as any)(destinationOrOutput, output, input)
+    const disconnectNodeOrParam = this.gainNode.disconnect as (
+      destination: AudioNode | AudioParam,
+      output?: number,
+    ) => void
+    if (destinationOrOutput === undefined) {
+      this.gainNode.disconnect()
+    } else if (typeof destinationOrOutput === 'number') {
+      this.gainNode.disconnect(destinationOrOutput)
+    } else if (input === undefined) {
+      disconnectNodeOrParam.call(this.gainNode, destinationOrOutput, output)
+    } else {
+      if (output === undefined) {
+        this.gainNode.disconnect(destinationOrOutput as AudioNode)
+      } else {
+        this.gainNode.disconnect(destinationOrOutput as AudioNode, output, input)
+      }
     }
   }
 
@@ -112,13 +124,13 @@ export class EnvelopedOscillator implements OscillatorNode, GainNode {
     return this.oscillator.onended
   }
 
-  set onended(value: ((this: AudioScheduledSourceNode, ev: Event) => any) | null) {
+  set onended(value: ((this: AudioScheduledSourceNode, ev: Event) => unknown) | null) {
     this.oscillator.onended = value
   }
 
   addEventListener<K extends keyof AudioScheduledSourceNodeEventMap>(
     type: K,
-    listener: (this: AudioScheduledSourceNode, ev: AudioScheduledSourceNodeEventMap[K]) => any,
+    listener: (this: AudioScheduledSourceNode, ev: AudioScheduledSourceNodeEventMap[K]) => unknown,
     options?: boolean | AddEventListenerOptions,
   ): void
   addEventListener(
@@ -136,7 +148,7 @@ export class EnvelopedOscillator implements OscillatorNode, GainNode {
 
   removeEventListener<K extends keyof AudioScheduledSourceNodeEventMap>(
     type: K,
-    listener: (this: AudioScheduledSourceNode, ev: AudioScheduledSourceNodeEventMap[K]) => any,
+    listener: (this: AudioScheduledSourceNode, ev: AudioScheduledSourceNodeEventMap[K]) => unknown,
     options?: boolean | EventListenerOptions,
   ): void
   removeEventListener(
