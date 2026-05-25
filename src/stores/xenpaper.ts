@@ -73,6 +73,7 @@ function useScoreEngine(id: number, transport: Transport, bank: Bank) {
       return false
     }
 
+    soundEngine.cutActiveNotes()
     await soundEngine.setScore(source.scoreTime)
     if (version !== parseVersion) return false
 
