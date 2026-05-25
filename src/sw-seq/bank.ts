@@ -1,5 +1,4 @@
 import { EnvelopedOscillator } from './nodes'
-export { EnvelopedOscillator } from './nodes'
 
 /**
  * Bank of re-usable enveloped oscillator nodes.
