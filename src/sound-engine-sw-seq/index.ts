@@ -1,4 +1,4 @@
-import type { MoscNoteTime, MoscScore } from '../mosc'
+import type { MoscNote, MoscScore } from '../mosc'
 import { SoundEngine } from '../mosc'
 import type { Bank } from '../sw-seq/bank'
 import { PolySynth, type SynthParams } from '../sw-seq/polysynth'
@@ -30,7 +30,7 @@ const isEnvParam = (value: unknown): value is SoundEngineEnvParam =>
 
 export class SoundEngineSwSeq extends SoundEngine {
   private endTime = 0
-  private activeNoteEvents = new Set<MoscNoteTime>()
+  private activeNoteEvents = new Set<MoscNote>()
   private noteOffs: Array<(time: number) => void> = []
   private destination: GainNode
   private synth: PolySynth

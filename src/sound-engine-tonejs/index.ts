@@ -1,4 +1,4 @@
-import type { MoscScore, MoscNoteTime } from '../mosc'
+import type { MoscScore, MoscNote } from '../mosc'
 import { SoundEngine } from '../mosc'
 import * as Tone from 'tone'
 import type { PolySynth, Synth, SynthOptions, ToneOscillatorType } from 'tone'
@@ -89,7 +89,7 @@ export const OSC_TYPES = flatMap(OSC_TYPES_EXPANDED, (type) => [
 export class SoundEngineTonejs extends SoundEngine {
   _started = false
   _endTime = 0
-  _activeNoteEvents = new Set<MoscNoteTime>()
+  _activeNoteEvents = new Set<MoscNote>()
   _transportEventIds: number[] = []
 
   _synth: PolySynth<Synth> | undefined
