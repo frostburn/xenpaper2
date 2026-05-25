@@ -13,13 +13,13 @@ import type {
 } from './grammar.generated'
 
 import type {
-  MoscScore,
-  MoscItem,
-  MoscNote,
-  MoscNoteTime,
+  MoscBeatScore,
+  MoscBeatItem,
+  MoscBeatNote,
   MoscTempo,
-  MoscParam,
-  MoscEnd,
+  MoscBeatParam,
+  MoscBeatEnd,
+  MoscNote,
 } from '../mosc'
 
 import { centsToRatio, octaveDivisionToRatio, timeToTime, ratioToCents } from '../mosc'
@@ -239,7 +239,7 @@ const isRatioChordPitchType = (pitch: ChordPitchType): pitch is RatioChordPitchT
   return pitch.type === 'RatioChordPitch'
 }
 
-const noteToMosc = (note: NoteType, context: Context): MoscNote[] => {
+const noteToMosc = (note: NoteType, context: Context): MoscBeatNote[] => {
   const timeProps = tailToTime(note.tail, context)
 
   // mutate ast node to add time
@@ -260,7 +260,7 @@ const noteToMosc = (note: NoteType, context: Context): MoscNote[] => {
   ]
 }
 
-const chordToMosc = (chord: ChordType | RatioChordType, context: Context): MoscNote[] => {
+const chordToMosc = (chord: ChordType | RatioChordType, context: Context): MoscBeatNote[] => {
   const { tail, pitches } = chord
   const chordPitches: ChordPitchType[] = pitches
   const timeProps = tailToTime(tail, context)
@@ -270,7 +270,7 @@ const chordToMosc = (chord: ChordType | RatioChordType, context: Context): MoscN
   times.push(arr)
   chord.time = arr
 
-  const pitchTypes: MoscNote[] = chordPitches.filter(isPitchType).map((pitch) => {
+  const pitchTypes: MoscBeatNote[] = chordPitches.filter(isPitchType).map((pitch) => {
     const hz = pitchToHz(pitch, context)
     const label = pitchToLabel(pitch, context)
 
@@ -291,7 +291,7 @@ const chordToMosc = (chord: ChordType | RatioChordType, context: Context): MoscN
 
   assertFinitePositive('Ratio denominator', firstDenominator)
 
-  const ratioPitchTypes: MoscNote[] = []
+  const ratioPitchTypes: MoscBeatNote[] = []
   const addRatioPitchType = (numerator: number): void => {
     ratioPitchTypes.push({
       type: 'NOTE_TIME',
@@ -448,7 +448,7 @@ const setScale = (setScale: SetScaleType, context: Context): void => {
   throw new Error(`Unknown scale type "${type}"`)
 }
 
-const setterToMosc = (setter: SetterType | DelimiterType, context: Context): MoscItem[] => {
+const setterToMosc = (setter: SetterType | DelimiterType, context: Context): MoscBeatItem[] => {
   const { type, delimiter } = setter
 
   if (delimiter) return []
@@ -546,7 +546,7 @@ type BuildingInitialRulerState = {
   highHz?: number
   rootHz?: number
   octaveSize?: number
-  plots: MoscNoteTime[][]
+  plots: MoscNote[][]
 }
 
 export type InitialRulerState = BuildingInitialRulerState & {
@@ -565,7 +565,7 @@ const setterToRulerState = (
 
   if (type === 'SetRulerPlot') {
     const newPlot = context.scale.map(
-      (ratio, i): MoscNoteTime => ({
+      (ratio, i): MoscNote => ({
         type: 'NOTE_TIME',
         time: context.time,
         timeEnd: context.time,
@@ -597,7 +597,7 @@ const setterToRulerState = (
 }
 
 export type Processed = {
-  score: MoscScore
+  score: MoscBeatScore
   initialRulerState: InitialRulerState
 }
 
@@ -614,7 +614,7 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
     lerp: false,
   }
 
-  const INITIAL_OSC: MoscParam = {
+  const INITIAL_OSC: MoscBeatParam = {
     type: 'PARAM_TIME',
     time: 0,
     value: {
@@ -623,7 +623,7 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
     },
   }
 
-  const INITIAL_ENV: MoscParam = {
+  const INITIAL_ENV: MoscBeatParam = {
     type: 'PARAM_TIME',
     time: 0,
     value: {
@@ -646,7 +646,7 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
     octaveSize: 2,
   }
 
-  const moscItems: MoscItem[] = []
+  const moscItems: MoscBeatItem[] = []
   let initialRulerState: BuildingInitialRulerState = {
     plots: [],
   }
@@ -719,7 +719,7 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
     {
       type: 'END_TIME',
       time: context.time,
-    } as MoscEnd,
+    } as MoscBeatEnd,
   ]
 
   // translate times from steps to ms

@@ -61,6 +61,11 @@ export type MoscScore = {
   lengthTime: number
 }
 
+export type MoscNoteTime = MoscNote
+export type MoscParamTime = MoscParam
+export type MoscEndTime = MoscEnd
+export type MoscItemTime = MoscItem
+
 //
 // utils
 //
@@ -140,7 +145,7 @@ export const timeToTime = (items: MoscBeatItem[]): ((time: number) => number) =>
   })
 
   const tempoItems: MoscTempo[] = items.filter(
-    (item: MoscItem): item is MoscTempo => item.type === 'TEMPO',
+    (item: MoscBeatItem): item is MoscTempo => item.type === 'TEMPO',
   )
 
   sortByTime(tempoItems).forEach((tempo: MoscTempo, index: number, all: MoscTempo[]) => {
