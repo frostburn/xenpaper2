@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref, shallowRef, watch } from 'vue'
 
 import { type CharData } from '../grammars/grammar-to-chars'
-import { type MoscNoteTime } from '../mosc'
+import { type MoscNote } from '../mosc'
 import {
   canRedoSourceChange,
   canUndoSourceChange,
@@ -34,7 +34,7 @@ import {
 } from '../utils'
 
 const DEFAULT_LOCATION_HREF = 'http://localhost/'
-const EMPTY_SCORE_TIME = { sequence: [], lengthTime: 0 }
+const EMPTY_SCORE = { sequence: [], lengthTime: 0 }
 const TAB_TITLE_LENGTH = 18
 const MAX_DEAD_SOURCE_TABS = 10
 
@@ -74,7 +74,7 @@ function useScoreEngine(id: number, transport: Transport, bank: Bank) {
     }
 
     soundEngine.cutActiveNotes()
-    await soundEngine.setScore(source.scoreTime)
+    await soundEngine.setScore(source.score)
     if (version !== parseVersion) return false
 
     scoreLoaded.value = true
@@ -171,7 +171,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   let shouldApplyInitialSidebarMode = true
   const cancelOnEndByEngine = new Map<number, () => void>()
   const cancelOnNoteByEngine = new Map<number, () => void>()
-  let activeNoteHandler: ((note: MoscNoteTime, on: boolean) => void) | undefined
+  let activeNoteHandler: ((note: MoscNote, on: boolean) => void) | undefined
 
   const activeScoreEngine = computed(() => scoreEngines.value[activeScoreEngineIndex.value]!)
 
@@ -265,7 +265,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
 
   const clearScoreEngine = async (engine: ScoreEngine): Promise<void> => {
     engine.soundEngine.cutActiveNotes()
-    await engine.soundEngine.setScore(EMPTY_SCORE_TIME)
+    await engine.soundEngine.setScore(EMPTY_SCORE)
     engine.scoreLoaded.value = false
   }
 
@@ -594,7 +594,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     playbackPositionTime.value = -1
   }
 
-  const setActiveNoteHandler = (handler?: (note: MoscNoteTime, on: boolean) => void): void => {
+  const setActiveNoteHandler = (handler?: (note: MoscNote, on: boolean) => void): void => {
     activeNoteHandler = handler
   }
 
@@ -635,7 +635,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
       if (!cancelOnNoteByEngine.has(engine.id)) {
         cancelOnNoteByEngine.set(
           engine.id,
-          engine.soundEngine.onNote((note: MoscNoteTime, on: boolean) => {
+          engine.soundEngine.onNote((note: MoscNote, on: boolean) => {
             activeNoteHandler?.(note, on)
           }),
         )

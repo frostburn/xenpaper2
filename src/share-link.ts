@@ -1,6 +1,6 @@
 // Swap spaces and underscores when encoding
-const SPACE_TOKEN = '_'
-const UNDERSCORE_TOKEN = '%20'
+const ENCODED_SPACE_TOKEN = '_'
+const ENCODED_UNDERSCORE_TOKEN = '%20'
 
 const hasBrowserWindow = (): boolean => typeof window !== 'undefined'
 
@@ -35,8 +35,8 @@ export const encodeSharedSource = (sourceCode: string): string =>
   sourceCode
     .replace(/%/g, '%25')
     .replace(/:/g, '%3A')
-    .replace(/_/g, UNDERSCORE_TOKEN)
-    .replace(/ /g, SPACE_TOKEN)
+    .replace(/_/g, ENCODED_UNDERSCORE_TOKEN)
+    .replace(/ /g, ENCODED_SPACE_TOKEN)
 
 export const decodeSharedSource = (encodedSource: string): string => {
   const percentPlaceholder = '\0percent\0'
