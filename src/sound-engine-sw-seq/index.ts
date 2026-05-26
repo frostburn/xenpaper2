@@ -96,6 +96,7 @@ export class SoundEngineSwSeq extends SoundEngine {
     this.endTime = score.lengthTime
 
     const patch: SynthParams = {
+      frequency: 440,
       velocity: OSC_VOLUME,
       oscillator: {
         type: 'sine',
@@ -111,7 +112,8 @@ export class SoundEngineSwSeq extends SoundEngine {
 
     score.sequence.forEach((item) => {
       if (item.type === 'NOTE_TIME') {
-        const noteHandle = this.synth.trigger(item.hz, patch)
+        patch.frequency = item.hz
+        const noteHandle = this.synth.trigger(patch)
         const noteStartId = this.transport.scheduleParametric((time) => {
           noteHandle.noteOn(time)
           this.activeNoteEvents.add(item)

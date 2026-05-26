@@ -11,6 +11,7 @@ type Envelope = {
 }
 
 export type SynthParams = {
+  frequency: number
   velocity: number
   oscillator: { type: OscillatorType; unison: boolean }
   envelope: Envelope
@@ -32,47 +33,39 @@ export class PolySynth {
     return this.bank.context
   }
 
-  trigger(frequency: number, params: SynthParams) {
-    const { velocity } = params
-    const { type, unison } = params.oscillator
-    const envelope = params.envelope
+  trigger(params: SynthParams) {
+    const { unison } = params.oscillator
 
     return unison
       ? this.triggerWithOscillator(
-          frequency,
-          velocity,
-          type,
-          envelope,
-          () => this.bank.allocateUnison(),
-          (oscillator) => this.bank.freeUnison(oscillator),
+          params,
+          this.bank.allocateUnison.bind(this.bank),
+          this.bank.freeUnison.bind(this.bank),
         )
       : this.triggerWithOscillator(
-          frequency,
-          velocity,
-          type,
-          envelope,
-          () => this.bank.allocateOscillator(),
-          (oscillator) => this.bank.freeOscillator(oscillator),
+          params,
+          this.bank.allocateOscillator.bind(this.bank),
+          this.bank.freeOscillator.bind(this.bank),
         )
   }
 
   private triggerWithOscillator<T extends EnvelopedOscillator | EnvelopedUnison>(
-    frequency: number,
-    velocity: number,
-    type: OscillatorType,
-    envelope: Envelope,
+    params: SynthParams,
     allocate: () => T | null,
     release: (oscillator: T) => void,
   ) {
     let oscillator: T | null = null
     let startTime = NaN
 
+    const { frequency, velocity } = params
+    const { type } = params.oscillator
+
     const {
       attack: attackTime,
       decay: decayTime,
       sustain: sustainLevel,
       release: releaseTime,
-    } = envelope
+    } = params.envelope
 
     const noteOn = (time: number) => {
       // Loops can cause note-ons to unpair from note-offs. Release previous resources.
