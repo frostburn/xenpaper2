@@ -127,6 +127,20 @@ export class Transport {
     return { start, end, loopLength, loopCount, wrapped }
   }
 
+
+  private noteWhenForLoop(note: ParametricNoteHandle, when: number) {
+    if (!(this.loop && this._loopStart < this._loopEnd)) return when
+    if (note.start < this._loopStart) return when
+
+    const loopLength = this._loopEnd - this._loopStart
+    let wrappedWhen = when
+    while (wrappedWhen >= this._loopEnd) {
+      wrappedWhen -= loopLength
+    }
+
+    return wrappedWhen
+  }
+
   /**
    * Compute the audio context time for an event that should fire.
    */
@@ -174,12 +188,14 @@ export class Transport {
     }
 
     for (const note of this.parametricNotesById.values()) {
-      const noteOnTime = this.contextTime({ id: note.id, callback: note.noteOn, when: note.start })
+      const noteOnWhen = this.noteWhenForLoop(note, note.start)
+      const noteOnTime = this.contextTime({ id: note.id, callback: note.noteOn, when: noteOnWhen })
       if (!isNaN(noteOnTime)) {
         note.noteOn(noteOnTime)
       }
 
-      const noteOffTime = this.contextTime({ id: note.id, callback: note.noteOff, when: note.end })
+      const noteOffWhen = this.noteWhenForLoop(note, note.end)
+      const noteOffTime = this.contextTime({ id: note.id, callback: note.noteOff, when: noteOffWhen })
       if (!isNaN(noteOffTime)) {
         const { loopCount } = this.currentWindow()
         if (!(this.loop && this._loopStart < this._loopEnd && loopCount > 0 && note.start < this._loopStart)) {
