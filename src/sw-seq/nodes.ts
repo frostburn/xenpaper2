@@ -1,12 +1,15 @@
-/**
- * OscillatorNode in series with a GainNode.
- */
-export class EnvelopedOscillator implements OscillatorNode, GainNode {
-  private oscillator: OscillatorNode
-  private gainNode: GainNode
+import { UnisonOscillator, type UnisonOscillatorOptions } from 'aperiodic-oscillator'
 
-  constructor(context: BaseAudioContext) {
-    this.oscillator = context.createOscillator()
+type OscillatorLike = OscillatorNode | UnisonOscillator
+
+class EnvelopedOscillatorBase<TOscillator extends OscillatorLike>
+  implements OscillatorNode, GainNode
+{
+  protected oscillator: TOscillator
+  protected gainNode: GainNode
+
+  constructor(context: BaseAudioContext, oscillator: TOscillator) {
+    this.oscillator = oscillator
     this.gainNode = context.createGain()
     this.gainNode.gain.setValueAtTime(0, context.currentTime)
     this.oscillator.connect(this.gainNode)
@@ -63,12 +66,10 @@ export class EnvelopedOscillator implements OscillatorNode, GainNode {
       this.gainNode.disconnect(destinationOrOutput)
     } else if (input === undefined) {
       disconnectNodeOrParam.call(this.gainNode, destinationOrOutput, output)
+    } else if (output === undefined) {
+      this.gainNode.disconnect(destinationOrOutput as AudioNode)
     } else {
-      if (output === undefined) {
-        this.gainNode.disconnect(destinationOrOutput as AudioNode)
-      } else {
-        this.gainNode.disconnect(destinationOrOutput as AudioNode, output, input)
-      }
+      this.gainNode.disconnect(destinationOrOutput as AudioNode, output, input)
     }
   }
 
@@ -166,5 +167,47 @@ export class EnvelopedOscillator implements OscillatorNode, GainNode {
 
   dispatchEvent(event: Event): boolean {
     return this.oscillator.dispatchEvent(event)
+  }
+}
+
+/**
+ * OscillatorNode in series with a GainNode.
+ */
+export class EnvelopedOscillator extends EnvelopedOscillatorBase<OscillatorNode> {
+  constructor(context: BaseAudioContext) {
+    super(context, context.createOscillator())
+  }
+}
+
+/**
+ * UnisonOscillator in series with a GainNode.
+ */
+export class EnvelopedUnison extends EnvelopedOscillatorBase<UnisonOscillator> {
+  constructor(
+    context: BaseAudioContext,
+    opts?: UnisonOscillatorOptions,
+    mode: 'frequency' | 'detune' = 'detune',
+  ) {
+    super(context, new UnisonOscillator(context, opts, mode))
+  }
+
+  get numberOfVoices() {
+    return this.oscillator.numberOfVoices
+  }
+
+  set numberOfVoices(value: number) {
+    this.oscillator.numberOfVoices = value
+  }
+
+  get spread() {
+    return this.oscillator.spread
+  }
+
+  get voices() {
+    return this.oscillator.voices
+  }
+
+  dispose() {
+    this.oscillator.dispose()
   }
 }

@@ -1,17 +1,20 @@
 import type { Bank } from './bank'
-import type { EnvelopedOscillator } from './nodes'
+import type { EnvelopedOscillator, EnvelopedUnison } from './nodes'
 
 const TIME_CONSTANT = 0.5
 
+type Envelope = {
+  attack: number
+  decay: number
+  sustain: number
+  release: number
+}
+
 export type SynthParams = {
+  frequency: number
   velocity: number
-  oscillator: { type: OscillatorType }
-  envelope: {
-    attack: number
-    decay: number
-    sustain: number
-    release: number
-  }
+  oscillator: { type: OscillatorType; unison: boolean }
+  envelope: Envelope
 }
 
 /**
@@ -30,22 +33,45 @@ export class PolySynth {
     return this.bank.context
   }
 
-  trigger(frequency: number, params: SynthParams) {
-    let oscillator: EnvelopedOscillator | null = null
+  trigger(params: SynthParams) {
+    const { unison } = params.oscillator
 
+    return unison
+      ? this.triggerWithOscillator(
+          params,
+          this.bank.allocateUnison.bind(this.bank),
+          this.bank.freeUnison.bind(this.bank),
+        )
+      : this.triggerWithOscillator(
+          params,
+          this.bank.allocateOscillator.bind(this.bank),
+          this.bank.freeOscillator.bind(this.bank),
+        )
+  }
+
+  private triggerWithOscillator<T extends EnvelopedOscillator | EnvelopedUnison>(
+    params: SynthParams,
+    allocate: () => T | null,
+    release: (oscillator: T) => void,
+  ) {
+    let oscillator: T | null = null
     let startTime = NaN
-    const velocity = params.velocity
-    const type = params.oscillator.type
-    const attackTime = params.envelope.attack
-    const decayTime = params.envelope.decay
-    const sustainLevel = params.envelope.sustain
-    const releaseTime = params.envelope.release
+
+    const { frequency, velocity } = params
+    const { type } = params.oscillator
+
+    const {
+      attack: attackTime,
+      decay: decayTime,
+      sustain: sustainLevel,
+      release: releaseTime,
+    } = params.envelope
 
     const noteOn = (time: number) => {
       // Loops can cause note-ons to unpair from note-offs. Release previous resources.
-      if (oscillator !== null) this.bank.freeOscillator(oscillator)
+      if (oscillator !== null) void release(oscillator)
 
-      oscillator = this.bank.allocateOscillator()
+      oscillator = allocate()
       if (oscillator === null) return
 
       startTime = time
@@ -83,7 +109,7 @@ export class PolySynth {
       if (releaseTime <= 0) oscillator.gain.setValueAtTime(0, endTime)
       else oscillator.gain.setTargetAtTime(0, endTime, releaseTime * TIME_CONSTANT)
 
-      this.bank.freeOscillator(oscillator)
+      void release(oscillator)
 
       // Loops can cause note-offs to unpair from note-ons. Prevent double release.
       oscillator = null

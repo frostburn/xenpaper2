@@ -19,6 +19,7 @@
     "compile:grammar": "peggy --format es src/grammars/grammar.peggy -o src/grammars/grammar.generated.js"
   },
   "dependencies": {
+    "aperiodic-oscillator": "^0.3.3",
     "peggy": "^5.1.0",
     "pinia": "^3.0.4",
     "tone": "^15.1.22",
