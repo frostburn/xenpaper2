@@ -5,6 +5,14 @@ type ParametricEvent = {
   callback: (time: number) => void
   when: number
 }
+
+type ParametricNoteHandle = {
+  id: number
+  noteOn: (time: number) => void
+  noteOff: (time: number) => void
+  start: number
+  end: number
+}
 type TransportEvent = {
   id: number
   callback: () => void
@@ -30,6 +38,7 @@ export class Transport {
   private _loopStart: number
   private _loopEnd: number
   private parametricEventsById: Map<number, ParametricEvent>
+  private parametricNotesById: Map<number, ParametricNoteHandle>
   private eventsById: Map<number, TransportEvent>
   private nextEventId: number
 
@@ -45,6 +54,7 @@ export class Transport {
     this._loopStart = 0
     this._loopEnd = 0
     this.parametricEventsById = new Map()
+    this.parametricNotesById = new Map()
     this.eventsById = new Map()
     this.nextEventId = 1
   }
@@ -96,17 +106,14 @@ export class Transport {
     this.onInterval()
   }
 
-  /**
-   * Compute the audio context time for an event that should fire.
-   */
-  private contextTime(event: ParametricEvent | TransportEvent) {
+  private currentWindow() {
     let end = this.lastTick - this.startTime
     let start = end - this.interval
-
     const loopLength = this._loopEnd - this._loopStart
     let loopCount = 0
+    let wrapped = false
+
     if (this.loop && loopLength > 0) {
-      // XXX: Currently it's not possible to wrap e.g. note-off events across the loop boundary
       while (start >= this._loopEnd) {
         start -= loopLength
         loopCount++
@@ -114,19 +121,33 @@ export class Transport {
       while (end >= this._loopEnd) {
         end -= loopLength
       }
-      if (start > end) {
-        // Check from start to boundary if needed (intentionally include boundary)
-        if (event.when >= start && event.when <= this._loopEnd) {
-          return (
-            (this.startTime + this._lookAhead + event.when + loopCount * loopLength) /
-            this.context.sampleRate
-          )
-        }
-        start = this._loopStart
-      }
+      wrapped = start > end
     }
-    if (event.when < start) return NaN
-    if (event.when >= end) return NaN
+
+    return { start, end, loopLength, loopCount, wrapped }
+  }
+
+  /**
+   * Compute the audio context time for an event that should fire.
+   */
+  private contextTime(event: ParametricEvent | TransportEvent) {
+    const { start, end, loopLength, loopCount, wrapped } = this.currentWindow()
+
+    if (wrapped) {
+      if (event.when >= start && event.when <= this._loopEnd) {
+        return (
+          (this.startTime + this._lookAhead + event.when + loopCount * loopLength) /
+          this.context.sampleRate
+        )
+      }
+      if (event.when < this._loopStart || event.when >= end) return NaN
+      return (
+        (this.startTime + this._lookAhead + event.when + loopCount * loopLength) /
+        this.context.sampleRate
+      )
+    }
+
+    if (event.when < start || event.when >= end) return NaN
     return (
       (this.startTime + this._lookAhead + event.when + loopCount * loopLength) /
       this.context.sampleRate
@@ -149,6 +170,21 @@ export class Transport {
       const time = this.contextTime(event)
       if (!isNaN(time)) {
         event.callback(time)
+      }
+    }
+
+    for (const note of this.parametricNotesById.values()) {
+      const noteOnTime = this.contextTime({ id: note.id, callback: note.noteOn, when: note.start })
+      if (!isNaN(noteOnTime)) {
+        note.noteOn(noteOnTime)
+      }
+
+      const noteOffTime = this.contextTime({ id: note.id, callback: note.noteOff, when: note.end })
+      if (!isNaN(noteOffTime)) {
+        const { loopCount } = this.currentWindow()
+        if (!(this.loop && this._loopStart < this._loopEnd && loopCount > 0 && note.start < this._loopStart)) {
+          note.noteOff(noteOffTime)
+        }
       }
     }
 
@@ -180,17 +216,35 @@ export class Transport {
 
   clear(id: number) {
     this.parametricEventsById.delete(id)
+    this.parametricNotesById.delete(id)
     this.eventsById.delete(id)
   }
 
   clearAll() {
     this.parametricEventsById.clear()
+    this.parametricNotesById.clear()
     this.eventsById.clear()
   }
 
   scheduleParametric(callback: (time: number) => void, when: number) {
     const id = this.nextEventId++
     this.parametricEventsById.set(id, { id, callback, when: round(when * this.context.sampleRate) })
+
+    return id
+  }
+
+  scheduleParametricNote(
+    note: Omit<ParametricNoteHandle, 'id' | 'start' | 'end'>,
+    start: number,
+    end: number,
+  ) {
+    const id = this.nextEventId++
+    this.parametricNotesById.set(id, {
+      ...note,
+      id,
+      start: round(start * this.context.sampleRate),
+      end: round(end * this.context.sampleRate),
+    })
 
     return id
   }

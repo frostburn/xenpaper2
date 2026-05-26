@@ -114,18 +114,23 @@ export class SoundEngineSwSeq extends SoundEngine {
       if (item.type === 'NOTE_TIME') {
         patch.frequency = item.hz
         const noteHandle = this.synth.trigger(patch)
-        const noteStartId = this.transport.scheduleParametric((time) => {
-          noteHandle.noteOn(time)
-          this.activeNoteEvents.add(item)
-          this._triggerEvent('note', item, true)
-        }, item.time)
-        const noteEndId = this.transport.scheduleParametric((time) => {
-          noteHandle.noteOff(time)
-          this.activeNoteEvents.delete(item)
-          this._triggerEvent('note', item, false)
-        }, item.timeEnd)
-        this.transportEventIds.set(noteStartId, true)
-        this.transportEventIds.set(noteEndId, true)
+        const noteEventId = this.transport.scheduleParametricNote(
+          {
+            noteOn: (time) => {
+              noteHandle.noteOn(time)
+              this.activeNoteEvents.add(item)
+              this._triggerEvent('note', item, true)
+            },
+            noteOff: (time) => {
+              noteHandle.noteOff(time)
+              this.activeNoteEvents.delete(item)
+              this._triggerEvent('note', item, false)
+            },
+          },
+          item.time,
+          item.timeEnd,
+        )
+        this.transportEventIds.set(noteEventId, true)
         this.noteOffs.push(noteHandle.noteOff)
       } else if (item.type === 'PARAM_TIME') {
         // No scheduling needed. Change the active patch directly.
