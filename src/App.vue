@@ -440,7 +440,7 @@ onUnmounted(() => {
   outline: 0;
   caret-color: var(--xenpaper-text);
   color: inherit;
-  overflow: hidden;
+  overflow: auto;
   -webkit-text-fill-color: transparent;
 }
 
@@ -452,6 +452,7 @@ onUnmounted(() => {
   position: relative;
   pointer-events: none;
   user-select: none;
+  overflow: hidden;
 }
 
 .play-start-marker {
