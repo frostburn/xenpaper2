@@ -114,22 +114,20 @@ export class SoundEngineSwSeq extends SoundEngine {
       if (item.type === 'NOTE_TIME') {
         patch.frequency = item.hz
         const noteHandle = this.synth.trigger(patch)
-        const noteEventId = this.transport.scheduleParametricNote(
-          {
-            noteOn: (time) => {
-              noteHandle.noteOn(time)
-              this.activeNoteEvents.add(item)
-              this._triggerEvent('note', item, true)
-            },
-            noteOff: (time) => {
-              noteHandle.noteOff(time)
-              this.activeNoteEvents.delete(item)
-              this._triggerEvent('note', item, false)
-            },
-            when: item.time,
-            duration: item.timeEnd - item.time,
+        const noteEventId = this.transport.scheduleParametricNote({
+          noteOn: (time) => {
+            noteHandle.noteOn(time)
+            this.activeNoteEvents.add(item)
+            this._triggerEvent('note', item, true)
           },
-        )
+          noteOff: (time) => {
+            noteHandle.noteOff(time)
+            this.activeNoteEvents.delete(item)
+            this._triggerEvent('note', item, false)
+          },
+          when: item.time,
+          duration: item.timeEnd - item.time,
+        })
         this.transportEventIds.set(noteEventId, true)
         this.noteOffs.push(noteHandle.noteOff)
       } else if (item.type === 'PARAM_TIME') {

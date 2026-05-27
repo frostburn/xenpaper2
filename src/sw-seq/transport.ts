@@ -108,7 +108,7 @@ export class Transport {
     this._position = this.lastTickTime - this.startTime
     const loopLength = this.loopEndPos - this.loopStartPos
     if (this.loop && loopLength > 0) {
-      while(this._position > this.loopEndPos) {
+      while (this._position > this.loopEndPos) {
         this._position -= loopLength
       }
     }
@@ -156,17 +156,24 @@ export class Transport {
   private fireInRange(startTime: number, startPos: number, endPos: number) {
     for (const event of this.parametricEventsById.values()) {
       if (event.when >= startPos && event.when < endPos) {
-        event.callback((event.when - startPos + startTime + this._lookAhead) / this.context.sampleRate)
+        event.callback(
+          (event.when - startPos + startTime + this._lookAhead) / this.context.sampleRate,
+        )
       }
     }
 
     for (const event of this.parametricNotesById.values()) {
       if (event.when >= startPos && event.when < endPos) {
-        event.noteOn((event.when - startPos + startTime + this._lookAhead) / this.context.sampleRate)
+        event.noteOn(
+          (event.when - startPos + startTime + this._lookAhead) / this.context.sampleRate,
+        )
 
         // XXX: Commiting to a note off this early is not the best or most accurate scheduling model
         // However it's important to commit somehow. Unpaired events are hard to debug and can lead to bad UX.
-        event.noteOff((event.when + event.duration - startPos + startTime + this._lookAhead) / this.context.sampleRate)
+        event.noteOff(
+          (event.when + event.duration - startPos + startTime + this._lookAhead) /
+            this.context.sampleRate,
+        )
       }
     }
 
