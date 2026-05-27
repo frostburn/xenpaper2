@@ -281,10 +281,10 @@ defineExpose({
 })
 
 const handlePointerDown = (event: PointerEvent): void => {
-  if (rulerHeight.value <= 0) return
+  if (!rulerElement.value || rulerHeight.value <= 0) return
 
   event.preventDefault()
-  rulerElement.value!.setPointerCapture(event.pointerId)
+  rulerElement.value.setPointerCapture(event.pointerId)
   dragStartState.value = {
     startPan: rulerState.viewPan,
     startZoom: rulerState.viewZoom,
@@ -327,15 +327,17 @@ const handleWheel = (event: WheelEvent): void => {
 let resizeObserver: ResizeObserver | undefined
 
 onMounted(() => {
+  if (!rulerElement.value) return
+
   const updateDimensions = (): void => {
-    const rect = rulerElement.value!.getBoundingClientRect()
+    const rect = rulerElement.value.getBoundingClientRect()
     rulerWidth.value = rect.width
     rulerHeight.value = rect.height
   }
 
   updateDimensions()
   resizeObserver = new ResizeObserver(updateDimensions)
-  resizeObserver.observe(rulerElement.value!)
+  resizeObserver.observe(rulerElement.value)
 })
 
 onBeforeUnmount(() => {
