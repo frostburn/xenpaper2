@@ -137,7 +137,6 @@ const stopWatchers = (): void => {
 onMounted(() => {
   xenpaper.initializeLocation(window.location.href)
   xenpaper.initializeSourceCode(initialRouteHash())
-  xenpaper.startSoundEngineListeners()
   startWatchers()
   void replaceShareRoute()
   void xenpaper.updateParsedSourceCode()
@@ -145,7 +144,6 @@ onMounted(() => {
 
 onUnmounted(() => {
   stopWatchers()
-  xenpaper.stopSoundEngineListeners()
   xenpaper.disposeSoundEngines()
   stopPlaybackAnimation()
 })
@@ -180,7 +178,6 @@ onUnmounted(() => {
         @close-sidebar="xenpaper.closeSidebar"
         @set-tune="xenpaper.setDemoTune"
         @import-source-codes="xenpaper.importSourceCodes"
-        @active-note-handler-change="xenpaper.setActiveNoteHandler"
       />
     </div>
     <TheFooter v-if="!xenpaper.isEmbedMode" />
