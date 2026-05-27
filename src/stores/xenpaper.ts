@@ -622,6 +622,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     if (!allEnginesEnded) return
 
     resetPlaybackState()
+    swSeqTransport.stop()
   }
 
   const startSoundEngineListeners = (): void => {

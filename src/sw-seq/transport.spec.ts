@@ -4,7 +4,7 @@ import { Transport } from './transport'
 
 class MockAudioContext {
   currentTime = 0
-  sampleRate = 100
+  sampleRate = 10
   destination = {} as AudioDestinationNode
 
   createConstantSource() {
@@ -17,71 +17,77 @@ class MockAudioContext {
 }
 
 const tick = (transport: Transport, times = 1) => {
-  const inner = transport as unknown as { onInterval: () => void }
-  for (let i = 0; i < times; i++) inner.onInterval()
+  const inner = transport as unknown as { context: MockAudioContext, onInterval: () => void }
+  for (let i = 0; i < times; i++) {
+    inner.context.currentTime = i / inner.context.sampleRate
+    inner.onInterval()
+  }
 }
 
-describe('Transport scheduleParametricNote', () => {
-  it('returns one id and can be cleared atomically', () => {
-    const transport = new Transport(new MockAudioContext() as unknown as AudioContext, 1, 0)
-    const calls: string[] = []
+function createTransport() {
+  return new Transport(new MockAudioContext() as unknown as AudioContext)
+}
+
+describe('Sample-accurate look-ahead transport', () => {
+  it('can schedule and fire a single event', () => {
+    const calls: number[] = []
+    const transport = createTransport()
+    const id = transport.scheduleParametric((time: number) => calls.push(time), 0)
+
     transport.start(0)
+    tick(transport, transport.context.sampleRate * 2)
 
-    const id = transport.scheduleParametricNote(
-      {
-        noteOn: () => calls.push('on'),
-        noteOff: () => calls.push('off'),
-      },
-      0.25,
-      0.75,
-    )
-
-    transport.clear(id)
-    tick(transport, 2)
-
-    expect(calls).toEqual([])
+    expect(calls).toHaveLength(1)
+    expect(calls[0]).toBeCloseTo(transport.lookAhead)
   })
 
-  it('schedules note callbacks through the note-handle entry', () => {
-    const transport = new Transport(new MockAudioContext() as unknown as AudioContext, 1, 0)
-    const calls: string[] = []
+  it('ends notes that lead into a looped section', () => {
+    const calls: {which: 'on' | 'off', time: number}[] = []
+    const transport = createTransport()
+    const id = transport.scheduleParametricNote({
+      noteOn: (time: number) => calls.push({which: 'on', time}),
+      noteOff: (time: number) => calls.push({which: 'off', time}),
+      when: 0.5,
+      duration: 1
+    })
+
+    transport.loop = true
+    transport.loopStart = 1
+    transport.loopEnd = 2
     transport.start(0)
+    tick(transport, transport.context.sampleRate * 5)
 
-    transport.scheduleParametricNote(
-      {
-        noteOn: () => calls.push('on'),
-        noteOff: () => calls.push('off'),
-      },
-      0,
-      1,
-    )
-
-    tick(transport, 3)
-
-    expect(calls).toContain('off')
+    expect(calls).toHaveLength(2)
+    expect(calls[0]!.which).toBe('on')
+    expect(calls[0]!.time).toBeCloseTo(0.5 + transport.lookAhead)
+    expect(calls[1]!.which).toBe('off')
+    expect(calls[1]!.time).toBeCloseTo(1.5 + transport.lookAhead)
   })
 
-  it('clearAll removes scheduled note handles', () => {
-    const transport = new Transport(new MockAudioContext() as unknown as AudioContext, 1, 0)
-    let called = false
+  it('repeats notes that lead out of a looped section', () => {
+    const calls: {which: 'on' | 'off', time: number}[] = []
+    const transport = createTransport()
+    const id = transport.scheduleParametricNote({
+      noteOn: (time: number) => calls.push({which: 'on', time}),
+      noteOff: (time: number) => calls.push({which: 'off', time}),
+      when: 1.5,
+      duration: 1
+    })
+
+    transport.loop = true
+    transport.loopStart = 1
+    transport.loopEnd = 2
     transport.start(0)
+    tick(transport, transport.context.sampleRate * 3)
 
-    transport.scheduleParametricNote(
-      {
-        noteOn: () => {
-          called = true
-        },
-        noteOff: () => {
-          called = true
-        },
-      },
-      0,
-      1,
-    )
-
-    transport.clearAll()
-    tick(transport, 3)
-
-    expect(called).toBe(false)
+    expect(calls).toHaveLength(4)
+    expect(calls[0]!.which).toBe('on')
+    expect(calls[0]!.time).toBeCloseTo(1.5 + transport.lookAhead)
+    expect(calls[1]!.which).toBe('off')
+    expect(calls[1]!.time).toBeCloseTo(2.5 + transport.lookAhead)
+    expect(calls[2]!.which).toBe('on')
+    expect(calls[2]!.time).toBeCloseTo(2.5 + transport.lookAhead)
+    expect(calls[3]!.which).toBe('off')
+    expect(calls[3]!.time).toBeCloseTo(3.5 + transport.lookAhead)
   })
 })

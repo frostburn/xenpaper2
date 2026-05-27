@@ -10,8 +10,8 @@ type ParametricNoteHandle = {
   id: number
   noteOn: (time: number) => void
   noteOff: (time: number) => void
-  start: number
-  end: number
+  when: number
+  duration: number
 }
 type TransportEvent = {
   id: number
@@ -30,13 +30,17 @@ export class Transport {
     /* empty */
   }
 
+  // Private time/duration measured in samples
+  // "Time" refers to context time
+  // "Position" refers to event time
   private interval: number
   private _lookAhead: number
   private startTime: number
-  private lastTick: number
-  private _endTime: number
-  private _loopStart: number
-  private _loopEnd: number
+  private lastTickTime: number
+  private _position: number
+  private endPos: number
+  private loopStartPos: number
+  private loopEndPos: number
   private parametricEventsById: Map<number, ParametricEvent>
   private parametricNotesById: Map<number, ParametricNoteHandle>
   private eventsById: Map<number, TransportEvent>
@@ -49,10 +53,11 @@ export class Transport {
     this.active = false
     this.loop = false
     this.startTime = NaN
-    this.lastTick = NaN
-    this._endTime = Infinity
-    this._loopStart = 0
-    this._loopEnd = 0
+    this.lastTickTime = NaN
+    this._position = NaN
+    this.endPos = Infinity
+    this.loopStartPos = 0
+    this.loopEndPos = 0
     this.parametricEventsById = new Map()
     this.parametricNotesById = new Map()
     this.eventsById = new Map()
@@ -64,165 +69,117 @@ export class Transport {
   }
 
   get position() {
-    let pos = this.lastTick - this.startTime
-    const loopLength = this._loopEnd - this._loopStart
-    if (this.loop && loopLength > 0) {
-      while (pos >= this._loopEnd) {
-        pos -= loopLength
-      }
-    }
-
-    return pos / this.context.sampleRate
+    return this._position / this.context.sampleRate
   }
 
   get endTime() {
-    return this._endTime / this.context.sampleRate
+    return this.endPos / this.context.sampleRate
   }
 
   set endTime(value: number) {
-    this._endTime = round(value * this.context.sampleRate)
+    this.endPos = round(value * this.context.sampleRate)
   }
 
   get loopStart() {
-    return this._loopStart / this.context.sampleRate
+    return this.loopStartPos / this.context.sampleRate
   }
 
   set loopStart(value: number) {
-    this._loopStart = round(value * this.context.sampleRate)
+    this.loopStartPos = round(value * this.context.sampleRate)
   }
 
   get loopEnd() {
-    return this._loopEnd / this.context.sampleRate
+    return this.loopEndPos / this.context.sampleRate
   }
 
   set loopEnd(value: number) {
-    this._loopEnd = round(value * this.context.sampleRate)
+    this.loopEndPos = round(value * this.context.sampleRate)
+  }
+
+  private get loopLength() {
+    return this.loopEndPos - this.loopStartPos
   }
 
   start(offset = 0) {
     this.startTime = round((this.context.currentTime - offset) * this.context.sampleRate)
     this.active = true
-    this.lastTick = round(this.context.currentTime * this.context.sampleRate)
+    this.lastTickTime = round(this.context.currentTime * this.context.sampleRate)
+
+    this._position = this.lastTickTime - this.startTime
+    const loopLength = this.loopEndPos - this.loopStartPos
+    if (this.loop && loopLength > 0) {
+      while(this._position > this.loopEndPos) {
+        this._position -= loopLength
+      }
+    }
+
     this.onInterval()
   }
 
-  private currentWindow() {
-    let end = this.lastTick - this.startTime
-    let start = end - this.interval
-    const loopLength = this._loopEnd - this._loopStart
-    let loopCount = 0
-    let wrapped = false
-
-    if (this.loop && loopLength > 0) {
-      while (start >= this._loopEnd) {
-        start -= loopLength
-        loopCount++
-      }
-      while (end >= this._loopEnd) {
-        end -= loopLength
-      }
-      wrapped = start > end
-    }
-
-    return { start, end, loopLength, loopCount, wrapped }
-  }
-
-
-  private noteWhenForLoop(note: ParametricNoteHandle, when: number) {
-    if (!(this.loop && this._loopStart < this._loopEnd)) return when
-    if (note.start < this._loopStart) return when
-
-    const loopLength = this._loopEnd - this._loopStart
-    let wrappedWhen = when
-    while (wrappedWhen >= this._loopEnd) {
-      wrappedWhen -= loopLength
-    }
-
-    return wrappedWhen
-  }
-
   /**
-   * Compute the audio context time for an event that should fire.
+   * Fire all events from the current position to pos+interval while looping.
    */
-  private contextTime(event: ParametricEvent | TransportEvent) {
-    const { start, end, loopLength, loopCount, wrapped } = this.currentWindow()
-
-    if (wrapped) {
-      if (event.when >= start && event.when <= this._loopEnd) {
-        return (
-          (this.startTime + this._lookAhead + event.when + loopCount * loopLength) /
-          this.context.sampleRate
-        )
-      }
-      if (event.when < this._loopStart || event.when >= end) return NaN
-      return (
-        (this.startTime + this._lookAhead + event.when + loopCount * loopLength) /
-        this.context.sampleRate
-      )
-    }
-
-    if (event.when < start || event.when >= end) return NaN
-    return (
-      (this.startTime + this._lookAhead + event.when + loopCount * loopLength) /
-      this.context.sampleRate
-    )
-  }
-
   private onInterval() {
     if (!this.active) {
       this.onended()
       return
     }
 
+    let startTime = this.lastTickTime
+    let startPos = this._position
+    this._position += this.interval
+    const loopLength = this.loopEndPos - this.loopStartPos
+    if (this.loop && loopLength > 0) {
+      while (this._position > this.loopEndPos) {
+        this.fireInRange(startTime, startPos, this.loopEndPos)
+        startTime += this.loopEndPos - startPos
+        startPos = this.loopStartPos
+        this._position -= loopLength
+      }
+    }
+    this.fireInRange(startTime, startPos, this._position)
+
     const ticker = this.context.createConstantSource()
     ticker.onended = this.onInterval.bind(this)
     ticker.start(this.context.currentTime)
-    this.lastTick += this.interval
-    ticker.stop(this.lastTick / this.context.sampleRate)
+    this.lastTickTime += this.interval
+    ticker.stop(this.lastTickTime / this.context.sampleRate)
 
+    if (this._position >= this.endPos) {
+      this.active = false
+    }
+  }
+
+  /**
+   * Fire all events in the given range.
+   */
+  private fireInRange(startTime: number, startPos: number, endPos: number) {
     for (const event of this.parametricEventsById.values()) {
-      const time = this.contextTime(event)
-      if (!isNaN(time)) {
-        event.callback(time)
+      if (event.when >= startPos && event.when < endPos) {
+        event.callback((event.when - startPos + startTime + this._lookAhead) / this.context.sampleRate)
       }
     }
 
-    for (const note of this.parametricNotesById.values()) {
-      const noteOnWhen = this.noteWhenForLoop(note, note.start)
-      const noteOnTime = this.contextTime({ id: note.id, callback: note.noteOn, when: noteOnWhen })
-      if (!isNaN(noteOnTime)) {
-        note.noteOn(noteOnTime)
-      }
+    for (const event of this.parametricNotesById.values()) {
+      if (event.when >= startPos && event.when < endPos) {
+        event.noteOn((event.when - startPos + startTime + this._lookAhead) / this.context.sampleRate)
 
-      const noteOffWhen = this.noteWhenForLoop(note, note.end)
-      const noteOffTime = this.contextTime({ id: note.id, callback: note.noteOff, when: noteOffWhen })
-      if (!isNaN(noteOffTime)) {
-        const { loopCount } = this.currentWindow()
-        if (!(this.loop && this._loopStart < this._loopEnd && loopCount > 0 && note.start < this._loopStart)) {
-          note.noteOff(noteOffTime)
-        }
+        // XXX: Commiting to a note off this early is not the best or most accurate scheduling model
+        // However it's important to commit somehow. Unpaired events are hard to debug and can lead to bad UX.
+        event.noteOff((event.when + event.duration - startPos + startTime + this._lookAhead) / this.context.sampleRate)
       }
     }
 
     for (const event of this.eventsById.values()) {
-      const time = this.contextTime(event)
-      if (isNaN(time)) {
-        continue
+      if (event.when >= startPos && event.when < endPos) {
+        const timer = this.context.createConstantSource()
+        timer.onended = () => {
+          if (!this.eventsById.has(event.id)) return
+          event.callback()
+        }
+        timer.start(this.context.currentTime)
+        timer.stop((event.when - startPos + startTime + this._lookAhead) / this.context.sampleRate)
       }
-      const timer = this.context.createConstantSource()
-      timer.onended = () => {
-        if (!this.eventsById.has(event.id)) return
-        event.callback()
-      }
-      timer.start(this.context.currentTime)
-      timer.stop(time)
-    }
-
-    if (this.loop && this._loopStart < this._loopEnd) {
-      return
-    }
-    if (this.lastTick - this.startTime > this._endTime) {
-      this.active = false
     }
   }
 
@@ -249,17 +206,13 @@ export class Transport {
     return id
   }
 
-  scheduleParametricNote(
-    note: Omit<ParametricNoteHandle, 'id' | 'start' | 'end'>,
-    start: number,
-    end: number,
-  ) {
+  scheduleParametricNote(note: Omit<ParametricNoteHandle, 'id'>) {
     const id = this.nextEventId++
     this.parametricNotesById.set(id, {
       ...note,
       id,
-      start: round(start * this.context.sampleRate),
-      end: round(end * this.context.sampleRate),
+      when: round(note.when * this.context.sampleRate),
+      duration: round(note.duration * this.context.sampleRate),
     })
 
     return id

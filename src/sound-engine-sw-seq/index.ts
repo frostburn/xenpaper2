@@ -126,9 +126,9 @@ export class SoundEngineSwSeq extends SoundEngine {
               this.activeNoteEvents.delete(item)
               this._triggerEvent('note', item, false)
             },
+            when: item.time,
+            duration: item.timeEnd - item.time,
           },
-          item.time,
-          item.timeEnd,
         )
         this.transportEventIds.set(noteEventId, true)
         this.noteOffs.push(noteHandle.noteOff)
