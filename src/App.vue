@@ -360,6 +360,7 @@ onUnmounted(() => {
   min-height: 0;
   line-height: 1.4em;
   font-size: clamp(1.1rem, 1.65vw, 1.4rem);
+  overflow: hidden;
 }
 
 .source-editor::before {
@@ -430,17 +431,19 @@ onUnmounted(() => {
   word-break: keep-all;
   overflow-wrap: break-word;
   padding: 1rem 8rem 1rem 2rem;
+  scrollbar-gutter: stable;
 }
 
 .source-input {
   position: absolute;
   inset: 0;
+  z-index: 1;
   height: 100%;
   resize: none;
   outline: 0;
   caret-color: var(--xenpaper-text);
   color: inherit;
-  overflow: hidden;
+  overflow: auto;
   -webkit-text-fill-color: transparent;
 }
 
@@ -449,9 +452,13 @@ onUnmounted(() => {
 }
 
 .source-highlights {
-  position: relative;
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  height: 100%;
   pointer-events: none;
   user-select: none;
+  overflow: hidden;
 }
 
 .play-start-marker {

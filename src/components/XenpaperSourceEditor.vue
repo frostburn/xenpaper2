@@ -36,6 +36,16 @@ const handleSourceInput = (event: Event): void => {
   emit('update:sourceCode', (event.target as HTMLTextAreaElement).value)
 }
 
+const sourceInput = ref<HTMLTextAreaElement>()
+const sourceHighlights = ref<HTMLPreElement>()
+
+const syncHighlightScroll = (): void => {
+  if (!sourceInput.value || !sourceHighlights.value) return
+
+  sourceHighlights.value.scrollTop = sourceInput.value.scrollTop
+  sourceHighlights.value.scrollLeft = sourceInput.value.scrollLeft
+}
+
 const handleSourceKeydown = (event: KeyboardEvent): void => {
   if (!(event.ctrlKey || event.metaKey)) return
 
@@ -242,6 +252,7 @@ const isCharacterActive = (charData?: CharData): boolean => {
       </div>
       <textarea
         id="source-code"
+        ref="sourceInput"
         :value="sourceCode"
         class="source-input"
         placeholder="Type your tune here..."
@@ -252,8 +263,9 @@ const isCharacterActive = (charData?: CharData): boolean => {
         :readonly="isEmbedMode"
         @input="handleSourceInput"
         @keydown="handleSourceKeydown"
+        @scroll="syncHighlightScroll"
       />
-      <pre class="source-highlights"><span
+      <pre ref="sourceHighlights" class="source-highlights"><span
         v-if="sourceCode === ''"
         class="placeholder-text"
         aria-hidden="true"
