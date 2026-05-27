@@ -360,6 +360,7 @@ onUnmounted(() => {
   min-height: 0;
   line-height: 1.4em;
   font-size: clamp(1.1rem, 1.65vw, 1.4rem);
+  overflow: hidden;
 }
 
 .source-editor::before {
@@ -430,6 +431,7 @@ onUnmounted(() => {
   word-break: keep-all;
   overflow-wrap: break-word;
   padding: 1rem 8rem 1rem 2rem;
+  scrollbar-gutter: stable;
 }
 
 .source-input {
