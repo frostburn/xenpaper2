@@ -1,0 +1,96 @@
+import { describe, expect, it } from 'vitest'
+
+import { Transport } from './transport'
+
+class MockAudioContext {
+  currentTime = 0
+  sampleRate = 10
+  destination = {} as AudioDestinationNode
+
+  createConstantSource() {
+    return {
+      onended: null as null | (() => void),
+      start: (_time?: number) => undefined,
+      stop: (_time?: number) => undefined,
+    }
+  }
+}
+
+const tick = (transport: Transport, times = 1) => {
+  const inner = transport as unknown as { context: MockAudioContext; onInterval: () => void }
+  for (let i = 0; i < times; i++) {
+    inner.context.currentTime = i / inner.context.sampleRate
+    inner.onInterval()
+  }
+}
+
+function createTransport() {
+  return new Transport(new MockAudioContext() as unknown as AudioContext)
+}
+
+describe('Sample-accurate look-ahead transport', () => {
+  it('can schedule and fire a single event', () => {
+    const calls: number[] = []
+    const transport = createTransport()
+    const id = transport.scheduleParametric((time: number) => calls.push(time), 0)
+
+    transport.start(0)
+    tick(transport, transport.context.sampleRate * 2)
+
+    expect(id).toBeGreaterThan(0)
+    expect(calls).toHaveLength(1)
+    expect(calls[0]).toBeCloseTo(transport.lookAhead)
+  })
+
+  it('ends notes that lead into a looped section', () => {
+    const calls: { which: 'on' | 'off'; time: number }[] = []
+    const transport = createTransport()
+    const id = transport.scheduleParametricNote({
+      noteOn: (time: number) => calls.push({ which: 'on', time }),
+      noteOff: (time: number) => calls.push({ which: 'off', time }),
+      when: 0.5,
+      duration: 1,
+    })
+
+    transport.loop = true
+    transport.loopStart = 1
+    transport.loopEnd = 2
+    transport.start(0)
+    tick(transport, transport.context.sampleRate * 5)
+
+    expect(id).toBeGreaterThan(0)
+    expect(calls).toHaveLength(2)
+    expect(calls[0]!.which).toBe('on')
+    expect(calls[0]!.time).toBeCloseTo(0.5 + transport.lookAhead)
+    expect(calls[1]!.which).toBe('off')
+    expect(calls[1]!.time).toBeCloseTo(1.5 + transport.lookAhead)
+  })
+
+  it('repeats notes that lead out of a looped section', () => {
+    const calls: { which: 'on' | 'off'; time: number }[] = []
+    const transport = createTransport()
+    const id = transport.scheduleParametricNote({
+      noteOn: (time: number) => calls.push({ which: 'on', time }),
+      noteOff: (time: number) => calls.push({ which: 'off', time }),
+      when: 1.5,
+      duration: 1,
+    })
+
+    transport.loop = true
+    transport.loopStart = 1
+    transport.loopEnd = 2
+    transport.start(0)
+    tick(transport, transport.context.sampleRate * 3)
+
+    expect(id).toBeGreaterThan(0)
+    expect(calls).toHaveLength(4)
+    expect(calls[0]!.which).toBe('on')
+    expect(calls[0]!.time).toBeCloseTo(1.5 + transport.lookAhead)
+    expect(calls[1]!.which).toBe('off')
+    expect(calls[1]!.time).toBeCloseTo(2.5 + transport.lookAhead)
+    expect(calls[2]!.which).toBe('on')
+    expect(calls[2]!.time).toBeCloseTo(2.5 + transport.lookAhead)
+    expect(calls[3]!.which).toBe('off')
+    expect(calls[3]!.time).toBeCloseTo(3.5 + transport.lookAhead)
+  })
+})
