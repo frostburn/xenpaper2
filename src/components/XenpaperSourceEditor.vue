@@ -96,7 +96,9 @@ const deadSourceTabs = computed(() =>
 const liveSourceTabCount = computed(() => liveSourceTabs.value.length)
 
 const closeRestoreMenu = (): void => {
-  restoreMenu.value!.open = false
+  if (!restoreMenu.value) return
+
+  restoreMenu.value.open = false
 }
 
 const restoreSourceCodeTab = (index: number): void => {
@@ -119,10 +121,10 @@ const handleSourceTabClick = (event: MouseEvent, index: number): void => {
 }
 
 const handleDocumentPointerdown = (event: PointerEvent): void => {
-  if (!restoreMenu.value!.open) return
+  if (!restoreMenu.value?.open) return
 
   const target = event.target
-  if (!(target instanceof Node) || restoreMenu.value!.contains(target)) return
+  if (!(target instanceof Node) || restoreMenu.value.contains(target)) return
 
   closeRestoreMenu()
 }
