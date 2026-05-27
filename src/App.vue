@@ -437,6 +437,7 @@ onUnmounted(() => {
 .source-input {
   position: absolute;
   inset: 0;
+  z-index: 2;
   height: 100%;
   resize: none;
   outline: 0;
@@ -451,7 +452,10 @@ onUnmounted(() => {
 }
 
 .source-highlights {
-  position: relative;
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  height: 100%;
   pointer-events: none;
   user-select: none;
   overflow: hidden;
