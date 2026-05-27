@@ -327,17 +327,21 @@ const handleWheel = (event: WheelEvent): void => {
 let resizeObserver: ResizeObserver | undefined
 
 onMounted(() => {
-  if (!rulerElement.value) return
+  const element = rulerElement.value
+  if (!element) return
 
   const updateDimensions = (): void => {
-    const rect = rulerElement.value.getBoundingClientRect()
+    const currentElement = rulerElement.value
+    if (!currentElement) return
+
+    const rect = currentElement.getBoundingClientRect()
     rulerWidth.value = rect.width
     rulerHeight.value = rect.height
   }
 
   updateDimensions()
   resizeObserver = new ResizeObserver(updateDimensions)
-  resizeObserver.observe(rulerElement.value)
+  resizeObserver.observe(element)
 })
 
 onBeforeUnmount(() => {
