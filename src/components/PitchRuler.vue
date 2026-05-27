@@ -32,7 +32,7 @@ const props = defineProps<{
   initialState?: InitialRulerState
 }>()
 
-const rulerElement = useTemplateRef<HTMLElement>('rulerElement')
+const rulerElement = useTemplateRef('rulerElement')
 const rulerWidth = ref(0)
 const rulerHeight = ref(0)
 const dragging = ref(false)

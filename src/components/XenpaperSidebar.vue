@@ -35,10 +35,10 @@ const emit = defineEmits<{
   activeNoteHandlerChange: [handler?: (note: MoscNote, on: boolean) => void]
 }>()
 
-const pitchRuler = useTemplateRef<InstanceType<typeof PitchRuler>>('pitchRuler')
+const pitchRuler = useTemplateRef('pitchRuler')
 const copiedShareLink = ref(false)
 const copiedEmbedCode = ref(false)
-const fileInput = useTemplateRef<HTMLInputElement>('fileInput')
+const fileInput = useTemplateRef('fileInput')
 const importError = ref('')
 const serializedSourceFile = computed(() => serializeXenpaperScoreFile(props.sourceCodes))
 let shareLinkResetTimeout: number | undefined

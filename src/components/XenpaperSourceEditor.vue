@@ -36,8 +36,8 @@ const handleSourceInput = (event: Event): void => {
   emit('update:sourceCode', (event.target as HTMLTextAreaElement).value)
 }
 
-const sourceInput = useTemplateRef<HTMLTextAreaElement>('sourceInput')
-const sourceHighlights = useTemplateRef<HTMLPreElement>('sourceHighlights')
+const sourceInput = useTemplateRef('sourceInput')
+const sourceHighlights = useTemplateRef('sourceHighlights')
 
 const syncHighlightScroll = (): void => {
   if (!sourceInput.value || !sourceHighlights.value) return
@@ -86,7 +86,7 @@ const handleSourceKeydown = (event: KeyboardEvent): void => {
   }
 }
 
-const restoreMenu = useTemplateRef<HTMLDetailsElement>('restoreMenu')
+const restoreMenu = useTemplateRef('restoreMenu')
 
 const activeSourceTab = computed(() => props.sourceTabs[props.activeSourceCodeTabIndex])
 const liveSourceTabs = computed(() => props.sourceTabs.filter((tab) => tab.alive))
