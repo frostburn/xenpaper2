@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, useTemplateRef } from 'vue'
 
 import type { CharData } from '../grammars/grammar-to-chars'
 import { getSourceLineAtOffset } from '../source-display'
@@ -36,8 +36,8 @@ const handleSourceInput = (event: Event): void => {
   emit('update:sourceCode', (event.target as HTMLTextAreaElement).value)
 }
 
-const sourceInput = ref<HTMLTextAreaElement>()
-const sourceHighlights = ref<HTMLPreElement>()
+const sourceInput = useTemplateRef('sourceInput')
+const sourceHighlights = useTemplateRef('sourceHighlights')
 
 const syncHighlightScroll = (): void => {
   if (!sourceInput.value || !sourceHighlights.value) return
@@ -86,7 +86,7 @@ const handleSourceKeydown = (event: KeyboardEvent): void => {
   }
 }
 
-const restoreMenu = ref<HTMLDetailsElement>()
+const restoreMenu = useTemplateRef('restoreMenu')
 
 const activeSourceTab = computed(() => props.sourceTabs[props.activeSourceCodeTabIndex])
 const liveSourceTabs = computed(() => props.sourceTabs.filter((tab) => tab.alive))

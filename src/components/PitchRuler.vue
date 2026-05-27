@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, useTemplateRef, watch } from 'vue'
 
 import { centsToRatio, ratioToCents, type MoscNote } from '../mosc'
 import type { InitialRulerState } from '../grammars/process-grammar'
@@ -32,7 +32,7 @@ const props = defineProps<{
   initialState?: InitialRulerState
 }>()
 
-const rulerElement = ref<HTMLElement>()
+const rulerElement = useTemplateRef('rulerElement')
 const rulerWidth = ref(0)
 const rulerHeight = ref(0)
 const dragging = ref(false)
@@ -327,17 +327,21 @@ const handleWheel = (event: WheelEvent): void => {
 let resizeObserver: ResizeObserver | undefined
 
 onMounted(() => {
-  if (!rulerElement.value) return
+  const element = rulerElement.value
+  if (!element) return
 
   const updateDimensions = (): void => {
-    const rect = rulerElement.value?.getBoundingClientRect()
-    rulerWidth.value = rect?.width ?? 0
-    rulerHeight.value = rect?.height ?? 0
+    const currentElement = rulerElement.value
+    if (!currentElement) return
+
+    const rect = currentElement.getBoundingClientRect()
+    rulerWidth.value = rect.width
+    rulerHeight.value = rect.height
   }
 
   updateDimensions()
   resizeObserver = new ResizeObserver(updateDimensions)
-  resizeObserver.observe(rulerElement.value)
+  resizeObserver.observe(element)
 })
 
 onBeforeUnmount(() => {

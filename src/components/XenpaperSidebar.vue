@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, useTemplateRef, watch } from 'vue'
 
 import type { MoscNote } from '../mosc'
 import type { InitialRulerState } from '../grammars/process-grammar'
@@ -35,10 +35,10 @@ const emit = defineEmits<{
   activeNoteHandlerChange: [handler?: (note: MoscNote, on: boolean) => void]
 }>()
 
-const pitchRuler = ref<InstanceType<typeof PitchRuler>>()
+const pitchRuler = useTemplateRef('pitchRuler')
 const copiedShareLink = ref(false)
 const copiedEmbedCode = ref(false)
-const fileInput = ref<HTMLInputElement>()
+const fileInput = useTemplateRef('fileInput')
 const importError = ref('')
 const serializedSourceFile = computed(() => serializeXenpaperScoreFile(props.sourceCodes))
 let shareLinkResetTimeout: number | undefined
