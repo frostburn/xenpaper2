@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, useTemplateRef, watch } from 'vue'
 
 import { centsToRatio, ratioToCents, type MoscNote } from '../mosc'
 import type { InitialRulerState } from '../grammars/process-grammar'
@@ -32,7 +32,7 @@ const props = defineProps<{
   initialState?: InitialRulerState
 }>()
 
-const rulerElement = ref<HTMLElement>()
+const rulerElement = useTemplateRef<HTMLElement>('rulerElement')
 const rulerWidth = ref(0)
 const rulerHeight = ref(0)
 const dragging = ref(false)
@@ -281,10 +281,10 @@ defineExpose({
 })
 
 const handlePointerDown = (event: PointerEvent): void => {
-  if (!rulerElement.value || rulerHeight.value <= 0) return
+  if (rulerHeight.value <= 0) return
 
   event.preventDefault()
-  rulerElement.value.setPointerCapture(event.pointerId)
+  rulerElement.value!.setPointerCapture(event.pointerId)
   dragStartState.value = {
     startPan: rulerState.viewPan,
     startZoom: rulerState.viewZoom,
@@ -327,17 +327,15 @@ const handleWheel = (event: WheelEvent): void => {
 let resizeObserver: ResizeObserver | undefined
 
 onMounted(() => {
-  if (!rulerElement.value) return
-
   const updateDimensions = (): void => {
-    const rect = rulerElement.value?.getBoundingClientRect()
-    rulerWidth.value = rect?.width ?? 0
-    rulerHeight.value = rect?.height ?? 0
+    const rect = rulerElement.value!.getBoundingClientRect()
+    rulerWidth.value = rect.width
+    rulerHeight.value = rect.height
   }
 
   updateDimensions()
   resizeObserver = new ResizeObserver(updateDimensions)
-  resizeObserver.observe(rulerElement.value)
+  resizeObserver.observe(rulerElement.value!)
 })
 
 onBeforeUnmount(() => {

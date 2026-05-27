@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, useTemplateRef } from 'vue'
 
 import type { CharData } from '../grammars/grammar-to-chars'
 import { getSourceLineAtOffset } from '../source-display'
@@ -36,8 +36,8 @@ const handleSourceInput = (event: Event): void => {
   emit('update:sourceCode', (event.target as HTMLTextAreaElement).value)
 }
 
-const sourceInput = ref<HTMLTextAreaElement>()
-const sourceHighlights = ref<HTMLPreElement>()
+const sourceInput = useTemplateRef<HTMLTextAreaElement>('sourceInput')
+const sourceHighlights = useTemplateRef<HTMLPreElement>('sourceHighlights')
 
 const syncHighlightScroll = (): void => {
   if (!sourceInput.value || !sourceHighlights.value) return
@@ -86,7 +86,7 @@ const handleSourceKeydown = (event: KeyboardEvent): void => {
   }
 }
 
-const restoreMenu = ref<HTMLDetailsElement>()
+const restoreMenu = useTemplateRef<HTMLDetailsElement>('restoreMenu')
 
 const activeSourceTab = computed(() => props.sourceTabs[props.activeSourceCodeTabIndex])
 const liveSourceTabs = computed(() => props.sourceTabs.filter((tab) => tab.alive))
@@ -96,9 +96,7 @@ const deadSourceTabs = computed(() =>
 const liveSourceTabCount = computed(() => liveSourceTabs.value.length)
 
 const closeRestoreMenu = (): void => {
-  if (!restoreMenu.value) return
-
-  restoreMenu.value.open = false
+  restoreMenu.value!.open = false
 }
 
 const restoreSourceCodeTab = (index: number): void => {
@@ -121,10 +119,10 @@ const handleSourceTabClick = (event: MouseEvent, index: number): void => {
 }
 
 const handleDocumentPointerdown = (event: PointerEvent): void => {
-  if (!restoreMenu.value?.open) return
+  if (!restoreMenu.value!.open) return
 
   const target = event.target
-  if (!(target instanceof Node) || restoreMenu.value.contains(target)) return
+  if (!(target instanceof Node) || restoreMenu.value!.contains(target)) return
 
   closeRestoreMenu()
 }
