@@ -174,7 +174,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   let nextScoreEngineId = 2
   let shouldApplyInitialSidebarMode = true
   const cancelOnEndByEngine = new Map<number, () => void>()
-  const cancelOnNoteByEngine = new Map<number, () => void>()
+  const cancelOnNoteByEngine = new Map<ScoreEngine, () => void>()
   let activeNoteHandler: ((note: MoscNote, on: boolean) => void) | undefined
 
   const activeScoreEngine = computed(() => scoreEngines.value[activeScoreEngineIndex.value]!)
@@ -322,8 +322,8 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     enginesToRemember.forEach((engine) => {
       cancelOnEndByEngine.get(engine.id)?.()
       cancelOnEndByEngine.delete(engine.id)
-      cancelOnNoteByEngine.get(engine.id)?.()
-      cancelOnNoteByEngine.delete(engine.id)
+      cancelOnNoteByEngine.get(engine)?.()
+      cancelOnNoteByEngine.delete(engine)
     })
 
     deadScoreEngines.value = [...enginesToRemember, ...deadScoreEngines.value]
@@ -595,20 +595,20 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   }
 
   const syncSoundEngineNoteListeners = (): void => {
-    const aliveEngineIds = new Set(scoreEngines.value.map((engine) => engine.id))
+    const aliveEngines = new Set(scoreEngines.value)
 
-    cancelOnNoteByEngine.forEach((cancel, engineId) => {
-      if (aliveEngineIds.has(engineId)) return
+    cancelOnNoteByEngine.forEach((cancel, engine) => {
+      if (aliveEngines.has(engine)) return
 
       cancel()
-      cancelOnNoteByEngine.delete(engineId)
+      cancelOnNoteByEngine.delete(engine)
     })
 
     scoreEngines.value.forEach((engine) => {
-      if (cancelOnNoteByEngine.has(engine.id)) return
+      if (cancelOnNoteByEngine.has(engine)) return
 
       cancelOnNoteByEngine.set(
-        engine.id,
+        engine,
         engine.soundEngine.onNote((note: MoscNote, on: boolean) => {
           activeNoteHandler?.(note, on)
         }),
