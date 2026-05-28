@@ -512,12 +512,19 @@ describe('App source editor keyboard shortcuts', () => {
     expect(wrapper.findAll('[role="tab"]')).toHaveLength(2)
     expect(wrapper.find('button[aria-label="Add source code"]').exists()).toBe(false)
     expect(wrapper.find('.source-tab-close').exists()).toBe(false)
+    expect(wrapper.find('.source-editor-tab-control').exists()).toBe(false)
     expect(wrapper.get<HTMLTextAreaElement>('textarea').element.readOnly).toBe(true)
 
     await wrapper.findAll('[role="tab"]')[1]!.trigger('click')
     await flushPromises()
 
     expect(wrapper.get<HTMLTextAreaElement>('textarea').element.value).toBe('second')
+  })
+
+  it('does not render editor playback controls in embed source code', async () => {
+    const { wrapper } = await mountApp('#0_2%0A4_5', '/embed/')
+
+    expect(wrapper.find('.play-start-marker').exists()).toBe(false)
   })
 
   it('shows and restores a recently closed source code tab', async () => {
