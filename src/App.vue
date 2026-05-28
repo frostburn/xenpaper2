@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, watch, type WatchStopHandle } from 'v
 import { RouterView, useRoute, useRouter } from 'vue-router'
 
 import TheFooter from './components/TheFooter.vue'
+import XenpaperEmbedToolbar from './components/XenpaperEmbedToolbar.vue'
 import XenpaperSidebar from './components/XenpaperSidebar.vue'
 import XenpaperToolbar from './components/XenpaperToolbar.vue'
 import { useXenpaperStore } from './stores/xenpaper'
@@ -99,12 +100,9 @@ const startWatchers = (): void => {
     xenpaper.updateLoopStart()
   })
 
-  stopRouteHashWatcher = watch(
-    [() => route.hash, isEmbedMode],
-    ([sharedHash, embedMode]) => {
-      xenpaper.applySharedHash(sharedHash, embedMode)
-    },
-  )
+  stopRouteHashWatcher = watch([() => route.hash, isEmbedMode], ([sharedHash, embedMode]) => {
+    xenpaper.applySharedHash(sharedHash, embedMode)
+  })
 
   stopPlaybackWatcher = watch(
     () => xenpaper.isPlaying,
@@ -152,11 +150,18 @@ onUnmounted(() => {
 <template>
   <div class="app-shell">
     <div class="app-layout" :class="{ 'app-layout-embed': isEmbedMode }">
-      <XenpaperToolbar
-        :is-embed-mode="isEmbedMode"
+      <XenpaperEmbedToolbar
+        v-if="isEmbedMode"
+        :edit-url="xenpaper.shareUrl"
         :is-playing="xenpaper.isPlaying"
         :is-looping="xenpaper.isLooping"
-        :share-url="xenpaper.shareUrl"
+        @toggle-playback="xenpaper.togglePlayback"
+        @toggle-loop="xenpaper.toggleLoop"
+      />
+      <XenpaperToolbar
+        v-else
+        :is-playing="xenpaper.isPlaying"
+        :is-looping="xenpaper.isLooping"
         :can-undo-source-code="xenpaper.canUndoSourceCode"
         :can-redo-source-code="xenpaper.canRedoSourceCode"
         :sidebar-mode="xenpaper.sidebarMode"
@@ -168,7 +173,7 @@ onUnmounted(() => {
       />
       <RouterView />
       <XenpaperSidebar
-        :is-embed-mode="isEmbedMode"
+        v-if="!isEmbedMode"
         :sidebar-mode="xenpaper.sidebarMode"
         :share-url="xenpaper.shareUrl"
         :embed-code="xenpaper.embedCode"
@@ -882,7 +887,6 @@ onUnmounted(() => {
   line-height: 1.3rem;
 }
 
-
 @media (max-width: 900px) {
   .actions:not(.actions-embed) {
     position: sticky;
@@ -952,13 +956,11 @@ onUnmounted(() => {
     overflow: visible;
   }
 
-
   .toolbar-rule {
     margin: 0.5rem 0.25rem;
     border-top: 0;
     border-left: 1px solid var(--xenpaper-bg-light);
   }
-
 
   .source-editor,
   .source-input,
@@ -1092,5 +1094,4 @@ onUnmounted(() => {
     overflow-wrap: anywhere;
   }
 }
-
 </style>

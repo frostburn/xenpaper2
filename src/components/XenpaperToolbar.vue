@@ -6,10 +6,8 @@ import PlayPauseButton from './PlayPauseButton.vue'
 import type { OpenSidebarMode, SidebarMode } from '../types'
 
 defineProps<{
-  isEmbedMode: boolean
   isPlaying: boolean
   isLooping: boolean
-  shareUrl: string
   canUndoSourceCode: boolean
   canRedoSourceCode: boolean
   sidebarMode: SidebarMode
@@ -25,7 +23,7 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div class="actions" :class="{ 'actions-embed': isEmbedMode }" aria-label="Playback controls">
+  <div class="actions" aria-label="Playback controls">
     <PlayPauseButton :playing="isPlaying" @toggle="emit('togglePlayback')" />
     <button
       class="action-button loop-button"
@@ -36,18 +34,8 @@ const emit = defineEmits<{
     >
       Loop
     </button>
-    <a
-      v-if="isEmbedMode"
-      class="action-button edit-link"
-      :href="shareUrl"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      Edit on Xenpaper 2
-    </a>
-    <div v-if="!isEmbedMode" class="toolbar-rule" aria-hidden="true"></div>
+    <div class="toolbar-rule" aria-hidden="true"></div>
     <button
-      v-if="!isEmbedMode"
       class="action-button"
       type="button"
       :disabled="!canUndoSourceCode"
@@ -56,7 +44,6 @@ const emit = defineEmits<{
       Undo
     </button>
     <button
-      v-if="!isEmbedMode"
       class="action-button"
       type="button"
       :disabled="!canRedoSourceCode"
@@ -64,9 +51,8 @@ const emit = defineEmits<{
     >
       Redo
     </button>
-    <div v-if="!isEmbedMode" class="toolbar-rule" aria-hidden="true"></div>
+    <div class="toolbar-rule" aria-hidden="true"></div>
     <button
-      v-if="!isEmbedMode"
       class="action-button"
       :class="{ active: sidebarMode === 'info' }"
       type="button"
@@ -75,7 +61,6 @@ const emit = defineEmits<{
       Info
     </button>
     <button
-      v-if="!isEmbedMode"
       class="action-button"
       :class="{ active: sidebarMode === 'share' }"
       type="button"
@@ -84,7 +69,6 @@ const emit = defineEmits<{
       Share
     </button>
     <button
-      v-if="!isEmbedMode"
       class="action-button"
       :class="{ active: sidebarMode === 'ruler' }"
       type="button"
@@ -92,7 +76,7 @@ const emit = defineEmits<{
     >
       Ruler
     </button>
-    <nav v-if="!isEmbedMode" class="route-navigation" aria-label="Application navigation">
+    <nav class="route-navigation" aria-label="Application navigation">
       <RouterLink class="action-button route-link" to="/">Home</RouterLink>
       <RouterLink class="action-button route-link" to="/about">About</RouterLink>
     </nav>

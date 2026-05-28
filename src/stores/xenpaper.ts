@@ -168,16 +168,15 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   const isEmbedMode = ref(false)
   const sidebarMode = ref<SidebarMode>('info')
   const locationHref = ref(DEFAULT_LOCATION_HREF)
-  const embedBaseUrl = computed(() => {
+  const appBaseUrl = computed(() => {
     const url = new URL(locationHref.value)
-    const pathname = url.pathname.replace(/\/(?:about|embed)\/?$/, '/')
-
-    url.pathname = `${pathname.replace(/\/?$/, '/')}embed/`
+    url.pathname = url.pathname.replace(/\/(?:about|embed)\/?$/, '/')
     url.search = ''
     url.hash = ''
 
     return url.toString()
   })
+  const embedBaseUrl = computed(() => new URL('embed/', appBaseUrl.value).toString())
   const deadScoreEngines = shallowRef<ScoreEngine[]>([])
   let nextScoreEngineId = 2
   let shouldApplyInitialSidebarMode = true
@@ -217,7 +216,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   const shareHash = computed(() => getShareHash(sourceCodes.value))
   const routeHash = computed(() => shareHash.value)
   const shareUrl = computed(() =>
-    new URL(encodeShareHashForUrl(shareHash.value), locationHref.value).toString(),
+    new URL(encodeShareHashForUrl(shareHash.value), appBaseUrl.value).toString(),
   )
   const embedUrl = computed(() =>
     new URL(encodeShareHashForUrl(shareHash.value), embedBaseUrl.value).toString(),

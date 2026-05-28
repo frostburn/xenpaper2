@@ -7,7 +7,6 @@ const xenpaper = useXenpaperStore()
 
 <template>
   <XenpaperSourceEditor
-    :is-embed-mode="false"
     :source-tabs="xenpaper.sourceTabs"
     :active-source-code-tab-index="xenpaper.activeSourceCodeTabIndex"
     :source-code="xenpaper.sourceCode"

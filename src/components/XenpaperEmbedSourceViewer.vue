@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, useTemplateRef } from 'vue'
+import { computed, useTemplateRef } from 'vue'
 
 import type { CharData } from '../grammars/grammar-to-chars'
 import { getSourceLineAtOffset } from '../source-display'
@@ -18,25 +18,20 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  'update:sourceCode': [source: string]
   restartPlaybackFromStart: []
   restartPlaybackFromLine: [line: number]
-  undoSourceCode: []
-  redoSourceCode: []
   setSelectedLine: [line: number]
-  addSourceCodeTab: []
   selectSourceCodeTab: [index: number]
   toggleSourceCodeTabMute: [index: number]
   toggleSourceCodeTabSolo: [index: number, preserveOtherSolos?: boolean]
-  closeSourceCodeTab: [id: number]
 }>()
-
-const handleSourceInput = (event: Event): void => {
-  emit('update:sourceCode', (event.target as HTMLTextAreaElement).value)
-}
 
 const sourceInput = useTemplateRef('sourceInput')
 const sourceHighlights = useTemplateRef('sourceHighlights')
+
+const activeSourceTab = computed(() => props.sourceTabs[props.activeSourceCodeTabIndex])
+const liveSourceTabs = computed(() => props.sourceTabs.filter((tab) => tab.alive))
+const liveSourceTabCount = computed(() => liveSourceTabs.value.length)
 
 const syncHighlightScroll = (): void => {
   if (!sourceInput.value || !sourceHighlights.value) return
@@ -62,47 +57,7 @@ const handleSourceKeydown = (event: KeyboardEvent): void => {
         ? getSourceLineAtOffset(props.sourceCode, target.selectionStart)
         : props.selectedLine
     emit('restartPlaybackFromLine', line)
-    return
   }
-
-  const key = event.key.toLowerCase()
-
-  if (key === 'z' && event.shiftKey) {
-    event.preventDefault()
-    emit('redoSourceCode')
-    return
-  }
-
-  if (key === 'z') {
-    event.preventDefault()
-    emit('undoSourceCode')
-    return
-  }
-
-  if (key === 'y') {
-    event.preventDefault()
-    emit('redoSourceCode')
-  }
-}
-
-const restoreMenu = useTemplateRef('restoreMenu')
-
-const activeSourceTab = computed(() => props.sourceTabs[props.activeSourceCodeTabIndex])
-const liveSourceTabs = computed(() => props.sourceTabs.filter((tab) => tab.alive))
-const deadSourceTabs = computed(() =>
-  props.sourceTabs.map((tab, index) => ({ ...tab, index })).filter((tab) => !tab.alive),
-)
-const liveSourceTabCount = computed(() => liveSourceTabs.value.length)
-
-const closeRestoreMenu = (): void => {
-  if (!restoreMenu.value) return
-
-  restoreMenu.value.open = false
-}
-
-const restoreSourceCodeTab = (index: number): void => {
-  emit('selectSourceCodeTab', index)
-  closeRestoreMenu()
 }
 
 const handleSourceTabClick = (event: MouseEvent, index: number): void => {
@@ -119,23 +74,6 @@ const handleSourceTabClick = (event: MouseEvent, index: number): void => {
   emit('selectSourceCodeTab', index)
 }
 
-const handleDocumentPointerdown = (event: PointerEvent): void => {
-  if (!restoreMenu.value?.open) return
-
-  const target = event.target
-  if (!(target instanceof Node) || restoreMenu.value.contains(target)) return
-
-  closeRestoreMenu()
-}
-
-onMounted(() => {
-  document.addEventListener('pointerdown', handleDocumentPointerdown)
-})
-
-onUnmounted(() => {
-  document.removeEventListener('pointerdown', handleDocumentPointerdown)
-})
-
 const isCharacterActive = (charData?: CharData): boolean => {
   const [start, end] = charData?.playTime ?? []
 
@@ -150,8 +88,13 @@ const isCharacterActive = (charData?: CharData): boolean => {
 </script>
 
 <template>
-  <main class="xenpaper-app">
-    <div class="source-tabs" role="tablist" aria-label="Source codes">
+  <main class="xenpaper-app xenpaper-app-embed">
+    <div
+      v-if="liveSourceTabs.length > 1"
+      class="source-tabs"
+      role="tablist"
+      aria-label="Source codes"
+    >
       <div class="source-tab-list">
         <div v-for="(tab, index) in liveSourceTabs" :key="tab.id" class="source-tab">
           <button
@@ -167,44 +110,12 @@ const isCharacterActive = (charData?: CharData): boolean => {
           >
             {{ tab.title }}
           </button>
-          <button
-            v-if="liveSourceTabCount > 1"
-            class="source-tab-close"
-            type="button"
-            :aria-label="`Close ${tab.title}`"
-            @click="emit('closeSourceCodeTab', tab.id)"
-          >
-            ×
-          </button>
         </div>
-        <button
-          class="source-tab-add"
-          type="button"
-          aria-label="Add source code"
-          @click="emit('addSourceCodeTab')"
-        >
-          +
-        </button>
       </div>
-      <details v-if="deadSourceTabs.length" ref="restoreMenu" class="source-tab-restore-menu">
-        <summary class="source-tab-restore-summary">Recently closed</summary>
-        <div class="source-tab-restore-list">
-          <button
-            v-for="tab in deadSourceTabs"
-            :key="tab.id"
-            class="source-tab-restore-button"
-            type="button"
-            :title="`Restore ${tab.title}`"
-            @click="restoreSourceCodeTab(tab.index)"
-          >
-            {{ tab.title }}
-          </button>
-        </div>
-      </details>
     </div>
     <label class="source-label" for="source-code">Source code</label>
     <div
-      class="source-editor"
+      class="source-editor source-editor-embed"
       :id="activeSourceTab ? `source-code-panel-${activeSourceTab.id}` : undefined"
       role="tabpanel"
     >
@@ -244,11 +155,11 @@ const isCharacterActive = (charData?: CharData): boolean => {
         :value="sourceCode"
         class="source-input"
         placeholder="Type your tune here..."
+        readonly
         autocapitalize="off"
         autocomplete="off"
         autocorrect="off"
         spellcheck="false"
-        @input="handleSourceInput"
         @keydown="handleSourceKeydown"
         @scroll="syncHighlightScroll"
       />

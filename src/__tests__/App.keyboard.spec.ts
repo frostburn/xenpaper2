@@ -337,6 +337,14 @@ describe('App source editor keyboard shortcuts', () => {
     expect(store.embedCode).toContain('src="http://localhost:3000/embed/#linked_tune"')
   })
 
+  it('points embed edit links to the root editor route', async () => {
+    const { wrapper } = await mountApp('#linked_tune', '/embed/')
+
+    expect(wrapper.get<HTMLAnchorElement>('.edit-link').element.href).toBe(
+      'http://localhost:3000/#linked_tune',
+    )
+  })
+
   it.skip('decodes legacy escapes', async () => {
     // This test works but produces: [Vue Router warn]: Error decoding "#first~second%_tab~third". Using original value
     const { store: restoredStore } = await mountApp('#first~second%_tab~third')
@@ -504,6 +512,7 @@ describe('App source editor keyboard shortcuts', () => {
     expect(wrapper.findAll('[role="tab"]')).toHaveLength(2)
     expect(wrapper.find('button[aria-label="Add source code"]').exists()).toBe(false)
     expect(wrapper.find('.source-tab-close').exists()).toBe(false)
+    expect(wrapper.get<HTMLTextAreaElement>('textarea').element.readOnly).toBe(true)
 
     await wrapper.findAll('[role="tab"]')[1]!.trigger('click')
     await flushPromises()
