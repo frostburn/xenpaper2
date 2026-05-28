@@ -1,9 +1,10 @@
 <script setup lang="ts">
+import type { CharData } from '../grammars/grammar-to-chars'
 import { computed, onMounted, onUnmounted, useTemplateRef } from 'vue'
 
-import type { CharData } from '../grammars/grammar-to-chars'
 import { getSourceLineAtOffset } from '../source-display'
 import type { SourceDisplayToken, SourceTab } from '../types'
+import SourceCodePane from './SourceCodePane.vue'
 
 const props = defineProps<{
   sourceCode: string
@@ -30,20 +31,6 @@ const emit = defineEmits<{
   toggleSourceCodeTabSolo: [index: number, preserveOtherSolos?: boolean]
   closeSourceCodeTab: [id: number]
 }>()
-
-const handleSourceInput = (event: Event): void => {
-  emit('update:sourceCode', (event.target as HTMLTextAreaElement).value)
-}
-
-const sourceInput = useTemplateRef('sourceInput')
-const sourceHighlights = useTemplateRef('sourceHighlights')
-
-const syncHighlightScroll = (): void => {
-  if (!sourceInput.value || !sourceHighlights.value) return
-
-  sourceHighlights.value.scrollTop = sourceInput.value.scrollTop
-  sourceHighlights.value.scrollLeft = sourceInput.value.scrollLeft
-}
 
 const handleSourceKeydown = (event: KeyboardEvent): void => {
   if (!(event.ctrlKey || event.metaKey)) return
@@ -135,18 +122,6 @@ onMounted(() => {
 onUnmounted(() => {
   document.removeEventListener('pointerdown', handleDocumentPointerdown)
 })
-
-const isCharacterActive = (charData?: CharData): boolean => {
-  const [start, end] = charData?.playTime ?? []
-
-  return (
-    props.isPlaying &&
-    start !== undefined &&
-    end !== undefined &&
-    props.playbackPositionTime >= start &&
-    props.playbackPositionTime < end
-  )
-}
 </script>
 
 <template>
@@ -238,43 +213,28 @@ const isCharacterActive = (charData?: CharData): boolean => {
           Mute
         </button>
       </div>
-      <textarea
-        id="source-code"
-        ref="sourceInput"
-        :value="sourceCode"
-        class="source-input"
-        placeholder="Type your tune here..."
-        autocapitalize="off"
-        autocomplete="off"
-        autocorrect="off"
-        spellcheck="false"
-        @input="handleSourceInput"
-        @keydown="handleSourceKeydown"
-        @scroll="syncHighlightScroll"
-      />
-      <pre ref="sourceHighlights" class="source-highlights"><span
-        v-if="sourceCode === ''"
-        class="placeholder-text"
-        aria-hidden="true"
-      >Type your tune here...</span><template v-else><template v-for="token in sourceDisplayTokens" :key="token.key"><button
-        v-if="token.type === 'playStart'"
-        class="play-start-marker"
-        :class="{ selected: selectedLine === token.line }"
-        type="button"
-        :aria-label="`Start playback at line ${token.line + 1}`"
-        :aria-pressed="selectedLine === token.line"
-        @click="emit('setSelectedLine', token.line)"
-      >&gt;</button><span
-        v-else
-        class="source-character"
-        aria-hidden="true"
-        :class="[
-          chars[token.index]?.color
-            ? `highlight-${chars[token.index]?.color}`
-            : 'highlight-unknown',
-          { active: isCharacterActive(chars[token.index]) },
-        ]"
-      >{{ token.character }}</span></template></template><br><br></pre>
+      <SourceCodePane
+        :source-code="sourceCode"
+        :source-display-tokens="sourceDisplayTokens"
+        :chars="chars"
+        :is-playing="isPlaying"
+        :playback-position-time="playbackPositionTime"
+        @update:source-code="emit('update:sourceCode', $event)"
+        @source-keydown="handleSourceKeydown"
+      >
+        <template #playStart="{ line }">
+          <button
+            class="play-start-marker"
+            :class="{ selected: selectedLine === line }"
+            type="button"
+            :aria-label="`Start playback at line ${line + 1}`"
+            :aria-pressed="selectedLine === line"
+            @click="emit('setSelectedLine', line)"
+          >
+            &gt;
+          </button>
+        </template>
+      </SourceCodePane>
     </div>
     <p v-if="lastError" class="playback-error" role="alert">Error: {{ lastError }}</p>
   </main>
