@@ -43,7 +43,6 @@ const replaceShareRoute = async (): Promise<void> => {
   if (route.hash === currentRouteHash.value) return
 
   await router.replace({
-    path: route.path,
     query: route.query,
     hash: currentRouteHash.value,
   })

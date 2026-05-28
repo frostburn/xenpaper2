@@ -272,6 +272,22 @@ describe('App source editor keyboard shortcuts', () => {
     expect(soundEngineMock.instances).toHaveLength(instanceCount)
   })
 
+  it('keeps direct About and Embed route loads on their routes while syncing hashes', async () => {
+    const { router: aboutRouter, store: aboutStore } = await mountApp('#about_tune', '/about')
+    aboutStore.setSourceCode('updated about tune')
+    await flushPromises()
+
+    expect(aboutRouter.currentRoute.value.path).toBe('/about')
+    expect(aboutRouter.currentRoute.value.hash).toBe('#updated_about_tune')
+
+    const { router: embedRouter, store: embedStore } = await mountApp('#embed_tune', '/embed')
+    embedStore.setSourceCode('updated embed tune')
+    await flushPromises()
+
+    expect(embedRouter.currentRoute.value.path).toBe('/embed/')
+    expect(embedRouter.currentRoute.value.hash).toBe('#updated_embed_tune')
+  })
+
   it('adds source code tabs with isolated editor contents', async () => {
     const { wrapper } = await mountApp('#0_2%0A4_5')
 
