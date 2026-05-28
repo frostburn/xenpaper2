@@ -899,8 +899,19 @@ onUnmounted(() => {
     position: sticky;
     top: 0;
     flex-direction: row;
+    flex-wrap: nowrap;
     width: 100%;
     padding-top: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .actions:not(.actions-embed) :deep(.play-pause-button),
+  .actions:not(.actions-embed) .action-button,
+  .actions:not(.actions-embed) .toolbar-rule,
+  .actions:not(.actions-embed) .route-navigation {
+    flex: 0 0 auto;
   }
 
   .action-button {
@@ -924,10 +935,14 @@ onUnmounted(() => {
   .route-navigation {
     flex-direction: row;
     margin-top: 0;
-    margin-left: auto;
+    margin-left: 0;
     padding-top: 0;
     border-top: 0;
     border-left: 1px solid var(--xenpaper-bg-light);
+  }
+
+  .source-tab-restore-menu {
+    display: none;
   }
 
   .source-editor,
@@ -959,8 +974,32 @@ onUnmounted(() => {
 }
 
 @media (max-width: 900px) and (orientation: landscape) {
+  .sidebar-stack {
+    flex-basis: 32%;
+    min-width: min(18rem, 42vw);
+  }
+
+  .sidebar-heading {
+    padding: 1.25rem 1.25rem 1rem;
+  }
+
+  .sidebar-heading h1 {
+    font-size: 1.75rem;
+    line-height: 1.5rem;
+  }
+
+  .sidebar-content {
+    padding: 1.25rem;
+    font-size: 0.95rem;
+  }
+
+  .sidebar-content h2,
+  .ruler-heading h2 {
+    font-size: 1.2rem;
+  }
+
   .source-editor {
-    font-size: clamp(0.9rem, 1.9vw, 1.05rem);
+    font-size: clamp(0.85rem, 1.5vw, 0.95rem);
   }
 
   .source-input,
