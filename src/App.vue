@@ -35,6 +35,7 @@ const initialRouteHash = (): string => {
 }
 
 const currentRouteHash = computed(() => xenpaper.routeHash)
+const isEmbedMode = computed(() => route.meta.embedMode === true)
 
 const replaceShareRoute = async (): Promise<void> => {
   xenpaper.saveSourceCodeToBrowser()
@@ -100,9 +101,9 @@ const startWatchers = (): void => {
   })
 
   stopRouteHashWatcher = watch(
-    () => route.hash,
-    (sharedHash) => {
-      xenpaper.applySharedHash(sharedHash)
+    [() => route.hash, isEmbedMode],
+    ([sharedHash, embedMode]) => {
+      xenpaper.applySharedHash(sharedHash, embedMode)
     },
   )
 
@@ -136,7 +137,7 @@ const stopWatchers = (): void => {
 
 onMounted(() => {
   xenpaper.initializeLocation(window.location.href)
-  xenpaper.initializeSourceCode(initialRouteHash())
+  xenpaper.initializeSourceCode(initialRouteHash(), isEmbedMode.value)
   startWatchers()
   void replaceShareRoute()
   void xenpaper.updateParsedSourceCode()
@@ -151,9 +152,9 @@ onUnmounted(() => {
 
 <template>
   <div class="app-shell">
-    <div class="app-layout" :class="{ 'app-layout-embed': xenpaper.isEmbedMode }">
+    <div class="app-layout" :class="{ 'app-layout-embed': isEmbedMode }">
       <XenpaperToolbar
-        :is-embed-mode="xenpaper.isEmbedMode"
+        :is-embed-mode="isEmbedMode"
         :is-playing="xenpaper.isPlaying"
         :is-looping="xenpaper.isLooping"
         :share-url="xenpaper.shareUrl"
@@ -168,7 +169,7 @@ onUnmounted(() => {
       />
       <RouterView />
       <XenpaperSidebar
-        :is-embed-mode="xenpaper.isEmbedMode"
+        :is-embed-mode="isEmbedMode"
         :sidebar-mode="xenpaper.sidebarMode"
         :share-url="xenpaper.shareUrl"
         :embed-code="xenpaper.embedCode"
@@ -181,7 +182,7 @@ onUnmounted(() => {
         @active-note-handler-change="xenpaper.setActiveNoteHandler"
       />
     </div>
-    <TheFooter v-if="!xenpaper.isEmbedMode" />
+    <TheFooter v-if="!isEmbedMode" />
   </div>
 </template>
 

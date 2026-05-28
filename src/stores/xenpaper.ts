@@ -13,12 +13,10 @@ import {
 } from '../source-history'
 import {
   encodeShareHashForUrl,
-  getEmbedShareHash,
   getSavedSourceCodes,
   getShareHash,
   getSharedSourceCodes,
   hasSharedSourceCode,
-  isEmbedHash,
   saveSourceCodes,
 } from '../share-link'
 import { SoundEngineSwSeq } from '../sound-engine-sw-seq'
@@ -170,6 +168,16 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   const isEmbedMode = ref(false)
   const sidebarMode = ref<SidebarMode>('info')
   const locationHref = ref(DEFAULT_LOCATION_HREF)
+  const embedBaseUrl = computed(() => {
+    const url = new URL(locationHref.value)
+    const pathname = url.pathname.replace(/\/(?:about|embed)\/?$/, '/')
+
+    url.pathname = `${pathname.replace(/\/?$/, '/')}embed/`
+    url.search = ''
+    url.hash = ''
+
+    return url.toString()
+  })
   const deadScoreEngines = shallowRef<ScoreEngine[]>([])
   let nextScoreEngineId = 2
   let shouldApplyInitialSidebarMode = true
@@ -207,13 +215,12 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   const htmlTitle = computed(() => createHtmlTitle(sourceCode.value))
 
   const shareHash = computed(() => getShareHash(sourceCodes.value))
-  const embedHash = computed(() => getEmbedShareHash(sourceCodes.value))
-  const routeHash = computed(() => (isEmbedMode.value ? embedHash.value : shareHash.value))
+  const routeHash = computed(() => shareHash.value)
   const shareUrl = computed(() =>
     new URL(encodeShareHashForUrl(shareHash.value), locationHref.value).toString(),
   )
   const embedUrl = computed(() =>
-    new URL(encodeShareHashForUrl(embedHash.value), locationHref.value).toString(),
+    new URL(encodeShareHashForUrl(shareHash.value), embedBaseUrl.value).toString(),
   )
   const embedCode = computed(
     () =>
@@ -394,10 +401,10 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     playbackPositionTime.value = -1
   }
 
-  const initializeSourceCode = (sharedHash: string): void => {
+  const initializeSourceCode = (sharedHash: string, embedMode = false): void => {
     replaceScoreEnginesWithSources(getSavedSourceCodes(sharedHash))
     clearDeadScoreEngines()
-    isEmbedMode.value = isEmbedHash(sharedHash)
+    isEmbedMode.value = embedMode
     shouldApplyInitialSidebarMode = true
   }
 
@@ -409,12 +416,9 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     saveSourceCodes(sourceCodes.value)
   }
 
-  const applySharedHash = (sharedHash: string): void => {
+  const applySharedHash = (sharedHash: string, embedMode = false): void => {
     const sharedSourceCodes = getSharedSourceCodes(sharedHash)
-
-    if (hasSharedSourceCode(sharedHash)) {
-      isEmbedMode.value = isEmbedHash(sharedHash)
-    }
+    isEmbedMode.value = embedMode
 
     if (
       hasSharedSourceCode(sharedHash) &&
@@ -652,7 +656,6 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     canRedoSourceCode,
     htmlTitle,
     shareHash,
-    embedHash,
     routeHash,
     shareUrl,
     embedUrl,

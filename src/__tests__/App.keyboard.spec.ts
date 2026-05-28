@@ -5,6 +5,7 @@ import { createPinia } from 'pinia'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import App from '../App.vue'
 import { useXenpaperStore } from '../stores/xenpaper'
+import EmbedView from '../views/EmbedView.vue'
 import HomeView from '../views/HomeView.vue'
 
 type MockFn<T extends (...args: never[]) => unknown> = ReturnType<typeof vi.fn<T>>
@@ -113,16 +114,17 @@ vi.mock('../sound-engine-sw-seq', () => ({
   }),
 }))
 
-const mountApp = async (hash = '#0_2') => {
+const mountApp = async (hash = '#0_2', path = '/') => {
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
       { path: '/', component: HomeView },
+      { path: '/embed/', alias: '/embed', component: EmbedView, meta: { embedMode: true } },
       { path: '/about', component: { template: '<main />' } },
     ],
   })
 
-  await router.push(`/${hash}`)
+  await router.push(`${path}${hash}`)
   await router.isReady()
 
   const pinia = createPinia()
@@ -310,6 +312,15 @@ describe('App source editor keyboard shortcuts', () => {
     expect(restoredStore.sourceTabs).toHaveLength(3)
   })
 
+  it('builds generated embed URLs with the dedicated route and no embed hash prefix', async () => {
+    const { store } = await mountApp('#linked_tune')
+
+    expect(new URL(store.embedUrl).pathname).toBe('/embed/')
+    expect(new URL(store.embedUrl).hash).toBe('#linked_tune')
+    expect(store.embedUrl).not.toContain('#embed:')
+    expect(store.embedCode).toContain('src="http://localhost:3000/embed/#linked_tune"')
+  })
+
   it.skip('decodes legacy escapes', async () => {
     // This test works but produces: [Vue Router warn]: Error decoding "#first~second%_tab~third". Using original value
     const { store: restoredStore } = await mountApp('#first~second%_tab~third')
@@ -472,7 +483,7 @@ describe('App source editor keyboard shortcuts', () => {
   })
 
   it('shows tabs in embed mode for shared multi-tab projects', async () => {
-    const { wrapper } = await mountApp('#embed:first~second')
+    const { wrapper } = await mountApp('#first~second', '/embed/')
 
     expect(wrapper.findAll('[role="tab"]')).toHaveLength(2)
     expect(wrapper.find('button[aria-label="Add source code"]').exists()).toBe(false)

@@ -4,14 +4,10 @@ const ENCODED_UNDERSCORE_TOKEN = '%20'
 
 const hasBrowserWindow = (): boolean => typeof window !== 'undefined'
 
-const EMBED_PREFIX = 'embed:'
 const SOURCE_SEPARATOR = '~'
 const ESCAPED_SOURCE_SEPARATOR = '%7E'
 
 const removeHashPrefix = (hash: string): string => (hash.startsWith('#') ? hash.slice(1) : hash)
-
-const removeEmbedPrefix = (hash: string): string =>
-  hash.startsWith(EMBED_PREFIX) ? hash.slice(EMBED_PREFIX.length) : hash
 
 const normalizeSourceCodes = (sourceCodes: string[]): string[] =>
   sourceCodes.length ? sourceCodes : ['']
@@ -90,13 +86,6 @@ export const encodeShareHashForUrl = (hash: string): string =>
 export const getShareHash = (sourceCode: string | string[]): string =>
   `#${Array.isArray(sourceCode) ? encodeSharedSources(sourceCode) : encodeSharedSource(sourceCode)}`
 
-export const getEmbedShareHash = (sourceCode: string | string[]): string =>
-  `#${EMBED_PREFIX}${Array.isArray(sourceCode) ? encodeSharedSources(sourceCode) : encodeSharedSource(sourceCode)}`
-
-export const isEmbedHash = (hash: unknown): boolean => {
-  return typeof hash === 'string' && removeHashPrefix(hash).startsWith(EMBED_PREFIX)
-}
-
 export const hasSharedSourceCode = (hash: unknown): boolean => {
   return typeof hash === 'string' && removeHashPrefix(hash) !== ''
 }
@@ -104,7 +93,7 @@ export const hasSharedSourceCode = (hash: unknown): boolean => {
 export const getSharedSourceCodes = (hash: unknown): string[] => {
   if (!hasSharedSourceCode(hash)) return ['']
 
-  return decodeSharedSources(removeEmbedPrefix(removeHashPrefix(hash as string)))
+  return decodeSharedSources(removeHashPrefix(hash as string))
 }
 
 export const getSavedSourceCodes = (hash: unknown): string[] => {
