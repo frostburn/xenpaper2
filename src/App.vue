@@ -887,8 +887,10 @@ onUnmounted(() => {
   .actions:not(.actions-embed) {
     position: sticky;
     top: 0;
+    z-index: 5;
     flex-direction: row;
     flex-wrap: nowrap;
+    align-items: stretch;
     width: 100%;
     padding-top: 0;
     overflow-x: auto;
@@ -904,9 +906,17 @@ onUnmounted(() => {
   }
 
   .action-button {
-    width: auto;
-    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 5rem;
+    min-width: 5rem;
+    height: 3rem;
+    padding: 0.5rem;
+    font-size: 0.95rem;
+    line-height: 1.1;
     white-space: nowrap;
+    text-align: center;
   }
 
   .actions :deep(.play-pause-button) {
@@ -916,6 +926,25 @@ onUnmounted(() => {
     flex: 0 0 3rem;
   }
 
+  .toolbar-rule {
+    margin: 0.5rem 0.25rem;
+    border-top: 0;
+    border-left: 1px solid var(--xenpaper-bg-light);
+  }
+
+  .route-navigation {
+    display: flex;
+    flex-direction: row;
+    margin-top: 0;
+    margin-left: 0;
+    padding-top: 0;
+    border-top: 0;
+    border-left: 1px solid var(--xenpaper-bg-light);
+  }
+
+  .source-tab-restore-menu {
+    display: none;
+  }
 }
 
 @media (max-width: 640px) {
@@ -968,6 +997,11 @@ onUnmounted(() => {
 }
 
 @media (max-width: 900px) and (orientation: landscape) {
+  .app-shell > footer {
+    display: none;
+  }
+
+
   .sidebar-stack {
     flex-basis: 32%;
     min-width: min(18rem, 42vw);
