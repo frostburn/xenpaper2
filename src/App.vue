@@ -882,19 +882,8 @@ onUnmounted(() => {
   line-height: 1.3rem;
 }
 
-@media (max-width: 640px) {
-  .app-shell {
-    min-height: 100vh;
-    height: auto;
-    overflow: visible;
-  }
 
-  .app-layout:not(.app-layout-embed) {
-    display: block;
-    min-height: 0;
-    overflow: visible;
-  }
-
+@media (max-width: 900px) {
   .actions:not(.actions-embed) {
     position: sticky;
     top: 0;
@@ -917,6 +906,7 @@ onUnmounted(() => {
   .action-button {
     width: auto;
     min-width: 0;
+    white-space: nowrap;
   }
 
   .actions :deep(.play-pause-button) {
@@ -926,24 +916,28 @@ onUnmounted(() => {
     flex: 0 0 3rem;
   }
 
+}
+
+@media (max-width: 640px) {
+  .app-shell {
+    min-height: 100vh;
+    height: auto;
+    overflow: visible;
+  }
+
+  .app-layout:not(.app-layout-embed) {
+    display: block;
+    min-height: 0;
+    overflow: visible;
+  }
+
+
   .toolbar-rule {
     margin: 0.5rem 0.25rem;
     border-top: 0;
     border-left: 1px solid var(--xenpaper-bg-light);
   }
 
-  .route-navigation {
-    flex-direction: row;
-    margin-top: 0;
-    margin-left: 0;
-    padding-top: 0;
-    border-top: 0;
-    border-left: 1px solid var(--xenpaper-bg-light);
-  }
-
-  .source-tab-restore-menu {
-    display: none;
-  }
 
   .source-editor,
   .source-input,
