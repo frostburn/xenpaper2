@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref, shallowRef, watch } from 'vue'
 
 import { type CharData } from '../grammars/grammar-to-chars'
+import type { MoscNote } from '../mosc'
 import {
   canRedoSourceChange,
   canUndoSourceChange,
@@ -173,7 +174,8 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   let nextScoreEngineId = 2
   let shouldApplyInitialSidebarMode = true
   const cancelOnEndByEngine = new Map<number, () => void>()
-  const cancelOnNoteByEngine = new Map<number, () => void>()
+  const cancelOnNoteByEngine = new Map<ScoreEngine, () => void>()
+  let activeNoteHandler: ((note: MoscNote, on: boolean) => void) | undefined
 
   const activeScoreEngine = computed(() => scoreEngines.value[activeScoreEngineIndex.value]!)
 
@@ -320,8 +322,8 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     enginesToRemember.forEach((engine) => {
       cancelOnEndByEngine.get(engine.id)?.()
       cancelOnEndByEngine.delete(engine.id)
-      cancelOnNoteByEngine.get(engine.id)?.()
-      cancelOnNoteByEngine.delete(engine.id)
+      cancelOnNoteByEngine.get(engine)?.()
+      cancelOnNoteByEngine.delete(engine)
     })
 
     deadScoreEngines.value = [...enginesToRemember, ...deadScoreEngines.value]
@@ -588,6 +590,32 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     playbackPositionTime.value = -1
   }
 
+  const setActiveNoteHandler = (handler?: (note: MoscNote, on: boolean) => void): void => {
+    activeNoteHandler = handler
+  }
+
+  const syncSoundEngineNoteListeners = (): void => {
+    const aliveEngines = new Set(scoreEngines.value)
+
+    cancelOnNoteByEngine.forEach((cancel, engine) => {
+      if (aliveEngines.has(engine)) return
+
+      cancel()
+      cancelOnNoteByEngine.delete(engine)
+    })
+
+    scoreEngines.value.forEach((engine) => {
+      if (cancelOnNoteByEngine.has(engine)) return
+
+      cancelOnNoteByEngine.set(
+        engine,
+        engine.soundEngine.onNote((note: MoscNote, on: boolean) => {
+          activeNoteHandler?.(note, on)
+        }),
+      )
+    })
+  }
+
   const isCharacterActive = (charData?: CharData): boolean => {
     const [start, end] = charData?.playTime ?? []
     return (
@@ -612,6 +640,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   }
 
   watch(isLooping, (newValue) => (swSeqTransport.loop = newValue), { immediate: true })
+  watch(scoreEngines, syncSoundEngineNoteListeners, { immediate: true })
 
   return {
     sourceCode,
@@ -658,6 +687,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     toggleLoop,
     syncPlaybackPosition,
     resetPlaybackPosition,
+    setActiveNoteHandler,
     isCharacterActive,
     disposeSoundEngines,
     showSidebar,
