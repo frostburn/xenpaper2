@@ -4,7 +4,7 @@ import { version } from '../../package.json'
 <template>
   <footer>
     Xenpaper {{ version }} is made by Lumi Pakkanen. Built with Vue 3, Vite, TypeScript, Peggy and
-    Tone.js. Originally created by Damien Clarke.
+    SW Seq. Originally created by Damien Clarke.
   </footer>
 </template>
 <style scoped>

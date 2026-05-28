@@ -13,7 +13,7 @@ Portions of this project were developed with the assistance of [OpenAI Codex](ht
 
 ## Stack
 
-Xenpaper 2 is built with Vue 3, Vite, TypeScript, Tone.js, Pinia, Vue Router, Peggy, and Vitest.
+Xenpaper 2 is built with Vue 3, Vite, TypeScript, SW Seq, Pinia, Vue Router, Peggy, and Vitest.
 
 ## Recommended IDE Setup
 
