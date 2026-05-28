@@ -898,7 +898,6 @@ onUnmounted(() => {
     -webkit-overflow-scrolling: touch;
   }
 
-  .actions:not(.actions-embed) :deep(.play-pause-button),
   .actions:not(.actions-embed) .action-button,
   .actions:not(.actions-embed) .toolbar-rule,
   .actions:not(.actions-embed) .route-navigation {
@@ -917,13 +916,6 @@ onUnmounted(() => {
     line-height: 1.1;
     white-space: nowrap;
     text-align: center;
-  }
-
-  .actions :deep(.play-pause-button) {
-    width: 3rem;
-    height: 3rem;
-    padding: 0.5rem;
-    flex: 0 0 3rem;
   }
 
   .toolbar-rule {
@@ -1036,13 +1028,6 @@ onUnmounted(() => {
     font-size: 0.75rem;
     line-height: 1;
     white-space: normal;
-  }
-
-  .actions:not(.actions-embed) :deep(.play-pause-button) {
-    width: 4rem;
-    height: 3rem;
-    padding: 0.45rem 0.7rem;
-    flex: 0 0 3rem;
   }
 
   .actions:not(.actions-embed) .toolbar-rule {
