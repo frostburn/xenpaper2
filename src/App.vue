@@ -178,6 +178,7 @@ onUnmounted(() => {
         @close-sidebar="xenpaper.closeSidebar"
         @set-tune="xenpaper.setDemoTune"
         @import-source-codes="xenpaper.importSourceCodes"
+        @active-note-handler-change="xenpaper.setActiveNoteHandler"
       />
     </div>
     <TheFooter v-if="!xenpaper.isEmbedMode" />
