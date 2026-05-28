@@ -909,8 +909,8 @@ onUnmounted(() => {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 5rem;
-    min-width: 5rem;
+    width: 4.25rem;
+    min-width: 4.25rem;
     height: 3rem;
     padding: 0.5rem;
     font-size: 0.95rem;
@@ -1001,6 +1001,24 @@ onUnmounted(() => {
     display: none;
   }
 
+  .actions:not(.actions-embed) {
+    min-height: 2.5rem;
+  }
+
+  .actions:not(.actions-embed) .action-button {
+    width: 3.75rem;
+    min-width: 3.75rem;
+    height: 2.5rem;
+    font-size: 0.8rem;
+    padding: 0.35rem;
+  }
+
+  .actions:not(.actions-embed) :deep(.play-pause-button) {
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0.3rem;
+    flex-basis: 2.5rem;
+  }
 
   .sidebar-stack {
     flex-basis: 32%;
