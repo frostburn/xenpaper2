@@ -996,6 +996,36 @@ onUnmounted(() => {
   }
 }
 
+@media (orientation: landscape) and (max-height: 600px) {
+  .actions:not(.actions-embed) {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    width: 100%;
+    padding-top: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .actions:not(.actions-embed) :deep(.play-pause-button),
+  .actions:not(.actions-embed) .action-button,
+  .actions:not(.actions-embed) .toolbar-rule,
+  .actions:not(.actions-embed) .route-navigation {
+    flex: 0 0 auto;
+  }
+
+  .route-navigation {
+    display: flex;
+    flex-direction: row;
+    margin-top: 0;
+    margin-left: 0;
+  }
+}
+
 @media (max-width: 900px) and (orientation: landscape) {
   .app-shell > footer {
     display: none;
