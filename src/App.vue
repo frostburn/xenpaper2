@@ -996,58 +996,68 @@ onUnmounted(() => {
   }
 }
 
-@media (orientation: landscape) and (max-height: 600px) {
-  .actions:not(.actions-embed) {
-    position: sticky;
-    top: 0;
-    z-index: 5;
-    flex-direction: row;
-    flex-wrap: nowrap;
-    align-items: stretch;
-    width: 100%;
-    padding-top: 0;
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .actions:not(.actions-embed) :deep(.play-pause-button),
-  .actions:not(.actions-embed) .action-button,
-  .actions:not(.actions-embed) .toolbar-rule,
-  .actions:not(.actions-embed) .route-navigation {
-    flex: 0 0 auto;
-  }
-
-  .route-navigation {
-    display: flex;
-    flex-direction: row;
-    margin-top: 0;
-    margin-left: 0;
-  }
-}
-
 @media (max-width: 900px) and (orientation: landscape) {
+  .app-shell {
+    height: 100vh;
+    min-height: 0;
+    overflow: hidden;
+  }
+
   .app-shell > footer {
     display: none;
   }
 
+  .app-layout:not(.app-layout-embed) {
+    display: flex;
+    min-height: 0;
+    overflow: hidden;
+  }
+
   .actions:not(.actions-embed) {
-    min-height: 2.5rem;
+    position: static;
+    z-index: 4;
+    flex: 0 0 4rem;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    width: 4rem;
+    height: 100%;
+    min-height: 0;
+    padding-top: 0.5rem;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
   .actions:not(.actions-embed) .action-button {
-    width: 3.75rem;
-    min-width: 3.75rem;
-    height: 2.5rem;
-    font-size: 0.8rem;
-    padding: 0.35rem;
+    width: 4rem;
+    min-width: 0;
+    height: auto;
+    min-height: 2.25rem;
+    padding: 0.35rem 0.25rem;
+    font-size: 0.75rem;
+    line-height: 1;
+    white-space: normal;
   }
 
   .actions:not(.actions-embed) :deep(.play-pause-button) {
-    width: 2.5rem;
-    height: 2.5rem;
-    padding: 0.3rem;
-    flex-basis: 2.5rem;
+    width: 4rem;
+    height: 3rem;
+    padding: 0.45rem 0.7rem;
+    flex: 0 0 3rem;
+  }
+
+  .actions:not(.actions-embed) .toolbar-rule {
+    margin: 0.5rem 0.35rem;
+    border-top: 1px solid var(--xenpaper-bg-light);
+    border-left: 0;
+  }
+
+  .actions:not(.actions-embed) .route-navigation {
+    flex-direction: column;
+    margin-top: 0.75rem;
+    margin-left: 0;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--xenpaper-bg-light);
+    border-left: 0;
   }
 
   .sidebar-stack {
