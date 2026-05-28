@@ -78,11 +78,17 @@ const playbackPaths = computed(() => PLAY_PATHS[playbackState.value])
   border: 0;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 900px) {
   .play-pause-button {
     width: 3rem;
+    min-width: 3rem;
     height: 3rem;
-    padding: 1rem 0.5rem;
+    padding: 0.4rem;
+  }
+
+  .playback-icon {
+    width: 100%;
+    height: 100%;
   }
 }
 </style>

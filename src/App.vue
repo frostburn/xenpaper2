@@ -882,6 +882,63 @@ onUnmounted(() => {
   line-height: 1.3rem;
 }
 
+
+@media (max-width: 900px) {
+  .actions:not(.actions-embed) {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    width: 100%;
+    padding-top: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .actions:not(.actions-embed) .action-button,
+  .actions:not(.actions-embed) .toolbar-rule,
+  .actions:not(.actions-embed) .route-navigation {
+    flex: 0 0 auto;
+  }
+
+  .action-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 4.25rem;
+    min-width: 4.25rem;
+    height: 3rem;
+    padding: 0.5rem;
+    font-size: 0.95rem;
+    line-height: 1.1;
+    white-space: nowrap;
+    text-align: center;
+  }
+
+  .toolbar-rule {
+    margin: 0.5rem 0.25rem;
+    border-top: 0;
+    border-left: 1px solid var(--xenpaper-bg-light);
+  }
+
+  .route-navigation {
+    display: flex;
+    flex-direction: row;
+    margin-top: 0;
+    margin-left: 0;
+    padding-top: 0;
+    border-top: 0;
+    border-left: 1px solid var(--xenpaper-bg-light);
+  }
+
+  .source-tab-restore-menu {
+    display: none;
+  }
+}
+
 @media (max-width: 640px) {
   .app-shell {
     min-height: 100vh;
@@ -895,17 +952,6 @@ onUnmounted(() => {
     overflow: visible;
   }
 
-  .actions:not(.actions-embed) {
-    position: sticky;
-    top: 0;
-    flex-direction: row;
-    width: 100%;
-    padding-top: 0;
-  }
-
-  .action-button {
-    width: auto;
-  }
 
   .toolbar-rule {
     margin: 0.5rem 0.25rem;
@@ -913,14 +959,6 @@ onUnmounted(() => {
     border-left: 1px solid var(--xenpaper-bg-light);
   }
 
-  .route-navigation {
-    flex-direction: row;
-    margin-top: 0;
-    margin-left: auto;
-    padding-top: 0;
-    border-top: 0;
-    border-left: 1px solid var(--xenpaper-bg-light);
-  }
 
   .source-editor,
   .source-input,
@@ -942,6 +980,117 @@ onUnmounted(() => {
   .sidebar-panel {
     height: auto;
     max-height: none;
+    overflow-x: hidden;
+  }
+
+  .sidebar-content {
+    overflow-wrap: anywhere;
   }
 }
+
+@media (max-width: 900px) and (orientation: landscape) {
+  .app-shell {
+    height: 100vh;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .app-shell > footer {
+    display: none;
+  }
+
+  .app-layout:not(.app-layout-embed) {
+    display: flex;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .actions:not(.actions-embed) {
+    position: static;
+    z-index: 4;
+    flex: 0 0 4rem;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    width: 4rem;
+    height: 100%;
+    min-height: 0;
+    padding-top: 0.5rem;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .actions:not(.actions-embed) .action-button {
+    width: 4rem;
+    min-width: 0;
+    height: auto;
+    min-height: 2.25rem;
+    padding: 0.35rem 0.25rem;
+    font-size: 0.75rem;
+    line-height: 1;
+    white-space: normal;
+  }
+
+  .actions:not(.actions-embed) .toolbar-rule {
+    margin: 0.5rem 0.35rem;
+    border-top: 1px solid var(--xenpaper-bg-light);
+    border-left: 0;
+  }
+
+  .actions:not(.actions-embed) .route-navigation {
+    flex-direction: column;
+    margin-top: 0.75rem;
+    margin-left: 0;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--xenpaper-bg-light);
+    border-left: 0;
+  }
+
+  .sidebar-stack {
+    flex-basis: 32%;
+    min-width: min(18rem, 42vw);
+  }
+
+  .sidebar-heading {
+    padding: 1.25rem 1.25rem 1rem;
+  }
+
+  .sidebar-heading h1 {
+    font-size: 1.75rem;
+    line-height: 1.5rem;
+  }
+
+  .sidebar-content {
+    padding: 1.25rem;
+    font-size: 0.95rem;
+  }
+
+  .sidebar-content h2,
+  .ruler-heading h2 {
+    font-size: 1.2rem;
+  }
+
+  .source-editor {
+    font-size: clamp(0.85rem, 1.5vw, 0.95rem);
+  }
+
+  .source-input,
+  .source-highlights {
+    white-space: pre;
+    overflow-x: auto;
+    overflow-y: auto;
+    overflow-wrap: normal;
+    word-break: normal;
+    padding-right: 3rem;
+  }
+
+  .sidebar-panel,
+  .sidebar-content {
+    overflow-x: hidden;
+  }
+
+  .sidebar-content {
+    overflow-wrap: anywhere;
+  }
+}
+
 </style>
