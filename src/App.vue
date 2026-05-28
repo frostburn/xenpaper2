@@ -905,6 +905,14 @@ onUnmounted(() => {
 
   .action-button {
     width: auto;
+    min-width: 0;
+  }
+
+  .actions :deep(.play-pause-button) {
+    width: 3rem;
+    height: 3rem;
+    padding: 0.5rem;
+    flex: 0 0 3rem;
   }
 
   .toolbar-rule {
@@ -942,6 +950,37 @@ onUnmounted(() => {
   .sidebar-panel {
     height: auto;
     max-height: none;
+    overflow-x: hidden;
+  }
+
+  .sidebar-content {
+    overflow-wrap: anywhere;
   }
 }
+
+@media (max-width: 900px) and (orientation: landscape) {
+  .source-editor {
+    font-size: clamp(0.9rem, 1.9vw, 1.05rem);
+  }
+
+  .source-input,
+  .source-highlights {
+    white-space: pre;
+    overflow-x: auto;
+    overflow-y: auto;
+    overflow-wrap: normal;
+    word-break: normal;
+    padding-right: 3rem;
+  }
+
+  .sidebar-panel,
+  .sidebar-content {
+    overflow-x: hidden;
+  }
+
+  .sidebar-content {
+    overflow-wrap: anywhere;
+  }
+}
+
 </style>
