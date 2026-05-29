@@ -156,45 +156,4 @@ const emit = defineEmits<{
   }
 }
 
-@media (max-width: 900px) and (orientation: landscape) {
-  .actions {
-    position: static;
-    z-index: 4;
-    flex: 0 0 4rem;
-    flex-direction: column;
-    flex-wrap: nowrap;
-    width: 4rem;
-    height: 100%;
-    min-height: 0;
-    padding-top: 0.5rem;
-    overflow-x: hidden;
-    overflow-y: auto;
-  }
-
-  .actions .action-button {
-    width: 4rem;
-    min-width: 0;
-    height: auto;
-    min-height: 2.25rem;
-    padding: 0.35rem 0.25rem;
-    font-size: 0.75rem;
-    line-height: 1;
-    white-space: normal;
-  }
-
-  .actions .toolbar-rule {
-    margin: 0.5rem 0.35rem;
-    border-top: 1px solid var(--xenpaper-bg-light);
-    border-left: 0;
-  }
-
-  .actions .route-navigation {
-    flex-direction: column;
-    margin-top: 0.75rem;
-    margin-left: 0;
-    padding-top: 0.5rem;
-    border-top: 1px solid var(--xenpaper-bg-light);
-    border-left: 0;
-  }
-}
 </style>

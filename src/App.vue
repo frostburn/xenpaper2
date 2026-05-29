@@ -425,27 +425,11 @@ onUnmounted(() => {
   overflow-wrap: anywhere;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 900px) {
   .source-editor,
   .source-input,
   .source-highlights {
     min-height: 50vh;
-  }
-}
-
-@media (max-width: 900px) and (orientation: landscape) {
-  .source-editor {
-    font-size: clamp(0.85rem, 1.5vw, 0.95rem);
-  }
-
-  .source-input,
-  .source-highlights {
-    white-space: pre;
-    overflow-x: auto;
-    overflow-y: auto;
-    overflow-wrap: normal;
-    word-break: normal;
-    padding-right: 3rem;
   }
 }
 
@@ -454,10 +438,18 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   align-items: stretch;
+  min-height: 0;
+  max-height: 100%;
   gap: 0;
   padding-top: 2rem;
+  overflow-x: hidden;
+  overflow-y: auto;
   background: var(--xenpaper-bg);
   z-index: 4;
+}
+
+.actions > * {
+  flex: 0 0 auto;
 }
 
 .action-button {
@@ -504,7 +496,7 @@ onUnmounted(() => {
   background: var(--xenpaper-placeholder);
 }
 
-@media (max-width: 640px) {
+@media (max-width: 900px) {
   .app-shell {
     min-height: 100vh;
     height: auto;
@@ -515,24 +507,6 @@ onUnmounted(() => {
     display: block;
     min-height: 0;
     overflow: visible;
-  }
-}
-
-@media (max-width: 900px) and (orientation: landscape) {
-  .app-shell {
-    height: 100vh;
-    min-height: 0;
-    overflow: hidden;
-  }
-
-  .app-shell > footer {
-    display: none;
-  }
-
-  .app-layout:not(.app-layout-embed) {
-    display: flex;
-    min-height: 0;
-    overflow: hidden;
   }
 }
 </style>
