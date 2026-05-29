@@ -431,6 +431,11 @@ onUnmounted(() => {
   .source-highlights {
     min-height: 50vh;
   }
+
+  .source-input,
+  .source-highlights {
+    padding-right: 2rem;
+  }
 }
 
 .actions {
