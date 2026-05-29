@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import type { CharData } from '../grammars/grammar-to-chars'
-import { computed } from 'vue'
+import { computed, useTemplateRef } from 'vue'
 
+import type { CharData } from '../grammars/grammar-to-chars'
 import type { SourceDisplayToken, SourceTab } from '../types'
-import SourceCodePane from './SourceCodePane.vue'
 
 const props = defineProps<{
   sourceCode: string
@@ -21,6 +20,28 @@ const emit = defineEmits<{
 
 const activeSourceTab = computed(() => props.sourceTabs.find((tab) => tab.active))
 const liveSourceTabs = computed(() => props.sourceTabs.filter((tab) => tab.alive))
+
+const sourceInput = useTemplateRef('sourceInput')
+const sourceHighlights = useTemplateRef('sourceHighlights')
+
+const syncHighlightScroll = (): void => {
+  if (!sourceInput.value || !sourceHighlights.value) return
+
+  sourceHighlights.value.scrollTop = sourceInput.value.scrollTop
+  sourceHighlights.value.scrollLeft = sourceInput.value.scrollLeft
+}
+
+const isCharacterActive = (charData?: CharData): boolean => {
+  const [start, end] = charData?.playTime ?? []
+
+  return (
+    props.isPlaying &&
+    start !== undefined &&
+    end !== undefined &&
+    props.playbackPositionTime >= start &&
+    props.playbackPositionTime < end
+  )
+}
 </script>
 
 <template>
@@ -55,14 +76,34 @@ const liveSourceTabs = computed(() => props.sourceTabs.filter((tab) => tab.alive
       :id="activeSourceTab ? `source-code-panel-${activeSourceTab.id}` : undefined"
       role="tabpanel"
     >
-      <SourceCodePane
+      <textarea
+        id="source-code"
+        ref="sourceInput"
+        :value="sourceCode"
+        class="source-input"
+        placeholder="Type your tune here..."
         readonly
-        :source-code="sourceCode"
-        :source-display-tokens="sourceDisplayTokens"
-        :chars="chars"
-        :is-playing="isPlaying"
-        :playback-position-time="playbackPositionTime"
+        autocapitalize="off"
+        autocomplete="off"
+        autocorrect="off"
+        spellcheck="false"
+        @scroll="syncHighlightScroll"
       />
+      <pre ref="sourceHighlights" class="source-highlights"><span
+        v-if="sourceCode === ''"
+        class="placeholder-text"
+        aria-hidden="true"
+      >Type your tune here...</span><template v-else><template v-for="token in sourceDisplayTokens" :key="token.key"><span
+        v-if="token.type === 'character'"
+        class="source-character"
+        aria-hidden="true"
+        :class="[
+          chars[token.index]?.color
+            ? `highlight-${chars[token.index]?.color}`
+            : 'highlight-unknown',
+          { active: isCharacterActive(chars[token.index]) },
+        ]"
+      >{{ token.character }}</span></template></template><br><br></pre>
     </div>
     <p v-if="lastError" class="playback-error" role="alert">Error: {{ lastError }}</p>
   </main>
