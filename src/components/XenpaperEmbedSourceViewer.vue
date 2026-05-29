@@ -108,3 +108,13 @@ const isCharacterActive = (charData?: CharData): boolean => {
     <p v-if="lastError" class="playback-error" role="alert">Error: {{ lastError }}</p>
   </main>
 </template>
+
+<style scoped>
+.xenpaper-app-embed {
+  padding-top: 3rem;
+}
+
+.source-editor-embed .source-input {
+  cursor: default;
+}
+</style>
