@@ -456,6 +456,10 @@ onUnmounted(() => {
     overflow-x: hidden;
   }
 
+  .ruler-panel {
+    min-height: max(32rem, calc(100dvh - 3rem));
+  }
+
   .sidebar-content {
     overflow-wrap: anywhere;
   }
