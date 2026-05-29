@@ -155,5 +155,4 @@ const emit = defineEmits<{
     border-left: 1px solid var(--xenpaper-bg-light);
   }
 }
-
 </style>
