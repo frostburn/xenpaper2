@@ -105,7 +105,7 @@ const emit = defineEmits<{
 }
 
 @media (max-width: 900px) {
-  .actions:not(.actions-embed) {
+  .actions {
     position: sticky;
     top: 0;
     z-index: 5;
@@ -119,9 +119,9 @@ const emit = defineEmits<{
     -webkit-overflow-scrolling: touch;
   }
 
-  .actions:not(.actions-embed) .action-button,
-  .actions:not(.actions-embed) .toolbar-rule,
-  .actions:not(.actions-embed) .route-navigation {
+  .actions .action-button,
+  .actions .toolbar-rule,
+  .actions .route-navigation {
     flex: 0 0 auto;
   }
 
@@ -157,7 +157,7 @@ const emit = defineEmits<{
 }
 
 @media (max-width: 900px) and (orientation: landscape) {
-  .actions:not(.actions-embed) {
+  .actions {
     position: static;
     z-index: 4;
     flex: 0 0 4rem;
@@ -171,7 +171,7 @@ const emit = defineEmits<{
     overflow-y: auto;
   }
 
-  .actions:not(.actions-embed) .action-button {
+  .actions .action-button {
     width: 4rem;
     min-width: 0;
     height: auto;
@@ -182,13 +182,13 @@ const emit = defineEmits<{
     white-space: normal;
   }
 
-  .actions:not(.actions-embed) .toolbar-rule {
+  .actions .toolbar-rule {
     margin: 0.5rem 0.35rem;
     border-top: 1px solid var(--xenpaper-bg-light);
     border-left: 0;
   }
 
-  .actions:not(.actions-embed) .route-navigation {
+  .actions .route-navigation {
     flex-direction: column;
     margin-top: 0.75rem;
     margin-left: 0;
