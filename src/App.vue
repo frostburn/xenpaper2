@@ -316,6 +316,7 @@ onUnmounted(() => {
 .source-highlights {
   box-sizing: border-box;
   min-height: 100%;
+  max-width: 64rem;
   width: 100%;
   margin: 0;
   border: 0;
@@ -327,7 +328,7 @@ onUnmounted(() => {
   white-space: pre-wrap;
   word-break: keep-all;
   overflow-wrap: break-word;
-  padding: 1rem 8rem 1rem 2rem;
+  padding: 1rem 1rem 1rem 2rem;
   scrollbar-gutter: stable;
 }
 
