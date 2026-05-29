@@ -438,7 +438,7 @@ onUnmounted(() => {
   line-height: 1.3rem;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 900px) {
   .sidebar-stack {
     min-width: 0;
     width: 100%;
@@ -465,38 +465,4 @@ onUnmounted(() => {
   }
 }
 
-@media (max-width: 900px) and (orientation: landscape) {
-  .sidebar-stack {
-    flex-basis: 32%;
-    min-width: min(18rem, 42vw);
-  }
-
-  .sidebar-heading {
-    padding: 1.25rem 1.25rem 1rem;
-  }
-
-  .sidebar-heading h1 {
-    font-size: 1.75rem;
-    line-height: 1.5rem;
-  }
-
-  .sidebar-content {
-    padding: 1.25rem;
-    font-size: 0.95rem;
-  }
-
-  .sidebar-content h2,
-  .ruler-heading h2 {
-    font-size: 1.2rem;
-  }
-
-  .sidebar-panel,
-  .sidebar-content {
-    overflow-x: hidden;
-  }
-
-  .sidebar-content {
-    overflow-wrap: anywhere;
-  }
-}
 </style>
