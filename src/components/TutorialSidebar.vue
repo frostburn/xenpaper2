@@ -216,7 +216,7 @@ const tutorialSections: TutorialSection[] = [
       <h2>Bugs and future features</h2>
       <p>
         Find anything broken, or have some ideas you want to share? Visit the
-        <a href="https://github.com/xenharmonic-devs/xenpaper2/issues">issue tracker on GitHub</a>
+        <a href="https://github.com/frostburn/xenpaper2/issues">issue tracker on GitHub</a>
         to file bugs or discuss future features.
       </p>
     </footer>
