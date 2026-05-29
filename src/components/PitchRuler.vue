@@ -556,4 +556,15 @@ watch(
   stroke-width: 2px;
   stroke-linejoin: round;
 }
+
+@media (max-width: 640px) {
+  .pitch-ruler {
+    min-height: 28rem;
+    height: auto;
+  }
+
+  .ruler-canvas {
+    min-height: 20rem;
+  }
+}
 </style>
