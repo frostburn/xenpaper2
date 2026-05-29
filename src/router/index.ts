@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import EmbedView from '../views/EmbedView.vue'
 import HomeView from '../views/HomeView.vue'
 
 const router = createRouter({
@@ -8,6 +9,13 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: HomeView,
+    },
+    {
+      path: '/embed/',
+      alias: '/embed',
+      name: 'embed',
+      component: EmbedView,
+      meta: { embedMode: true },
     },
     {
       path: '/about',

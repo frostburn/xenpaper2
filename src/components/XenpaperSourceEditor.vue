@@ -6,7 +6,6 @@ import { getSourceLineAtOffset } from '../source-display'
 import type { SourceDisplayToken, SourceTab } from '../types'
 
 const props = defineProps<{
-  isEmbedMode: boolean
   sourceCode: string
   sourceDisplayTokens: SourceDisplayToken[]
   selectedLine: number
@@ -136,7 +135,6 @@ onMounted(() => {
 onUnmounted(() => {
   document.removeEventListener('pointerdown', handleDocumentPointerdown)
 })
-
 const isCharacterActive = (charData?: CharData): boolean => {
   const [start, end] = charData?.playTime ?? []
 
@@ -151,13 +149,8 @@ const isCharacterActive = (charData?: CharData): boolean => {
 </script>
 
 <template>
-  <main class="xenpaper-app" :class="{ 'xenpaper-app-embed': isEmbedMode }">
-    <div
-      v-if="!isEmbedMode || liveSourceTabs.length > 1"
-      class="source-tabs"
-      role="tablist"
-      aria-label="Source codes"
-    >
+  <main class="xenpaper-app">
+    <div class="source-tabs" role="tablist" aria-label="Source codes">
       <div class="source-tab-list">
         <div v-for="(tab, index) in liveSourceTabs" :key="tab.id" class="source-tab">
           <button
@@ -174,7 +167,7 @@ const isCharacterActive = (charData?: CharData): boolean => {
             {{ tab.title }}
           </button>
           <button
-            v-if="!isEmbedMode && liveSourceTabCount > 1"
+            v-if="liveSourceTabCount > 1"
             class="source-tab-close"
             type="button"
             :aria-label="`Close ${tab.title}`"
@@ -184,7 +177,6 @@ const isCharacterActive = (charData?: CharData): boolean => {
           </button>
         </div>
         <button
-          v-if="!isEmbedMode"
           class="source-tab-add"
           type="button"
           aria-label="Add source code"
@@ -193,11 +185,7 @@ const isCharacterActive = (charData?: CharData): boolean => {
           +
         </button>
       </div>
-      <details
-        v-if="!isEmbedMode && deadSourceTabs.length"
-        ref="restoreMenu"
-        class="source-tab-restore-menu"
-      >
+      <details v-if="deadSourceTabs.length" ref="restoreMenu" class="source-tab-restore-menu">
         <summary class="source-tab-restore-summary">Recently closed</summary>
         <div class="source-tab-restore-list">
           <button
@@ -218,7 +206,6 @@ const isCharacterActive = (charData?: CharData): boolean => {
       class="source-editor"
       :id="activeSourceTab ? `source-code-panel-${activeSourceTab.id}` : undefined"
       role="tabpanel"
-      :class="{ 'source-editor-embed': isEmbedMode }"
     >
       <div v-if="activeSourceTab && liveSourceTabCount > 1" class="source-editor-tab-controls">
         <button
@@ -260,7 +247,6 @@ const isCharacterActive = (charData?: CharData): boolean => {
         autocomplete="off"
         autocorrect="off"
         spellcheck="false"
-        :readonly="isEmbedMode"
         @input="handleSourceInput"
         @keydown="handleSourceKeydown"
         @scroll="syncHighlightScroll"

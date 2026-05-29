@@ -19,7 +19,6 @@ import TutorialSidebar from './TutorialSidebar.vue'
 const COPY_FEEDBACK_MS = 2000
 
 const props = defineProps<{
-  isEmbedMode: boolean
   sidebarMode: SidebarMode
   shareUrl: string
   embedCode: string
@@ -126,7 +125,7 @@ onUnmounted(() => {
 
 <template>
   <aside
-    v-if="!isEmbedMode && sidebarMode !== 'none'"
+    v-if="sidebarMode !== 'none'"
     class="sidebar-stack"
     :class="`sidebar-stack-${sidebarMode}`"
   >

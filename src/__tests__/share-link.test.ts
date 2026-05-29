@@ -4,12 +4,10 @@ import {
   decodeSharedSource,
   encodeShareHashForUrl,
   encodeSharedSource,
-  getEmbedShareHash,
   getSavedSourceCodes,
   getShareHash,
   getSharedSourceCodes,
   hasSharedSourceCode,
-  isEmbedHash,
   saveSourceCodes,
 } from '../share-link'
 
@@ -38,10 +36,9 @@ describe('share-link', () => {
     expect(decodeSharedSource(encoded)).toBe('pitch_name with space')
   })
 
-  it('builds hash fragments for shared and embedded source code', () => {
+  it('builds hash fragments for shared source code', () => {
     expect(getShareHash('linked tune')).toBe('#linked_tune')
     expect(getShareHash('embed:linked tune')).toBe('#embed%3Alinked_tune')
-    expect(getEmbedShareHash('linked tune')).toBe('#embed:linked_tune')
     expect(getShareHash(`"0-\`0-100%`)).toBe('#"0-`0-100%25')
     expect(getShareHash(['linked tune'])).toBe('#linked_tune')
   })
@@ -54,21 +51,6 @@ describe('share-link', () => {
     expect(getSharedSourceCodes(hash)).toEqual(sources)
   })
 
-  it('builds embedded multi-source hash fragments', () => {
-    expect(getEmbedShareHash(['one', 'two'])).toBe('#embed:one~two')
-    expect(isEmbedHash(getEmbedShareHash(['one', 'two']))).toBe(true)
-    expect(getSharedSourceCodes(getEmbedShareHash(['one', 'two']))).toEqual(['one', 'two'])
-  })
-
-  it('does not split embed source colons into tab fragments', () => {
-    const sources = ['10:12:15', '4:5']
-    const hash = getEmbedShareHash(sources)
-
-    expect(hash).toBe('#embed:10%3A12%3A15~4%3A5')
-    expect(getSharedSourceCodes(hash)).toEqual(sources)
-    expect(getSharedSourceCodes('#embed:10:12:15~4:5')).toEqual(sources)
-  })
-
   it('encodes control characters before hash fragments are used in absolute URLs', () => {
     const hash = getShareHash('0_2\n4_5\t6_7')
 
@@ -78,12 +60,8 @@ describe('share-link', () => {
     )
   })
 
-  it('detects embed hashes and restores their source code', () => {
-    expect(isEmbedHash('#embed:linked_tune')).toBe(true)
-    expect(isEmbedHash(getShareHash('embed:linked tune'))).toBe(false)
-    expect(isEmbedHash('#linked_tune')).toBe(false)
-    expect(getSharedSourceCodes('#embed:linked_tune')).toEqual(['linked tune'])
-    expect(getSharedSourceCodes(getShareHash('embed:linked tune'))).toEqual(['embed:linked tune'])
+  it('treats embed-prefixed text as normal shared source code', () => {
+    expect(getSharedSourceCodes('#embed%3Alinked_tune')).toEqual(['embed:linked tune'])
   })
 
   it('restores source code from a route hash without a leading hash prefix', () => {

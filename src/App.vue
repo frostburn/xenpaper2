@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, watch, type WatchStopHandle } from 'v
 import { RouterView, useRoute, useRouter } from 'vue-router'
 
 import TheFooter from './components/TheFooter.vue'
+import XenpaperEmbedToolbar from './components/XenpaperEmbedToolbar.vue'
 import XenpaperSidebar from './components/XenpaperSidebar.vue'
 import XenpaperToolbar from './components/XenpaperToolbar.vue'
 import { useXenpaperStore } from './stores/xenpaper'
@@ -35,6 +36,7 @@ const initialRouteHash = (): string => {
 }
 
 const currentRouteHash = computed(() => xenpaper.routeHash)
+const isEmbedMode = computed(() => route.meta.embedMode === true)
 
 const replaceShareRoute = async (): Promise<void> => {
   xenpaper.saveSourceCodeToBrowser()
@@ -42,7 +44,6 @@ const replaceShareRoute = async (): Promise<void> => {
   if (route.hash === currentRouteHash.value) return
 
   await router.replace({
-    path: route.path,
     query: route.query,
     hash: currentRouteHash.value,
   })
@@ -99,12 +100,9 @@ const startWatchers = (): void => {
     xenpaper.updateLoopStart()
   })
 
-  stopRouteHashWatcher = watch(
-    () => route.hash,
-    (sharedHash) => {
-      xenpaper.applySharedHash(sharedHash)
-    },
-  )
+  stopRouteHashWatcher = watch([() => route.hash, isEmbedMode], ([sharedHash, embedMode]) => {
+    xenpaper.applySharedHash(sharedHash, embedMode)
+  })
 
   stopPlaybackWatcher = watch(
     () => xenpaper.isPlaying,
@@ -136,7 +134,7 @@ const stopWatchers = (): void => {
 
 onMounted(() => {
   xenpaper.initializeLocation(window.location.href)
-  xenpaper.initializeSourceCode(initialRouteHash())
+  xenpaper.initializeSourceCode(initialRouteHash(), isEmbedMode.value)
   startWatchers()
   void replaceShareRoute()
   void xenpaper.updateParsedSourceCode()
@@ -151,12 +149,19 @@ onUnmounted(() => {
 
 <template>
   <div class="app-shell">
-    <div class="app-layout" :class="{ 'app-layout-embed': xenpaper.isEmbedMode }">
-      <XenpaperToolbar
-        :is-embed-mode="xenpaper.isEmbedMode"
+    <div class="app-layout" :class="{ 'app-layout-embed': isEmbedMode }">
+      <XenpaperEmbedToolbar
+        v-if="isEmbedMode"
+        :edit-url="xenpaper.shareUrl"
         :is-playing="xenpaper.isPlaying"
         :is-looping="xenpaper.isLooping"
-        :share-url="xenpaper.shareUrl"
+        @toggle-playback="xenpaper.togglePlayback"
+        @toggle-loop="xenpaper.toggleLoop"
+      />
+      <XenpaperToolbar
+        v-else
+        :is-playing="xenpaper.isPlaying"
+        :is-looping="xenpaper.isLooping"
         :can-undo-source-code="xenpaper.canUndoSourceCode"
         :can-redo-source-code="xenpaper.canRedoSourceCode"
         :sidebar-mode="xenpaper.sidebarMode"
@@ -168,7 +173,7 @@ onUnmounted(() => {
       />
       <RouterView />
       <XenpaperSidebar
-        :is-embed-mode="xenpaper.isEmbedMode"
+        v-if="!isEmbedMode"
         :sidebar-mode="xenpaper.sidebarMode"
         :share-url="xenpaper.shareUrl"
         :embed-code="xenpaper.embedCode"
@@ -181,7 +186,7 @@ onUnmounted(() => {
         @active-note-handler-change="xenpaper.setActiveNoteHandler"
       />
     </div>
-    <TheFooter v-if="!xenpaper.isEmbedMode" />
+    <TheFooter v-if="!isEmbedMode" />
   </div>
 </template>
 
@@ -557,35 +562,6 @@ onUnmounted(() => {
   z-index: 4;
 }
 
-.actions-embed {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  flex: 0 0 auto;
-  flex-direction: row;
-  width: 100%;
-  padding-top: 0;
-}
-
-.actions-embed .action-button {
-  width: auto;
-  height: 3rem;
-  padding: 1rem 0.5rem;
-  font-size: 0.9rem;
-  line-height: 1rem;
-}
-
-.actions-embed .edit-link {
-  margin-left: auto;
-}
-
-.actions-embed .play-pause-button {
-  width: 3rem;
-  height: 3rem;
-  padding: 1rem 0.5rem;
-}
-
 .xenpaper-app-embed {
   padding-top: 3rem;
 }
@@ -882,7 +858,6 @@ onUnmounted(() => {
   line-height: 1.3rem;
 }
 
-
 @media (max-width: 900px) {
   .actions:not(.actions-embed) {
     position: sticky;
@@ -952,13 +927,11 @@ onUnmounted(() => {
     overflow: visible;
   }
 
-
   .toolbar-rule {
     margin: 0.5rem 0.25rem;
     border-top: 0;
     border-left: 1px solid var(--xenpaper-bg-light);
   }
-
 
   .source-editor,
   .source-input,
@@ -1092,5 +1065,4 @@ onUnmounted(() => {
     overflow-wrap: anywhere;
   }
 }
-
 </style>
