@@ -127,7 +127,7 @@ onUnmounted(() => {
   <aside
     v-if="sidebarMode !== 'none'"
     class="sidebar-stack"
-    :class="`sidebar-stack-${sidebarMode}`"
+    :class="{ 'sidebar-stack-ruler': sidebarMode === 'ruler' }"
   >
     <button
       class="sidebar-close"
