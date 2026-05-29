@@ -438,10 +438,18 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   align-items: stretch;
+  min-height: 0;
+  max-height: 100%;
   gap: 0;
   padding-top: 2rem;
+  overflow-x: hidden;
+  overflow-y: auto;
   background: var(--xenpaper-bg);
   z-index: 4;
+}
+
+.actions > * {
+  flex: 0 0 auto;
 }
 
 .action-button {
