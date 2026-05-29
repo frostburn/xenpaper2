@@ -434,7 +434,7 @@ onUnmounted(() => {
 
   .source-input,
   .source-highlights {
-    padding-right: 2rem;
+    padding-right: min(8rem, 4vw);
   }
 }
 
