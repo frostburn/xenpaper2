@@ -36,7 +36,7 @@ export type PartialsRange =
 
 export type BasicOscillatorWithPartials = `${BasicOscillatorType}${PartialsRange}`
 
-export type CustomTimbre = 'amsine' | 'amtriangle'
+export type CustomTimbre = 'amsine' | 'amtriangle' | 'fmsine' | 'fmtriangle'
 
 export type FatOscillatorType =
   `fat${BasicOscillatorType | BasicOscillatorWithPartials | CustomTimbre}`
@@ -63,7 +63,7 @@ const PERIODIC_WAVE_CACHE = new Map<BasicOscillatorWithPartials | CustomTimbre, 
 
 const BASIC_OSCILLATOR_TYPES = ['sawtooth', 'square', 'sine', 'triangle'] as const
 
-const CUSTOM_TIMBRES = ['amsine', 'amtriangle'] as const
+const CUSTOM_TIMBRES = ['amsine', 'amtriangle', 'fmsine', 'fmtriangle'] as const
 
 const isBasicOscillatorType = (value: unknown): value is BasicOscillatorType =>
   typeof value === 'string' && BASIC_OSCILLATOR_TYPES.includes(value as BasicOscillatorType)
@@ -154,6 +154,51 @@ export function parseSWOscillatorType(
           case 3:
             real.push(0)
             imag.push(2 / (Math.PI * Math.PI * n * n))
+            break
+        }
+      }
+    } else if (name === 'fmsine') {
+      real.push(0)
+      imag.push(0)
+
+      real.push(-0.5)
+      imag.push(0)
+
+      real.push(0)
+      imag.push(-32 / (Math.PI * 15))
+
+      real.push(-0.5)
+      imag.push(0)
+
+      for (let n = 4; n < 128; ++n) {
+        real.push(0)
+        if (n & 1) {
+          imag.push(0)
+        } else {
+          imag.push((16 * n) / (Math.PI * (n * n - 1) * (n * n - 9)))
+        }
+      }
+    } else if (name === 'fmtriangle') {
+      real.push(0)
+      imag.push(0)
+      for (let n = 1; n < 128; ++n) {
+        switch (n % 6) {
+          case 1:
+          case 5:
+            real.push(1 / (n * n))
+            imag.push(0)
+            break
+          case 2:
+            real.push(0)
+            imag.push((3 * Math.sqrt(3)) / (n * n))
+            break
+          case 3:
+            real.push(10 / (n * n))
+            imag.push(0)
+            break
+          case 4:
+            real.push(0)
+            imag.push((-3 * Math.sqrt(3)) / (n * n))
             break
         }
       }
