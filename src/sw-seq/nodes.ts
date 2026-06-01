@@ -1,6 +1,11 @@
-import { UnisonOscillator, type UnisonOscillatorOptions } from 'aperiodic-oscillator'
+import {
+  AperiodicOscillator,
+  type AperiodicWave,
+  UnisonOscillator,
+  type UnisonOscillatorOptions,
+} from 'aperiodic-oscillator'
 
-type OscillatorLike = OscillatorNode | UnisonOscillator
+type OscillatorLike = OscillatorNode | UnisonOscillator | AperiodicOscillator
 
 class EnvelopedOscillatorBase<TOscillator extends OscillatorLike>
   implements OscillatorNode, GainNode
@@ -82,7 +87,7 @@ class EnvelopedOscillatorBase<TOscillator extends OscillatorLike>
   }
 
   setPeriodicWave(periodicWave: PeriodicWave) {
-    this.oscillator.setPeriodicWave(periodicWave)
+    if ('setPeriodicWave' in this.oscillator) this.oscillator.setPeriodicWave(periodicWave)
   }
 
   get numberOfInputs() {
@@ -205,6 +210,31 @@ export class EnvelopedUnison extends EnvelopedOscillatorBase<UnisonOscillator> {
 
   get voices() {
     return this.oscillator.voices
+  }
+
+  dispose() {
+    this.oscillator.dispose()
+  }
+}
+
+/**
+ * AperiodicOscillator in series with a GainNode.
+ */
+export class EnvelopedAperiodicOscillator extends EnvelopedOscillatorBase<AperiodicOscillator> {
+  constructor(context: BaseAudioContext) {
+    super(context, new AperiodicOscillator(context))
+  }
+
+  setAperiodicWave(aperiodicWave: AperiodicWave) {
+    this.oscillator.setAperiodicWave(aperiodicWave)
+  }
+
+  get numberOfVoices() {
+    return this.oscillator.numberOfVoices
+  }
+
+  set numberOfVoices(value: number) {
+    this.oscillator.numberOfVoices = value
   }
 
   dispose() {

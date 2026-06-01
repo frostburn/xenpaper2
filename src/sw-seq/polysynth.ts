@@ -1,5 +1,5 @@
 import type { Bank } from './bank'
-import type { EnvelopedOscillator, EnvelopedUnison } from './nodes'
+import type { EnvelopedAperiodicOscillator, EnvelopedOscillator, EnvelopedUnison } from './nodes'
 import type { SynthType } from './timbre'
 
 const TIME_CONSTANT = 0.2
@@ -35,9 +35,17 @@ export class PolySynth {
   }
 
   trigger(params: SynthParams) {
-    const { unison } = params.oscillator
+    const { periodicity } = params.oscillator
 
-    return unison
+    if (periodicity === 'aperiodic') {
+      return this.triggerWithOscillator(
+        params,
+        this.bank.allocateAperiodicOscillator.bind(this.bank),
+        this.bank.freeAperiodicOscillator.bind(this.bank),
+      )
+    }
+
+    return periodicity === 'unison'
       ? this.triggerWithOscillator(
           params,
           this.bank.allocateUnison.bind(this.bank),
@@ -50,11 +58,9 @@ export class PolySynth {
         )
   }
 
-  private triggerWithOscillator<T extends EnvelopedOscillator | EnvelopedUnison>(
-    params: SynthParams,
-    allocate: () => T | null,
-    release: (oscillator: T) => void,
-  ) {
+  private triggerWithOscillator<
+    T extends EnvelopedOscillator | EnvelopedUnison | EnvelopedAperiodicOscillator,
+  >(params: SynthParams, allocate: () => T | null, release: (oscillator: T) => void) {
     let oscillator: T | null = null
     let startTime = NaN
 
@@ -76,9 +82,11 @@ export class PolySynth {
       if (oscillator === null) return
 
       startTime = time
-      if (type === 'custom') {
+      if (params.oscillator.aperiodicWave !== null && 'setAperiodicWave' in oscillator) {
+        oscillator.setAperiodicWave(params.oscillator.aperiodicWave)
+      } else if (type === 'custom' && periodicWave !== null) {
         oscillator.setPeriodicWave(periodicWave)
-      } else {
+      } else if (type !== 'custom') {
         oscillator.type = type
       }
       oscillator.frequency.setValueAtTime(frequency, time)
