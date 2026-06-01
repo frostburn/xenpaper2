@@ -2,7 +2,7 @@ import type { Bank } from './bank'
 import type { EnvelopedOscillator, EnvelopedUnison } from './nodes'
 import type { SynthType } from './timbre'
 
-const TIME_CONSTANT = 0.5
+const TIME_CONSTANT = 0.2
 
 type Envelope = {
   attack: number
