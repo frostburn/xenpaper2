@@ -36,9 +36,16 @@ export type PartialsRange =
 
 export type BasicOscillatorWithPartials = `${BasicOscillatorType}${PartialsRange}`
 
-export type FatOscillatorType = `fat${BasicOscillatorType | BasicOscillatorWithPartials}`
+export type CustomTimbre = 'amsine' | 'amtriangle'
 
-export type SWOscillatorType = BasicOscillatorType | BasicOscillatorWithPartials | FatOscillatorType
+export type FatOscillatorType =
+  `fat${BasicOscillatorType | BasicOscillatorWithPartials | CustomTimbre}`
+
+export type SWOscillatorType =
+  | BasicOscillatorType
+  | BasicOscillatorWithPartials
+  | CustomTimbre
+  | FatOscillatorType
 
 export type SynthType =
   | {
@@ -52,9 +59,11 @@ export type SynthType =
       periodicWave: PeriodicWave
     }
 
-const PERIODIC_WAVE_CACHE = new Map<BasicOscillatorWithPartials, PeriodicWave>()
+const PERIODIC_WAVE_CACHE = new Map<BasicOscillatorWithPartials | CustomTimbre, PeriodicWave>()
 
 const BASIC_OSCILLATOR_TYPES = ['sawtooth', 'square', 'sine', 'triangle'] as const
+
+const CUSTOM_TIMBRES = ['amsine', 'amtriangle'] as const
 
 const isBasicOscillatorType = (value: unknown): value is BasicOscillatorType =>
   typeof value === 'string' && BASIC_OSCILLATOR_TYPES.includes(value as BasicOscillatorType)
@@ -69,7 +78,11 @@ export function isSWOscillatorType(value: unknown): value is SWOscillatorType {
   }
   if (typeof value === 'string') {
     const digits = value.split(/[^\d]/).slice(-1)[0]
-    if (digits !== undefined && digits.length) {
+    if (digits === undefined || !digits.length) {
+      if (CUSTOM_TIMBRES.includes(value as (typeof CUSTOM_TIMBRES)[0])) {
+        return true
+      }
+    } else {
       const count = parseInt(digits, 10)
       if (count < 1 || count > 32) {
         return false
@@ -103,12 +116,60 @@ export function parseSWOscillatorType(
       periodicWave: PERIODIC_WAVE_CACHE.get(name)!,
     }
   }
-  const entry = name
   const digits = name.split(/[^\d]/).slice(-1)[0]
   if (digits === undefined || !digits.length) {
-    throw new Error(`Invalid oscillator type '${name}'`)
+    const real: number[] = []
+    const imag: number[] = []
+    if (name === 'amsine') {
+      real.push(2 / Math.PI)
+      imag.push(0)
+
+      real.push(0)
+      imag.push(1)
+      for (let n = 2; n < 128; ++n) {
+        if (n & 1) {
+          real.push(0)
+        } else {
+          real.push(-4 / (Math.PI * (n * n - 1)))
+        }
+        imag.push(0)
+      }
+    } else if (name === 'amtriangle') {
+      real.push(0.25)
+      imag.push(0)
+      for (let n = 1; n < 128; ++n) {
+        switch (n % 4) {
+          case 0:
+            real.push(0)
+            imag.push(0)
+            break
+          case 1:
+            real.push(0)
+            imag.push(-2 / (Math.PI * Math.PI * n * n))
+            break
+          case 2:
+            real.push(-4 / (Math.PI * Math.PI * n * n))
+            imag.push(0)
+            break
+          case 3:
+            real.push(0)
+            imag.push(2 / (Math.PI * Math.PI * n * n))
+            break
+        }
+      }
+    } else {
+      throw new Error(`Invalid oscillator type '${name}'`)
+    }
+    const periodicWave = context.createPeriodicWave(real, imag)
+    PERIODIC_WAVE_CACHE.set(name, periodicWave)
+    return {
+      type: 'custom',
+      unison,
+      periodicWave,
+    }
   }
   const count = parseInt(digits, 10)
+  const entry = name
   name = name.slice(0, name.length - digits.length) as SWOscillatorType
   if (!isBasicOscillatorType(name)) {
     throw new Error(`Invalid oscillator type '${name}'`)
