@@ -2,32 +2,19 @@ import type { MoscNote, MoscScore } from '../mosc'
 import { SoundEngine } from '../mosc'
 import type { Bank } from '../sw-seq/bank'
 import { PolySynth, type SynthParams } from '../sw-seq/polysynth'
+import { isSWOscillatorType, parseSWOscillatorType, type SWOscillatorType } from '../sw-seq/timbre'
 import type { Transport } from '../sw-seq/transport'
 
 const OSC_VOLUME = 0.125
-const BASIC_OSC_TYPES = ['sine', 'square', 'triangle', 'sawtooth'] as const
-const FAT_OSC_MAP = {
-  fatsine: 'sine',
-  fatsquare: 'square',
-  fattriangle: 'triangle',
-  fatsawtooth: 'sawtooth',
-} as const satisfies Record<string, OscillatorType>
-const OSC_TYPES = [...BASIC_OSC_TYPES, ...Object.keys(FAT_OSC_MAP)] as const
 
-type BasicOscillatorType = (typeof BASIC_OSC_TYPES)[number]
-type FatOscillatorType = keyof typeof FAT_OSC_MAP
-type SoundEngineOscillatorType = BasicOscillatorType | FatOscillatorType
-type SoundEngineOscParam = { type: 'osc'; osc: SoundEngineOscillatorType }
+type SoundEngineOscParam = { type: 'osc'; osc: SWOscillatorType }
 type SoundEngineEnvParam = { type: 'env'; a: number; d: number; s: number; r: number }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null
 
-const isOscillatorType = (value: unknown): value is SoundEngineOscillatorType =>
-  typeof value === 'string' && OSC_TYPES.includes(value as SoundEngineOscillatorType)
-
 const isOscParam = (value: unknown): value is SoundEngineOscParam =>
-  isRecord(value) && value.type === 'osc' && isOscillatorType(value.osc)
+  isRecord(value) && value.type === 'osc' && isSWOscillatorType(value.osc)
 
 const isEnvParam = (value: unknown): value is SoundEngineEnvParam =>
   isRecord(value) &&
@@ -36,9 +23,6 @@ const isEnvParam = (value: unknown): value is SoundEngineEnvParam =>
   typeof value.d === 'number' &&
   typeof value.s === 'number' &&
   typeof value.r === 'number'
-
-const isBasicOsc = (value: SoundEngineOscillatorType): value is BasicOscillatorType =>
-  BASIC_OSC_TYPES.includes(value as BasicOscillatorType)
 
 export class SoundEngineSwSeq extends SoundEngine {
   private endTime = 0
@@ -58,12 +42,16 @@ export class SoundEngineSwSeq extends SoundEngine {
     this.synth = new PolySynth(bank, this.destination)
   }
 
+  get context() {
+    return this.transport.context
+  }
+
   private clearScheduledEvents(): void {
     this.transportEventIds.forEach((_, id) => this.transport.clear(id))
     this.transportEventIds.clear()
     for (const callback of this.noteOffs) {
       // Just release, scheduling be damned
-      callback(this.transport.context.currentTime)
+      callback(this.context.currentTime)
     }
     this.noteOffs.length = 0
   }
@@ -82,12 +70,12 @@ export class SoundEngineSwSeq extends SoundEngine {
     this.activeNoteEvents.clear()
     for (const callback of this.noteOffs) {
       // Just release, scheduling be damned
-      callback(this.transport.context.currentTime)
+      callback(this.context.currentTime)
     }
   }
 
   setOutputGain(gain: number): void {
-    this.destination.gain.setValueAtTime(gain, this.transport.context.currentTime)
+    this.destination.gain.setValueAtTime(gain, this.context.currentTime)
   }
 
   async setScore(score: MoscScore): Promise<void> {
@@ -101,6 +89,7 @@ export class SoundEngineSwSeq extends SoundEngine {
       oscillator: {
         type: 'sine',
         unison: false,
+        periodicWave: null,
       },
       envelope: {
         attack: 0.01,
@@ -133,14 +122,7 @@ export class SoundEngineSwSeq extends SoundEngine {
       } else if (item.type === 'PARAM_TIME') {
         // No scheduling needed. Change the active patch directly.
         if (isOscParam(item.value)) {
-          const type = item.value.osc
-          if (isBasicOsc(type)) {
-            patch.oscillator.type = type
-            patch.oscillator.unison = false
-          } else {
-            patch.oscillator.type = FAT_OSC_MAP[type]
-            patch.oscillator.unison = true
-          }
+          patch.oscillator = parseSWOscillatorType(item.value.osc, this.context)
         }
         if (isEnvParam(item.value)) {
           patch.envelope = {

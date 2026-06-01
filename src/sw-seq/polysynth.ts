@@ -1,5 +1,6 @@
 import type { Bank } from './bank'
 import type { EnvelopedOscillator, EnvelopedUnison } from './nodes'
+import type { SynthType } from './timbre'
 
 const TIME_CONSTANT = 0.5
 
@@ -13,7 +14,7 @@ type Envelope = {
 export type SynthParams = {
   frequency: number
   velocity: number
-  oscillator: { type: OscillatorType; unison: boolean }
+  oscillator: SynthType
   envelope: Envelope
 }
 
@@ -58,7 +59,7 @@ export class PolySynth {
     let startTime = NaN
 
     const { frequency, velocity } = params
-    const { type } = params.oscillator
+    const { type, periodicWave } = params.oscillator
 
     const {
       attack: attackTime,
@@ -75,7 +76,11 @@ export class PolySynth {
       if (oscillator === null) return
 
       startTime = time
-      oscillator.type = type
+      if (type === 'custom') {
+        oscillator.setPeriodicWave(periodicWave)
+      } else {
+        oscillator.type = type
+      }
       oscillator.frequency.setValueAtTime(frequency, time)
       oscillator.connect(this.destination)
       oscillator.gain.setValueAtTime(0, startTime)
