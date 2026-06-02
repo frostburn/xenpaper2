@@ -140,7 +140,7 @@ export class Transport {
     this.fireInRange(startTime, startPos, this._position)
 
     const ticker = this.context.createConstantSource()
-    ticker.onended = this.onInterval.bind(this)
+    ticker.addEventListener('ended', this.onInterval.bind(this), { once: true })
     ticker.start(this.context.currentTime)
     this.lastTickTime += this.interval
     ticker.stop(this.lastTickTime / this.context.sampleRate)
@@ -180,10 +180,14 @@ export class Transport {
     for (const event of this.eventsById.values()) {
       if (event.when >= startPos && event.when < endPos) {
         const timer = this.context.createConstantSource()
-        timer.onended = () => {
-          if (!this.eventsById.has(event.id)) return
-          event.callback()
-        }
+        timer.addEventListener(
+          'ended',
+          () => {
+            if (!this.eventsById.has(event.id)) return
+            event.callback()
+          },
+          { once: true },
+        )
         timer.start(this.context.currentTime)
         timer.stop((event.when - startPos + startTime + this._lookAhead) / this.context.sampleRate)
       }
