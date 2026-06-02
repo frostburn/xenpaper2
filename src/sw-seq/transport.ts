@@ -1,3 +1,5 @@
+import { isApplePlatform } from '../utils'
+
 const round = Math.round
 
 type ParametricEvent = {
@@ -18,6 +20,8 @@ type TransportEvent = {
   callback: () => void
   when: number
 }
+
+type TimeoutHandle = ReturnType<typeof setTimeout>
 
 /**
  * Transport using look-ahead scheduling.
@@ -45,6 +49,8 @@ export class Transport {
   private parametricNotesById: Map<number, ParametricNoteHandle>
   private eventsById: Map<number, TransportEvent>
   private nextEventId: number
+  private useSetTimeoutFallback: boolean
+  private tickTimeout: TimeoutHandle | undefined
 
   constructor(context: AudioContext, interval = 0.1, lookAhead = 0.2) {
     this.context = context
@@ -62,6 +68,8 @@ export class Transport {
     this.parametricNotesById = new Map()
     this.eventsById = new Map()
     this.nextEventId = 1
+    this.useSetTimeoutFallback = isApplePlatform()
+    this.tickTimeout = undefined
   }
 
   get lookAhead() {
@@ -116,6 +124,29 @@ export class Transport {
     this.onInterval()
   }
 
+  private scheduleTimeout(callback: () => void, time: number) {
+    const delay = Math.max(0, (time - this.context.currentTime) * 1000)
+
+    return setTimeout(callback, delay)
+  }
+
+  private scheduleNextInterval() {
+    const nextTime = this.lastTickTime / this.context.sampleRate
+
+    if (this.useSetTimeoutFallback) {
+      this.tickTimeout = this.scheduleTimeout(() => {
+        this.tickTimeout = undefined
+        this.onInterval()
+      }, nextTime)
+      return
+    }
+
+    const ticker = this.context.createConstantSource()
+    ticker.addEventListener('ended', this.onInterval.bind(this), { once: true })
+    ticker.start(this.context.currentTime)
+    ticker.stop(nextTime)
+  }
+
   /**
    * Fire all events from the current position to pos+interval while looping.
    */
@@ -139,11 +170,8 @@ export class Transport {
     }
     this.fireInRange(startTime, startPos, this._position)
 
-    const ticker = this.context.createConstantSource()
-    ticker.addEventListener('ended', this.onInterval.bind(this), { once: true })
-    ticker.start(this.context.currentTime)
     this.lastTickTime += this.interval
-    ticker.stop(this.lastTickTime / this.context.sampleRate)
+    this.scheduleNextInterval()
 
     if (this._position >= this.endPos) {
       this.active = false
@@ -179,6 +207,17 @@ export class Transport {
 
     for (const event of this.eventsById.values()) {
       if (event.when >= startPos && event.when < endPos) {
+        const eventTime =
+          (event.when - startPos + startTime + this._lookAhead) / this.context.sampleRate
+
+        if (this.useSetTimeoutFallback) {
+          this.scheduleTimeout(() => {
+            if (!this.eventsById.has(event.id)) return
+            event.callback()
+          }, eventTime)
+          continue
+        }
+
         const timer = this.context.createConstantSource()
         timer.addEventListener(
           'ended',
@@ -189,13 +228,19 @@ export class Transport {
           { once: true },
         )
         timer.start(this.context.currentTime)
-        timer.stop((event.when - startPos + startTime + this._lookAhead) / this.context.sampleRate)
+        timer.stop(eventTime)
       }
     }
   }
 
   stop() {
     this.active = false
+
+    if (this.tickTimeout !== undefined) {
+      clearTimeout(this.tickTimeout)
+      this.tickTimeout = undefined
+      this.onended()
+    }
   }
 
   clear(id: number) {

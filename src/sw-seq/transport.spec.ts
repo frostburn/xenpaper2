@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { Transport } from './transport'
 
@@ -31,6 +31,11 @@ const tick = (transport: Transport, times = 1) => {
 function createTransport() {
   return new Transport(new MockAudioContext() as unknown as AudioContext)
 }
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+  vi.useRealTimers()
+})
 
 describe('Sample-accurate look-ahead transport', () => {
   it('can schedule and fire a single event', () => {
@@ -68,6 +73,24 @@ describe('Sample-accurate look-ahead transport', () => {
     expect(calls[0]!.time).toBeCloseTo(0.5 + transport.lookAhead)
     expect(calls[1]!.which).toBe('off')
     expect(calls[1]!.time).toBeCloseTo(1.5 + transport.lookAhead)
+  })
+
+  it('uses setTimeout for one-shot events on Apple platforms', () => {
+    vi.useFakeTimers()
+    vi.stubGlobal('navigator', { platform: 'MacIntel' })
+
+    const calls: string[] = []
+    const transport = createTransport()
+    transport.scheduleEvent(() => calls.push('event'), 0)
+
+    transport.start(0)
+    vi.advanceTimersByTime(199)
+
+    expect(calls).toHaveLength(0)
+
+    vi.advanceTimersByTime(1)
+
+    expect(calls).toEqual(['event'])
   })
 
   it('repeats notes that lead out of a looped section', () => {
