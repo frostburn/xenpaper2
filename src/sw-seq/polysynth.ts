@@ -84,7 +84,7 @@ export class PolySynth {
       startTime = time
       if (aperiodicWave !== null && 'setAperiodicWave' in oscillator) {
         oscillator.setAperiodicWave(aperiodicWave)
-      } else if (type === 'custom' && periodicWave !== null) {
+      } else if (type === 'custom' && periodicWave !== null && 'setPeriodicWave' in oscillator) {
         oscillator.setPeriodicWave(periodicWave)
       } else if (type !== 'custom') {
         oscillator.type = type

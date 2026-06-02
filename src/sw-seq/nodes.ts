@@ -7,9 +7,7 @@ import {
 
 type OscillatorLike = OscillatorNode | UnisonOscillator | AperiodicOscillator
 
-class EnvelopedOscillatorBase<TOscillator extends OscillatorLike>
-  implements OscillatorNode, GainNode
-{
+class EnvelopedOscillatorBase<TOscillator extends OscillatorLike> implements GainNode {
   protected oscillator: TOscillator
   protected gainNode: GainNode
 
@@ -84,10 +82,6 @@ class EnvelopedOscillatorBase<TOscillator extends OscillatorLike>
 
   stop(when?: number) {
     this.oscillator.stop(when)
-  }
-
-  setPeriodicWave(periodicWave: PeriodicWave) {
-    if ('setPeriodicWave' in this.oscillator) this.oscillator.setPeriodicWave(periodicWave)
   }
 
   get numberOfInputs() {
@@ -178,22 +172,36 @@ class EnvelopedOscillatorBase<TOscillator extends OscillatorLike>
 /**
  * OscillatorNode in series with a GainNode.
  */
-export class EnvelopedOscillator extends EnvelopedOscillatorBase<OscillatorNode> {
+export class EnvelopedOscillator
+  extends EnvelopedOscillatorBase<OscillatorNode>
+  implements OscillatorNode
+{
   constructor(context: BaseAudioContext) {
     super(context, context.createOscillator())
+  }
+
+  setPeriodicWave(periodicWave: PeriodicWave) {
+    this.oscillator.setPeriodicWave(periodicWave)
   }
 }
 
 /**
  * UnisonOscillator in series with a GainNode.
  */
-export class EnvelopedUnison extends EnvelopedOscillatorBase<UnisonOscillator> {
+export class EnvelopedUnison
+  extends EnvelopedOscillatorBase<UnisonOscillator>
+  implements OscillatorNode
+{
   constructor(
     context: BaseAudioContext,
     opts?: UnisonOscillatorOptions,
     mode: 'frequency' | 'detune' = 'detune',
   ) {
     super(context, new UnisonOscillator(context, opts, mode))
+  }
+
+  setPeriodicWave(periodicWave: PeriodicWave) {
+    this.oscillator.setPeriodicWave(periodicWave)
   }
 
   get numberOfVoices() {
