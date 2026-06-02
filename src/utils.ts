@@ -2,7 +2,7 @@ import { parse } from './grammars/grammar.generated.js'
 import { grammarToChars, type CharData } from './grammars/grammar-to-chars'
 import { processGrammar } from './grammars/process-grammar'
 import { scoreToTime } from './mosc'
-import type { ParsedSource } from './types'
+import type { DemoTune, ParsedSource } from './types'
 
 const DEFAULT_DOCUMENT_TITLE = 'Xenpaper 2'
 const TITLE_SOURCE_LIMIT = 20
@@ -18,6 +18,26 @@ type ParseErrorLocation = {
 type ParseError = Error & {
   location?: ParseErrorLocation
 }
+
+export const isApplePlatform = (): boolean => {
+  if (typeof navigator === 'undefined') return false
+
+  const platform = navigator.platform.toLowerCase()
+  return (
+    platform.includes('mac') ||
+    platform.includes('iphone') ||
+    platform.includes('ipad') ||
+    platform.includes('ipod')
+  )
+}
+
+export const getKeyboardModifierKeyLabel = (): 'Command' | 'Ctrl' =>
+  isApplePlatform() ? 'Command' : 'Ctrl'
+
+export const formatDemoTune = (tune: DemoTune): string =>
+  Array.isArray(tune)
+    ? tune.map((source, index) => `# Tab ${index + 1}\n${source}`).join('\n\n')
+    : tune
 
 export const escapeHtmlAttribute = (value: string): string =>
   value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')

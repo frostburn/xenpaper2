@@ -3,7 +3,7 @@ import { computed, onMounted, onUnmounted, ref, useTemplateRef, watch } from 'vu
 
 import type { MoscNote } from '../mosc'
 import type { InitialRulerState } from '../grammars/process-grammar'
-import type { SidebarMode } from '../types'
+import type { DemoTune, SidebarMode } from '../types'
 import { copyText } from '../utils'
 import {
   parseXenpaperScoreFile,
@@ -13,6 +13,7 @@ import {
   XENPAPER_FILE_NAME,
 } from '../xenpaper-file'
 import BlobDownloadLink from './BlobDownloadLink.vue'
+import NewInV2Sidebar from './NewInV2Sidebar.vue'
 import PitchRuler from './PitchRuler.vue'
 import TutorialSidebar from './TutorialSidebar.vue'
 
@@ -29,7 +30,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   closeSidebar: []
-  setTune: [source: string]
+  setTune: [source: DemoTune]
   importSourceCodes: [sourceCodes: string[]]
   activeNoteHandlerChange: [handler?: (note: MoscNote, on: boolean) => void]
 }>()
@@ -138,6 +139,7 @@ onUnmounted(() => {
       ×
     </button>
     <TutorialSidebar v-if="sidebarMode === 'info'" @set-tune="emit('setTune', $event)" />
+    <NewInV2Sidebar v-else-if="sidebarMode === 'new-v2'" @set-tune="emit('setTune', $event)" />
 
     <section v-else-if="sidebarMode === 'share'" class="sidebar-panel share-panel">
       <header class="sidebar-heading">
@@ -268,7 +270,7 @@ onUnmounted(() => {
   outline-offset: 2px;
 }
 
-.tutorial-sidebar {
+.sidebar {
   height: 100%;
   max-height: 100%;
 }
@@ -449,7 +451,7 @@ onUnmounted(() => {
     flex-basis: auto;
   }
 
-  .tutorial-sidebar,
+  .sidebar,
   .sidebar-panel {
     height: auto;
     max-height: none;

@@ -23,7 +23,13 @@ import { SoundEngineSwSeq } from '../sound-engine-sw-seq'
 import { Bank } from '../sw-seq/bank'
 import { Transport } from '../sw-seq/transport'
 import { createSourceDisplayTokens } from '../source-display'
-import type { OpenSidebarMode, SidebarMode, SourceDisplayToken, SourceTab } from '../types'
+import type {
+  DemoTune,
+  OpenSidebarMode,
+  SidebarMode,
+  SourceDisplayToken,
+  SourceTab,
+} from '../types'
 import {
   createHtmlTitle,
   escapeHtmlAttribute,
@@ -522,25 +528,25 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     applySharedTransportLoop()
   }
 
-  const setDemoTune = async (source: string): Promise<void> => {
+  const setDemoTune = async (source: DemoTune): Promise<void> => {
     await pauseAllSoundEngines()
     const previousScoreEngines = scoreEngines.value
     resetPlaybackState()
     await clearScoreEngines(previousScoreEngines)
 
-    const engine = createScoreEngineFromSource(source, nextScoreEngineId++)
+    const demoSources = Array.isArray(source) ? (source.length ? source : ['']) : [source]
+    const engines = demoSources.map((demoSource) =>
+      createScoreEngineFromSource(demoSource, nextScoreEngineId++),
+    )
 
-    await engine.updateParsedSourceCode()
-    if (!engine.scoreLoaded.value) {
-      scoreEngines.value = [engine]
-      activeScoreEngineIndex.value = 0
-      rememberDeadScoreEngines(previousScoreEngines)
-      return
-    }
-
-    scoreEngines.value = [engine]
+    await Promise.all(engines.map((engine) => engine.updateParsedSourceCode()))
+    scoreEngines.value = engines
     activeScoreEngineIndex.value = 0
     rememberDeadScoreEngines(previousScoreEngines)
+    syncScoreEngineGains()
+
+    if (!engines.some((engine) => engine.scoreLoaded.value)) return
+
     swSeqTransport.loopStart = 0
     await restartPlaybackFromStart()
   }

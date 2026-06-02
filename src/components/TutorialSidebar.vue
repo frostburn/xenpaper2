@@ -1,19 +1,12 @@
 <script setup lang="ts">
-type TutorialDemo = {
-  description: string
-  tune?: string
-}
-
-type TutorialSection = {
-  title: string
-  demos: TutorialDemo[]
-}
+import type { DemoTune, SidebarSection } from '../types'
+import { formatDemoTune } from '../utils'
 
 const emit = defineEmits<{
-  setTune: [tune: string]
+  setTune: [tune: DemoTune]
 }>()
 
-const tutorialSections: TutorialSection[] = [
+const tutorialSections: SidebarSection[] = [
   {
     title: 'How it works',
     demos: [
@@ -186,33 +179,33 @@ const tutorialSections: TutorialSection[] = [
 </script>
 
 <template>
-  <aside class="tutorial-sidebar" aria-labelledby="tutorial-title">
-    <header class="sidebar-header">
+  <aside class="sidebar" aria-labelledby="tutorial-title">
+    <header class="header">
       <h1 id="tutorial-title">Xenpaper 2</h1>
       <p>Text-based microtonal sequencer.</p>
     </header>
 
-    <div class="sidebar-content">
-      <section v-for="section in tutorialSections" :key="section.title" class="tutorial-section">
+    <div class="content">
+      <section v-for="section in tutorialSections" :key="section.title" class="section">
         <h2>{{ section.title }}</h2>
 
         <article
           v-for="demo in section.demos"
           :key="`${section.title}-${demo.description}`"
-          class="tutorial-demo"
+          class="demo"
         >
           <p>{{ demo.description }}</p>
 
           <div v-if="demo.tune" class="example">
             <span class="example-label">e.g.</span>
-            <pre>{{ demo.tune }}</pre>
+            <pre>{{ formatDemoTune(demo.tune) }}</pre>
             <button type="button" @click="emit('setTune', demo.tune)">Demo</button>
           </div>
         </article>
       </section>
     </div>
 
-    <footer class="sidebar-footer">
+    <footer class="footer">
       <h2>Bugs and future features</h2>
       <p>
         Find anything broken, or have some ideas you want to share? Visit the
@@ -223,133 +216,4 @@ const tutorialSections: TutorialSection[] = [
   </aside>
 </template>
 
-<style scoped>
-.tutorial-sidebar {
-  height: 100%;
-  min-height: 0;
-  overflow: auto;
-  background: var(--xenpaper-bg-light);
-  color: var(--xenpaper-text);
-  font-family: var(--xenpaper-font-copy);
-  animation: 0.3s ease-out on-show;
-}
-
-@keyframes on-show {
-  from {
-    opacity: 0;
-    transform: translateY(0.25rem);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.sidebar-header {
-  padding: 2rem 2rem 1.5rem;
-  background: var(--xenpaper-bg);
-}
-
-.sidebar-header h1 {
-  margin: 0 0 0.5rem;
-  font-size: 2.5rem;
-  line-height: 2rem;
-  font-weight: 400;
-  text-transform: lowercase;
-}
-
-.sidebar-header p {
-  margin: 0;
-  color: var(--xenpaper-placeholder);
-  font-style: italic;
-  line-height: 1.3rem;
-}
-
-.sidebar-content {
-  padding: 2rem;
-}
-
-.tutorial-section + .tutorial-section {
-  margin-top: 2.5rem;
-}
-
-.tutorial-section h2 {
-  margin: 0 0 1rem;
-  font-size: 1.5rem;
-  line-height: 1.2;
-  font-weight: 400;
-}
-
-.tutorial-demo {
-  margin-bottom: 2rem;
-}
-
-.tutorial-demo p {
-  margin: 0;
-}
-
-.example {
-  display: flex;
-  align-items: stretch;
-  margin-top: 1rem;
-  padding: 0.5rem;
-  background: var(--xenpaper-bg);
-  font-family: var(--xenpaper-font-mono);
-  line-height: 2em;
-}
-
-.example-label {
-  flex: 0 0 auto;
-  color: var(--xenpaper-placeholder);
-  font-style: italic;
-  padding: 0 1rem 0 0.6rem;
-}
-
-.example pre {
-  flex: 1 1 auto;
-  width: 0;
-  margin: 0;
-  padding-right: 0.5rem;
-  color: var(--xenpaper-cyan);
-  font: inherit;
-  line-height: 1.4em;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-}
-
-.example button {
-  flex: 0 0 auto;
-  border: 0;
-  display: block;
-  padding: 0.5rem;
-  cursor: pointer;
-  background: #ff541e;
-  color: var(--xenpaper-bg);
-  outline: none;
-  opacity: 0.7;
-  transition: opacity 0.2s ease-out;
-}
-
-.example button:hover,
-.example button:focus,
-.example button:active {
-  opacity: 1;
-}
-
-.sidebar-footer {
-  padding: 1rem 2rem 1.5rem;
-  background: var(--xenpaper-bg);
-  color: var(--xenpaper-placeholder);
-  font-size: 0.9rem;
-  line-height: 1.3rem;
-}
-
-.sidebar-footer p {
-  margin: 0;
-}
-
-.sidebar-footer p + p {
-  margin-top: 0.35rem;
-}
-</style>
+<style scoped src="../assets/info-sidebar.css"></style>

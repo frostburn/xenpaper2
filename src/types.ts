@@ -31,9 +31,21 @@ export type SourceHistory = {
   future: string[]
 }
 
-export type SidebarMode = 'info' | 'share' | 'ruler' | 'none'
+export type SidebarMode = 'info' | 'new-v2' | 'share' | 'ruler' | 'none'
 
 export type OpenSidebarMode = Exclude<SidebarMode, 'none'>
+
+export type DemoTune = string | string[]
+
+export type SidebarDemo = {
+  description: string
+  tune?: DemoTune
+}
+
+export type SidebarSection = {
+  title: string
+  demos: SidebarDemo[]
+}
 
 type ParsedSourceBase = {
   chars: CharData[]
