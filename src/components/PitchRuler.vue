@@ -4,7 +4,9 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref, useTemplateRef, wa
 import { centsToRatio, ratioToCents, type MoscNote } from '../mosc'
 import type { InitialRulerState } from '../grammars/process-grammar'
 
-export type RulerColourMode = 'gradient' | 'proxnotes' | `proxplot${number}`
+const BASE_RULER_COLOUR_MODES = ['gradient', 'proxnotes'] as const
+
+export type RulerColourMode = (typeof BASE_RULER_COLOUR_MODES)[number] | `proxplot${number}`
 
 export type RulerState = {
   notes: Map<string, MoscNote>
@@ -115,9 +117,13 @@ const visibleRange = computed<[number, number]>(() => [
   panToHz(pxToPan(0, rulerState.viewPan, rulerState.viewZoom, rulerHeight.value)),
 ])
 
+const RULER_COLOUR_MODE_LABELS: Record<(typeof BASE_RULER_COLOUR_MODES)[number], string> = {
+  gradient: 'Gradient',
+  proxnotes: 'Proximity to notes',
+}
+
 const colourModeOptions = computed(() => [
-  { value: 'gradient', label: 'Gradient' },
-  { value: 'proxnotes', label: 'Proximity to notes' },
+  ...BASE_RULER_COLOUR_MODES.map((value) => ({ value, label: RULER_COLOUR_MODE_LABELS[value] })),
   ...rulerState.plots.map((_plot, index) => ({
     value: `proxplot${index}`,
     label: `Proximity to plot ${index + 1}`,
