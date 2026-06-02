@@ -179,29 +179,25 @@ const tutorialSections: SidebarSection[] = [
 </script>
 
 <template>
-  <aside class="info-sidebar" aria-labelledby="tutorial-title">
-    <header class="info-sidebar__header">
+  <aside class="sidebar" aria-labelledby="tutorial-title">
+    <header class="header">
       <h1 id="tutorial-title">Xenpaper 2</h1>
       <p>Text-based microtonal sequencer.</p>
     </header>
 
-    <div class="info-sidebar__content">
-      <section
-        v-for="section in tutorialSections"
-        :key="section.title"
-        class="info-sidebar__section"
-      >
+    <div class="content">
+      <section v-for="section in tutorialSections" :key="section.title" class="section">
         <h2>{{ section.title }}</h2>
 
         <article
           v-for="demo in section.demos"
           :key="`${section.title}-${demo.description}`"
-          class="info-sidebar__demo"
+          class="demo"
         >
           <p>{{ demo.description }}</p>
 
-          <div v-if="demo.tune" class="info-sidebar__example">
-            <span class="info-sidebar__example-label">e.g.</span>
+          <div v-if="demo.tune" class="example">
+            <span class="example-label">e.g.</span>
             <pre>{{ formatDemoTune(demo.tune) }}</pre>
             <button type="button" @click="emit('setTune', demo.tune)">Demo</button>
           </div>
@@ -209,7 +205,7 @@ const tutorialSections: SidebarSection[] = [
       </section>
     </div>
 
-    <footer class="info-sidebar__footer">
+    <footer class="footer">
       <h2>Bugs and future features</h2>
       <p>
         Find anything broken, or have some ideas you want to share? Visit the
@@ -219,3 +215,5 @@ const tutorialSections: SidebarSection[] = [
     </footer>
   </aside>
 </template>
+
+<style scoped src="../assets/info-sidebar.css"></style>

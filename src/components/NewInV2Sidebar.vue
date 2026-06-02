@@ -114,29 +114,25 @@ const newInV2Sections: SidebarSection[] = [
 </script>
 
 <template>
-  <aside class="info-sidebar" aria-labelledby="new-v2-title">
-    <header class="info-sidebar__header">
+  <aside class="sidebar" aria-labelledby="new-v2-title">
+    <header class="header">
       <h1 id="new-v2-title">New in v2</h1>
       <p>Tabs, shortcuts, and expanded oscillator colors.</p>
     </header>
 
-    <div class="info-sidebar__content">
-      <section
-        v-for="section in newInV2Sections"
-        :key="section.title"
-        class="info-sidebar__section"
-      >
+    <div class="content">
+      <section v-for="section in newInV2Sections" :key="section.title" class="section">
         <h2>{{ section.title }}</h2>
 
         <article
           v-for="demo in section.demos"
           :key="`${section.title}-${demo.description}`"
-          class="info-sidebar__demo"
+          class="demo"
         >
           <p>{{ demo.description }}</p>
 
-          <div v-if="demo.tune" class="info-sidebar__example">
-            <span class="info-sidebar__example-label">e.g.</span>
+          <div v-if="demo.tune" class="example">
+            <span class="example-label">e.g.</span>
             <pre>{{ formatDemoTune(demo.tune) }}</pre>
             <button type="button" @click="emit('setTune', demo.tune)">Demo</button>
           </div>
@@ -145,3 +141,5 @@ const newInV2Sections: SidebarSection[] = [
     </div>
   </aside>
 </template>
+
+<style scoped src="../assets/info-sidebar.css"></style>

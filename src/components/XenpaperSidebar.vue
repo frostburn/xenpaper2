@@ -270,7 +270,7 @@ onUnmounted(() => {
   outline-offset: 2px;
 }
 
-.info-sidebar {
+.sidebar {
   height: 100%;
   max-height: 100%;
 }
@@ -451,7 +451,7 @@ onUnmounted(() => {
     flex-basis: auto;
   }
 
-  .info-sidebar,
+  .sidebar,
   .sidebar-panel {
     height: auto;
     max-height: none;
