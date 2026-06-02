@@ -34,6 +34,7 @@ import {
   createHtmlTitle,
   escapeHtmlAttribute,
   getMsAtLine,
+  isApplePlatform,
   parseAndProcessSourceCode,
 } from '../utils'
 
@@ -158,7 +159,7 @@ const getSourceTabTitle = (source: string, index: number): string => {
 
 export const useXenpaperStore = defineStore('xenpaper', () => {
   const audioContext = new AudioContext()
-  const swSeqTransport = new Transport(audioContext)
+  const swSeqTransport = new Transport(audioContext, { useSetTimeoutFallback: isApplePlatform() })
   const swSeqBank = new Bank(audioContext)
 
   swSeqTransport.onended = () => {

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { Transport } from './transport'
 
@@ -68,6 +68,27 @@ describe('Sample-accurate look-ahead transport', () => {
     expect(calls[0]!.time).toBeCloseTo(0.5 + transport.lookAhead)
     expect(calls[1]!.which).toBe('off')
     expect(calls[1]!.time).toBeCloseTo(1.5 + transport.lookAhead)
+  })
+
+  it('uses setTimeout for one-shot events when the fallback is enabled', () => {
+    vi.useFakeTimers()
+
+    const calls: string[] = []
+    const transport = new Transport(new MockAudioContext() as unknown as AudioContext, {
+      useSetTimeoutFallback: true,
+    })
+    transport.scheduleEvent(() => calls.push('event'), 0)
+
+    transport.start(0)
+    vi.advanceTimersByTime(199)
+
+    expect(calls).toHaveLength(0)
+
+    vi.advanceTimersByTime(1)
+
+    expect(calls).toEqual(['event'])
+
+    vi.useRealTimers()
   })
 
   it('repeats notes that lead out of a looped section', () => {
