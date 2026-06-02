@@ -65,7 +65,7 @@ export class PolySynth {
     let startTime = NaN
 
     const { frequency, velocity } = params
-    const { type, periodicWave } = params.oscillator
+    const { type, periodicWave, aperiodicWave } = params.oscillator
 
     const {
       attack: attackTime,
@@ -82,8 +82,8 @@ export class PolySynth {
       if (oscillator === null) return
 
       startTime = time
-      if (params.oscillator.aperiodicWave !== null && 'setAperiodicWave' in oscillator) {
-        oscillator.setAperiodicWave(params.oscillator.aperiodicWave)
+      if (aperiodicWave !== null && 'setAperiodicWave' in oscillator) {
+        oscillator.setAperiodicWave(aperiodicWave)
       } else if (type === 'custom' && periodicWave !== null) {
         oscillator.setPeriodicWave(periodicWave)
       } else if (type !== 'custom') {
