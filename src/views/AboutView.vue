@@ -22,6 +22,11 @@
     <a target="_blank" href="https://github.com/dxinteractive/xenpaper"
       >DX Interactive / Xenpaper 1</a
     >
+    <h2>AI assistance disclosure</h2>
+    <p>
+      GPT-5.3-Codex, an AI model created by OpenAI, assisted in translating the original Xenpaper
+      project into Xenpaper 2 and in further development of this project.
+    </p>
   </main>
 </template>
 
