@@ -1,5 +1,3 @@
-import { isApplePlatform } from '../utils'
-
 const round = Math.round
 
 type ParametricEvent = {
@@ -22,6 +20,12 @@ type TransportEvent = {
 }
 
 type TimeoutHandle = ReturnType<typeof setTimeout>
+
+export type TransportOptions = {
+  interval?: number
+  lookAhead?: number
+  useSetTimeoutFallback?: boolean
+}
 
 /**
  * Transport using look-ahead scheduling.
@@ -52,7 +56,9 @@ export class Transport {
   private useSetTimeoutFallback: boolean
   private tickTimeout: TimeoutHandle | undefined
 
-  constructor(context: AudioContext, interval = 0.1, lookAhead = 0.2) {
+  constructor(context: AudioContext, options: TransportOptions = {}) {
+    const { interval = 0.1, lookAhead = 0.2, useSetTimeoutFallback = false } = options
+
     this.context = context
     this.interval = round(interval * context.sampleRate)
     this._lookAhead = round(lookAhead * context.sampleRate)
@@ -68,7 +74,7 @@ export class Transport {
     this.parametricNotesById = new Map()
     this.eventsById = new Map()
     this.nextEventId = 1
-    this.useSetTimeoutFallback = isApplePlatform()
+    this.useSetTimeoutFallback = useSetTimeoutFallback
     this.tickTimeout = undefined
   }
 
