@@ -724,4 +724,41 @@ describe('App source editor keyboard shortcuts', () => {
     expect(store.activeSourceCodeTabIndex).toBe(0)
     expect(store.isPlaying).toBe(true)
   })
+
+  it('resets the project to multiple source tabs when selecting a multi-tab demo', async () => {
+    const { store, wrapper } = await mountApp('#first')
+
+    await wrapper.get('button[aria-label="Add source code"]').trigger('click')
+    await wrapper.get<HTMLTextAreaElement>('textarea').setValue('second')
+    await flushPromises()
+
+    await store.setDemoTune(['0 2', '4 5', '7 9'])
+    await flushPromises()
+
+    expect(store.sourceCodes).toEqual(['0 2', '4 5', '7 9'])
+    expect(store.sourceTabs).toMatchObject([
+      { title: '0 2', alive: true, active: true },
+      { title: '4 5', alive: true, active: false },
+      { title: '7 9', alive: true, active: false },
+      { title: 'first', alive: false, active: false },
+      { title: 'second', alive: false, active: false },
+    ])
+    expect(wrapper.findAll('[role="tab"]')).toHaveLength(3)
+    expect(store.activeSourceCodeTabIndex).toBe(0)
+    expect(store.isPlaying).toBe(true)
+  })
+
+  it('uses only the first line for source tab titles', async () => {
+    const { store } = await mountApp()
+
+    store.setSourceCode('first line\nsecond line')
+    await flushPromises()
+
+    expect(store.sourceTabs[0]!.title).toBe('first line')
+
+    store.setSourceCode('\nsecond line')
+    await flushPromises()
+
+    expect(store.sourceTabs[0]!.title).toBe('Source 1')
+  })
 })

@@ -138,16 +138,13 @@ const sourceCodesEqual = (a: string[], b: string[]): boolean =>
   a.length === b.length && a.every((sourceCode, index) => sourceCode === b[index])
 
 const getSourceTabTitle = (source: string, index: number): string => {
-  const firstContentLine = source
-    .split('\n')
-    .map((line) => line.trim())
-    .find((line) => line.length > 0)
+  const firstLine = source.split('\n')[0]?.trim() ?? ''
 
-  if (!firstContentLine) return `Source ${index + 1}`
+  if (!firstLine) return `Source ${index + 1}`
 
-  return firstContentLine.length > TAB_TITLE_LENGTH
-    ? `${firstContentLine.slice(0, TAB_TITLE_LENGTH)}...`
-    : firstContentLine
+  return firstLine.length > TAB_TITLE_LENGTH
+    ? `${firstLine.slice(0, TAB_TITLE_LENGTH)}...`
+    : firstLine
 }
 
 export const useXenpaperStore = defineStore('xenpaper', () => {
@@ -522,25 +519,25 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     applySharedTransportLoop()
   }
 
-  const setDemoTune = async (source: string): Promise<void> => {
+  const setDemoTune = async (source: string | string[]): Promise<void> => {
     await pauseAllSoundEngines()
     const previousScoreEngines = scoreEngines.value
     resetPlaybackState()
     await clearScoreEngines(previousScoreEngines)
 
-    const engine = createScoreEngineFromSource(source, nextScoreEngineId++)
+    const demoSources = Array.isArray(source) ? (source.length ? source : ['']) : [source]
+    const engines = demoSources.map((demoSource) =>
+      createScoreEngineFromSource(demoSource, nextScoreEngineId++),
+    )
 
-    await engine.updateParsedSourceCode()
-    if (!engine.scoreLoaded.value) {
-      scoreEngines.value = [engine]
-      activeScoreEngineIndex.value = 0
-      rememberDeadScoreEngines(previousScoreEngines)
-      return
-    }
-
-    scoreEngines.value = [engine]
+    await Promise.all(engines.map((engine) => engine.updateParsedSourceCode()))
+    scoreEngines.value = engines
     activeScoreEngineIndex.value = 0
     rememberDeadScoreEngines(previousScoreEngines)
+    syncScoreEngineGains()
+
+    if (!engines.some((engine) => engine.scoreLoaded.value)) return
+
     swSeqTransport.loopStart = 0
     await restartPlaybackFromStart()
   }

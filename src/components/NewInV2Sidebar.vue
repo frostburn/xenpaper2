@@ -1,7 +1,9 @@
 <script setup lang="ts">
+type DemoTune = string | string[]
+
 type SidebarDemo = {
   description: string
-  tune?: string
+  tune?: DemoTune
 }
 
 type SidebarSection = {
@@ -10,7 +12,7 @@ type SidebarSection = {
 }
 
 const emit = defineEmits<{
-  setTune: [tune: string]
+  setTune: [tune: DemoTune]
 }>()
 
 const isApplePlatform = (): boolean => {
@@ -27,6 +29,16 @@ const isApplePlatform = (): boolean => {
 
 const modifierKey = isApplePlatform() ? 'Command' : 'Ctrl'
 
+const formatDemoTune = (tune: DemoTune): string =>
+  Array.isArray(tune)
+    ? tune
+        .map(
+          (source, index) => `# Tab ${index + 1}
+${source}`,
+        )
+        .join('\n\n')
+    : tune
+
 const newInV2Sections: SidebarSection[] = [
   {
     title: 'Source tabs',
@@ -34,10 +46,11 @@ const newInV2Sections: SidebarSection[] = [
       {
         description:
           'Use the + tab button to add another source. Every live tab plays together, so tabs are useful for layering bass lines, chords, percussion-like pulses, or alternate scales.',
-        tune: `(osc:triangle)(env:0165)0--- 7---
-
-# Add another tab and try this countermelody:
-(osc:warm2)(env:0344)0 2 4 7 9 7 4 2`,
+        tune: [
+          `(osc:fatwarm2)(env:0754)(bpm:96)0--- 0--- 5--- 7---`,
+          `(osc:semisine)(env:0245)(bpm:96)(2)[0,4,7]-- [5,9,12]-- [3,7,10]-- [4,7,11]--`,
+          `(osc:tin)(env:1112)(bpm:96)(4)0 . 7 . 10 7 5 . 7 . 12 . 10 7 5 .`,
+        ],
       },
       {
         description:
@@ -121,10 +134,10 @@ const newInV2Sections: SidebarSection[] = [
       },
       {
         description:
-          'L-system spectra are also available as long oscillator names for denser inharmonic clouds: l-system-golden-dense-a, l-system-golden-dense-b, l-system-golden-sparse-a, l-system-golden-sparse-b, l-system-plastic, l-system-silver, and l-system-supergolden.',
-        tune: `(osc:l-system-golden-sparse-a)0 2 4 7.
-(osc:l-system-silver)0 2 4 7.
-(osc:l-system-plastic)0 2 4 7.`,
+          'L-system spectra are also available as long oscillator names for denser inharmonic clouds: L-system-golden-dense-A, L-system-golden-dense-B, L-system-golden-sparse-A, L-system-golden-sparse-B, L-system-plastic, L-system-silver, and L-system-supergolden.',
+        tune: `(osc:L-system-golden-sparse-B)0 2 4 7.
+(osc:L-system-silver)0 2 4 7.
+(osc:L-system-plastic)0 2 4 7.`,
       },
     ],
   },
@@ -151,7 +164,7 @@ const newInV2Sections: SidebarSection[] = [
 
           <div v-if="demo.tune" class="example">
             <span class="example-label">e.g.</span>
-            <pre>{{ demo.tune }}</pre>
+            <pre>{{ formatDemoTune(demo.tune) }}</pre>
             <button type="button" @click="emit('setTune', demo.tune)">Demo</button>
           </div>
         </article>

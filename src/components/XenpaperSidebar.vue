@@ -30,7 +30,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   closeSidebar: []
-  setTune: [source: string]
+  setTune: [source: string | string[]]
   importSourceCodes: [sourceCodes: string[]]
   activeNoteHandlerChange: [handler?: (note: MoscNote, on: boolean) => void]
 }>()
