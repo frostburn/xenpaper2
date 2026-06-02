@@ -13,6 +13,20 @@ const emit = defineEmits<{
   setTune: [tune: string]
 }>()
 
+const isApplePlatform = (): boolean => {
+  if (typeof navigator === 'undefined') return false
+
+  const platform = navigator.platform.toLowerCase()
+  return (
+    platform.includes('mac') ||
+    platform.includes('iphone') ||
+    platform.includes('ipad') ||
+    platform.includes('ipod')
+  )
+}
+
+const modifierKey = isApplePlatform() ? 'Command' : 'Ctrl'
+
 const newInV2Sections: SidebarSection[] = [
   {
     title: 'Source tabs',
@@ -27,11 +41,10 @@ const newInV2Sections: SidebarSection[] = [
       },
       {
         description:
-          'Tab names come from the first non-comment line. Close tabs with ×, then restore them from Recently closed while you keep sketching.',
+          'Tab names come from the first line. Close tabs with ×, then restore them from Recently closed while you keep sketching.',
       },
       {
-        description:
-          'Shift-click a tab to mute it. Ctrl-click or Command-click a tab to solo it; Alt+Ctrl-click or Alt+Command-click adds or removes it from the current solo set.',
+        description: `Shift-click a tab to mute it. ${modifierKey}-click a tab to solo it; Alt+${modifierKey}-click adds or removes it from the current solo set.`,
       },
       {
         description:
@@ -43,16 +56,13 @@ const newInV2Sections: SidebarSection[] = [
     title: 'Keyboard shortcuts',
     demos: [
       {
-        description:
-          'Ctrl+Enter or Command+Enter restarts playback from the beginning of the active tab.',
+        description: `${modifierKey}+Enter restarts playback from the beginning of the active tab.`,
       },
       {
-        description:
-          'Ctrl+Space or Command+Space restarts playback from the line containing the text cursor. The > markers beside the editor also choose the restart line.',
+        description: `${modifierKey}+Space restarts playback from the line containing the text cursor. The > markers beside the editor also choose the restart line.`,
       },
       {
-        description:
-          'Ctrl+Z / Command+Z undoes edits in the active tab. Ctrl+Shift+Z, Command+Shift+Z, Ctrl+Y, or Command+Y redo them.',
+        description: `${modifierKey}+Z undoes edits in the active tab. ${modifierKey}+Shift+Z or ${modifierKey}+Y redoes them.`,
       },
     ],
   },
@@ -74,8 +84,7 @@ const newInV2Sections: SidebarSection[] = [
 (osc:parabolic)0 4 7.`,
       },
       {
-        description:
-          'Most harmonic colors can also be made fat for a detuned unison effect.',
+        description: 'Most harmonic colors can also be made fat for a detuned unison effect.',
         tune: `(osc:fatwarm2)0 4 7.
 (osc:fatgold)0 4 7.
 (osc:fatglass-classic)0 4 7.`,
@@ -101,13 +110,18 @@ const newInV2Sections: SidebarSection[] = [
       },
       {
         description:
-          'Harmonium and gamelan-inspired aperiodic timbres pair well with just-intonation scales and chords.',
-        tune: `(osc:harmonium){1/1 9/8 5/4 4/3 3/2 5/3 15/8}0 2 4 6.
-(osc:jublag)[0,2,4]-[1,3,5]-[2,4,6]--`,
+          'Harmonium and the gamelan timbres jegogan, jublag, and ugal pair well with scales from their respective regions.',
+        tune: `(osc:ugal) (env:1716) (4)
+# Average of 30 measured slendro gamelans
+{0c 231c 474c 717c 955c 1208c'}
+[0 3]---      [1 4]---   |
+[0 3]---      [1 4]---   |
+[2 5]- [3 6]- [4 7]- 8 9 |
+[3 6]- 7 6    [0 5 10]-----. ||`,
       },
       {
         description:
-          'L-system spectra are also available as long oscillator names for denser inharmonic clouds.',
+          'L-system spectra are also available as long oscillator names for denser inharmonic clouds: l-system-golden-dense-a, l-system-golden-dense-b, l-system-golden-sparse-a, l-system-golden-sparse-b, l-system-plastic, l-system-silver, and l-system-supergolden.',
         tune: `(osc:l-system-golden-sparse-a)0 2 4 7.
 (osc:l-system-silver)0 2 4 7.
 (osc:l-system-plastic)0 2 4 7.`,
