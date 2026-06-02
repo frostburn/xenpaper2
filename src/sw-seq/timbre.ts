@@ -4,96 +4,81 @@ import { AperiodicWave } from 'aperiodic-oscillator'
 
 import TIMBRES from './timbres.json'
 
-export type BasicOscillatorType = Exclude<OscillatorType, 'custom'>
+const BASIC_OSCILLATOR_TYPES = ['sawtooth', 'square', 'sine', 'triangle'] as const
 
-export type PartialsRange =
-  | 1
-  | 2
-  | 3
-  | 4
-  | 5
-  | 6
-  | 7
-  | 8
-  | 9
-  | 10
-  | 11
-  | 12
-  | 13
-  | 14
-  | 15
-  | 16
-  | 17
-  | 18
-  | 19
-  | 20
-  | 21
-  | 22
-  | 23
-  | 24
-  | 25
-  | 26
-  | 27
-  | 28
-  | 29
-  | 30
-  | 31
-  | 32
+const PARTIALS_RANGE = [
+  1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27,
+  28, 29, 30, 31, 32,
+] as const
+
+const JSON_HARMONIC_TIMBRES = Object.keys(TIMBRES.harmonics) as Array<
+  keyof typeof TIMBRES.harmonics
+>
+
+const GENERATED_PERIODIC_TIMBRES = [
+  'semisine',
+  'rich',
+  'slender',
+  'didacus',
+  'bohlen',
+  'glass',
+  'boethius',
+  'gold',
+  'parabolic',
+  'rich-classic',
+  'slender-classic',
+  'didacus-classic',
+  'bohlen-classic',
+  'glass-classic',
+  'boethius-classic',
+] as const
+
+const LEGACY_CUSTOM_TIMBRES = ['amsine', 'amtriangle', 'fmsine', 'fmtriangle'] as const
+
+const CUSTOM_TIMBRES = [
+  ...JSON_HARMONIC_TIMBRES,
+  ...GENERATED_PERIODIC_TIMBRES,
+  ...LEGACY_CUSTOM_TIMBRES,
+] as const
+
+const GENERATED_APERIODIC_TIMBRES = [
+  'tin',
+  'bronze',
+  'steel',
+  'silver',
+  'platinum',
+  'gender',
+  '12-tet',
+  'harmonium',
+] as const
+
+export type BasicOscillatorType = (typeof BASIC_OSCILLATOR_TYPES)[number]
+
+export type PartialsRange = (typeof PARTIALS_RANGE)[number]
 
 export type BasicOscillatorWithPartials = `${BasicOscillatorType}${PartialsRange}`
 
-export type JsonHarmonicTimbre =
-  | 'warm1'
-  | 'warm2'
-  | 'warm3'
-  | 'warm4'
-  | 'octaver'
-  | 'brightness'
-  | 'harmonicbell'
+export type JsonHarmonicTimbre = (typeof JSON_HARMONIC_TIMBRES)[number]
 
-export type GeneratedPeriodicTimbre =
-  | 'semisine'
-  | 'rich'
-  | 'slender'
-  | 'didacus'
-  | 'bohlen'
-  | 'glass'
-  | 'boethius'
-  | 'gold'
-  | 'parabolic'
-  | 'rich-classic'
-  | 'slender-classic'
-  | 'didacus-classic'
-  | 'bohlen-classic'
-  | 'glass-classic'
-  | 'boethius-classic'
+export type GeneratedPeriodicTimbre = (typeof GENERATED_PERIODIC_TIMBRES)[number]
 
-export type LegacyCustomTimbre = 'amsine' | 'amtriangle' | 'fmsine' | 'fmtriangle'
+export type LegacyCustomTimbre = (typeof LEGACY_CUSTOM_TIMBRES)[number]
 
-export type CustomTimbre = JsonHarmonicTimbre | GeneratedPeriodicTimbre | LegacyCustomTimbre
+export type CustomTimbre = (typeof CUSTOM_TIMBRES)[number]
 
-export type JsonTimbre = 'jegogan' | 'jublag' | 'ugal' | 'piano'
+export type JsonTimbre = keyof typeof TIMBRES.timbres
 
-export type PlainSpectrumTimbre =
-  | 'l-system-golden-dense-a'
-  | 'l-system-golden-dense-b'
-  | 'l-system-golden-sparse-a'
-  | 'l-system-golden-sparse-b'
-  | 'l-system-silver'
-  | 'l-system-plastic'
-  | 'l-system-supergolden'
+export type PlainSpectrumTimbre = keyof typeof TIMBRES.plainSpectra
 
-export type GeneratedAperiodicTimbre =
-  | 'tin'
-  | 'bronze'
-  | 'steel'
-  | 'silver'
-  | 'platinum'
-  | 'gender'
-  | '12-tet'
-  | 'harmonium'
+export type GeneratedAperiodicTimbre = (typeof GENERATED_APERIODIC_TIMBRES)[number]
 
 export type AperiodicTimbre = JsonTimbre | PlainSpectrumTimbre | GeneratedAperiodicTimbre
+
+const APERIODIC_TIMBRES = [
+  ...Object.keys(TIMBRES.timbres),
+  ...Object.keys(TIMBRES.plainSpectra),
+  ...GENERATED_APERIODIC_TIMBRES,
+] as AperiodicTimbre[]
 
 export type FatOscillatorType =
   `fat${BasicOscillatorType | BasicOscillatorWithPartials | CustomTimbre}`
@@ -140,53 +125,6 @@ const TIMBRE_DATA = TIMBRES as Timbres
 const PERIODIC_WAVE_CACHE = new Map<BasicOscillatorWithPartials | CustomTimbre, PeriodicWave>()
 const APERIODIC_WAVE_CACHE = new Map<AperiodicTimbre, AperiodicWave>()
 
-const BASIC_OSCILLATOR_TYPES = ['sawtooth', 'square', 'sine', 'triangle'] as const
-
-const JSON_HARMONIC_TIMBRES = Object.keys(TIMBRE_DATA.harmonics) as JsonHarmonicTimbre[]
-
-const GENERATED_PERIODIC_TIMBRES = [
-  'semisine',
-  'rich',
-  'slender',
-  'didacus',
-  'bohlen',
-  'glass',
-  'boethius',
-  'gold',
-  'parabolic',
-  'rich-classic',
-  'slender-classic',
-  'didacus-classic',
-  'bohlen-classic',
-  'glass-classic',
-  'boethius-classic',
-] as const
-
-const LEGACY_CUSTOM_TIMBRES = ['amsine', 'amtriangle', 'fmsine', 'fmtriangle'] as const
-
-const CUSTOM_TIMBRES = [
-  ...JSON_HARMONIC_TIMBRES,
-  ...GENERATED_PERIODIC_TIMBRES,
-  ...LEGACY_CUSTOM_TIMBRES,
-] as const
-
-const GENERATED_APERIODIC_TIMBRES = [
-  'tin',
-  'bronze',
-  'steel',
-  'silver',
-  'platinum',
-  'gender',
-  '12-tet',
-  'harmonium',
-] as const
-
-const APERIODIC_TIMBRES = [
-  ...Object.keys(TIMBRE_DATA.timbres),
-  ...Object.keys(TIMBRE_DATA.plainSpectra),
-  ...GENERATED_APERIODIC_TIMBRES,
-] as AperiodicTimbre[]
-
 const isBasicOscillatorType = (value: unknown): value is BasicOscillatorType =>
   typeof value === 'string' && BASIC_OSCILLATOR_TYPES.includes(value as BasicOscillatorType)
 
@@ -208,7 +146,7 @@ const getPartialsCount = (value: string): number | null => {
   if (!isBasicOscillatorType(baseType)) return null
 
   const count = parseInt(digits, 10)
-  return count >= 1 && count <= 32 ? count : null
+  return PARTIALS_RANGE.includes(count as PartialsRange) ? count : null
 }
 
 const isHarmonicSWOscillatorType = (value: unknown) =>
