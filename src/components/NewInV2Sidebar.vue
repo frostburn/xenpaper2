@@ -16,9 +16,14 @@ const newInV2Sections: SidebarSection[] = [
         description:
           'Use the + tab button to add another source. Every live tab plays together, so tabs are useful for layering bass lines, chords, percussion-like pulses, or alternate scales.',
         tune: [
-          `(osc:fatwarm2)(env:0754)(bpm:96)0--- 0--- 5--- 7---`,
-          `(osc:semisine)(env:0245)(bpm:96)(2)[0,4,7]-- [5,9,12]-- [3,7,10]-- [4,7,11]--`,
-          `(osc:tin)(env:1112)(bpm:96)(4)0 . 7 . 10 7 5 . 7 . 12 . 10 7 5 .`,
+          `(osc:fatwarm2)(env:1754)(bpm:96){r\`0}
+0--- 0--- | 5--- 7--- ||`,
+          `(osc:semisine)(env:2245)(bpm:96)
+[0,4,7]-- [5,9,12]-- [3,7,10]--
+[2,7,12]-- [0,4,7,11,12]---`,
+          `(osc:gold)(env:1233)(bpm:96)(4){r'0}
+5 . 7  . 10 7 5 . 7  . 12 . 10 7 5  . |
+0 . 10 . 7  5 7 . 12 5 7  . 10 . 12 . ||`,
         ],
       },
       {
@@ -63,7 +68,7 @@ const newInV2Sections: SidebarSection[] = [
           'Generated harmonic oscillators include semisine, rich, slender, didacus, bohlen, glass, boethius, gold, parabolic, and -classic variants.',
         tune: `(osc:semisine)0 4 7.
 (osc:bohlen)0 4 7.
-(osc:parabolic)0 4 7.`,
+(osc:boethius)0 4 7.`,
       },
       {
         description: 'Most harmonic colors can also be made fat for a detuned unison effect.',
@@ -78,7 +83,7 @@ const newInV2Sections: SidebarSection[] = [
     demos: [
       {
         description:
-          'Aperiodic oscillator names create inharmonic spectra that can make the same pitches feel metallic, bell-like, or gamelan-like.',
+          'Aperiodic oscillator names create inharmonic spectra that can make the same pitches feel metallic, bell-like, or gamelan-like. Metallic timbres include tin, bronze, steel, silver and platinum organized by how bunched up the partials are.',
         tune: `(osc:tin)0 4 7.
 (osc:bronze)0 4 7.
 (osc:steel)0 4 7.`,
@@ -92,8 +97,8 @@ const newInV2Sections: SidebarSection[] = [
       },
       {
         description:
-          'Harmonium and the gamelan timbres jegogan, jublag, and ugal pair well with scales from their respective regions.',
-        tune: `(osc:ugal) (env:1716) (4)
+          'Harmonium and the gamelan timbres gender, jegogan, jublag, and ugal pair well with scales from their respective regions.',
+        tune: `(osc:ugal)(env:1716)(4)
 # Average of 30 measured slendro gamelans
 {0c 231c 474c 717c 955c 1208c'}
 [0 3]---      [1 4]---   |
