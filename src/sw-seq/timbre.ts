@@ -1,3 +1,5 @@
+import { sum } from 'xen-dev-utils/core'
+import { centsToValue, valueToCents } from 'xen-dev-utils/conversion'
 import { AperiodicWave } from 'aperiodic-oscillator'
 
 import TIMBRES from './timbres.json'
@@ -73,13 +75,13 @@ export type CustomTimbre = JsonHarmonicTimbre | GeneratedPeriodicTimbre | Legacy
 export type JsonTimbre = 'jegogan' | 'jublag' | 'ugal' | 'piano'
 
 export type PlainSpectrumTimbre =
-  | 'L-system golden dense A'
-  | 'L-system golden dense B'
-  | 'L-system golden sparse A'
-  | 'L-system golden sparse B'
-  | 'L-system silver'
-  | 'L-system plastic'
-  | 'L-system supergolden'
+  | 'l-system-golden-dense-a'
+  | 'l-system-golden-dense-b'
+  | 'l-system-golden-sparse-a'
+  | 'l-system-golden-sparse-b'
+  | 'l-system-silver'
+  | 'l-system-plastic'
+  | 'l-system-supergolden'
 
 export type GeneratedAperiodicTimbre =
   | 'tin'
@@ -88,7 +90,7 @@ export type GeneratedAperiodicTimbre =
   | 'silver'
   | 'platinum'
   | 'gender'
-  | '12-TET'
+  | '12-tet'
   | 'harmonium'
 
 export type AperiodicTimbre = JsonTimbre | PlainSpectrumTimbre | GeneratedAperiodicTimbre
@@ -175,7 +177,7 @@ const GENERATED_APERIODIC_TIMBRES = [
   'silver',
   'platinum',
   'gender',
-  '12-TET',
+  '12-tet',
   'harmonium',
 ] as const
 
@@ -220,10 +222,9 @@ export function isSWOscillatorType(value: unknown): value is SWOscillatorType {
   return isHarmonicSWOscillatorType(value) || isAperiodicTimbre(value)
 }
 
-const centsToValue = (cents: number) => 2 ** (cents / 1200)
-const valueToCents = (value: number) => 1200 * Math.log2(value)
-const sum = (values: number[]) => values.reduce((total, value) => total + value, 0)
-const ceilPow2 = (value: number) => 2 ** Math.ceil(Math.log2(value))
+function ceilPow2(x: number) {
+  return 1 << (32 - Math.clz32(x - 1))
+}
 
 const createWave = (context: BaseAudioContext, real: number[], imag: number[]) =>
   context.createPeriodicWave(new Float32Array(real), new Float32Array(imag))
@@ -491,7 +492,7 @@ const createGeneratedAperiodicWave = (
     return new AperiodicWave(context, spectrum, amplitudes, 7, 0.1)
   }
 
-  if (name === '12-TET') {
+  if (name === '12-tet') {
     const spectrumCents: number[] = []
     const amplitudes: number[] = []
     for (let h = 1; h <= 128; ++h) {
