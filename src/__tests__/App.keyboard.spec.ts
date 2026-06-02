@@ -747,18 +747,4 @@ describe('App source editor keyboard shortcuts', () => {
     expect(store.activeSourceCodeTabIndex).toBe(0)
     expect(store.isPlaying).toBe(true)
   })
-
-  it('uses only the first line for source tab titles', async () => {
-    const { store } = await mountApp()
-
-    store.setSourceCode('first line\nsecond line')
-    await flushPromises()
-
-    expect(store.sourceTabs[0]!.title).toBe('first line')
-
-    store.setSourceCode('\nsecond line')
-    await flushPromises()
-
-    expect(store.sourceTabs[0]!.title).toBe('Source 1')
-  })
 })

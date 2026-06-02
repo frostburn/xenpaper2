@@ -1,43 +1,12 @@
 <script setup lang="ts">
-type DemoTune = string | string[]
-
-type SidebarDemo = {
-  description: string
-  tune?: DemoTune
-}
-
-type SidebarSection = {
-  title: string
-  demos: SidebarDemo[]
-}
+import type { DemoTune, SidebarSection } from '../types'
+import { formatDemoTune, getKeyboardModifierKeyLabel } from '../utils'
 
 const emit = defineEmits<{
   setTune: [tune: DemoTune]
 }>()
 
-const isApplePlatform = (): boolean => {
-  if (typeof navigator === 'undefined') return false
-
-  const platform = navigator.platform.toLowerCase()
-  return (
-    platform.includes('mac') ||
-    platform.includes('iphone') ||
-    platform.includes('ipad') ||
-    platform.includes('ipod')
-  )
-}
-
-const modifierKey = isApplePlatform() ? 'Command' : 'Ctrl'
-
-const formatDemoTune = (tune: DemoTune): string =>
-  Array.isArray(tune)
-    ? tune
-        .map(
-          (source, index) => `# Tab ${index + 1}
-${source}`,
-        )
-        .join('\n\n')
-    : tune
+const modifierKey = getKeyboardModifierKeyLabel()
 
 const newInV2Sections: SidebarSection[] = [
   {
@@ -54,7 +23,7 @@ const newInV2Sections: SidebarSection[] = [
       },
       {
         description:
-          'Tab names come from the first line. Close tabs with ×, then restore them from Recently closed while you keep sketching.',
+          'Tab names come from the first non-empty line. Close tabs with ×, then restore them from Recently closed while you keep sketching.',
       },
       {
         description: `Shift-click a tab to mute it. ${modifierKey}-click a tab to solo it; Alt+${modifierKey}-click adds or removes it from the current solo set.`,
@@ -145,25 +114,29 @@ const newInV2Sections: SidebarSection[] = [
 </script>
 
 <template>
-  <aside class="new-v2-sidebar" aria-labelledby="new-v2-title">
-    <header class="sidebar-header">
+  <aside class="info-sidebar" aria-labelledby="new-v2-title">
+    <header class="info-sidebar__header">
       <h1 id="new-v2-title">New in v2</h1>
       <p>Tabs, shortcuts, and expanded oscillator colors.</p>
     </header>
 
-    <div class="sidebar-content">
-      <section v-for="section in newInV2Sections" :key="section.title" class="new-v2-section">
+    <div class="info-sidebar__content">
+      <section
+        v-for="section in newInV2Sections"
+        :key="section.title"
+        class="info-sidebar__section"
+      >
         <h2>{{ section.title }}</h2>
 
         <article
           v-for="demo in section.demos"
           :key="`${section.title}-${demo.description}`"
-          class="new-v2-demo"
+          class="info-sidebar__demo"
         >
           <p>{{ demo.description }}</p>
 
-          <div v-if="demo.tune" class="example">
-            <span class="example-label">e.g.</span>
+          <div v-if="demo.tune" class="info-sidebar__example">
+            <span class="info-sidebar__example-label">e.g.</span>
             <pre>{{ formatDemoTune(demo.tune) }}</pre>
             <button type="button" @click="emit('setTune', demo.tune)">Demo</button>
           </div>
@@ -172,118 +145,3 @@ const newInV2Sections: SidebarSection[] = [
     </div>
   </aside>
 </template>
-
-<style scoped>
-.new-v2-sidebar {
-  height: 100%;
-  min-height: 0;
-  overflow: auto;
-  background: var(--xenpaper-bg-light);
-  color: var(--xenpaper-text);
-  font-family: var(--xenpaper-font-copy);
-  animation: 0.3s ease-out on-show;
-}
-
-@keyframes on-show {
-  from {
-    opacity: 0;
-    transform: translateY(0.25rem);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.sidebar-header {
-  padding: 2rem 2rem 1.5rem;
-  background: var(--xenpaper-bg);
-}
-
-.sidebar-header h1 {
-  margin: 0 0 0.5rem;
-  font-size: 2.5rem;
-  line-height: 2rem;
-  font-weight: 400;
-  text-transform: lowercase;
-}
-
-.sidebar-header p {
-  margin: 0;
-  color: var(--xenpaper-placeholder);
-  font-style: italic;
-  line-height: 1.3rem;
-}
-
-.sidebar-content {
-  padding: 2rem;
-}
-
-.new-v2-section + .new-v2-section {
-  margin-top: 2.5rem;
-}
-
-.new-v2-section h2 {
-  margin: 0 0 1rem;
-  font-size: 1.5rem;
-  line-height: 1.2;
-  font-weight: 400;
-}
-
-.new-v2-demo {
-  margin-bottom: 2rem;
-}
-
-.new-v2-demo p {
-  margin: 0;
-}
-
-.example {
-  display: flex;
-  align-items: stretch;
-  margin-top: 1rem;
-  padding: 0.5rem;
-  background: var(--xenpaper-bg);
-  font-family: var(--xenpaper-font-mono);
-  line-height: 2em;
-}
-
-.example-label {
-  flex: 0 0 auto;
-  color: var(--xenpaper-placeholder);
-  font-style: italic;
-  padding: 0 1rem 0 0.6rem;
-}
-
-.example pre {
-  flex: 1 1 auto;
-  width: 0;
-  margin: 0;
-  padding-right: 0.5rem;
-  color: var(--xenpaper-cyan);
-  font: inherit;
-  line-height: 1.4em;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-}
-
-.example button {
-  flex: 0 0 auto;
-  border: 0;
-  display: block;
-  padding: 0.5rem;
-  cursor: pointer;
-  background: #ff541e;
-  color: var(--xenpaper-bg);
-  outline: none;
-  opacity: 0.7;
-  transition: opacity 0.2s ease-out;
-}
-
-.example button:hover,
-.example button:focus,
-.example button:active {
-  opacity: 1;
-}
-</style>

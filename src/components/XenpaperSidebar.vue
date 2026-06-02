@@ -3,7 +3,7 @@ import { computed, onMounted, onUnmounted, ref, useTemplateRef, watch } from 'vu
 
 import type { MoscNote } from '../mosc'
 import type { InitialRulerState } from '../grammars/process-grammar'
-import type { SidebarMode } from '../types'
+import type { DemoTune, SidebarMode } from '../types'
 import { copyText } from '../utils'
 import {
   parseXenpaperScoreFile,
@@ -30,7 +30,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   closeSidebar: []
-  setTune: [source: string | string[]]
+  setTune: [source: DemoTune]
   importSourceCodes: [sourceCodes: string[]]
   activeNoteHandlerChange: [handler?: (note: MoscNote, on: boolean) => void]
 }>()
@@ -270,8 +270,7 @@ onUnmounted(() => {
   outline-offset: 2px;
 }
 
-.tutorial-sidebar,
-.new-v2-sidebar {
+.info-sidebar {
   height: 100%;
   max-height: 100%;
 }
@@ -452,8 +451,7 @@ onUnmounted(() => {
     flex-basis: auto;
   }
 
-  .tutorial-sidebar,
-  .new-v2-sidebar,
+  .info-sidebar,
   .sidebar-panel {
     height: auto;
     max-height: none;

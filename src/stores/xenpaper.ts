@@ -23,7 +23,13 @@ import { SoundEngineSwSeq } from '../sound-engine-sw-seq'
 import { Bank } from '../sw-seq/bank'
 import { Transport } from '../sw-seq/transport'
 import { createSourceDisplayTokens } from '../source-display'
-import type { OpenSidebarMode, SidebarMode, SourceDisplayToken, SourceTab } from '../types'
+import type {
+  DemoTune,
+  OpenSidebarMode,
+  SidebarMode,
+  SourceDisplayToken,
+  SourceTab,
+} from '../types'
 import {
   createHtmlTitle,
   escapeHtmlAttribute,
@@ -138,13 +144,16 @@ const sourceCodesEqual = (a: string[], b: string[]): boolean =>
   a.length === b.length && a.every((sourceCode, index) => sourceCode === b[index])
 
 const getSourceTabTitle = (source: string, index: number): string => {
-  const firstLine = source.split('\n')[0]?.trim() ?? ''
+  const firstContentLine = source
+    .split('\n')
+    .map((line) => line.trim())
+    .find((line) => line.length > 0)
 
-  if (!firstLine) return `Source ${index + 1}`
+  if (!firstContentLine) return `Source ${index + 1}`
 
-  return firstLine.length > TAB_TITLE_LENGTH
-    ? `${firstLine.slice(0, TAB_TITLE_LENGTH)}...`
-    : firstLine
+  return firstContentLine.length > TAB_TITLE_LENGTH
+    ? `${firstContentLine.slice(0, TAB_TITLE_LENGTH)}...`
+    : firstContentLine
 }
 
 export const useXenpaperStore = defineStore('xenpaper', () => {
@@ -519,7 +528,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     applySharedTransportLoop()
   }
 
-  const setDemoTune = async (source: string | string[]): Promise<void> => {
+  const setDemoTune = async (source: DemoTune): Promise<void> => {
     await pauseAllSoundEngines()
     const previousScoreEngines = scoreEngines.value
     resetPlaybackState()
