@@ -88,8 +88,9 @@ export class SoundEngineSwSeq extends SoundEngine {
       velocity: OSC_VOLUME,
       oscillator: {
         type: 'sine',
-        unison: false,
+        periodicity: 'harmonic',
         periodicWave: null,
+        aperiodicWave: null,
       },
       envelope: {
         attack: 0.01,

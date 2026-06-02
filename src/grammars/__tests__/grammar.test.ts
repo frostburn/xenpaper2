@@ -6,6 +6,7 @@ type LooseParserResult = {
   sequence: LooseParserResult
   items: [LooseParserResult, ...LooseParserResult[]]
   paramGroup: LooseParserResult
+  setters?: [LooseParserResult]
   tail: unknown
 }
 
@@ -1452,6 +1453,13 @@ describe('grammar', () => {
             ],
           },
         ])
+      })
+
+      it('should parse osc setter with a name containing a dash', () => {
+        expect(strip(parser('(osc:12-TET)').sequence.items[0]!.setters![0])).toEqual({
+          type: 'SetOsc',
+          osc: '12-tet',
+        })
       })
 
       it('should parse sequence with env setter', () => {

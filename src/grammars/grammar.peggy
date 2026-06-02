@@ -80,7 +80,7 @@ SetSubdivision = ([dD][iI][vV] ":" Whitespace?)? n:Int frac:("/" d:Int)? {
     denominator: frac ? frac[1] : undefined,
   });
 }
-SetOsc = [oO][sS][cC] ":" Whitespace? osc:$([a-zA-Z0-9]+) { return node('SetOsc', { osc: osc.toLowerCase() }); }
+SetOsc = [oO][sS][cC] ":" Whitespace? osc:$([a-zA-Z0-9\-]+) { return node('SetOsc', { osc: osc.toLowerCase() }); }
 SetEnv = [eE][nN][vV] ":" Whitespace? vals:$([0-9][0-9][0-9][0-9]) {
   return node('SetEnv', { a: Number(vals[0]), d: Number(vals[1]), s: Number(vals[2]), r: Number(vals[3]) });
 }
