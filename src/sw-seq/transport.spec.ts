@@ -9,7 +9,11 @@ class MockAudioContext {
 
   createConstantSource() {
     return {
-      onended: null as null | (() => void),
+      addEventListener: (
+        _type: 'ended',
+        _listener: () => void,
+        _options?: AddEventListenerOptions,
+      ) => undefined,
       start: (_time?: number) => undefined,
       stop: (_time?: number) => undefined,
     }
