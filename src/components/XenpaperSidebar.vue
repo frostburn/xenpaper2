@@ -13,6 +13,7 @@ import {
   XENPAPER_FILE_NAME,
 } from '../xenpaper-file'
 import BlobDownloadLink from './BlobDownloadLink.vue'
+import NewInV2Sidebar from './NewInV2Sidebar.vue'
 import PitchRuler from './PitchRuler.vue'
 import TutorialSidebar from './TutorialSidebar.vue'
 
@@ -138,6 +139,7 @@ onUnmounted(() => {
       ×
     </button>
     <TutorialSidebar v-if="sidebarMode === 'info'" @set-tune="emit('setTune', $event)" />
+    <NewInV2Sidebar v-else-if="sidebarMode === 'new-v2'" @set-tune="emit('setTune', $event)" />
 
     <section v-else-if="sidebarMode === 'share'" class="sidebar-panel share-panel">
       <header class="sidebar-heading">
@@ -268,7 +270,8 @@ onUnmounted(() => {
   outline-offset: 2px;
 }
 
-.tutorial-sidebar {
+.tutorial-sidebar,
+.new-v2-sidebar {
   height: 100%;
   max-height: 100%;
 }
@@ -450,6 +453,7 @@ onUnmounted(() => {
   }
 
   .tutorial-sidebar,
+  .new-v2-sidebar,
   .sidebar-panel {
     height: auto;
     max-height: none;
