@@ -22,7 +22,10 @@ Pitch = oct:OctaveModifier? val:(PitchCents / PitchHz / PitchOctaveDivision / Pi
   if (oct) return node('Pitch', { octave: oct, value: val });
   return node('Pitch', { value: val });
 }
-OctaveModifier = s:$([\'"`]+) { const octave = (s.split("'").length - 1) + ((s.split('"').length - 1) * 2) - (s.split('`').length - 1); return node('OctaveModifier', { octave }); }
+OctaveModifier = s:$((Apostrophe / Quote / Grave)+) { const octave = (s.split("'").length - 1) + ((s.split('"').length - 1) * 2) - (s.split('`').length - 1); return node('OctaveModifier', { octave }); }
+Apostrophe "apostrophe" = "\'"
+Quote "quote" = '"'
+Grave "grave" = "`"
 PitchCents = n:Number "c"i { return node('PitchCents',{cents:n}); }
 PitchHz = n:Number "hz"i { return node('PitchHz',{hz:n}); }
 PitchOctaveDivision = n:Int [\\/] d:Int "o"i os:Int? divPart:("/" od:Int)? {
@@ -81,10 +84,12 @@ SetSubdivision = ("div"i ":" Whitespace?)? n:Int frac:("/" d:Int)? {
     denominator: frac ? frac[1] : undefined,
   });
 }
-SetOsc = "osc"i ":" Whitespace? osc:$([a-zA-Z0-9\-]+) { return node('SetOsc', { osc: osc.toLowerCase() }); }
-SetEnv = "env"i ":" Whitespace? vals:$([0-9][0-9][0-9][0-9]) {
+SetOsc = "osc"i ":" Whitespace? osc:OscName { return node('SetOsc', { osc: osc.toLowerCase() }); }
+OscName "oscillator name" = $([a-zA-Z0-9\-]+)
+SetEnv = "env"i ":" Whitespace? vals:EnvValues {
   return node('SetEnv', { a: Number(vals[0]), d: Number(vals[1]), s: Number(vals[2]), r: Number(vals[3]) });
 }
+EnvValues "four digits" = $([0-9][0-9][0-9][0-9])
 SetRulerRange = "rl"i ":" low:Pitch "," high:Pitch { return node('SetRulerRange', { low, high }); }
 SetRulerPlot = "plot"i { return node('SetRulerPlot'); }
 SetRoot = "{r" p:Pitch "}" { return node('SetRoot', { pitch: p }); }
@@ -116,7 +121,7 @@ PitchGroupScale = pref:PitchGroupScalePrefix? pitches:PitchGroup som:ScaleOctave
 Comment = "#" comment:$([^\n\r]*) {
   return node('Comment', { comment });
 }
-Whitespace = [,\n\r\t ]+ { return node('Whitespace',{delimiter:true}); }
-Number = n:$([0-9]+ ("." [0-9]*)?) { return Number(n); }
-Int = n:$([0-9]+) { return Number(n); }
-_ = [ \t\n\r]*
+Whitespace "whitespace" = [,\n\r\t ]+ { return node('Whitespace',{delimiter:true}); }
+Number "number" = n:$([0-9]+ ("." [0-9]*)?) { return Number(n); }
+Int "integer" = n:$([0-9]+) { return Number(n); }
+_ "whitespace" = [ \t\n\r]*
