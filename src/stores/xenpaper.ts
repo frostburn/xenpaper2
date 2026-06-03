@@ -365,8 +365,8 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     syncScoreEngineGains()
   }
 
-  const restoreDeadSourceCodeTab = (deadIndex: number): void => {
-    const restored = deadScoreEngines.value[deadIndex]
+  const restoreDeadSourceCodeTab = (id: number): void => {
+    const restored = deadScoreEngines.value.find((engine) => engine.id === id)
     if (!restored) return
 
     if (isPlaying.value) {
@@ -374,7 +374,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
       void pauseAllSoundEngines()
     }
 
-    deadScoreEngines.value = deadScoreEngines.value.filter((_, index) => index !== deadIndex)
+    deadScoreEngines.value = deadScoreEngines.value.filter((engine) => engine.id !== id)
     scoreEngines.value = [...scoreEngines.value, restored]
     activeScoreEngineIndex.value = scoreEngines.value.length - 1
     syncScoreEngineGains()
@@ -464,16 +464,16 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     syncScoreEngineGains()
   }
 
-  const toggleSourceCodeTabMute = (index: number): void => {
-    const engine = scoreEngines.value[index]
+  const toggleSourceCodeTabMute = (id: number): void => {
+    const engine = scoreEngines.value.find((scoreEngine) => scoreEngine.id === id)
     if (!engine) return
 
     engine.muted.value = !engine.muted.value
     syncScoreEngineGains()
   }
 
-  const toggleSourceCodeTabSolo = (index: number, preserveOtherSolos = false): void => {
-    const engine = scoreEngines.value[index]
+  const toggleSourceCodeTabSolo = (id: number, preserveOtherSolos = false): void => {
+    const engine = scoreEngines.value.find((scoreEngine) => scoreEngine.id === id)
     if (!engine) return
 
     if (preserveOtherSolos) {
@@ -493,15 +493,14 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     syncScoreEngineGains()
   }
 
-  const selectSourceCodeTab = (index: number): void => {
-    if (index < 0 || index >= sourceTabs.value.length) return
-
-    if (index >= scoreEngines.value.length) {
-      restoreDeadSourceCodeTab(index - scoreEngines.value.length)
+  const selectSourceCodeTab = (id: number): void => {
+    const aliveIndex = scoreEngines.value.findIndex((engine) => engine.id === id)
+    if (aliveIndex >= 0) {
+      activeScoreEngineIndex.value = aliveIndex
       return
     }
 
-    activeScoreEngineIndex.value = index
+    restoreDeadSourceCodeTab(id)
   }
 
   const closeSourceCodeTab = async (id: number): Promise<void> => {
