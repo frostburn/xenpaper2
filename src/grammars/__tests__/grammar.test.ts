@@ -48,7 +48,7 @@ const strip = <T>(data: T): T => {
     const record = data as Record<string, unknown>
     const result = Object.keys(record).reduce(
       (obj, key) => {
-        if (key !== 'pos' && key !== 'location' && key !== 'delimiter') {
+        if (key !== 'pos' && key !== 'location' && key !== 'delimiter' && key !== 'parts') {
           obj[key] = strip(record[key])
         }
         return obj
@@ -295,6 +295,30 @@ describe('grammar', () => {
             tail: undefined,
           },
         ])
+      })
+
+      it('should emit barlines inside hold tails', () => {
+        const held = parser('1--|--')
+        const tail = held.sequence.items[0].tail as {
+          type: string
+          length: number
+          parts: Array<{
+            type: string
+            location: { start: { offset: number }; end: { offset: number } }
+          }>
+        }
+
+        expect(tail.type).toBe('Hold')
+        expect(tail.length).toBe(4)
+        expect(tail.parts.map((part) => part.type)).toEqual([
+          'HoldDash',
+          'HoldDash',
+          'BarLine',
+          'HoldDash',
+          'HoldDash',
+        ])
+        expect(tail.parts[2].location.start.offset).toBe(3)
+        expect(tail.parts[2].location.end.offset).toBe(4)
       })
 
       it('should allow comma after hold', () => {

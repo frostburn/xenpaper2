@@ -31,9 +31,12 @@ PitchOctaveDivision = n:Int [\\/] d:Int [oO] os:Int? divPart:("/" od:Int)? {
 } / n:Int "\\" d:Int { return node('PitchOctaveDivision',{numerator:n,denominator:d,octaveSize:2}); }
 PitchRatio = n:Int "/" d:Int { return node('PitchRatio',{numerator:n,denominator:d}); }
 PitchDegree = n:Int { return node('PitchDegree',{degree:n}); }
-Hold = s:$("-"* ("|"+ "-"+)+ / "-"+ ("|"+ "-"+)*) {
-  return node('Hold',{length:s.replace(/[|]+/g,'').length});
+Hold = parts:(HoldDash / BarLineInHold)+ {
+  const length = parts.filter((part) => part.type === 'HoldDash').length;
+  return node('Hold', { length, parts });
 }
+BarLineInHold = bar:BarLine &("|"* "-") { return bar; }
+HoldDash = "-" { return node('HoldDash'); }
 Rest = "." { return node('Rest', { length: 1 }); }
 PitchGroup = first:Pitch rest:(Whitespace Pitch)* {
   const result = [first];

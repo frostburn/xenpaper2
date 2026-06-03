@@ -55,8 +55,11 @@ export type PitchGroupType = Array<PitchType | DelimiterType>
 // note
 //
 
+export type HoldDashType = NodeType<'HoldDash'>
+
 export type HoldType = NodeType<'Hold'> & {
   length: number
+  parts: Array<HoldDashType | Extract<DelimiterType, { type: 'BarLine' }>>
 }
 
 export type TailType = HoldType
