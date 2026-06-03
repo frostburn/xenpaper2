@@ -54,6 +54,22 @@ const newInV2Sections: SidebarSection[] = [
     ],
   },
   {
+    title: 'More forgiving notation',
+    demos: [
+      {
+        description:
+          'Chords now allow relaxed whitespace after [ and before ], and commas between chord pitches are optional when spaces already separate them.',
+        tune: `[ 0, 4, 7 ]--- [ '0 4 7 ]---
+[ 0 3 7 10 ]--- [ 2, 5, 9, 12 ]---`,
+      },
+      {
+        description:
+          'Octave-division pitch literals can divide custom octave sizes inline. Use compact forms like 5\\13<3> or spaced forms like 7\\13 ed 3.',
+        tune: '5\\13<3> 7\\13 ed 3 9\\13 < 3 > 13\\13 ed 3.',
+      },
+    ],
+  },
+  {
     title: 'New harmonic oscillators',
     demos: [
       {
@@ -122,7 +138,7 @@ const newInV2Sections: SidebarSection[] = [
   <aside class="sidebar" aria-labelledby="new-v2-title">
     <header class="header">
       <h1 id="new-v2-title">New in v2</h1>
-      <p>Tabs, shortcuts, and expanded oscillator colors.</p>
+      <p>Tabs, shortcuts, notation, and expanded oscillator colors.</p>
     </header>
 
     <div class="content">
