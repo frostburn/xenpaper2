@@ -14,12 +14,8 @@ ParamEmbed = [eE][mM][bB][eE][dD] { return node('ParamEmbed'); }
 Sequence = items:ItemList { return node('Sequence', { items }); }
 ItemList = head:Item tail:(_ Item)* { return [head, ...tail.map(([,i]) => i)]; } / '' { return []; }
 Item = Comment / SetterGroup / SetRoot / SetScale / RatioChordItem / Note / Rest / Chord / BarLine / Whitespace
-Note = pitch:Pitch tail:Hold? cont:($("|" "-"+))* {
-  const extraText = cont.join('');
-  const extraHolds = extraText.replace(/[|]+/g, '').length;
-  const baseTail = tail ?? undefined;
-  const totalHolds = (baseTail?.length ?? 0) + extraHolds;
-  const noteTail = totalHolds > 0 ? node('Hold', { length: totalHolds }) : undefined;
+Note = pitch:Pitch tail:Hold? {
+  const noteTail = tail ?? undefined;
   return node('Note', { pitch, tail: noteTail });
 }
 Pitch = oct:OctaveModifier? val:(PitchCents / PitchHz / PitchOctaveDivision / PitchRatio / PitchDegree) {
@@ -35,7 +31,9 @@ PitchOctaveDivision = n:Int [\\/] d:Int [oO] os:Int? divPart:("/" od:Int)? {
 } / n:Int "\\" d:Int { return node('PitchOctaveDivision',{numerator:n,denominator:d,octaveSize:2}); }
 PitchRatio = n:Int "/" d:Int { return node('PitchRatio',{numerator:n,denominator:d}); }
 PitchDegree = n:Int { return node('PitchDegree',{degree:n}); }
-Hold = s:$("|"? "-"+) { return node('Hold',{length:s.replace(/[|]+/g,'').length}); }
+Hold = s:$("-"* ("|"+ "-"+)+ / "-"+ ("|"+ "-"+)*) {
+  return node('Hold',{length:s.replace(/[|]+/g,'').length});
+}
 Rest = "." { return node('Rest', { length: 1 }); }
 PitchGroup = first:Pitch rest:(Whitespace Pitch)* {
   const result = [first];
