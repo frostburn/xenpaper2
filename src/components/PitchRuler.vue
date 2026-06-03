@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { clamp } from 'xen-dev-utils/core'
 import { computed, onBeforeUnmount, onMounted, reactive, ref, useTemplateRef, watch } from 'vue'
 
 import { centsToRatio, ratioToCents, type MoscNote } from '../mosc'
@@ -46,14 +47,10 @@ const hzToPan = (hz: number): number => Math.log2(hz / LOW_HZ_LIMIT)
 const panToHz = (pan: number): number => Math.pow(2, pan) * LOW_HZ_LIMIT
 const panToCents = (pan: number): number => pan * 1200
 
-const clamp = (value: number, min: number, max: number): number => {
-  return Math.min(Math.max(value, min), max)
-}
-
 const wrapHue = (hue: number): number => ((hue % 360) + 360) % 360
 
 const hsl = (hue: number, saturation: number, lightness: number): string => {
-  return `hsl(${wrapHue(Math.round(hue))} ${saturation}% ${clamp(lightness, 0, 100)}%)`
+  return `hsl(${wrapHue(Math.round(hue))} ${saturation}% ${clamp(0, 100, lightness)}%)`
 }
 
 const panToPx = (pan: number, viewPan: number, viewZoom: number, height: number): number => {
@@ -318,7 +315,7 @@ const handleWheel = (event: WheelEvent): void => {
   const delta = event.deltaY < 0 ? 1 : -1
   const oldZoom = rulerState.viewZoom
   const oldPointerPan = pxToPan(event.offsetY, rulerState.viewPan, oldZoom, rulerHeight.value)
-  const newZoom = clamp(oldZoom * Math.pow(ZOOM_SPEED, -delta), MIN_ZOOM, MAX_ZOOM)
+  const newZoom = clamp(MIN_ZOOM, MAX_ZOOM, oldZoom * Math.pow(ZOOM_SPEED, -delta))
 
   rulerState.viewZoom = newZoom
   rulerState.viewPan = oldPointerPan - (oldPointerPan - rulerState.viewPan) * (newZoom / oldZoom)
