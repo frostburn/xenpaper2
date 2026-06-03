@@ -511,7 +511,7 @@ describe('grammar', () => {
       it('should error if hold is attempted after a rest', () => {
         expectParserFormattedErrorMessage(
           '2-.-',
-          `Error: Expected "#", "(", ".", "[", "{", "{r", "|", [ \\t\\n\\r], ['"\`], [,\\n\\r\\t ], [0-9], or end of input but "-" found.
+          `Error: Expected "#", "(", ".", "[", "{", "{r", "|", end of input, integer, number, octave modifier, or whitespace but "-" found.
  --> test-input:1:4
   |
 1 | 2-.-
@@ -979,7 +979,7 @@ describe('grammar', () => {
       })
 
       it('should error if chord is empty or not delimited properly', () => {
-        expectParserErrorMessage('[]', 'Expected [\'"`] or [0-9] but "]" found.')
+        expectParserErrorMessage('[]', 'Expected integer, number, or octave modifier but "]" found.')
       })
 
       it('should parse sequence with a ratio chord', () => {
@@ -1710,11 +1710,11 @@ describe('grammar', () => {
       it('should error if setter is empty or not delimited properly', () => {
         expectParserErrorMessage(
           '()',
-          'Expected "bms", "bpm", "div", "env", "osc", "plot", "rl", or [0-9] but ")" found.',
+          'Expected "bms", "bpm", "div", "env", "osc", "plot", "rl", or integer but ")" found.',
         )
         expectParserErrorMessage('(div:16;)', 'but ")" found.')
         expectParserErrorMessage('(div:16;;div:16)', 'but ";" found.')
-        expectParserErrorMessage('(env:123)', 'Expected [0-9] but ")" found.')
+        expectParserErrorMessage('(env:123)', 'Expected envelope values or whitespace but "1" found.')
       })
     })
   })
