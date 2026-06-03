@@ -711,7 +711,7 @@ describe('grammar', () => {
       })
 
       it('should parse sequence with octave fraction notes', () => {
-        expect(strip(parser('2/3o,3/4o3,3/4o3/2')).sequence.items).toEqual([
+        expect(strip(parser('2/3 ed,3/4 ed 3,3/4 < 3 / 2 >')).sequence.items).toEqual([
           {
             type: 'Note',
             pitch: {
@@ -760,8 +760,8 @@ describe('grammar', () => {
         ])
       })
 
-      it('should parse sequence with octave fraction notes (type 2)', () => {
-        expect(strip(parser('2\\3')).sequence.items).toEqual([
+      it('should parse sequence with backslash octave fraction notes', () => {
+        expect(strip(parser('2\\3,5\\13 ed 3,5\\13 < 3 >')).sequence.items).toEqual([
           {
             type: 'Note',
             pitch: {
@@ -771,6 +771,38 @@ describe('grammar', () => {
                 numerator: 2,
                 denominator: 3,
                 octaveSize: 2,
+              },
+            },
+            tail: undefined,
+          },
+          {
+            type: 'Whitespace',
+          },
+          {
+            type: 'Note',
+            pitch: {
+              type: 'Pitch',
+              value: {
+                type: 'PitchOctaveDivision',
+                numerator: 5,
+                denominator: 13,
+                octaveSize: 3,
+              },
+            },
+            tail: undefined,
+          },
+          {
+            type: 'Whitespace',
+          },
+          {
+            type: 'Note',
+            pitch: {
+              type: 'Pitch',
+              value: {
+                type: 'PitchOctaveDivision',
+                numerator: 5,
+                denominator: 13,
+                octaveSize: 3,
               },
             },
             tail: undefined,
