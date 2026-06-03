@@ -1710,7 +1710,7 @@ describe('grammar', () => {
       it('should error if setter is empty or not delimited properly', () => {
         expectParserErrorMessage(
           '()',
-          'Expected [0-9], [bB], [dD], [eE], [oO], [pP], or [rR] but ")" found.',
+          'Expected "bms", "bpm", "div", "env", "osc", "plot", "rl", or [0-9] but ")" found.',
         )
         expectParserErrorMessage('(div:16;)', 'but ")" found.')
         expectParserErrorMessage('(div:16;;div:16)', 'but ";" found.')
