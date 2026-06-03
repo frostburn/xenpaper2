@@ -219,21 +219,8 @@ export type SequenceType = NodeType<'Sequence'> & {
   items: SequenceItemsType[]
 }
 
-//
-// params
-//
-
-export type ParamEmbedType = NodeType<'ParamEmbed'>
-
-export type ParamType = ParamEmbedType
-
-export type ParamGroupType = NodeType<'ParamGroup'> & {
-  params: ParamType[]
-}
-
 export type XenpaperAST = NodeType<'XenpaperGrammar'> & {
   sequence: SequenceType
-  paramGroup?: ParamGroupType
 }
 
 export function parse(input: string, options?: { grammarSource?: string }): XenpaperAST
