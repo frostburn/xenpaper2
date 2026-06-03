@@ -317,8 +317,8 @@ describe('grammar', () => {
           'HoldDash',
           'HoldDash',
         ])
-        expect(tail.parts[2].location.start.offset).toBe(3)
-        expect(tail.parts[2].location.end.offset).toBe(4)
+        expect(tail.parts[2]!.location.start.offset).toBe(3)
+        expect(tail.parts[2]!.location.end.offset).toBe(4)
       })
 
       it('should allow comma after hold', () => {
