@@ -25,10 +25,13 @@ Quote "quote" = '"' { return 2; }
 Grave "grave" = "`" { return -1; }
 PitchCents = n:Number _ "c"i { return node('PitchCents',{cents:n}); }
 PitchHz = n:Number _ "hz"i { return node('PitchHz',{hz:n}); }
-PitchOctaveDivision = n:Int _ [\\/] _ d:Int _ "o"i os:Int? divPart:(_ "/" _ od:Int)? {
-  const octaveDenom = divPart ? divPart[3] : 1;
-  return node('PitchOctaveDivision',{numerator:n,denominator:d,octaveSize:(os||2)/octaveDenom});
+PitchOctaveDivision = n:Int _ [\\/] _ d:Int suffix:PitchOctaveDivisionSuffix {
+  return node('PitchOctaveDivision',{numerator:n,denominator:d,octaveSize:suffix});
 } / n:Int _ "\\" _ d:Int { return node('PitchOctaveDivision',{numerator:n,denominator:d,octaveSize:2}); }
+PitchOctaveDivisionSuffix = _ "ed"i _ os:OctaveSize? { return os ?? 2; } / _ "<" _ os:OctaveSize _ ">" { return os; }
+OctaveSize = os:Int frac:(_ "/" _ den:Int)? {
+  return os / (frac ? frac[3] : 1);
+}
 PitchRatio = n:Int _ "/" _ d:Int { return node('PitchRatio',{numerator:n,denominator:d}); }
 PitchDegree = n:Int { return node('PitchDegree',{degree:n}); }
 Hold = parts:(HoldDash / BarLineInHold)+ {
