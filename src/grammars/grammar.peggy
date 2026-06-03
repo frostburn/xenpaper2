@@ -9,8 +9,7 @@ ParamGroup = first:Param rest:(Semicolon Param)* ":" {
   const params = [first, ...rest.map(([, p]) => p)];
   return node('ParamGroup', { params });
 }
-Param = ParamEmbed
-ParamEmbed = "embed"i { return node('ParamEmbed'); }
+Param "parameter" = "embed"i { return node('ParamEmbed'); }
 Sequence = items:ItemList { return node('Sequence', { items }); }
 ItemList = head:Item tail:(_ Item)* { return [head, ...tail.map(([,i]) => i)]; } / '' { return []; }
 Item = Comment / SetterGroup / SetRoot / SetScale / RatioChordItem / Note / Rest / Chord / BarLine / Whitespace
@@ -22,10 +21,13 @@ Pitch = oct:OctaveModifier? val:(PitchCents / PitchHz / PitchOctaveDivision / Pi
   if (oct) return node('Pitch', { octave: oct, value: val });
   return node('Pitch', { value: val });
 }
-OctaveModifier = s:$((Apostrophe / Quote / Grave)+) { const octave = (s.split("'").length - 1) + ((s.split('"').length - 1) * 2) - (s.split('`').length - 1); return node('OctaveModifier', { octave }); }
-Apostrophe "apostrophe" = "\'"
-Quote "quote" = '"'
-Grave "grave" = "`"
+OctaveModifier = shifts:(Apostrophe / Quote / Grave)+ {
+  const octave = shifts.reduce((sum, shift) => sum + shift, 0);
+  return node('OctaveModifier', { octave });
+}
+Apostrophe "apostrophe" = "'" { return 1; }
+Quote "quote" = '"' { return 2; }
+Grave "grave" = "`" { return -1; }
 PitchCents = n:Number "c"i { return node('PitchCents',{cents:n}); }
 PitchHz = n:Number "hz"i { return node('PitchHz',{hz:n}); }
 PitchOctaveDivision = n:Int [\\/] d:Int "o"i os:Int? divPart:("/" od:Int)? {
@@ -34,10 +36,11 @@ PitchOctaveDivision = n:Int [\\/] d:Int "o"i os:Int? divPart:("/" od:Int)? {
 } / n:Int "\\" d:Int { return node('PitchOctaveDivision',{numerator:n,denominator:d,octaveSize:2}); }
 PitchRatio = n:Int "/" d:Int { return node('PitchRatio',{numerator:n,denominator:d}); }
 PitchDegree = n:Int { return node('PitchDegree',{degree:n}); }
-Hold = parts:(HoldDash / BarLineInHold)+ {
-  const length = parts.filter((part) => part.type === 'HoldDash').length;
-  return node('Hold', { length, parts });
+Hold = parts:HoldPart+ {
+  const length = parts.reduce((sum, part) => sum + part.length, 0);
+  return node('Hold', { length, parts: parts.map(({ part }) => part) });
 }
+HoldPart = part:HoldDash { return { length: 1, part }; } / part:BarLineInHold { return { length: 0, part }; }
 BarLineInHold = bar:BarLine &("|"* "-") { return bar; }
 HoldDash = "-" { return node('HoldDash'); }
 Rest = "." { return node('Rest', { length: 1 }); }
@@ -87,9 +90,10 @@ SetSubdivision = ("div"i ":" Whitespace?)? n:Int frac:("/" d:Int)? {
 SetOsc = "osc"i ":" Whitespace? osc:OscName { return node('SetOsc', { osc: osc.toLowerCase() }); }
 OscName "oscillator name" = $([a-zA-Z0-9\-]+)
 SetEnv = "env"i ":" Whitespace? vals:EnvValues {
-  return node('SetEnv', { a: Number(vals[0]), d: Number(vals[1]), s: Number(vals[2]), r: Number(vals[3]) });
+  return node('SetEnv', vals);
 }
-EnvValues "four digits" = $([0-9][0-9][0-9][0-9])
+EnvValues "four digits" = a:EnvDigit d:EnvDigit s:EnvDigit r:EnvDigit { return { a, d, s, r }; }
+EnvDigit = digit:[0-9] { return Number(digit); }
 SetRulerRange = "rl"i ":" low:Pitch "," high:Pitch { return node('SetRulerRange', { low, high }); }
 SetRulerPlot = "plot"i { return node('SetRulerPlot'); }
 SetRoot = "{r" p:Pitch "}" { return node('SetRoot', { pitch: p }); }
