@@ -5,7 +5,6 @@ type LooseParserResult = {
   location: unknown
   sequence: LooseParserResult
   items: [LooseParserResult, ...LooseParserResult[]]
-  paramGroup: LooseParserResult
   setters?: [LooseParserResult]
   tail: unknown
 }
@@ -1716,39 +1715,6 @@ describe('grammar', () => {
         expectParserErrorMessage('(div:16;;div:16)', 'but ";" found.')
         expectParserErrorMessage('(env:123)', 'Expected four digits or whitespace but "1" found.')
       })
-    })
-  })
-
-  describe('params', () => {
-    it('should parse sequence with param', () => {
-      const output = strip(parser('embed:2'))
-      expect(output.paramGroup).toEqual({
-        params: [
-          {
-            type: 'ParamEmbed',
-          },
-        ],
-        type: 'ParamGroup',
-      })
-
-      expect(output.sequence.items).toEqual([
-        {
-          type: 'Note',
-          pitch: {
-            type: 'Pitch',
-            value: {
-              type: 'PitchDegree',
-              degree: 2,
-            },
-          },
-          tail: undefined,
-        },
-      ])
-    })
-
-    it('should not allow unknown params', () => {
-      expectParserErrorMessage(':2', 'but ":" found.')
-      expectParserErrorMessage('foo:2', 'but "f" found.')
     })
   })
 })
