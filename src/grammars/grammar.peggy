@@ -22,7 +22,7 @@ Pitch = oct:OctaveModifier? val:(PitchCents / PitchHz / PitchOctaveDivision / Pi
   if (oct) return node('Pitch', { octave: oct, value: val });
   return node('Pitch', { value: val });
 }
-OctaveModifier "octave modifier" = s:$([\'"`]+) { const octave = (s.split("'").length - 1) + ((s.split('"').length - 1) * 2) - (s.split('`').length - 1); return node('OctaveModifier', { octave }); }
+OctaveModifier "apostrophe / grave" = s:$([\'"`]+) { const octave = (s.split("'").length - 1) + ((s.split('"').length - 1) * 2) - (s.split('`').length - 1); return node('OctaveModifier', { octave }); }
 PitchCents = n:Number "c"i { return node('PitchCents',{cents:n}); }
 PitchHz = n:Number "hz"i { return node('PitchHz',{hz:n}); }
 PitchOctaveDivision = n:Int [\\/] d:Int "o"i os:Int? divPart:("/" od:Int)? {
@@ -86,7 +86,7 @@ OscName "oscillator name" = $([a-zA-Z0-9\-]+)
 SetEnv = "env"i ":" Whitespace? vals:EnvValues {
   return node('SetEnv', { a: Number(vals[0]), d: Number(vals[1]), s: Number(vals[2]), r: Number(vals[3]) });
 }
-EnvValues "envelope values" = $([0-9][0-9][0-9][0-9])
+EnvValues "four digits" = $([0-9][0-9][0-9][0-9])
 SetRulerRange = "rl"i ":" low:Pitch "," high:Pitch { return node('SetRulerRange', { low, high }); }
 SetRulerPlot = "plot"i { return node('SetRulerPlot'); }
 SetRoot = "{r" p:Pitch "}" { return node('SetRoot', { pitch: p }); }
