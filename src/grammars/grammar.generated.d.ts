@@ -81,8 +81,6 @@ export type RatioChordPitchType = NodeType<'RatioChordPitch'> & {
   pitch: number
 }
 
-export type RatioChordPitchGroupType = Array<RatioChordPitchType | DelimiterType>
-
 export type ChordType = NodeType<'Chord'> & {
   pitches: Array<RatioChordPitchType | PitchType | DelimiterType>
   tail?: TailType
@@ -137,38 +135,17 @@ export type SetRootType = NodeType<'SetRoot'> & {
 
 // bpm
 
-export type SetBpmValue = NodeType<'SetBpmValue'> & {
-  bpm: number
-}
-
 export type SetBpmType = NodeType<'SetBpm'> & {
-  bpm: number
-}
-
-export type SetBpmValueType = NodeType<'SetBpmValue'> & {
   bpm: number
 }
 
 // bms (beat milliseconds)
 
-export type SetBmsValue = NodeType<'SetBmsValue'> & {
-  bms: number
-}
-
 export type SetBmsType = NodeType<'SetBms'> & {
   bms: number
 }
 
-export type SetBmsValueType = NodeType<'SetBmsValue'> & {
-  bms: number
-}
-
 // subdivision
-
-export type SetSubdivisionValueType = NodeType<'SetSubdivisionValue'> & {
-  subdivision: number
-  denominator?: number
-}
 
 export type SetSubdivisionType = NodeType<'SetSubdivision'> & {
   subdivision: number
@@ -177,22 +154,11 @@ export type SetSubdivisionType = NodeType<'SetSubdivision'> & {
 
 // osc
 
-export type SetOscValueType = NodeType<'SetOscValue'> & {
-  osc: string
-}
-
 export type SetOscType = NodeType<'SetOsc'> & {
   osc: string
 }
 
 // env
-
-export type SetEnvValueType = NodeType<'SetEnvValue'> & {
-  a: number
-  d: number
-  s: number
-  r: number
-}
 
 export type SetEnvType = NodeType<'SetEnv'> & {
   a: number
