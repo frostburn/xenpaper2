@@ -31,18 +31,11 @@ PitchOctaveDivision = n:Int [\\/] d:Int [oO] os:Int? divPart:("/" od:Int)? {
 } / n:Int "\\" d:Int { return node('PitchOctaveDivision',{numerator:n,denominator:d,octaveSize:2}); }
 PitchRatio = n:Int "/" d:Int { return node('PitchRatio',{numerator:n,denominator:d}); }
 PitchDegree = n:Int { return node('PitchDegree',{degree:n}); }
-Hold = parts:(HoldStartingWithBarLine / HoldStartingWithDash) {
+Hold = parts:(HoldDash / BarLineInHold)+ {
   const length = parts.filter((part) => part.type === 'HoldDash').length;
   return node('Hold', { length, parts });
 }
-HoldStartingWithBarLine = firstBars:BarLines firstDashes:HoldDashes rest:(BarLines HoldDashes)* {
-  return [firstBars, firstDashes, ...rest.flatMap(([bars, dashes]) => [bars, dashes])].flat();
-}
-HoldStartingWithDash = firstDashes:HoldDashes rest:(BarLines HoldDashes)* {
-  return [firstDashes, ...rest.flatMap(([bars, dashes]) => [bars, dashes])].flat();
-}
-BarLines = bars:BarLine+ { return bars; }
-HoldDashes = dashes:HoldDash+ { return dashes; }
+BarLineInHold = bar:BarLine &("-" / "|"+ "-") { return bar; }
 HoldDash = "-" { return node('HoldDash'); }
 Rest = "." { return node('Rest', { length: 1 }); }
 PitchGroup = first:Pitch rest:(Whitespace Pitch)* {
