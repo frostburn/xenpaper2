@@ -15,7 +15,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  selectSourceCodeTab: [index: number]
+  selectSourceCodeTab: [id: number]
 }>()
 
 const activeSourceTab = computed(() => props.sourceTabs.find((tab) => tab.active))
@@ -53,7 +53,7 @@ const isCharacterActive = (charData?: CharData): boolean => {
       aria-label="Source codes"
     >
       <div class="source-tab-list">
-        <div v-for="(tab, index) in liveSourceTabs" :key="tab.id" class="source-tab">
+        <div v-for="tab in liveSourceTabs" :key="tab.id" class="source-tab">
           <button
             class="source-tab-button"
             :class="{ active: tab.active }"
@@ -63,7 +63,7 @@ const isCharacterActive = (charData?: CharData): boolean => {
             :title="tab.title"
             :aria-label="tab.title"
             :aria-controls="`source-code-panel-${tab.id}`"
-            @click="emit('selectSourceCodeTab', index)"
+            @click="emit('selectSourceCodeTab', tab.id)"
           >
             {{ tab.title }}
           </button>

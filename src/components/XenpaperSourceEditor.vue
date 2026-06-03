@@ -25,9 +25,9 @@ const emit = defineEmits<{
   redoSourceCode: []
   setSelectedLine: [line: number]
   addSourceCodeTab: []
-  selectSourceCodeTab: [index: number]
-  toggleSourceCodeTabMute: [index: number]
-  toggleSourceCodeTabSolo: [index: number, preserveOtherSolos?: boolean]
+  selectSourceCodeTab: [id: number]
+  toggleSourceCodeTabMute: [id: number]
+  toggleSourceCodeTabSolo: [id: number, preserveOtherSolos?: boolean]
   closeSourceCodeTab: [id: number]
 }>()
 
@@ -89,9 +89,7 @@ const restoreMenu = useTemplateRef('restoreMenu')
 
 const activeSourceTab = computed(() => props.sourceTabs[props.activeSourceCodeTabIndex])
 const liveSourceTabs = computed(() => props.sourceTabs.filter((tab) => tab.alive))
-const deadSourceTabs = computed(() =>
-  props.sourceTabs.map((tab, index) => ({ ...tab, index })).filter((tab) => !tab.alive),
-)
+const deadSourceTabs = computed(() => props.sourceTabs.filter((tab) => !tab.alive))
 const liveSourceTabCount = computed(() => liveSourceTabs.value.length)
 
 const closeRestoreMenu = (): void => {
@@ -100,23 +98,23 @@ const closeRestoreMenu = (): void => {
   restoreMenu.value.open = false
 }
 
-const restoreSourceCodeTab = (index: number): void => {
-  emit('selectSourceCodeTab', index)
+const restoreSourceCodeTab = (id: number): void => {
+  emit('selectSourceCodeTab', id)
   closeRestoreMenu()
 }
 
-const handleSourceTabClick = (event: MouseEvent, index: number): void => {
+const handleSourceTabClick = (event: MouseEvent, id: number): void => {
   if (event.ctrlKey || event.metaKey) {
-    emit('toggleSourceCodeTabSolo', index, event.altKey)
+    emit('toggleSourceCodeTabSolo', id, event.altKey)
     return
   }
 
   if (event.shiftKey) {
-    emit('toggleSourceCodeTabMute', index)
+    emit('toggleSourceCodeTabMute', id)
     return
   }
 
-  emit('selectSourceCodeTab', index)
+  emit('selectSourceCodeTab', id)
 }
 
 const handleDocumentPointerdown = (event: PointerEvent): void => {
@@ -152,7 +150,7 @@ const isCharacterActive = (charData?: CharData): boolean => {
   <main class="xenpaper-app">
     <div class="source-tabs" role="tablist" aria-label="Source codes">
       <div class="source-tab-list">
-        <div v-for="(tab, index) in liveSourceTabs" :key="tab.id" class="source-tab">
+        <div v-for="tab in liveSourceTabs" :key="tab.id" class="source-tab">
           <button
             class="source-tab-button"
             :class="{ active: tab.active, muted: tab.muted, soloed: tab.soloed }"
@@ -162,7 +160,7 @@ const isCharacterActive = (charData?: CharData): boolean => {
             :title="`${tab.title}${tab.soloed ? ' (solo)' : ''}${tab.muted ? ' (muted)' : ''}`"
             :aria-label="`${tab.title}${tab.soloed ? ', soloed' : ''}${tab.muted ? ', muted' : ''}`"
             :aria-controls="`source-code-panel-${tab.id}`"
-            @click="handleSourceTabClick($event, index)"
+            @click="handleSourceTabClick($event, tab.id)"
           >
             {{ tab.title }}
           </button>
@@ -194,7 +192,7 @@ const isCharacterActive = (charData?: CharData): boolean => {
             class="source-tab-restore-button"
             type="button"
             :title="`Restore ${tab.title}`"
-            @click="restoreSourceCodeTab(tab.index)"
+            @click="restoreSourceCodeTab(tab.id)"
           >
             {{ tab.title }}
           </button>
@@ -216,11 +214,7 @@ const isCharacterActive = (charData?: CharData): boolean => {
           :aria-pressed="activeSourceTab.soloed"
           :title="`${activeSourceTab.soloed ? 'Unsolo' : 'Solo'} ${activeSourceTab.title}`"
           @click="
-            emit(
-              'toggleSourceCodeTabSolo',
-              activeSourceCodeTabIndex,
-              $event.ctrlKey || $event.metaKey,
-            )
+            emit('toggleSourceCodeTabSolo', activeSourceTab.id, $event.ctrlKey || $event.metaKey)
           "
         >
           Solo
@@ -232,7 +226,7 @@ const isCharacterActive = (charData?: CharData): boolean => {
           :aria-label="`Mute ${activeSourceTab.title}`"
           :aria-pressed="activeSourceTab.muted"
           :title="`${activeSourceTab.muted ? 'Unmute' : 'Mute'} ${activeSourceTab.title}`"
-          @click="emit('toggleSourceCodeTabMute', activeSourceCodeTabIndex)"
+          @click="emit('toggleSourceCodeTabMute', activeSourceTab.id)"
         >
           Mute
         </button>

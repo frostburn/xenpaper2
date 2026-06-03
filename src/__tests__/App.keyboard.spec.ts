@@ -616,7 +616,7 @@ describe('App source editor keyboard shortcuts', () => {
       { title: 'second', alive: false, active: false },
     ])
 
-    store.selectSourceCodeTab(1)
+    store.selectSourceCodeTab(store.sourceTabs[1]!.id)
 
     expect(store.sourceCodes).toEqual(['first', 'second'])
     expect(store.sourceTabs.every((tab) => tab.alive)).toBe(true)
@@ -689,7 +689,7 @@ describe('App source editor keyboard shortcuts', () => {
     const remainingEngine = soundEngineMock.instances[soundEngineMock.instances.length - 2]!
     const removedEngine = soundEngineMock.instances[soundEngineMock.instances.length - 1]!
 
-    store.selectSourceCodeTab(0)
+    store.selectSourceCodeTab(store.sourceTabs[0]!.id)
     await store.restartPlaybackFromStart()
     expect(store.isPlaying).toBe(true)
     expect(wrapper.get('.play-pause-button').text()).toContain('Pause')
