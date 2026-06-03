@@ -28,6 +28,12 @@ describe('grammarToChars', () => {
     ])
   })
 
+  it('highlights barlines inside hold tails as delimiters', () => {
+    const chars = grammarToChars(parse('1--|--'))
+
+    expect(colors(chars)).toEqual(['pitch', 'pitch', 'pitch', 'delimiter', 'pitch', 'pitch'])
+  })
+
   it('leaves skipped separator spaces uncolored', () => {
     const chars = grammarToChars(parse('2 34'))
 
