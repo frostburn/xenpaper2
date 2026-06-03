@@ -35,7 +35,7 @@ Hold = parts:(HoldDash / BarLineInHold)+ {
   const length = parts.filter((part) => part.type === 'HoldDash').length;
   return node('Hold', { length, parts });
 }
-BarLineInHold = bar:BarLine &("-" / "|"+ "-") { return bar; }
+BarLineInHold = bar:BarLine &("|"* "-") { return bar; }
 HoldDash = "-" { return node('HoldDash'); }
 Rest = "." { return node('Rest', { length: 1 }); }
 PitchGroup = first:Pitch rest:(Whitespace Pitch)* {
