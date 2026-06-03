@@ -538,6 +538,28 @@ describe('grammar', () => {
           },
         ])
       })
+
+      it('should parse sequence with a hold across a double bar line', () => {
+        expect(strip(parser('2--||---|')).sequence.items).toEqual([
+          {
+            type: 'Note',
+            pitch: {
+              type: 'Pitch',
+              value: {
+                type: 'PitchDegree',
+                degree: 2,
+              },
+            },
+            tail: {
+              type: 'Hold',
+              length: 5,
+            },
+          },
+          {
+            type: 'BarLine',
+          },
+        ])
+      })
     })
 
     describe('notes', () => {
@@ -908,6 +930,30 @@ describe('grammar', () => {
         ])
       })
 
+      it('should parse sequence with chord holds across double bar lines', () => {
+        expect(strip(parser('[0]--||---|')).sequence.items).toEqual([
+          {
+            type: 'Chord',
+            pitches: [
+              {
+                type: 'Pitch',
+                value: {
+                  type: 'PitchDegree',
+                  degree: 0,
+                },
+              },
+            ],
+            tail: {
+              type: 'Hold',
+              length: 5,
+            },
+          },
+          {
+            type: 'BarLine',
+          },
+        ])
+      })
+
       it('should error if chord is empty or not delimited properly', () => {
         expectParserErrorMessage('[]', 'Expected [\'"`] or [0-9] but "]" found.')
       })
@@ -932,6 +978,27 @@ describe('grammar', () => {
 
       it('should parse sequence with ratio chord holds across bar lines', () => {
         expect(strip(parser('4:5:6:7--|---|')).sequence.items).toEqual([
+          {
+            type: 'RatioChord',
+            pitches: [
+              { type: 'RatioChordPitch', pitch: 4 },
+              { type: 'Colon' },
+              { type: 'RatioChordPitch', pitch: 5 },
+              { type: 'Colon' },
+              { type: 'RatioChordPitch', pitch: 6 },
+              { type: 'Colon' },
+              { type: 'RatioChordPitch', pitch: 7 },
+            ],
+            tail: { type: 'Hold', length: 5 },
+          },
+          {
+            type: 'BarLine',
+          },
+        ])
+      })
+
+      it('should parse sequence with ratio chord holds across double bar lines', () => {
+        expect(strip(parser('4:5:6:7--||---|')).sequence.items).toEqual([
           {
             type: 'RatioChord',
             pitches: [

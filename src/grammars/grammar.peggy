@@ -31,7 +31,7 @@ PitchOctaveDivision = n:Int [\\/] d:Int [oO] os:Int? divPart:("/" od:Int)? {
 } / n:Int "\\" d:Int { return node('PitchOctaveDivision',{numerator:n,denominator:d,octaveSize:2}); }
 PitchRatio = n:Int "/" d:Int { return node('PitchRatio',{numerator:n,denominator:d}); }
 PitchDegree = n:Int { return node('PitchDegree',{degree:n}); }
-Hold = s:$("-"* ("|" "-"+)+ / "-"+ ("|" "-"+)*) {
+Hold = s:$("-"* ("|"+ "-"+)+ / "-"+ ("|"+ "-"+)*) {
   return node('Hold',{length:s.replace(/[|]+/g,'').length});
 }
 Rest = "." { return node('Rest', { length: 1 }); }
