@@ -58,9 +58,9 @@ const newInV2Sections: SidebarSection[] = [
     demos: [
       {
         description:
-          'Chords now allow relaxed whitespace after [ and before ], and commas between chord pitches are optional when spaces already separate them.',
-        tune: `[ 0, 4, 7 ]--- [ '0 4 7 ]---
-[ 0 3 7 10 ]--- [ 2, 5, 9, 12 ]---`,
+          'Chords now allow relaxed whitespace after [ and before ], optional commas when spaces already separate pitches, and holds that continue through barlines.',
+        tune: `[ 0, 4, 7 ]--|---|
+[ '0 4 7 ]--- [ 0 3 7 10 ]---`,
       },
       {
         description:
