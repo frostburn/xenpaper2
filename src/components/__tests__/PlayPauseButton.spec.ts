@@ -16,10 +16,10 @@ describe('PlayPauseButton', () => {
     const wrapper = mount(PlayPauseButton, { props: { playing: true } })
 
     expect(wrapper.text()).toContain('Pause')
-    expect(wrapper.findAll('path').map((path) => path.attributes('d'))).toEqual([
-      'M 0 0 L 4 0 L 4 12 L 0 12 Z',
-      'M 8 0 L 12 0 L 12 12 L 8 12 Z',
-    ])
+    expect(wrapper.findAll('path')).toHaveLength(1)
+    expect(wrapper.find('path').attributes('d')).toBe(
+      'M 0 0 L 4 0 L 4 12 L 0 12 Z M 8 0 L 12 0 L 12 12 L 8 12 Z',
+    )
   })
 
   it('emits toggle when clicked', async () => {

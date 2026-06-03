@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-const PLAY_PATHS = {
-  paused: ['M 0 0 L 12 6 L 0 12 Z'],
-  playing: ['M 0 0 L 4 0 L 4 12 L 0 12 Z', 'M 8 0 L 12 0 L 12 12 L 8 12 Z'],
+const PLAY_PATH = {
+  // Triangle to resume playing
+  paused: 'M 0 0 L 12 6 L 0 12 Z',
+
+  // Two bars to pause play
+  playing: 'M 0 0 L 4 0 L 4 12 L 0 12 Z M 8 0 L 12 0 L 12 12 L 8 12 Z',
 } as const
 
 const props = defineProps<{
@@ -16,14 +19,14 @@ const emit = defineEmits<{
 
 const playbackState = computed(() => (props.playing ? 'playing' : 'paused'))
 const playbackLabel = computed(() => (props.playing ? 'Pause' : 'Play'))
-const playbackPaths = computed(() => PLAY_PATHS[playbackState.value])
+const playbackPath = computed(() => PLAY_PATH[playbackState.value])
 </script>
 
 <template>
   <button class="play-pause-button" type="button" @click="emit('toggle')">
     <span class="visually-hidden">{{ playbackLabel }}</span>
     <svg aria-hidden="true" class="playback-icon" viewBox="0 0 12 12">
-      <path v-for="path in playbackPaths" :key="path" :d="path" />
+      <path :d="playbackPath" />
     </svg>
   </button>
 </template>
