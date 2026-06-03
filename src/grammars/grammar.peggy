@@ -22,7 +22,9 @@ Pitch = oct:OctaveModifier? val:(PitchCents / PitchHz / PitchOctaveDivision / Pi
   if (oct) return node('Pitch', { octave: oct, value: val });
   return node('Pitch', { value: val });
 }
-OctaveModifier "apostrophe / grave" = s:$([\'"`]+) { const octave = (s.split("'").length - 1) + ((s.split('"').length - 1) * 2) - (s.split('`').length - 1); return node('OctaveModifier', { octave }); }
+OctaveModifier = s:$((Apostrophe / Grave)+) { const octave = (s.split("'").length - 1) + ((s.split('"').length - 1) * 2) - (s.split('`').length - 1); return node('OctaveModifier', { octave }); }
+Apostrophe "apostrophe" = [\'"]
+Grave "grave" = "`"
 PitchCents = n:Number "c"i { return node('PitchCents',{cents:n}); }
 PitchHz = n:Number "hz"i { return node('PitchHz',{hz:n}); }
 PitchOctaveDivision = n:Int [\\/] d:Int "o"i os:Int? divPart:("/" od:Int)? {

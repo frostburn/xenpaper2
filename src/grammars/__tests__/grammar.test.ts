@@ -511,7 +511,7 @@ describe('grammar', () => {
       it('should error if hold is attempted after a rest', () => {
         expectParserFormattedErrorMessage(
           '2-.-',
-          `Error: Expected "#", "(", ".", "[", "{", "{r", "|", apostrophe / grave, end of input, integer, number, or whitespace but "-" found.
+          `Error: Expected "#", "(", ".", "[", "{", "{r", "|", apostrophe, end of input, grave, integer, number, or whitespace but "-" found.
  --> test-input:1:4
   |
 1 | 2-.-
@@ -979,7 +979,7 @@ describe('grammar', () => {
       })
 
       it('should error if chord is empty or not delimited properly', () => {
-        expectParserErrorMessage('[]', 'Expected apostrophe / grave, integer, or number but "]" found.')
+        expectParserErrorMessage('[]', 'Expected apostrophe, grave, integer, or number but "]" found.')
       })
 
       it('should parse sequence with a ratio chord', () => {
