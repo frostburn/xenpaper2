@@ -510,7 +510,7 @@ describe('grammar', () => {
       it('should error if hold is attempted after a rest', () => {
         expectParserFormattedErrorMessage(
           '2-.-',
-          `Error: Expected "#", "(", ".", "[", "{", "{r", "|", apostrophe, end of input, grave, integer, number, quote, or whitespace but "-" found.
+          `Error: Expected "#", "(", ".", "[", "{", "|", apostrophe, end of input, grave, integer, number, quote, or whitespace but "-" found.
  --> test-input:1:4
   |
 1 | 2-.-
@@ -978,7 +978,10 @@ describe('grammar', () => {
       })
 
       it('should error if chord is empty or not delimited properly', () => {
-        expectParserErrorMessage('[]', 'Expected apostrophe, grave, integer, number, or quote but "]" found.')
+        expectParserErrorMessage(
+          '[]',
+          'Expected apostrophe, grave, integer, number, or quote but "]" found.',
+        )
       })
 
       it('should parse sequence with a ratio chord', () => {
@@ -1113,6 +1116,60 @@ describe('grammar', () => {
                   octave: 1,
                 },
               },
+            ],
+            tail: undefined,
+          },
+        ])
+      })
+
+      it('should parse chord and ratio chord syntax with additional whitespace', () => {
+        expect(strip(parser("[ 0, 7, '0 ] 4 : 5 :: 6")).sequence.items).toEqual([
+          {
+            type: 'Chord',
+            pitches: [
+              {
+                type: 'Pitch',
+                value: {
+                  type: 'PitchDegree',
+                  degree: 0,
+                },
+              },
+              {
+                type: 'Whitespace',
+              },
+              {
+                type: 'Pitch',
+                value: {
+                  type: 'PitchDegree',
+                  degree: 7,
+                },
+              },
+              {
+                type: 'Whitespace',
+              },
+              {
+                type: 'Pitch',
+                value: {
+                  type: 'PitchDegree',
+                  degree: 0,
+                },
+                octave: {
+                  type: 'OctaveModifier',
+                  octave: 1,
+                },
+              },
+            ],
+            tail: undefined,
+          },
+          {
+            type: 'RatioChord',
+            pitches: [
+              { type: 'RatioChordPitch', pitch: 4 },
+              { type: 'Colon' },
+              { type: 'RatioChordPitch', pitch: 5 },
+              { type: 'Colon' },
+              { type: 'Colon' },
+              { type: 'RatioChordPitch', pitch: 6 },
             ],
             tail: undefined,
           },
@@ -1449,6 +1506,72 @@ describe('grammar', () => {
           },
         ])
       })
+
+      it('should parse scale setters with additional whitespace', () => {
+        expect(
+          strip(parser("{ 12 edo 3 / 2 }{ 4 : 5 :: 6 ' }{ m 1 / 1, 9 / 8 ' }")).sequence.items,
+        ).toEqual([
+          {
+            type: 'SetScale',
+            scale: {
+              type: 'EdoScale',
+              divisions: 12,
+              octaveSize: 1.5,
+            },
+          },
+          {
+            type: 'SetScale',
+            scale: {
+              type: 'RatioChordScale',
+              pitches: [
+                { type: 'RatioChordPitch', pitch: 4 },
+                { type: 'Colon' },
+                { type: 'RatioChordPitch', pitch: 5 },
+                { type: 'Colon' },
+                { type: 'Colon' },
+                { type: 'RatioChordPitch', pitch: 6 },
+              ],
+              scaleOctaveMarker: {
+                type: 'ScaleOctaveMarker',
+              },
+            },
+          },
+          {
+            type: 'SetScale',
+            scale: {
+              type: 'PitchGroupScale',
+              pitchGroupScalePrefix: {
+                type: 'PitchGroupScalePrefix',
+                prefix: 'm',
+              },
+              pitches: [
+                {
+                  type: 'Pitch',
+                  value: {
+                    type: 'PitchRatio',
+                    numerator: 1,
+                    denominator: 1,
+                  },
+                },
+                {
+                  type: 'Whitespace',
+                },
+                {
+                  type: 'Pitch',
+                  value: {
+                    type: 'PitchRatio',
+                    numerator: 9,
+                    denominator: 8,
+                  },
+                },
+              ],
+              scaleOctaveMarker: {
+                type: 'ScaleOctaveMarker',
+              },
+            },
+          },
+        ])
+      })
     })
 
     describe('setters', () => {
@@ -1706,6 +1829,73 @@ describe('grammar', () => {
         ])
       })
 
+      it('should parse setters with additional whitespace', () => {
+        expect(
+          strip(
+            parser('( bpm : 440 ; div : 1 / 4 ; env : 0 1 2 3 ; rl : 200 c , 400 hz ){ r 7 / 5 }'),
+          ).sequence.items,
+        ).toEqual([
+          {
+            type: 'SetterGroup',
+            setters: [
+              {
+                type: 'SetBpm',
+                bpm: 440,
+              },
+              {
+                type: 'Semicolon',
+              },
+              {
+                type: 'SetSubdivision',
+                subdivision: 1,
+                denominator: 4,
+              },
+              {
+                type: 'Semicolon',
+              },
+              {
+                type: 'SetEnv',
+                a: 0,
+                d: 1,
+                s: 2,
+                r: 3,
+              },
+              {
+                type: 'Semicolon',
+              },
+              {
+                type: 'SetRulerRange',
+                low: {
+                  type: 'Pitch',
+                  value: {
+                    type: 'PitchCents',
+                    cents: 200,
+                  },
+                },
+                high: {
+                  type: 'Pitch',
+                  value: {
+                    type: 'PitchHz',
+                    hz: 400,
+                  },
+                },
+              },
+            ],
+          },
+          {
+            type: 'SetRoot',
+            pitch: {
+              type: 'Pitch',
+              value: {
+                type: 'PitchRatio',
+                numerator: 7,
+                denominator: 5,
+              },
+            },
+          },
+        ])
+      })
+
       it('should error if setter is empty or not delimited properly', () => {
         expectParserErrorMessage(
           '()',
@@ -1713,7 +1903,7 @@ describe('grammar', () => {
         )
         expectParserErrorMessage('(div:16;)', 'but ")" found.')
         expectParserErrorMessage('(div:16;;div:16)', 'but ";" found.')
-        expectParserErrorMessage('(env:123)', 'Expected four digits or whitespace but "1" found.')
+        expectParserErrorMessage('(env:123)', 'Expected four digits but "1" found.')
       })
     })
   })

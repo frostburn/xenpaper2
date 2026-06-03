@@ -23,13 +23,13 @@ OctaveModifier = shifts:(Apostrophe / Quote / Grave)+ {
 Apostrophe "apostrophe" = "'" { return 1; }
 Quote "quote" = '"' { return 2; }
 Grave "grave" = "`" { return -1; }
-PitchCents = n:Number "c"i { return node('PitchCents',{cents:n}); }
-PitchHz = n:Number "hz"i { return node('PitchHz',{hz:n}); }
-PitchOctaveDivision = n:Int [\\/] d:Int "o"i os:Int? divPart:("/" od:Int)? {
-  const octaveDenom = divPart ? divPart[1] : 1;
+PitchCents = n:Number _ "c"i { return node('PitchCents',{cents:n}); }
+PitchHz = n:Number _ "hz"i { return node('PitchHz',{hz:n}); }
+PitchOctaveDivision = n:Int _ [\\/] _ d:Int _ "o"i os:Int? divPart:(_ "/" _ od:Int)? {
+  const octaveDenom = divPart ? divPart[3] : 1;
   return node('PitchOctaveDivision',{numerator:n,denominator:d,octaveSize:(os||2)/octaveDenom});
-} / n:Int "\\" d:Int { return node('PitchOctaveDivision',{numerator:n,denominator:d,octaveSize:2}); }
-PitchRatio = n:Int "/" d:Int { return node('PitchRatio',{numerator:n,denominator:d}); }
+} / n:Int _ "\\" _ d:Int { return node('PitchOctaveDivision',{numerator:n,denominator:d,octaveSize:2}); }
+PitchRatio = n:Int _ "/" _ d:Int { return node('PitchRatio',{numerator:n,denominator:d}); }
 PitchDegree = n:Int { return node('PitchDegree',{degree:n}); }
 Hold = parts:(HoldDash / BarLineInHold)+ {
   const length = parts.filter((part) => part.type === 'HoldDash').length;
@@ -47,10 +47,10 @@ PitchGroup = first:Pitch rest:(Whitespace Pitch)* {
 }
 RatioChordPitch = n:Int { return node('RatioChordPitch', { pitch: n }); }
 Colon = ":" { return node('Colon', { delimiter: true }); }
-RatioChordPitches = first:RatioChordPitch rest:((Colon)+ RatioChordPitch)* {
+RatioChordPitches = first:RatioChordPitch rest:((_ Colon _)+ RatioChordPitch)* {
   const result = [first];
   for (const part of rest) {
-    const colons = part[0];
+    const colons = part[0].map(([, colon]) => colon);
     const pitch = part[1];
     result.push(...colons, pitch);
   }
@@ -60,54 +60,54 @@ RatioChord = pitches:RatioChordPitches tail:Hold? {
   const noteTail = tail ?? undefined;
   return node('RatioChord', { pitches, tail: noteTail });
 }
-RatioChordItem = &([0-9]+ ":") rc:RatioChord { return rc; }
-Chord = "[" pitches:((&([0-9]+ ":") rp:RatioChordPitches { return rp; }) / PitchGroup) "]" tail:Hold? {
+RatioChordItem = &(Int _ ":") rc:RatioChord { return rc; }
+Chord = "[" _ pitches:((&(Int _ ":") rp:RatioChordPitches { return rp; }) / PitchGroup) _ "]" tail:Hold? {
   const noteTail = tail ?? undefined;
   return node('Chord', { pitches, tail: noteTail });
 }
 BarLine = "|" { return node('BarLine',{delimiter:true}); }
-Semicolon = ";" Whitespace? { return node('Semicolon', { delimiter: true }); }
-SetterGroup = "(" first:Setter rest:(Semicolon Setter)* ")" {
+Semicolon = _ ";" _ { return node('Semicolon', { delimiter: true }); }
+SetterGroup = "(" _ first:Setter rest:(Semicolon Setter)* _ ")" {
   const setters = [first];
   for (const part of rest) setters.push(part[0], part[1]);
   return node('SetterGroup', { setters });
 }
 Setter = SetBpm / SetBms / SetSubdivision / SetOsc / SetEnv / SetRulerRange / SetRulerPlot
-SetBpm = "bpm"i ":" Whitespace? bpm:Number { return node('SetBpm', { bpm }); }
-SetBms = "bms"i ":" Whitespace? bms:Number { return node('SetBms', { bms }); }
-SetSubdivision = ("div"i ":" Whitespace?)? n:Int frac:("/" d:Int)? {
+SetBpm = "bpm"i _ ":" _ bpm:Number { return node('SetBpm', { bpm }); }
+SetBms = "bms"i _ ":" _ bms:Number { return node('SetBms', { bms }); }
+SetSubdivision = ("div"i _ ":" _)? n:Int frac:(_ "/" _ d:Int)? {
   return node('SetSubdivision', {
     subdivision: n,
-    denominator: frac ? frac[1] : undefined,
+    denominator: frac ? frac[3] : undefined,
   });
 }
-SetOsc = "osc"i ":" Whitespace? osc:OscName { return node('SetOsc', { osc: osc.toLowerCase() }); }
+SetOsc = "osc"i _ ":" _ osc:OscName { return node('SetOsc', { osc: osc.toLowerCase() }); }
 OscName "oscillator name" = $([a-zA-Z0-9\-]+)
-SetEnv = "env"i ":" Whitespace? vals:EnvValues {
+SetEnv = "env"i _ ":" _ vals:EnvValues {
   return node('SetEnv', vals);
 }
-EnvValues "four digits" = a:EnvDigit d:EnvDigit s:EnvDigit r:EnvDigit { return { a, d, s, r }; }
+EnvValues "four digits" = a:EnvDigit _ d:EnvDigit _ s:EnvDigit _ r:EnvDigit { return { a, d, s, r }; }
 EnvDigit = digit:[0-9] { return Number(digit); }
-SetRulerRange = "rl"i ":" low:Pitch "," high:Pitch { return node('SetRulerRange', { low, high }); }
+SetRulerRange = "rl"i _ ":" _ low:Pitch _ "," _ high:Pitch { return node('SetRulerRange', { low, high }); }
 SetRulerPlot = "plot"i { return node('SetRulerPlot'); }
-SetRoot = "{r" p:Pitch "}" { return node('SetRoot', { pitch: p }); }
-SetScale = "{" scale:(EdoScale / RatioChordScale / PitchGroupScale) "}" {
+SetRoot = "{" _ "r"i _ p:Pitch _ "}" { return node('SetRoot', { pitch: p }); }
+SetScale = "{" _ scale:(EdoScale / RatioChordScale / PitchGroupScale) _ "}" {
   return node('SetScale', { scale });
 }
-EdoScale = div:Int "ed"i "o"i? os:Int? frac:("/" den:Int)? {
-  const den = frac ? frac[1] : 1;
+EdoScale = div:Int _ "ed"i "o"i? _ os:Int? frac:(_ "/" _ den:Int)? {
+  const den = frac ? frac[3] : 1;
   const octaveSize = (os ?? 2) / den;
   return node('EdoScale', { divisions: div, octaveSize });
 }
 ScaleOctaveMarker = "'" { return node('ScaleOctaveMarker'); }
-RatioChordScale = &([0-9]+ ":") pitches:RatioChordPitches som:ScaleOctaveMarker? {
+RatioChordScale = &(Int _ ":") pitches:RatioChordPitches _ som:ScaleOctaveMarker? {
   const scaleOctaveMarker = som ?? undefined;
   return node('RatioChordScale', { pitches, scaleOctaveMarker });
 }
-PitchGroupScalePrefix = p:"m"i Whitespace? {
+PitchGroupScalePrefix = p:"m"i _ {
   return node('PitchGroupScalePrefix', { prefix: p.toLowerCase() });
 }
-PitchGroupScale = pref:PitchGroupScalePrefix? pitches:PitchGroup som:ScaleOctaveMarker? {
+PitchGroupScale = pref:PitchGroupScalePrefix? pitches:PitchGroup _ som:ScaleOctaveMarker? {
   const pitchGroupScalePrefix = pref ?? undefined;
   const scaleOctaveMarker = som ?? undefined;
   return node('PitchGroupScale', {
