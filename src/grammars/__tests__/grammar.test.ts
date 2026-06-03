@@ -1509,7 +1509,7 @@ describe('grammar', () => {
 
       it('should parse scale setters with additional whitespace', () => {
         expect(
-          strip(parser("{ 12 ed o 3 / 2 }{ 4 : 5 :: 6 ' }{ m 1 / 1, 9 / 8 ' }")).sequence.items,
+          strip(parser("{ 12 edo 3 / 2 }{ 4 : 5 :: 6 ' }{ m 1 / 1, 9 / 8 ' }")).sequence.items,
         ).toEqual([
           {
             type: 'SetScale',

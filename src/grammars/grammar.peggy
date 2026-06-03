@@ -94,7 +94,7 @@ SetRoot = "{" _ "r"i _ p:Pitch _ "}" { return node('SetRoot', { pitch: p }); }
 SetScale = "{" _ scale:(EdoScale / RatioChordScale / PitchGroupScale) _ "}" {
   return node('SetScale', { scale });
 }
-EdoScale = div:Int _ "ed"i _ "o"i? _ os:Int? frac:(_ "/" _ den:Int)? {
+EdoScale = div:Int _ "ed"i "o"i? _ os:Int? frac:(_ "/" _ den:Int)? {
   const den = frac ? frac[3] : 1;
   const octaveSize = (os ?? 2) / den;
   return node('EdoScale', { divisions: div, octaveSize });
