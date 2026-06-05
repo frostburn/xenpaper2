@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import { centsToValue, valueToCents } from 'xen-dev-utils/conversion'
 import { clamp } from 'xen-dev-utils/core'
 import { computed, onBeforeUnmount, onMounted, reactive, ref, useTemplateRef, watch } from 'vue'
 
-import { centsToRatio, ratioToCents, type MoscNote } from '../mosc'
+import { type MoscNote } from '../mosc'
 import type { InitialRulerState } from '../grammars/process-grammar'
 
 export type RulerColourMode = 'gradient' | 'proxnotes' | `proxplot${number}`
@@ -224,13 +225,13 @@ const centsGridLines = computed(() => {
   if (!rootHz || !octaveSize) return []
 
   const lines: Array<{ key: string; label: string; y: number; stroke: string; fill: string }> = []
-  const equaveCents = ratioToCents(octaveSize)
+  const equaveCents = valueToCents(octaveSize)
 
   CENT_GRID_POSITIONS.forEach((equave) => {
     const equaveRatio = Math.pow(octaveSize, equave)
 
     for (let cents = 100; cents < equaveCents; cents += 100) {
-      const hz = rootHz * equaveRatio * centsToRatio(cents)
+      const hz = rootHz * equaveRatio * centsToValue(cents)
       if (hzInRange(hz, visibleRange.value)) {
         lines.push({
           key: `cents-${equave}-${cents}`,

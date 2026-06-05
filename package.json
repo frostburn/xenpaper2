@@ -25,7 +25,7 @@
     "tone": "^15.1.22",
     "vue": "^3.5.32",
     "vue-router": "^5.0.6",
-    "xen-dev-utils": "^0.13.1"
+    "xen-dev-utils": "^0.14.0"
   },
   "devDependencies": {
     "@tsconfig/node24": "^24.0.4",

@@ -65,32 +65,6 @@ export type MoscScore = {
 // utils
 //
 
-export const centsToRatio = (cents: number, octave: number = 0): number => {
-  return octaveDivisionToRatio(cents, 1200, 2, octave)
-}
-
-export const octaveDivisionToRatio = (
-  steps: number,
-  stepsInOctave: number,
-  octaveSize: number,
-  octave: number = 0,
-): number => {
-  return Math.pow(octaveSize, (steps + octave * stepsInOctave) / stepsInOctave)
-}
-
-export const ratioToCents = (ratio: number, octave: number = 0): number => {
-  return ratioToOctaveDivision(ratio, 1200, 2, octave)
-}
-
-export const ratioToOctaveDivision = (
-  ratio: number,
-  stepsInOctave: number,
-  octaveSize: number,
-  octave: number = 0,
-): number => {
-  return (Math.log(ratio) / Math.log(octaveSize)) * stepsInOctave - octave * stepsInOctave
-}
-
 export const sortByTime = <T extends { time: number }>(items: T[]): T[] => {
   return items.slice().sort((a, b) => a.time - b.time)
 }
@@ -130,7 +104,7 @@ const findTempoRangeForTime = (tempoChanges: TempoChange[], time: number): Tempo
   throw new Error('No tempo changes found.')
 }
 
-export const timeToTime = (items: MoscBeatItem[]): ((time: number) => number) => {
+export const beatToTime = (items: MoscBeatItem[]): ((time: number) => number) => {
   const tempoChanges: TempoChange[] = []
   tempoChanges.push({
     bpm: 60,
@@ -170,7 +144,7 @@ export const timeToTime = (items: MoscBeatItem[]): ((time: number) => number) =>
 }
 
 export const scoreToTime = (score: MoscBeatScore): MoscScore => {
-  const thisTimeToTime = timeToTime(score.sequence)
+  const thisBeatToTime = beatToTime(score.sequence)
 
   const sequence: MoscItem[] = sortByTime(score.sequence)
     .map((item: MoscBeatItem): MoscItem | undefined => {
@@ -180,8 +154,8 @@ export const scoreToTime = (score: MoscBeatScore): MoscScore => {
           type: 'NOTE_TIME',
           hz: note.hz,
           label: note.label,
-          time: thisTimeToTime(note.time),
-          timeEnd: thisTimeToTime(note.timeEnd),
+          time: thisBeatToTime(note.time),
+          timeEnd: thisBeatToTime(note.timeEnd),
         }
       }
       if (item.type === 'PARAM_TIME') {
@@ -189,14 +163,14 @@ export const scoreToTime = (score: MoscBeatScore): MoscScore => {
         return {
           type: 'PARAM_TIME',
           value: param.value,
-          time: thisTimeToTime(param.time),
+          time: thisBeatToTime(param.time),
         }
       }
       if (item.type === 'END_TIME') {
         const end = item as MoscBeatEnd
         return {
           type: 'END_TIME',
-          time: thisTimeToTime(end.time),
+          time: thisBeatToTime(end.time),
         }
       }
       return undefined
@@ -205,7 +179,7 @@ export const scoreToTime = (score: MoscBeatScore): MoscScore => {
 
   return {
     sequence,
-    lengthTime: thisTimeToTime(score.lengthTime),
+    lengthTime: thisBeatToTime(score.lengthTime),
   }
 }
 

@@ -1,3 +1,5 @@
+import { centsToValue, equaveDivisionToValue, valueToCents } from 'xen-dev-utils/conversion'
+
 import type {
   XenpaperAST,
   SetScaleType,
@@ -22,7 +24,7 @@ import type {
   MoscNote,
 } from '../mosc'
 
-import { centsToRatio, octaveDivisionToRatio, timeToTime, ratioToCents } from '../mosc'
+import { beatToTime } from '../mosc'
 
 //
 // utils
@@ -63,14 +65,14 @@ export const pitchToRatio = (pitch: PitchType, context: Context): number => {
   if (type === 'PitchCents') {
     const { cents } = pitch.value
     limit('Cents', cents, -12000, 12000)
-    return centsToRatio(cents) * octaveMulti
+    return centsToValue(cents) * octaveMulti
   }
 
   if (type === 'PitchOctaveDivision') {
     const { numerator, denominator, octaveSize } = pitch.value
     assertFinitePositive('PitchOctaveDivision.denominator', denominator)
     assertFinitePositive('PitchOctaveDivision.octaveSize', octaveSize)
-    return octaveDivisionToRatio(numerator, denominator, octaveSize) * octaveMulti
+    return equaveDivisionToValue(numerator, denominator, octaveSize) * octaveMulti
   }
 
   if (type === 'PitchDegree') {
@@ -84,7 +86,7 @@ export const pitchToRatio = (pitch: PitchType, context: Context): number => {
 const edoToRatios = (edoSize: number, octaveSize: number): number[] => {
   const ratios: number[] = []
   for (let i = 0; i < edoSize; i++) {
-    ratios.push(octaveDivisionToRatio(i, edoSize, octaveSize))
+    ratios.push(equaveDivisionToValue(i, edoSize, octaveSize))
   }
   return ratios
 }
@@ -166,7 +168,7 @@ const ratioWrap = (ratio: number, octaveSize: number): number => {
 }
 
 const ratioToCentsLabel = (ratio: number, octaveSize: number): string => {
-  return `${ratioToCents(ratioWrap(ratio, octaveSize)).toFixed(1)}c`
+  return `${valueToCents(ratioWrap(ratio, octaveSize)).toFixed(1)}c`
 }
 
 export const pitchToLabel = (pitch: PitchType, context: Context): string => {
@@ -723,12 +725,12 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
   ]
 
   // translate times from steps to ms
-  const thisTimeToMs = timeToTime(sequence)
+  const thisBeatToTime = beatToTime(sequence)
 
   // omg are we really mutating many time items throughout the AST tree via mutations? golly!
   times.forEach((time) => {
-    time[0] = thisTimeToMs(time[0])
-    time[1] = thisTimeToMs(time[1])
+    time[0] = thisBeatToTime(time[0])
+    time[1] = thisBeatToTime(time[1])
   })
 
   const score = {
