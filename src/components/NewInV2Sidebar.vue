@@ -113,7 +113,7 @@ const newInV2Sections: SidebarSection[] = [
       },
       {
         description:
-          'Harmonium and the gamelan timbres gender, jegogan, jublag, and ugal pair well with scales from their respective regions.',
+          'Harmonium, piano and the gamelan timbres gender, jegogan, jublag, and ugal pair well with scales from their respective regions.',
         tune: `(osc:ugal)(env:1716)(4)
 # Average of 30 measured slendro gamelans
 {0c 231c 474c 717c 955c 1208c'}
