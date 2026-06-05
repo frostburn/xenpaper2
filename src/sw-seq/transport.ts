@@ -1,3 +1,5 @@
+import { mmod } from 'xen-dev-utils/fraction'
+
 const round = Math.round
 
 type ParametricEvent = {
@@ -122,9 +124,7 @@ export class Transport {
     this._position = this.lastTickTime - this.startTime
     const loopLength = this.loopEndPos - this.loopStartPos
     if (this.loop && loopLength > 0) {
-      while (this._position > this.loopEndPos) {
-        this._position -= loopLength
-      }
+      this._position = mmod(this._position, this.loopEndPos)
     }
 
     this.onInterval()

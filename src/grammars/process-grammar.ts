@@ -1,3 +1,4 @@
+import { mmod, geoMod } from 'xen-dev-utils/fraction'
 import { centsToValue, equaveDivisionToValue, valueToCents } from 'xen-dev-utils/conversion'
 
 import type {
@@ -94,19 +95,9 @@ const edoToRatios = (edoSize: number, octaveSize: number): number[] => {
 const pitchDegreeWrap = (degree: number, scale: number[]): [number, number] => {
   limit('Scale degree', degree, -1000, 1000)
 
-  const steps = scale.length
-  let octave = 0
+  const steps = mmod(degree, scale.length)
 
-  while (degree >= steps && octave > -20) {
-    degree -= steps
-    octave++
-  }
-  while (degree < 0 && octave < 20) {
-    degree += steps
-    octave--
-  }
-
-  return [degree, octave]
+  return [steps, (degree - steps) / scale.length]
 }
 
 const pitchDegreeToRatio = (degree: number, scale: number[], octaveSize: number): number => {
@@ -158,13 +149,11 @@ const tailToTime = (
 
 const ratioWrap = (ratio: number, octaveSize: number): number => {
   assertFinitePositive('ratioWrap.octaveSize', octaveSize)
-  while (ratio < 1) {
-    ratio *= octaveSize
+  const wrapped = geoMod(ratio, octaveSize)
+  if (wrapped === 1 && ratio >= octaveSize) {
+    return octaveSize
   }
-  while (ratio > octaveSize) {
-    ratio /= octaveSize
-  }
-  return ratio
+  return wrapped
 }
 
 const ratioToCentsLabel = (ratio: number, octaveSize: number): string => {
