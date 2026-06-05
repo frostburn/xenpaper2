@@ -3,7 +3,7 @@
 //
 
 export type MoscBeatNote = {
-  type: 'NOTE_TIME'
+  type: 'NOTE_BEAT_TIME'
   time: number
   timeEnd: number
   hz: number
@@ -19,7 +19,7 @@ export type MoscNote = {
 }
 
 export type MoscBeatParam = {
-  type: 'PARAM_TIME'
+  type: 'PARAM_BEAT_TIME'
   time: number
   value: unknown
 }
@@ -38,7 +38,7 @@ export type MoscTempo = {
 }
 
 export type MoscBeatEnd = {
-  type: 'END_TIME'
+  type: 'END_BEAT_TIME'
   time: number
 }
 
@@ -148,29 +148,26 @@ export const scoreToTime = (score: MoscBeatScore): MoscScore => {
 
   const sequence: MoscItem[] = sortByTime(score.sequence)
     .map((item: MoscBeatItem): MoscItem | undefined => {
-      if (item.type === 'NOTE_TIME') {
-        const note = item as MoscBeatNote
+      if (item.type === 'NOTE_BEAT_TIME') {
         return {
           type: 'NOTE_TIME',
-          hz: note.hz,
-          label: note.label,
-          time: thisBeatToTime(note.time),
-          timeEnd: thisBeatToTime(note.timeEnd),
+          hz: item.hz,
+          label: item.label,
+          time: thisBeatToTime(item.time),
+          timeEnd: thisBeatToTime(item.timeEnd),
         }
       }
-      if (item.type === 'PARAM_TIME') {
-        const param = item as MoscBeatParam
+      if (item.type === 'PARAM_BEAT_TIME') {
         return {
           type: 'PARAM_TIME',
-          value: param.value,
-          time: thisBeatToTime(param.time),
+          value: item.value,
+          time: thisBeatToTime(item.time),
         }
       }
-      if (item.type === 'END_TIME') {
-        const end = item as MoscBeatEnd
+      if (item.type === 'END_BEAT_TIME') {
         return {
           type: 'END_TIME',
-          time: thisBeatToTime(end.time),
+          time: thisBeatToTime(item.time),
         }
       }
       return undefined

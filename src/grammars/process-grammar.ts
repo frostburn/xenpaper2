@@ -254,7 +254,7 @@ const noteToMosc = (note: NoteType, context: Context): MoscBeatNote[] => {
 
   return [
     {
-      type: 'NOTE_TIME',
+      type: 'NOTE_BEAT_TIME',
       hz,
       label,
       ...timeProps,
@@ -277,7 +277,7 @@ const chordToMosc = (chord: ChordType | RatioChordType, context: Context): MoscB
     const label = pitchToLabel(pitch, context)
 
     return {
-      type: 'NOTE_TIME',
+      type: 'NOTE_BEAT_TIME',
       hz,
       label,
       ...timeProps,
@@ -296,7 +296,7 @@ const chordToMosc = (chord: ChordType | RatioChordType, context: Context): MoscB
   const ratioPitchTypes: MoscBeatNote[] = []
   const addRatioPitchType = (numerator: number): void => {
     ratioPitchTypes.push({
-      type: 'NOTE_TIME',
+      type: 'NOTE_BEAT_TIME',
       hz: (numerator / firstDenominator) * context.rootHz,
       label: `${numerator}/${firstDenominator}  ${ratioToCentsLabel(
         numerator / firstDenominator,
@@ -496,7 +496,7 @@ const setterToMosc = (setter: SetterType | DelimiterType, context: Context): Mos
     const { osc } = setter
     return [
       {
-        type: 'PARAM_TIME',
+        type: 'PARAM_BEAT_TIME',
         time: context.time,
         value: {
           type: 'osc',
@@ -510,7 +510,7 @@ const setterToMosc = (setter: SetterType | DelimiterType, context: Context): Mos
     const { a, d, s, r } = setter
     return [
       {
-        type: 'PARAM_TIME',
+        type: 'PARAM_BEAT_TIME',
         time: context.time,
         value: {
           type: 'env',
@@ -617,7 +617,7 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
   }
 
   const INITIAL_OSC: MoscBeatParam = {
-    type: 'PARAM_TIME',
+    type: 'PARAM_BEAT_TIME',
     time: 0,
     value: {
       type: 'osc',
@@ -626,7 +626,7 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
   }
 
   const INITIAL_ENV: MoscBeatParam = {
-    type: 'PARAM_TIME',
+    type: 'PARAM_BEAT_TIME',
     time: 0,
     value: {
       type: 'env',
@@ -719,7 +719,7 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
     INITIAL_ENV,
     ...moscItems,
     {
-      type: 'END_TIME',
+      type: 'END_BEAT_TIME',
       time: context.time,
     } as MoscBeatEnd,
   ]
