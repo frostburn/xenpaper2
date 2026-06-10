@@ -8,6 +8,17 @@ export const createSourceHistory = (initialSourceCode: string): SourceHistory =>
   future: [],
 })
 
+export const resetSourceHistory = (
+  history: SourceHistory,
+  initialSourceCode: string,
+): SourceHistory => {
+  history.past.length = 0
+  history.present = initialSourceCode
+  history.future.length = 0
+
+  return history
+}
+
 export const canUndoSourceChange = (history: SourceHistory): boolean => history.past.length > 0
 
 export const canRedoSourceChange = (history: SourceHistory): boolean => history.future.length > 0
@@ -19,11 +30,12 @@ export const recordSourceChange = (
 ): SourceHistory => {
   if (nextSourceCode === history.present) return history
 
-  return {
-    past: [...history.past, history.present].slice(-maxHistory),
-    present: nextSourceCode,
-    future: [],
-  }
+  history.past.push(history.present)
+  while (history.past.length > maxHistory) history.past.shift()
+  history.present = nextSourceCode
+  history.future.length = 0
+
+  return history
 }
 
 export const undoSourceChange = (
@@ -32,13 +44,12 @@ export const undoSourceChange = (
 ): SourceHistory => {
   if (!canUndoSourceChange(history)) return history
 
-  const previousSourceCode = history.past[history.past.length - 1]!
+  const previousSourceCode = history.past.pop()!
+  history.future.unshift(history.present)
+  while (history.future.length > maxHistory) history.future.pop()
+  history.present = previousSourceCode
 
-  return {
-    past: history.past.slice(0, -1),
-    present: previousSourceCode,
-    future: [history.present, ...history.future].slice(0, maxHistory),
-  }
+  return history
 }
 
 export const redoSourceChange = (
@@ -47,11 +58,10 @@ export const redoSourceChange = (
 ): SourceHistory => {
   if (!canRedoSourceChange(history)) return history
 
-  const [nextSourceCode, ...future] = history.future as [string, ...string[]]
+  const nextSourceCode = history.future.shift()!
+  history.past.push(history.present)
+  while (history.past.length > maxHistory) history.past.shift()
+  history.present = nextSourceCode
 
-  return {
-    past: [...history.past, history.present].slice(-maxHistory),
-    present: nextSourceCode,
-    future: future.slice(0, maxHistory),
-  }
+  return history
 }

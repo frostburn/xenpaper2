@@ -6,6 +6,7 @@ import {
   createSourceHistory,
   recordSourceChange,
   redoSourceChange,
+  resetSourceHistory,
   undoSourceChange,
 } from '../source-history'
 
@@ -51,6 +52,21 @@ describe('source-history', () => {
     const history = createSourceHistory('0')
 
     expect(recordSourceChange(history, '0')).toBe(history)
+  })
+
+  it('mutates history and keeps stack array instances stable', () => {
+    const history = createSourceHistory('0')
+    const past = history.past
+    const future = history.future
+
+    expect(recordSourceChange(history, '1')).toBe(history)
+    expect(undoSourceChange(history)).toBe(history)
+    expect(redoSourceChange(history)).toBe(history)
+    expect(resetSourceHistory(history, '2')).toBe(history)
+
+    expect(history.past).toBe(past)
+    expect(history.future).toBe(future)
+    expect(history).toEqual({ past: [], present: '2', future: [] })
   })
 
   it('respects the configured history limit', () => {
