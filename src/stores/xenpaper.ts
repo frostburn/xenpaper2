@@ -54,11 +54,12 @@ function useScoreEngine(id: number, transport: Transport, bank: Bank) {
   const muted = ref(false)
   const soloed = ref(false)
   const selectedLine = ref(0)
+  const engineError = ref('')
   let parseVersion = 0
 
   const parsedSource = computed(() => parseAndProcessSourceCode(sourceCode.value))
   const chars = computed(() => parsedSource.value.chars)
-  const lastError = computed(() => parsedSource.value.error)
+  const lastError = computed(() => parsedSource.value.error || engineError.value)
   const initialRulerState = computed(() =>
     'initialRulerState' in parsedSource.value ? parsedSource.value.initialRulerState : undefined,
   )
@@ -78,7 +79,12 @@ function useScoreEngine(id: number, transport: Transport, bank: Bank) {
       return false
     }
 
-    await soundEngine.setScore(source.score)
+    try {
+      engineError.value = ''
+      soundEngine.setScore(source.score)
+    } catch (e) {
+      engineError.value = e instanceof Error ? e.message : 'Unable to set score for sound engine.'
+    }
     if (version !== parseVersion) return false
 
     scoreLoaded.value = true
@@ -280,7 +286,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
 
   const clearScoreEngine = async (engine: ScoreEngine): Promise<void> => {
     engine.soundEngine.cutActiveNotes()
-    await engine.soundEngine.setScore(EMPTY_SCORE)
+    engine.soundEngine.setScore(EMPTY_SCORE)
     engine.scoreLoaded.value = false
   }
 

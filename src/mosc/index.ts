@@ -197,7 +197,7 @@ export class SoundEngine {
 
   cutActiveNotes(_time?: number): void {}
 
-  async setScore(_score: MoscScore): Promise<void> {}
+  setScore(_score: MoscScore): void {}
 
   setOutputGain(_gain: number): void {}
 

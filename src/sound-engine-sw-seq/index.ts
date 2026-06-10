@@ -14,7 +14,7 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null
 
 const isOscParam = (value: unknown): value is SoundEngineOscParam =>
-  isRecord(value) && value.type === 'osc' && isSWOscillatorType(value.osc)
+  isRecord(value) && value.type === 'osc'
 
 const isEnvParam = (value: unknown): value is SoundEngineEnvParam =>
   isRecord(value) &&
@@ -78,7 +78,7 @@ export class SoundEngineSwSeq extends SoundEngine {
     this.destination.gain.setValueAtTime(gain, this.context.currentTime)
   }
 
-  async setScore(score: MoscScore): Promise<void> {
+  setScore(score: MoscScore): void {
     this.score = score
     this.clearScheduledEvents()
     this.endTime = score.lengthTime
@@ -123,7 +123,9 @@ export class SoundEngineSwSeq extends SoundEngine {
       } else if (item.type === 'PARAM_TIME') {
         // No scheduling needed. Change the active patch directly.
         if (isOscParam(item.value)) {
-          patch.oscillator = parseSWOscillatorType(item.value.osc, this.context)
+          if (isSWOscillatorType(item.value.osc))
+            patch.oscillator = parseSWOscillatorType(item.value.osc, this.context)
+          else throw new Error(`"${item.value.osc}" is not a valid oscillator type.`)
         }
         if (isEnvParam(item.value)) {
           patch.envelope = {

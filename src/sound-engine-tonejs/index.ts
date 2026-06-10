@@ -161,7 +161,7 @@ export class SoundEngineTonejs extends SoundEngine {
     this.getSynth().volume.value = gain <= 0 ? -Infinity : 20 * Math.log10(gain)
   }
 
-  async setScore(score: MoscScore): Promise<void> {
+  setScore(score: MoscScore): void {
     this.score = score
 
     // clear this engine's previous notes from tone transport without
