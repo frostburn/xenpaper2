@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, ref, shallowRef, watch } from 'vue'
+import { computed, reactive, ref, shallowRef, watch } from 'vue'
 
 import { type CharData } from '../grammars/grammar-to-chars'
 import type { MoscNote } from '../mosc'
@@ -9,6 +9,7 @@ import {
   createSourceHistory,
   recordSourceChange,
   redoSourceChange,
+  resetSourceHistory,
   undoSourceChange,
 } from '../source-history'
 import {
@@ -49,7 +50,7 @@ type ScoreEngine = ReturnType<typeof useScoreEngine>
 function useScoreEngine(id: number, transport: Transport, bank: Bank) {
   const soundEngine = new SoundEngineSwSeq(transport, bank)
   const sourceCode = ref('')
-  const sourceHistory = ref(createSourceHistory(''))
+  const sourceHistory = reactive(createSourceHistory(''))
   const scoreLoaded = ref(false)
   const muted = ref(false)
   const soloed = ref(false)
@@ -95,20 +96,22 @@ function useScoreEngine(id: number, transport: Transport, bank: Bank) {
   const applySourceCode = (source: string, recordHistory = true): void => {
     if (source === sourceCode.value) return
 
-    sourceHistory.value = recordHistory
-      ? recordSourceChange(sourceHistory.value, source)
-      : createSourceHistory(source)
-    sourceCode.value = sourceHistory.value.present
+    if (recordHistory) {
+      recordSourceChange(sourceHistory, source)
+    } else {
+      resetSourceHistory(sourceHistory, source)
+    }
+    sourceCode.value = sourceHistory.present
   }
 
   const undoSourceCode = (): void => {
-    sourceHistory.value = undoSourceChange(sourceHistory.value)
-    sourceCode.value = sourceHistory.value.present
+    undoSourceChange(sourceHistory)
+    sourceCode.value = sourceHistory.present
   }
 
   const redoSourceCode = (): void => {
-    sourceHistory.value = redoSourceChange(sourceHistory.value)
-    sourceCode.value = sourceHistory.value.present
+    redoSourceChange(sourceHistory)
+    sourceCode.value = sourceHistory.present
   }
 
   const setSelectedLine = (line: number): void => {
@@ -242,10 +245,10 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   )
 
   const canUndoSourceCode = computed(() =>
-    canUndoSourceChange(activeScoreEngine.value.sourceHistory.value),
+    canUndoSourceChange(activeScoreEngine.value.sourceHistory),
   )
   const canRedoSourceCode = computed(() =>
-    canRedoSourceChange(activeScoreEngine.value.sourceHistory.value),
+    canRedoSourceChange(activeScoreEngine.value.sourceHistory),
   )
   const getScoreEngineGain = (engine: ScoreEngine): number => {
     const hasSoloedScoreEngine = scoreEngines.value.some((scoreEngine) => scoreEngine.soloed.value)
@@ -315,7 +318,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
 
   const createScoreEngineFromSource = (source: string, id: number): ScoreEngine => {
     const engine = useScoreEngine(id, swSeqTransport, swSeqBank)
-    engine.sourceHistory.value = createSourceHistory(source)
+    resetSourceHistory(engine.sourceHistory, source)
     engine.sourceCode.value = source
 
     return engine
