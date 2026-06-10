@@ -33,7 +33,7 @@ import type {
 import {
   createHtmlTitle,
   escapeHtmlAttribute,
-  getMsAtLine,
+  getTimeAtLine,
   isApplePlatform,
   parseAndProcessSourceCode,
 } from '../utils'
@@ -68,7 +68,7 @@ function useScoreEngine(id: number, transport: Transport, bank: Bank) {
   )
 
   const getSelectedLineStartTime = (): number =>
-    getMsAtLine(sourceCode.value, chars.value, selectedLine.value)
+    getTimeAtLine(sourceCode.value, chars.value, selectedLine.value)
 
   const updateParsedSourceCode = async (): Promise<boolean> => {
     const version = ++parseVersion

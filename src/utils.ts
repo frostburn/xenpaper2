@@ -40,7 +40,12 @@ export const formatDemoTune = (tune: DemoTune): string =>
     : tune
 
 export const escapeHtmlAttribute = (value: string): string =>
-  value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  value
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/'/g, '&#039;')
 
 export const createHtmlTitle = (source: string): string => {
   if (source.length === 0) return DEFAULT_DOCUMENT_TITLE
@@ -117,7 +122,7 @@ export const parseAndProcessSourceCode = (source: string): ParsedSource => {
   }
 }
 
-export const getMsAtLine = (
+export const getTimeAtLine = (
   source: string,
   charData: CharData[] | undefined,
   line: number,
