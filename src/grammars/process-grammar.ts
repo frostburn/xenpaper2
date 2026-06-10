@@ -377,7 +377,7 @@ const setScale = (setScale: SetScaleType, context: Context): void => {
 
   if (type === 'EdoScale') {
     const { divisions, octaveSize } = scale
-    assertFinitePositive('EdoScale.divisions', divisions)
+    limit('EdoScale.divisions', divisions, 1, 10000)
     assertFinitePositive('EdoScale.octaveSize', octaveSize)
     context.scale = edoToRatios(divisions, octaveSize)
     context.scaleLabels = edoToLabels(divisions, context.scale, octaveSize)
@@ -593,7 +593,6 @@ export type Processed = {
 }
 
 export const processGrammar = (grammar: XenpaperAST): Processed => {
-  // console.log('grammar', JSON.stringify(grammar));
   times.length = 0
 
   const grammarSequence = grammar.sequence

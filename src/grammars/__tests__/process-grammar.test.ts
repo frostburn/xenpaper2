@@ -771,7 +771,7 @@ describe('grammar numeric validation', () => {
   it.each([
     ['(div:0) 0', 'SetSubdivision.subdivision must be a finite positive number, got 0'],
     ['(bms:0) 0', 'SetBms.bms must be a finite positive number, got 0'],
-    ['{0edo} 0', 'EdoScale.divisions must be a finite positive number, got 0'],
+    ['{0edo} 0', 'EdoScale.divisions must be between 1 and 10000, got 0'],
     ['1/0', 'PitchRatio.denominator must be a finite positive number, got 0'],
     [String.raw`1\0`, 'PitchOctaveDivision.denominator must be a finite positive number, got 0'],
   ])('should reject invalid numeric input in %s', (source, expectedError) => {
