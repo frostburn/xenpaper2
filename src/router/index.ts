@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import EmbedView from '../views/EmbedView.vue'
 import HomeView from '../views/HomeView.vue'
+import ClearLocalStorageView from '../views/ClearLocalStorageView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -16,6 +17,12 @@ const router = createRouter({
       name: 'embed',
       component: EmbedView,
       meta: { embedMode: true },
+    },
+    {
+      path: '/clear',
+      alias: '/clear/',
+      name: 'clear',
+      component: ClearLocalStorageView,
     },
     {
       path: '/about',
