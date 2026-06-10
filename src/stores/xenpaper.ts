@@ -39,7 +39,7 @@ import {
 } from '../utils'
 
 const DEFAULT_LOCATION_HREF = 'http://localhost/'
-const EMPTY_SCORE = { sequence: [], lengthTime: 0 }
+const EMPTY_SCORE = Object.freeze({ sequence: [], lengthTime: 0 })
 const TAB_TITLE_LENGTH = 18
 const MAX_DEAD_SOURCE_TABS = 10
 
@@ -70,7 +70,7 @@ function useScoreEngine(id: number, transport: Transport, bank: Bank) {
   const getSelectedLineStartTime = (): number =>
     getTimeAtLine(sourceCode.value, chars.value, selectedLine.value)
 
-  const updateParsedSourceCode = async (): Promise<boolean> => {
+  const updateParsedSourceCode = (): boolean => {
     const version = ++parseVersion
     const source = parsedSource.value
 
@@ -115,9 +115,9 @@ function useScoreEngine(id: number, transport: Transport, bank: Bank) {
     selectedLine.value = line
   }
 
-  const preparePlayableScore = async (): Promise<boolean> => {
+  const preparePlayableScore = (): boolean => {
     if (!scoreLoaded.value || transport.position >= soundEngine.endPosition()) {
-      await updateParsedSourceCode()
+      updateParsedSourceCode()
     }
 
     return scoreLoaded.value
@@ -272,9 +272,11 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     swSeqTransport.endTime = swSeqTransport.loopEnd + 1
   }
 
-  const preparePlayableScoreEngines = async (): Promise<ScoreEngine[]> => {
+  const preparePlayableScoreEngines = (): ScoreEngine[] => {
     syncScoreEngineGains()
-    await Promise.all(scoreEngines.value.map((engine) => engine.preparePlayableScore()))
+    for (const engine of scoreEngines.value) {
+      engine.preparePlayableScore()
+    }
     const engines = getPlayableScoreEngines()
     applySharedTransportLoop(engines)
     return engines
@@ -563,11 +565,11 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   }
 
   const restartPlaybackFromSelectedLine = async (): Promise<void> => {
-    const playableEngines = await preparePlayableScoreEngines()
+    const playableEngines = preparePlayableScoreEngines()
     if (!playableEngines.length) return
 
     const startTime = activeScoreEngine.value.getSelectedLineStartTime()
-    audioContext.resume()
+    await audioContext.resume()
     swSeqTransport.start(startTime)
     isPlaying.value = true
   }

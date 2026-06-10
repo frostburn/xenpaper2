@@ -129,7 +129,7 @@ export const getTimeAtLine = (
 ): number => {
   if (line === 0) return 0
 
-  let ms = 0
+  let time = 0
   let counted = 0
   const sourceCharacters = source.split('')
 
@@ -137,11 +137,11 @@ export const getTimeAtLine = (
     const character = sourceCharacters[i]
     const [, end] = charData?.[i]?.playTime ?? []
 
-    if (end !== undefined) ms = end
+    if (end !== undefined) time = end
 
     if (character === '\n') {
       counted++
-      if (counted === line) return ms
+      if (counted === line) return time
     }
   }
 
