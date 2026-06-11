@@ -539,7 +539,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     applySharedTransportLoop()
   }
 
-  const setDemoTune = (source: DemoTune): Promise<void> | void => {
+  const setDemoTune = async (source: DemoTune): Promise<void> => {
     pauseAllSoundEngines()
     const previousScoreEngines = scoreEngines.value
     resetPlaybackState()
@@ -559,7 +559,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     if (!engines.some((engine) => engine.scoreLoaded.value)) return
 
     swSeqTransport.loopStart = 0
-    return restartPlaybackFromStart()
+    await restartPlaybackFromStart()
   }
 
   const updateLoopStart = (): void => {
@@ -584,14 +584,14 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
 
   const restartPlaybackFromStart = (): Promise<void> => restartPlaybackFromLine(0)
 
-  const togglePlayback = (): Promise<void> | void => {
+  const togglePlayback = async (): Promise<void> => {
     if (isPlaying.value) {
       resetPlaybackState()
       pauseAllSoundEngines()
       return
     }
 
-    return restartPlaybackFromSelectedLine()
+    await restartPlaybackFromSelectedLine()
   }
 
   const toggleLoop = (): void => {
