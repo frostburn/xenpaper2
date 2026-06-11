@@ -182,7 +182,6 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   const playbackPositionTime = ref(-1)
   const scoreEngines = shallowRef<ScoreEngine[]>([useScoreEngine(1, swSeqTransport, swSeqBank)])
   const activeScoreEngineIndex = ref(0)
-  const isEmbedMode = ref(false)
   const sidebarMode = ref<SidebarMode>('info')
   const locationHref = ref(DEFAULT_LOCATION_HREF)
   const appBaseUrl = computed(() => {
@@ -401,11 +400,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     if (shouldApplyInitialSidebarMode) {
       shouldApplyInitialSidebarMode = false
 
-      if (
-        'initialRulerState' in source &&
-        source.initialRulerState.lowHz !== undefined &&
-        !isEmbedMode.value
-      ) {
+      if ('initialRulerState' in source && source.initialRulerState.lowHz !== undefined) {
         sidebarMode.value = 'ruler'
       }
     }
@@ -419,10 +414,9 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     playbackPositionTime.value = -1
   }
 
-  const initializeSourceCode = (sharedHash: string, embedMode = false): void => {
+  const initializeSourceCode = (sharedHash: string): void => {
     replaceScoreEnginesWithSources(getSavedSourceCodes(sharedHash))
     clearDeadScoreEngines()
-    isEmbedMode.value = embedMode
     shouldApplyInitialSidebarMode = true
   }
 
@@ -434,9 +428,8 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     saveSourceCodes(sourceCodes.value)
   }
 
-  const applySharedHash = (sharedHash: string, embedMode = false): void => {
+  const applySharedHash = (sharedHash: string): void => {
     const sharedSourceCodes = getSharedSourceCodes(sharedHash)
-    isEmbedMode.value = embedMode
 
     if (
       hasSharedSourceCode(sharedHash) &&
@@ -682,7 +675,6 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     chars: computed(() => activeScoreEngine.value.chars.value),
     initialRulerState: computed(() => activeScoreEngine.value.initialRulerState.value),
     playbackPositionTime,
-    isEmbedMode,
     sidebarMode,
     updateParsedSourceCode,
     initializeSourceCode,

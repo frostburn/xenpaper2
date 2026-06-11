@@ -100,9 +100,12 @@ const startWatchers = (): void => {
     xenpaper.updateLoopStart()
   })
 
-  stopRouteHashWatcher = watch([() => route.hash, isEmbedMode], ([sharedHash, embedMode]) => {
-    xenpaper.applySharedHash(sharedHash, embedMode)
-  })
+  stopRouteHashWatcher = watch(
+    () => route.hash,
+    (sharedHash) => {
+      xenpaper.applySharedHash(sharedHash)
+    },
+  )
 
   stopPlaybackWatcher = watch(
     () => xenpaper.isPlaying,
@@ -134,7 +137,7 @@ const stopWatchers = (): void => {
 
 onMounted(() => {
   xenpaper.initializeLocation(window.location.href)
-  xenpaper.initializeSourceCode(initialRouteHash(), isEmbedMode.value)
+  xenpaper.initializeSourceCode(initialRouteHash())
   startWatchers()
   void replaceShareRoute()
   void xenpaper.updateParsedSourceCode()
