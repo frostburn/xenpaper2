@@ -32,6 +32,7 @@ import type {
   SourceTab,
 } from '../types'
 import {
+  APP_BASE_URL,
   createHtmlTitle,
   escapeHtmlAttribute,
   getTimeAtLine,
@@ -39,7 +40,6 @@ import {
   parseAndProcessSourceCode,
 } from '../utils'
 
-const DEFAULT_LOCATION_HREF = 'http://localhost/'
 const EMPTY_SCORE = Object.freeze({ sequence: [], lengthTime: 0 })
 const TAB_TITLE_LENGTH = 18
 const MAX_DEAD_SOURCE_TABS = 10
@@ -183,16 +183,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   const scoreEngines = shallowRef<ScoreEngine[]>([useScoreEngine(1, swSeqTransport, swSeqBank)])
   const activeScoreEngineIndex = ref(0)
   const sidebarMode = ref<SidebarMode>('info')
-  const locationHref = ref(DEFAULT_LOCATION_HREF)
-  const appBaseUrl = computed(() => {
-    const url = new URL(locationHref.value)
-    url.pathname = url.pathname.replace(/\/(?:about|embed)\/?$/, '/')
-    url.search = ''
-    url.hash = ''
-
-    return url.toString()
-  })
-  const embedBaseUrl = computed(() => new URL('embed/', appBaseUrl.value).toString())
+  const embedBaseUrl = computed(() => new URL('embed/', APP_BASE_URL).toString())
   const deadScoreEngines = shallowRef<ScoreEngine[]>([])
   let nextScoreEngineId = 2
   let shouldApplyInitialSidebarMode = true
@@ -232,7 +223,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   const shareHash = computed(() => getShareHash(sourceCodes.value))
   const routeHash = computed(() => shareHash.value)
   const shareUrl = computed(() =>
-    new URL(encodeShareHashForUrl(shareHash.value), appBaseUrl.value).toString(),
+    new URL(encodeShareHashForUrl(shareHash.value), APP_BASE_URL).toString(),
   )
   const embedUrl = computed(() =>
     new URL(encodeShareHashForUrl(shareHash.value), embedBaseUrl.value).toString(),
@@ -418,10 +409,6 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     replaceScoreEnginesWithSources(getSavedSourceCodes(sharedHash))
     clearDeadScoreEngines()
     shouldApplyInitialSidebarMode = true
-  }
-
-  const initializeLocation = (href: string): void => {
-    locationHref.value = href
   }
 
   const saveSourceCodeToBrowser = (): void => {
@@ -678,7 +665,6 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     sidebarMode,
     updateParsedSourceCode,
     initializeSourceCode,
-    initializeLocation,
     saveSourceCodeToBrowser,
     applySharedHash,
     setSourceCode,
