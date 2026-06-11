@@ -91,6 +91,17 @@ describe('Sample-accurate look-ahead transport', () => {
     vi.useRealTimers()
   })
 
+  it('wraps start offsets back into the active loop range', () => {
+    const transport = createTransport()
+
+    transport.loop = true
+    transport.loopStart = 1
+    transport.loopEnd = 2
+    transport.start(2.5)
+
+    expect(transport.position).toBeCloseTo(1.6)
+  })
+
   it('repeats notes that lead out of a looped section', () => {
     const calls: { which: 'on' | 'off'; time: number }[] = []
     const transport = createTransport()

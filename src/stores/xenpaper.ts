@@ -412,7 +412,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
 
     applySharedTransportLoop()
 
-    if (!engine.scoreLoaded) {
+    if (!engine.scoreLoaded.value) {
       return
     }
 

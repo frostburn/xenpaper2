@@ -123,8 +123,8 @@ export class Transport {
 
     this._position = this.lastTickTime - this.startTime
     const loopLength = this.loopEndPos - this.loopStartPos
-    if (this.loop && loopLength > 0) {
-      this._position = mmod(this._position, this.loopEndPos)
+    if (this.loop && loopLength > 0 && this._position >= this.loopEndPos) {
+      this._position = this.loopStartPos + mmod(this._position - this.loopStartPos, loopLength)
     }
 
     this.onInterval()
