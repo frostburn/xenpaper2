@@ -42,6 +42,7 @@ export class Bank {
     osc.node.detune.cancelScheduledValues(this.context.currentTime)
     osc.node.frequency.cancelScheduledValues(this.context.currentTime)
     osc.node.gain.cancelScheduledValues(this.context.currentTime)
+    osc.node.gain.setValueAtTime(0, this.context.currentTime)
     osc.node.disconnect()
     return osc.node
   }
