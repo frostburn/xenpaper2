@@ -304,8 +304,11 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   }
 
   const clearAndDisposeScoreEngines = (engines: ScoreEngine[]): void => {
-    clearScoreEngines(engines)
-    disposeScoreEngines(engines)
+    try {
+      clearScoreEngines(engines)
+    } finally {
+      disposeScoreEngines(engines)
+    }
   }
 
   const resetPlaybackState = (): void => {
