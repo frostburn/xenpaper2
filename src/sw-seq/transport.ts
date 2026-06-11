@@ -32,13 +32,10 @@ export type TransportOptions = {
 /**
  * Transport using look-ahead scheduling.
  */
-export class Transport {
+export class Transport extends EventTarget {
   readonly context: AudioContext
   active: boolean
   loop: boolean
-  onended = () => {
-    /* empty */
-  }
 
   // Private time/duration measured in samples
   // "Time" refers to context time
@@ -59,6 +56,8 @@ export class Transport {
   private tickTimeout: TimeoutHandle | undefined
 
   constructor(context: AudioContext, options: TransportOptions = {}) {
+    super()
+
     const { interval = 0.1, lookAhead = 0.2, useSetTimeoutFallback = false } = options
 
     this.context = context
@@ -158,7 +157,7 @@ export class Transport {
    */
   private onInterval() {
     if (!this.active) {
-      this.onended()
+      this.dispatchEvent(new Event('ended'))
       return
     }
 
@@ -245,7 +244,7 @@ export class Transport {
     if (this.tickTimeout !== undefined) {
       clearTimeout(this.tickTimeout)
       this.tickTimeout = undefined
-      this.onended()
+      this.dispatchEvent(new Event('ended'))
     }
   }
 

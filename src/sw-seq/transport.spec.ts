@@ -91,6 +91,24 @@ describe('Sample-accurate look-ahead transport', () => {
     vi.useRealTimers()
   })
 
+  it('dispatches ended events to registered listeners', () => {
+    vi.useFakeTimers()
+
+    const calls: string[] = []
+    const transport = new Transport(new MockAudioContext() as unknown as AudioContext, {
+      useSetTimeoutFallback: true,
+    })
+    transport.addEventListener('ended', () => calls.push('first'))
+    transport.addEventListener('ended', () => calls.push('second'))
+
+    transport.start(0)
+    transport.stop()
+
+    expect(calls).toEqual(['first', 'second'])
+
+    vi.useRealTimers()
+  })
+
   it('wraps start offsets back into the active loop range', () => {
     const transport = createTransport()
 

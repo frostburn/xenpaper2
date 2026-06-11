@@ -172,10 +172,10 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   const swSeqTransport = new Transport(audioContext, { useSetTimeoutFallback: isApplePlatform() })
   const swSeqBank = new Bank(audioContext)
 
-  swSeqTransport.onended = () => {
+  swSeqTransport.addEventListener('ended', () => {
     swSeqBank.stop()
     resetPlaybackState()
-  }
+  })
 
   const isPlaying = ref(false)
   const isLooping = ref(false)
