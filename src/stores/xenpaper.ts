@@ -57,6 +57,7 @@ function useScoreEngine(id: number, transport: Transport, bank: Bank) {
   const selectedLine = ref(0)
   const engineError = ref('')
   const alive = ref(true)
+  const deadOrder = ref(0)
   let parseVersion = 0
 
   const parsedSource = computed(() => parseAndProcessSourceCode(sourceCode.value))
@@ -128,8 +129,9 @@ function useScoreEngine(id: number, transport: Transport, bank: Bank) {
     return scoreLoaded.value
   }
 
-  const kill = (): void => {
+  const kill = (order: number): void => {
     alive.value = false
+    deadOrder.value = order
     soundEngine.cutActiveNotes()
     soundEngine.setScore(EMPTY_SCORE)
     scoreLoaded.value = false
@@ -145,6 +147,7 @@ function useScoreEngine(id: number, transport: Transport, bank: Bank) {
     soloed,
     selectedLine,
     alive,
+    deadOrder,
     parsedSource,
     chars,
     lastError,
@@ -196,11 +199,17 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   const embedBaseUrl = computed(() => new URL('embed/', APP_BASE_URL).toString())
   let nextScoreEngineId = 2
   let shouldApplyInitialSidebarMode = true
+  let nextDeadScoreEngineOrder = 1
   const scoreEnginesWithNoteListeners = new WeakSet<ScoreEngine>()
   let activeNoteHandler: ((note: MoscNote, on: boolean) => void) | undefined
 
   const liveScoreEngines = computed(() => scoreEngines.value.filter((engine) => engine.alive.value))
-  const deadScoreEngines = computed(() => scoreEngines.value.filter((engine) => !engine.alive.value))
+  const deadScoreEngines = computed(() =>
+    scoreEngines.value
+      .filter((engine) => !engine.alive.value)
+      .slice()
+      .sort((a, b) => b.deadOrder.value - a.deadOrder.value),
+  )
   const activeScoreEngine = computed(() => liveScoreEngines.value[activeScoreEngineIndex.value]!)
 
   const sourceTabs = computed<SourceTab[]>(() => [
@@ -325,36 +334,36 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     return engine
   }
 
-  const orderScoreEngines = (live: ScoreEngine[], dead: ScoreEngine[]): void => {
-    scoreEngines.value = [...live, ...dead]
+  const removeScoreEngines = (enginesToRemove: ScoreEngine[]): void => {
+    const idsToRemove = new Set(enginesToRemove.map((engine) => engine.id))
+    scoreEngines.value = scoreEngines.value.filter((engine) => !idsToRemove.has(engine.id))
   }
 
   const killScoreEngine = (engine: ScoreEngine): void => {
-    engine.kill()
+    engine.kill(nextDeadScoreEngineOrder++)
   }
 
   const trimDeadScoreEngines = (): void => {
-    const deadEngines = deadScoreEngines.value
-    const enginesToKeep = deadEngines.slice(0, MAX_DEAD_SOURCE_TABS)
-    const enginesToRemove = deadEngines.slice(MAX_DEAD_SOURCE_TABS)
-    orderScoreEngines(liveScoreEngines.value, enginesToKeep)
+    const enginesToRemove = deadScoreEngines.value.slice(MAX_DEAD_SOURCE_TABS)
+    removeScoreEngines(enginesToRemove)
     clearAndDisposeScoreEngines(enginesToRemove)
   }
 
   const clearDeadScoreEngines = (): void => {
     const enginesToRemove = deadScoreEngines.value
-    orderScoreEngines(liveScoreEngines.value, [])
+    removeScoreEngines(enginesToRemove)
     clearAndDisposeScoreEngines(enginesToRemove)
   }
 
   const replaceScoreEnginesWithSources = (sources: string[]): void => {
-    const existingDeadScoreEngines = deadScoreEngines.value
-    clearAndDisposeScoreEngines(liveScoreEngines.value)
+    const enginesToReplace = liveScoreEngines.value
+    clearAndDisposeScoreEngines(enginesToReplace)
+    removeScoreEngines(enginesToReplace)
     const nextSources = sources.length ? sources : ['']
     const nextScoreEngines = nextSources.map((source, index) =>
       createScoreEngineFromSource(source, index + 1),
     )
-    orderScoreEngines(nextScoreEngines, existingDeadScoreEngines)
+    scoreEngines.value = [...scoreEngines.value, ...nextScoreEngines]
     activeScoreEngineIndex.value = 0
     nextScoreEngineId = Math.max(...scoreEngines.value.map((engine) => engine.id), 0) + 1
     syncScoreEngineGains()
@@ -369,11 +378,10 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
       pauseAllSoundEngines()
     }
 
-    const nextLiveScoreEngines = [...liveScoreEngines.value, restored]
-    const nextDeadScoreEngines = deadScoreEngines.value.filter((engine) => engine !== restored)
     restored.alive.value = true
-    orderScoreEngines(nextLiveScoreEngines, nextDeadScoreEngines)
-    activeScoreEngineIndex.value = nextLiveScoreEngines.length - 1
+    restored.deadOrder.value = 0
+    scoreEngines.value = [...scoreEngines.value.filter((engine) => engine !== restored), restored]
+    activeScoreEngineIndex.value = liveScoreEngines.value.length - 1
     syncScoreEngineGains()
   }
 
@@ -444,8 +452,8 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     }
 
     const engine = useScoreEngine(nextScoreEngineId++, swSeqTransport, swSeqBank)
-    orderScoreEngines([...liveScoreEngines.value, engine], deadScoreEngines.value)
-    activeScoreEngineIndex.value = liveScoreEngines.value.length - 1
+    activeScoreEngineIndex.value = liveScoreEngines.value.length
+    scoreEngines.value = [...scoreEngines.value, engine]
     syncScoreEngineGains()
   }
 
@@ -492,16 +500,15 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     const index = liveScoreEngines.value.findIndex((engine) => engine.id === id)
     if (liveScoreEngines.value.length <= 1 || index < 0) return
 
-    const nextScoreEngines = liveScoreEngines.value.slice()
-    const [removed] = nextScoreEngines.splice(index, 1)
+    const liveEngines = liveScoreEngines.value
+    const removed = liveEngines[index]
     if (!removed) return
 
-    const nextDeadScoreEngines = [removed, ...deadScoreEngines.value]
     killScoreEngine(removed)
-    orderScoreEngines(nextScoreEngines, nextDeadScoreEngines)
+    const nextLiveScoreEngineCount = liveEngines.length - 1
 
-    if (activeScoreEngineIndex.value >= nextScoreEngines.length) {
-      activeScoreEngineIndex.value = nextScoreEngines.length - 1
+    if (activeScoreEngineIndex.value >= nextLiveScoreEngineCount) {
+      activeScoreEngineIndex.value = nextLiveScoreEngineCount - 1
     } else if (activeScoreEngineIndex.value > index) {
       activeScoreEngineIndex.value--
     }
@@ -517,7 +524,6 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   const setDemoTune = async (source: DemoTune): Promise<void> => {
     pauseAllSoundEngines()
     const previousScoreEngines = liveScoreEngines.value
-    const previousDeadScoreEngines = deadScoreEngines.value
     resetPlaybackState()
 
     const demoSources = Array.isArray(source) ? (source.length ? source : ['']) : [source]
@@ -526,8 +532,8 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     )
 
     engines.forEach((engine) => engine.updateParsedSourceCode())
-    previousScoreEngines.forEach(killScoreEngine)
-    orderScoreEngines(engines, [...previousScoreEngines, ...previousDeadScoreEngines])
+    previousScoreEngines.slice().reverse().forEach(killScoreEngine)
+    scoreEngines.value = [...scoreEngines.value, ...engines]
     activeScoreEngineIndex.value = 0
     trimDeadScoreEngines()
     syncScoreEngineGains()
