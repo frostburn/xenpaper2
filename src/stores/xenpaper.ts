@@ -77,6 +77,7 @@ function useScoreEngine(id: number, transport: Transport, bank: Bank) {
     scoreLoaded.value = false
 
     if (!source.playable) {
+      soundEngine.clearScheduledEvents()
       return
     }
 

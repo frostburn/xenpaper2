@@ -11,7 +11,6 @@ import HomeView from '../views/HomeView.vue'
 type MockFn<T extends (...args: never[]) => unknown> = ReturnType<typeof vi.fn<T>>
 
 type MockSoundEngine = {
-  endMs: number
   endCallback?: () => void
   noteCallback?: (...args: unknown[]) => void
   endPosition: MockFn<() => number>
@@ -23,6 +22,7 @@ type MockSoundEngine = {
   onEnd: MockFn<(callback: () => void) => () => void>
   onNote: MockFn<(callback: (...args: unknown[]) => void) => () => void>
   dispose: MockFn<() => void>
+  clearScheduledEvents: () => void
 }
 
 vi.stubGlobal(
@@ -89,8 +89,7 @@ vi.mock('../sw-seq/transport', () => ({
 vi.mock('../sound-engine-sw-seq', () => ({
   SoundEngineSwSeq: vi.fn<() => MockSoundEngine>(function () {
     const engine: MockSoundEngine = {
-      endMs: 10_000,
-      endPosition: vi.fn<() => number>(() => engine.endMs),
+      endPosition: vi.fn<() => number>(() => 10),
       cutActiveNotes: vi.fn<(time?: number) => void>(),
       setLoopActive: vi.fn<(active: boolean) => void>(),
       setLoopStart: vi.fn<(ms?: number) => void>(),
@@ -107,6 +106,7 @@ vi.mock('../sound-engine-sw-seq', () => ({
         },
       ),
       dispose: vi.fn<() => void>(),
+      clearScheduledEvents: vi.fn<() => void>(),
     }
 
     soundEngineMock.instances.push(engine)
