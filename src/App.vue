@@ -38,12 +38,12 @@ const initialRouteHash = (): string => {
 const currentRouteHash = computed(() => xenpaper.routeHash)
 const isEmbedMode = computed(() => route.meta.embedMode === true)
 
-const replaceShareRoute = async (): Promise<void> => {
+const replaceShareRoute = () => {
   xenpaper.saveSourceCodeToBrowser()
 
   if (route.hash === currentRouteHash.value) return
 
-  await router.replace({
+  return router.replace({
     query: route.query,
     hash: currentRouteHash.value,
   })
