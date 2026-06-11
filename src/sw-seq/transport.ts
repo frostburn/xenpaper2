@@ -32,13 +32,11 @@ export type TransportOptions = {
 /**
  * Transport using look-ahead scheduling.
  */
-export class Transport {
+export class Transport implements EventTarget {
   readonly context: AudioContext
   active: boolean
   loop: boolean
-  onended = () => {
-    /* empty */
-  }
+  private readonly eventTarget = new EventTarget()
 
   // Private time/duration measured in samples
   // "Time" refers to context time
@@ -78,6 +76,26 @@ export class Transport {
     this.nextEventId = 1
     this.useSetTimeoutFallback = useSetTimeoutFallback
     this.tickTimeout = undefined
+  }
+
+  addEventListener(
+    type: string,
+    callback: EventListenerOrEventListenerObject | null,
+    options?: AddEventListenerOptions | boolean,
+  ) {
+    this.eventTarget.addEventListener(type, callback, options)
+  }
+
+  dispatchEvent(event: Event) {
+    return this.eventTarget.dispatchEvent(event)
+  }
+
+  removeEventListener(
+    type: string,
+    callback: EventListenerOrEventListenerObject | null,
+    options?: EventListenerOptions | boolean,
+  ) {
+    this.eventTarget.removeEventListener(type, callback, options)
   }
 
   get lookAhead() {
@@ -158,7 +176,7 @@ export class Transport {
    */
   private onInterval() {
     if (!this.active) {
-      this.onended()
+      this.dispatchEvent(new Event('ended'))
       return
     }
 
@@ -245,7 +263,7 @@ export class Transport {
     if (this.tickTimeout !== undefined) {
       clearTimeout(this.tickTimeout)
       this.tickTimeout = undefined
-      this.onended()
+      this.dispatchEvent(new Event('ended'))
     }
   }
 

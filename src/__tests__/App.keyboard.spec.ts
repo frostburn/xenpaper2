@@ -31,7 +31,7 @@ vi.stubGlobal(
     currentTime = 0
     createConstantSource() {
       return {
-        onended: null,
+        addEventListener: () => undefined,
         start: () => undefined,
         stop: () => undefined,
       }
@@ -77,6 +77,11 @@ vi.mock('../sw-seq/transport', () => ({
       this.state = 'stopped'
     }
     clear() {}
+    addEventListener() {}
+    removeEventListener() {}
+    dispatchEvent() {
+      return true
+    }
     scheduleParametric() {
       return 1
     }
