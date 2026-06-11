@@ -196,8 +196,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   const embedBaseUrl = computed(() => new URL('embed/', APP_BASE_URL).toString())
   let nextScoreEngineId = 2
   let shouldApplyInitialSidebarMode = true
-  const cancelOnEndByEngine = new Map<number, () => void>()
-  const cancelOnNoteByEngine = new Map<ScoreEngine, () => void>()
+  const scoreEnginesWithNoteListeners = new WeakSet<ScoreEngine>()
   let activeNoteHandler: ((note: MoscNote, on: boolean) => void) | undefined
 
   const liveScoreEngines = computed(() => scoreEngines.value.filter((engine) => engine.alive.value))
@@ -330,16 +329,8 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     scoreEngines.value = [...live, ...dead]
   }
 
-  const cleanupScoreEngineListeners = (engine: ScoreEngine): void => {
-    cancelOnEndByEngine.get(engine.id)?.()
-    cancelOnEndByEngine.delete(engine.id)
-    cancelOnNoteByEngine.get(engine)?.()
-    cancelOnNoteByEngine.delete(engine)
-  }
-
   const killScoreEngine = (engine: ScoreEngine): void => {
     engine.kill()
-    cleanupScoreEngineListeners(engine)
   }
 
   const trimDeadScoreEngines = (): void => {
@@ -598,24 +589,13 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   }
 
   const syncSoundEngineNoteListeners = (): void => {
-    const aliveEngines = new Set(liveScoreEngines.value)
-
-    cancelOnNoteByEngine.forEach((cancel, engine) => {
-      if (aliveEngines.has(engine)) return
-
-      cancel()
-      cancelOnNoteByEngine.delete(engine)
-    })
-
     liveScoreEngines.value.forEach((engine) => {
-      if (cancelOnNoteByEngine.has(engine)) return
+      if (scoreEnginesWithNoteListeners.has(engine)) return
 
-      cancelOnNoteByEngine.set(
-        engine,
-        engine.soundEngine.onNote((note: MoscNote, on: boolean) => {
-          activeNoteHandler?.(note, on)
-        }),
-      )
+      engine.soundEngine.onNote((note: MoscNote, on: boolean) => {
+        activeNoteHandler?.(note, on)
+      })
+      scoreEnginesWithNoteListeners.add(engine)
     })
   }
 
