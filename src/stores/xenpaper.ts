@@ -71,26 +71,26 @@ function useScoreEngine(id: number, transport: Transport, bank: Bank) {
   const getSelectedLineStartTime = (): number =>
     getTimeAtLine(sourceCode.value, chars.value, selectedLine.value)
 
-  const updateParsedSourceCode = (): boolean => {
+  const updateParsedSourceCode = (): void => {
     const version = ++parseVersion
     const source = parsedSource.value
+    scoreLoaded.value = false
 
     if (!source.playable) {
-      scoreLoaded.value = false
-      return false
+      return
     }
 
     try {
       engineError.value = ''
       soundEngine.setScore(source.score)
     } catch (e) {
+      soundEngine.clearScheduledEvents()
       engineError.value = e instanceof Error ? e.message : 'Unable to set score for sound engine.'
+      return
     }
-    if (version !== parseVersion) return false
+    if (version !== parseVersion) return
 
     scoreLoaded.value = true
-
-    return true
   }
 
   const applySourceCode = (source: string, recordHistory = true): void => {
@@ -391,10 +391,10 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     syncScoreEngineGains()
   }
 
-  const updateParsedSourceCode = async (): Promise<void> => {
+  const updateParsedSourceCode = (): void => {
     scoreEngines.value.forEach((engine) => engine.soundEngine.cutActiveNotes())
     const engine = activeScoreEngine.value
-    const sourcePlayable = await engine.updateParsedSourceCode()
+    engine.updateParsedSourceCode()
     const source = engine.parsedSource.value
 
     if (shouldApplyInitialSidebarMode) {
@@ -411,7 +411,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
 
     applySharedTransportLoop()
 
-    if (!sourcePlayable) {
+    if (!engine.scoreLoaded) {
       return
     }
 
