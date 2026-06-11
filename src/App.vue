@@ -136,7 +136,6 @@ const stopWatchers = (): void => {
 }
 
 onMounted(() => {
-  xenpaper.initializeLocation(window.location.href)
   xenpaper.initializeSourceCode(initialRouteHash())
   startWatchers()
   void replaceShareRoute()

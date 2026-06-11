@@ -6,6 +6,10 @@ import type { DemoTune, ParsedSource } from './types'
 
 const DEFAULT_DOCUMENT_TITLE = 'Xenpaper 2'
 const TITLE_SOURCE_LIMIT = 20
+export const APP_BASE_URL = new URL(
+  import.meta.env.BASE_URL,
+  window?.location?.href ?? 'http://localhost/',
+)
 
 type ParseErrorLocation = {
   start?: {
