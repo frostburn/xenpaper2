@@ -46,7 +46,7 @@ export class SoundEngineSwSeq extends SoundEngine {
     return this.transport.context
   }
 
-  private clearScheduledEvents(): void {
+  clearScheduledEvents(): void {
     this.transportEventIds.forEach((_, id) => this.transport.clear(id))
     this.transportEventIds.clear()
     for (const callback of this.noteOffs) {

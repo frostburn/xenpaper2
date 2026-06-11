@@ -285,27 +285,27 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     return engines
   }
 
-  const pauseAllSoundEngines = () => {
+  const pauseAllSoundEngines = (): void => {
     swSeqTransport.stop()
   }
 
-  const clearScoreEngine = async (engine: ScoreEngine): Promise<void> => {
+  const clearScoreEngine = (engine: ScoreEngine): void => {
     engine.soundEngine.cutActiveNotes()
     engine.soundEngine.setScore(EMPTY_SCORE)
     engine.scoreLoaded.value = false
   }
 
-  const clearScoreEngines = async (engines: ScoreEngine[]): Promise<void> => {
-    await Promise.all(engines.map((engine) => clearScoreEngine(engine)))
+  const clearScoreEngines = (engines: ScoreEngine[]): void => {
+    engines.forEach(clearScoreEngine)
   }
 
   const disposeScoreEngines = (engines: ScoreEngine[]): void => {
     engines.forEach((engine) => engine.soundEngine.dispose())
   }
 
-  const clearAndDisposeScoreEngines = async (engines: ScoreEngine[]): Promise<void> => {
+  const clearAndDisposeScoreEngines = (engines: ScoreEngine[]): void => {
     try {
-      await clearScoreEngines(engines)
+      clearScoreEngines(engines)
     } finally {
       disposeScoreEngines(engines)
     }
@@ -327,7 +327,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   const trimDeadScoreEngines = (): void => {
     const enginesToRemove = deadScoreEngines.value.slice(MAX_DEAD_SOURCE_TABS)
     deadScoreEngines.value = deadScoreEngines.value.slice(0, MAX_DEAD_SOURCE_TABS)
-    void clearAndDisposeScoreEngines(enginesToRemove)
+    clearAndDisposeScoreEngines(enginesToRemove)
   }
 
   const rememberDeadScoreEngines = (engines: ScoreEngine[]): void => {
@@ -357,11 +357,11 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   const clearDeadScoreEngines = (): void => {
     const enginesToRemove = deadScoreEngines.value
     deadScoreEngines.value = []
-    void clearAndDisposeScoreEngines(enginesToRemove)
+    clearAndDisposeScoreEngines(enginesToRemove)
   }
 
   const replaceScoreEnginesWithSources = (sources: string[]): void => {
-    void clearAndDisposeScoreEngines(scoreEngines.value)
+    clearAndDisposeScoreEngines(scoreEngines.value)
     const nextSources = sources.length ? sources : ['']
     scoreEngines.value = nextSources.map((source, index) =>
       createScoreEngineFromSource(source, index + 1),
@@ -382,7 +382,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
 
     if (isPlaying.value) {
       resetPlaybackState()
-      void pauseAllSoundEngines()
+      pauseAllSoundEngines()
     }
 
     deadScoreEngines.value = deadScoreEngines.value.filter((engine) => engine.id !== id)
@@ -450,10 +450,10 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     activeScoreEngine.value.applySourceCode(source)
   }
 
-  const importSourceCodes = async (sources: string[]): Promise<void> => {
+  const importSourceCodes = (sources: string[]): void => {
     if (isPlaying.value) {
       resetPlaybackState()
-      await pauseAllSoundEngines()
+      pauseAllSoundEngines()
     }
 
     clearDeadScoreEngines()
@@ -461,10 +461,10 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     applySharedTransportLoop()
   }
 
-  const addSourceCodeTab = async (): Promise<void> => {
+  const addSourceCodeTab = (): void => {
     if (isPlaying.value) {
       resetPlaybackState()
-      await pauseAllSoundEngines()
+      pauseAllSoundEngines()
     }
 
     scoreEngines.value = [
@@ -514,7 +514,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     restoreDeadSourceCodeTab(id)
   }
 
-  const closeSourceCodeTab = async (id: number): Promise<void> => {
+  const closeSourceCodeTab = (id: number): void => {
     const index = scoreEngines.value.findIndex((engine) => engine.id === id)
     if (scoreEngines.value.length <= 1 || index < 0) return
 
@@ -532,25 +532,25 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
 
     if (isPlaying.value) {
       resetPlaybackState()
-      await pauseAllSoundEngines()
+      pauseAllSoundEngines()
     }
-    await clearScoreEngine(removed)
+    clearScoreEngine(removed)
     rememberDeadScoreEngines([removed])
     applySharedTransportLoop()
   }
 
   const setDemoTune = async (source: DemoTune): Promise<void> => {
-    await pauseAllSoundEngines()
+    pauseAllSoundEngines()
     const previousScoreEngines = scoreEngines.value
     resetPlaybackState()
-    await clearScoreEngines(previousScoreEngines)
+    clearScoreEngines(previousScoreEngines)
 
     const demoSources = Array.isArray(source) ? (source.length ? source : ['']) : [source]
     const engines = demoSources.map((demoSource) =>
       createScoreEngineFromSource(demoSource, nextScoreEngineId++),
     )
 
-    await Promise.all(engines.map((engine) => engine.updateParsedSourceCode()))
+    engines.forEach((engine) => engine.updateParsedSourceCode())
     scoreEngines.value = engines
     activeScoreEngineIndex.value = 0
     rememberDeadScoreEngines(previousScoreEngines)
@@ -577,14 +577,12 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     isPlaying.value = true
   }
 
-  const restartPlaybackFromLine = async (line: number): Promise<void> => {
+  const restartPlaybackFromLine = (line: number): Promise<void> => {
     activeScoreEngine.value.selectedLine.value = line
-    await restartPlaybackFromSelectedLine()
+    return restartPlaybackFromSelectedLine()
   }
 
-  const restartPlaybackFromStart = async (): Promise<void> => {
-    await restartPlaybackFromLine(0)
-  }
+  const restartPlaybackFromStart = (): Promise<void> => restartPlaybackFromLine(0)
 
   const togglePlayback = async (): Promise<void> => {
     if (isPlaying.value) {
