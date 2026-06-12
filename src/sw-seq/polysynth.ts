@@ -1,10 +1,6 @@
 import type { Bank } from './bank'
-import type {
-  EnvelopedAperiodicOscillator,
-  EnvelopedNoiseGenerator,
-  EnvelopedOscillator,
-  EnvelopedUnison,
-} from './nodes'
+import type { EnvelopedAperiodicOscillator, EnvelopedOscillator, EnvelopedUnison } from './nodes'
+import type { NoiseGeneratorNode } from './noise-worklet'
 import type { SynthType as TimbreSynthType } from './timbre'
 
 const TIME_CONSTANT = 0.2
@@ -96,7 +92,7 @@ export class PolySynth {
       | EnvelopedOscillator
       | EnvelopedUnison
       | EnvelopedAperiodicOscillator
-      | EnvelopedNoiseGenerator,
+      | NoiseGeneratorNode,
   >(params: SynthParams, allocate: () => T | null, release: (oscillator: T) => void) {
     let oscillator: T | null = null
     let startTime = NaN

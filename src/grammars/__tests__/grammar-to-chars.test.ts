@@ -40,6 +40,12 @@ describe('grammarToChars', () => {
     expect(colors(chars)).toEqual(['pitch', undefined, 'pitch', 'pitch'])
   })
 
+  it('highlights noise setters like osc setters', () => {
+    expect(colors(grammarToChars(parse('(noise:white)')))).toEqual(
+      colors(grammarToChars(parse('(osc:sine---)'))),
+    )
+  })
+
   it('lets nested scale, pitch, and setter nodes override group colors', () => {
     const chars = grammarToChars(parse('{12edo}(bpm: 120;4)[0,4]-'))
 

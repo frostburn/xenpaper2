@@ -1,10 +1,5 @@
-import {
-  EnvelopedAperiodicOscillator,
-  EnvelopedNoiseGenerator,
-  EnvelopedOscillator,
-  EnvelopedUnison,
-} from './nodes'
-import { registerNoiseGeneratorWorklet } from './noise-worklet'
+import { EnvelopedAperiodicOscillator, EnvelopedOscillator, EnvelopedUnison } from './nodes'
+import { createNoiseGeneratorNode, type NoiseGeneratorNode } from './noise-worklet'
 
 /**
  * Bank of re-usable enveloped oscillator nodes.
@@ -19,7 +14,7 @@ export class Bank {
   private oscillators: { node: EnvelopedOscillator; age: number }[]
   private unisons: { node: EnvelopedUnison; age: number }[]
   private aperiodics: { node: EnvelopedAperiodicOscillator; age: number }[]
-  private noiseGenerators: { node: EnvelopedNoiseGenerator; age: number }[]
+  private noiseGenerators: { node: NoiseGeneratorNode; age: number }[]
 
   constructor(context: AudioContext, maxPolyphony = 32) {
     this.context = context
@@ -148,13 +143,9 @@ export class Bank {
     })
   }
 
-  registerNoiseGeneratorWorklet() {
-    return registerNoiseGeneratorWorklet(this.context)
-  }
-
   allocateNoiseGenerator() {
     if (this.noiseGenerators.length < this.maxPolyphony) {
-      const osc = { node: new EnvelopedNoiseGenerator(this.context), age: -1 }
+      const osc = { node: createNoiseGeneratorNode(this.context), age: -1 }
       osc.node.start(this.context.currentTime)
       this.noiseGenerators.push(osc)
       return osc.node
@@ -177,7 +168,7 @@ export class Bank {
     return osc.node
   }
 
-  freeNoiseGenerator(node: EnvelopedNoiseGenerator) {
+  freeNoiseGenerator(node: NoiseGeneratorNode) {
     const osc = this.noiseGenerators.find((o) => o.node === node)
     if (osc === undefined) {
       throw new Error('Attempting to free unallocated noise generator.')
