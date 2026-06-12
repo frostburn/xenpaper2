@@ -106,8 +106,8 @@ const newInV2Sections: SidebarSection[] = [
         description:
           'Use ! for a note whose noise clock runs at the audio context sample rate. With short envelopes it works well for hi-hats; 0 can drive lower pitched noise as kicks, and octave-shifted "0 notes can cut through as snares.',
         tune: `(bpm:200)(noise:violet)(env:0600)
-[0 !] ! ["0 !] !     [0 !] !     ["0 !  ] ! |
-[0 !] ! ["0 !] [0 !] !     [0 !] [0 "0 !] . ||`,
+[0!] ! ["0!] !    [0!] !    ["0! ] ! |
+[0!] ! ["0!] [0!] !    [0!] [0"0!] . ||`,
       },
     ],
   },
