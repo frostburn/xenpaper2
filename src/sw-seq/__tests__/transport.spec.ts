@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { Transport } from './transport'
+import { Transport } from '../transport'
 
 class MockAudioContext {
   currentTime = 0

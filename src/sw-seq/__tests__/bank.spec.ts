@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { Bank } from './bank'
+import { Bank } from '../bank'
 
 const createAudioParam = () => ({
   cancelScheduledValues: vi.fn<(time: number) => void>(),
