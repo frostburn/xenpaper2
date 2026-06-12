@@ -146,7 +146,6 @@ export class Bank {
   allocateNoiseGenerator() {
     if (this.noiseGenerators.length < this.maxPolyphony) {
       const osc = { node: createNoiseGeneratorNode(this.context), age: -1 }
-      osc.node.start(this.context.currentTime)
       this.noiseGenerators.push(osc)
       return osc.node
     }
@@ -160,8 +159,6 @@ export class Bank {
       return null
     }
     osc.age = -1
-    osc.node.detune.cancelScheduledValues(this.context.currentTime)
-    osc.node.frequency.cancelScheduledValues(this.context.currentTime)
     osc.node.gain.cancelScheduledValues(this.context.currentTime)
     osc.node.gain.setValueAtTime(0, this.context.currentTime)
     osc.node.disconnect()
@@ -211,8 +208,6 @@ export class Bank {
     })
 
     this.noiseGenerators.forEach((o) => {
-      o.node.detune.cancelScheduledValues(this.context.currentTime)
-      o.node.frequency.cancelScheduledValues(this.context.currentTime)
       o.node.gain.cancelScheduledValues(this.context.currentTime)
       o.node.gain.setValueAtTime(0, this.context.currentTime)
       o.node.disconnect()
