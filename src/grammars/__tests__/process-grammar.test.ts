@@ -6,7 +6,6 @@ declare module 'vitest' {
   }
 }
 
-import { SAMPLE_RATE_NOTE_HZ } from '../../mosc'
 import { parseAndProcessSourceCode } from '../../utils'
 import { processGrammar } from '../process-grammar'
 
@@ -65,10 +64,9 @@ describe('grammar to mosc score', () => {
     if (!source.playable) throw new Error('Expected sample-rate note source to be playable.')
 
     expect(source.score.sequence).toContainEqual({
-      type: 'NOTE_TIME',
+      type: 'SAMPLE_RATE_NOTE_TIME',
       time: 0,
       timeEnd: 0.5,
-      hz: SAMPLE_RATE_NOTE_HZ,
       label: 'sample rate',
     })
   })
@@ -80,10 +78,9 @@ describe('grammar to mosc score', () => {
     if (!source.playable) throw new Error('Expected sample-rate chord source to be playable.')
 
     expect(source.score.sequence).toContainEqual({
-      type: 'NOTE_TIME',
+      type: 'SAMPLE_RATE_NOTE_TIME',
       time: 0,
       timeEnd: 0.25,
-      hz: SAMPLE_RATE_NOTE_HZ,
       label: 'sample rate',
     })
     expect(source.score.sequence).toContainEqual({
@@ -752,11 +749,11 @@ describe('grammar to mosc score', () => {
 
   //
   // # ratio chords
-  // 4:5-[4:5]-
+  // 4:5-
   //
 
   const RATIOCHORDS_TEST = JSON.parse(
-    `{"type":"XenpaperGrammar","sequence":{"type":"Sequence","items":[{"type":"Comment","comment":" ratio chords","pos":0},{"type":"RatioChord","pitches":[{"type":"RatioChordPitch","pitch":4,"pos":15},{"type":"Colon","delimiter":true,"pos":16},{"type":"RatioChordPitch","pitch":5,"pos":17}],"tail":{"type":"Hold","length":1,"pos":18},"pos":15},{"type":"Chord","pitches":[{"type":"RatioChordPitch","pitch":4,"pos":20},{"type":"Colon","delimiter":true,"pos":21},{"type":"RatioChordPitch","pitch":5,"pos":22}],"tail":{"type":"Hold","length":1,"pos":24},"pos":19}],"pos":0},"pos":0}`,
+    `{"type":"XenpaperGrammar","sequence":{"type":"Sequence","items":[{"type":"Comment","comment":" ratio chords","pos":0},{"type":"RatioChord","pitches":[{"type":"RatioChordPitch","pitch":4,"pos":15},{"type":"Colon","delimiter":true,"pos":16},{"type":"RatioChordPitch","pitch":5,"pos":17}],"tail":{"type":"Hold","length":1,"pos":18},"pos":15}],"pos":0},"pos":0}`,
   )
 
   it('should translate ratio chords', () => {
@@ -778,25 +775,11 @@ describe('grammar to mosc score', () => {
           label: '5/4  386.3c',
         },
         {
-          type: 'NOTE_BEAT_TIME',
-          time: 1,
-          timeEnd: 2,
-          hz: 220,
-          label: '4/4  0.0c',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 1,
-          timeEnd: 2,
-          hz: 275,
-          label: '5/4  386.3c',
-        },
-        {
           type: 'END_BEAT_TIME',
-          time: 2,
+          time: 1,
         },
       ],
-      lengthTime: 2,
+      lengthTime: 1,
     })
   })
 })

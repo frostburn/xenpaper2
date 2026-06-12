@@ -20,13 +20,14 @@ import type {
   MoscBeatScore,
   MoscBeatItem,
   MoscBeatNote,
+  MoscBeatSampleRateNote,
   MoscTempo,
   MoscBeatParam,
   MoscBeatEnd,
   MoscNote,
 } from '../mosc'
 
-import { beatToTime, SAMPLE_RATE_NOTE_HZ } from '../mosc'
+import { beatToTime } from '../mosc'
 
 //
 // utils
@@ -235,6 +236,8 @@ const isSampleRateNoteType = (pitch: ChordPitchType): pitch is SampleRateNoteTyp
   return pitch.type === 'SampleRateNote'
 }
 
+type MoscBeatPlayableNote = MoscBeatNote | MoscBeatSampleRateNote
+
 const noteToMosc = (note: NoteType, context: Context): MoscBeatNote[] => {
   const timeProps = tailToTime(note.tail, context)
 
@@ -256,7 +259,10 @@ const noteToMosc = (note: NoteType, context: Context): MoscBeatNote[] => {
   ]
 }
 
-const sampleRateNoteToMosc = (note: SampleRateNoteType, context: Context): MoscBeatNote[] => {
+const sampleRateNoteToMosc = (
+  note: SampleRateNoteType,
+  context: Context,
+): MoscBeatSampleRateNote[] => {
   const timeProps = tailToTime(note.tail, context)
 
   // mutate ast node to add time
@@ -266,15 +272,17 @@ const sampleRateNoteToMosc = (note: SampleRateNoteType, context: Context): MoscB
 
   return [
     {
-      type: 'NOTE_BEAT_TIME',
-      hz: SAMPLE_RATE_NOTE_HZ,
+      type: 'SAMPLE_RATE_NOTE_BEAT_TIME',
       label: 'sample rate',
       ...timeProps,
     },
   ]
 }
 
-const chordToMosc = (chord: ChordType | RatioChordType, context: Context): MoscBeatNote[] => {
+const chordToMosc = (
+  chord: ChordType | RatioChordType,
+  context: Context,
+): MoscBeatPlayableNote[] => {
   const { tail, pitches } = chord
   const chordPitches: ChordPitchType[] = pitches
   const timeProps = tailToTime(tail, context)
@@ -284,7 +292,7 @@ const chordToMosc = (chord: ChordType | RatioChordType, context: Context): MoscB
   times.push(arr)
   chord.time = arr
 
-  const pitchTypes: MoscBeatNote[] = chordPitches
+  const pitchTypes: MoscBeatPlayableNote[] = chordPitches
     .filter(
       (pitch): pitch is PitchType | SampleRateNoteType =>
         isPitchType(pitch) || isSampleRateNoteType(pitch),
@@ -292,8 +300,7 @@ const chordToMosc = (chord: ChordType | RatioChordType, context: Context): MoscB
     .map((pitch) => {
       if (isSampleRateNoteType(pitch)) {
         return {
-          type: 'NOTE_BEAT_TIME',
-          hz: SAMPLE_RATE_NOTE_HZ,
+          type: 'SAMPLE_RATE_NOTE_BEAT_TIME',
           label: 'sample rate',
           ...timeProps,
         }

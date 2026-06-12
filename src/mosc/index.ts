@@ -1,12 +1,3 @@
-export const SAMPLE_RATE_NOTE_HZ: unique symbol = Symbol('xenpaper.sampleRateNoteHz')
-
-export type MoscHz = number | typeof SAMPLE_RATE_NOTE_HZ
-
-export const isResolvedHz = (hz: MoscHz): hz is number => typeof hz === 'number'
-
-export const resolveNoteHz = (hz: MoscHz, sampleRate: number): number =>
-  hz === SAMPLE_RATE_NOTE_HZ ? sampleRate : hz
-
 //
 // types
 //
@@ -15,7 +6,14 @@ export type MoscBeatNote = {
   type: 'NOTE_BEAT_TIME'
   time: number
   timeEnd: number
-  hz: MoscHz
+  hz: number
+  label: string
+}
+
+export type MoscBeatSampleRateNote = {
+  type: 'SAMPLE_RATE_NOTE_BEAT_TIME'
+  time: number
+  timeEnd: number
   label: string
 }
 
@@ -23,14 +21,16 @@ export type MoscNote = {
   type: 'NOTE_TIME'
   time: number
   timeEnd: number
-  hz: MoscHz
+  hz: number
   label: string
 }
 
-export type ResolvedMoscNote = MoscNote & { hz: number }
-
-export const isResolvedMoscNote = (note: MoscNote): note is ResolvedMoscNote =>
-  isResolvedHz(note.hz)
+export type MoscSampleRateNote = {
+  type: 'SAMPLE_RATE_NOTE_TIME'
+  time: number
+  timeEnd: number
+  label: string
+}
 
 export type MoscBeatParam = {
   type: 'PARAM_BEAT_TIME'
@@ -61,14 +61,19 @@ export type MoscEnd = {
   time: number
 }
 
-export type MoscBeatItem = MoscBeatNote | MoscTempo | MoscBeatParam | MoscBeatEnd
+export type MoscBeatItem =
+  | MoscBeatNote
+  | MoscBeatSampleRateNote
+  | MoscTempo
+  | MoscBeatParam
+  | MoscBeatEnd
 
 export type MoscBeatScore = {
   sequence: MoscBeatItem[]
   lengthTime: number
 }
 
-export type MoscItem = MoscNote | MoscParam | MoscEnd
+export type MoscItem = MoscNote | MoscSampleRateNote | MoscParam | MoscEnd
 
 export type MoscScore = {
   sequence: MoscItem[]
@@ -166,6 +171,14 @@ export const scoreToTime = (score: MoscBeatScore): MoscScore => {
         return {
           type: 'NOTE_TIME',
           hz: item.hz,
+          label: item.label,
+          time: thisBeatToTime(item.time),
+          timeEnd: thisBeatToTime(item.timeEnd),
+        }
+      }
+      if (item.type === 'SAMPLE_RATE_NOTE_BEAT_TIME') {
+        return {
+          type: 'SAMPLE_RATE_NOTE_TIME',
           label: item.label,
           time: thisBeatToTime(item.time),
           timeEnd: thisBeatToTime(item.timeEnd),

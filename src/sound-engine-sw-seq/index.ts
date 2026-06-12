@@ -1,5 +1,5 @@
-import type { MoscNote, MoscScore, ResolvedMoscNote } from '../mosc'
-import { resolveNoteHz, SoundEngine } from '../mosc'
+import type { MoscNote, MoscScore } from '../mosc'
+import { SoundEngine } from '../mosc'
 import type { Bank } from '../sw-seq/bank'
 import { isNoiseGeneratorType, type NoiseGeneratorType } from '../sw-seq/noise-worklet'
 import {
@@ -116,20 +116,23 @@ export class SoundEngineSwSeq extends SoundEngine {
     }
 
     score.sequence.forEach((item) => {
-      if (item.type === 'NOTE_TIME') {
-        patch.frequency = resolveNoteHz(item.hz, this.context.sampleRate)
-        const resolvedNote: ResolvedMoscNote = { ...item, hz: patch.frequency }
+      if (item.type === 'NOTE_TIME' || item.type === 'SAMPLE_RATE_NOTE_TIME') {
+        const note: MoscNote =
+          item.type === 'SAMPLE_RATE_NOTE_TIME'
+            ? { ...item, type: 'NOTE_TIME', hz: this.context.sampleRate }
+            : item
+        patch.frequency = note.hz
         const noteHandle = this.synth.trigger(patch)
         const noteEventId = this.transport.scheduleParametricNote({
           noteOn: (time) => {
             noteHandle.noteOn(time)
-            this.activeNoteEvents.add(resolvedNote)
-            this._triggerEvent('note', resolvedNote, true)
+            this.activeNoteEvents.add(note)
+            this._triggerEvent('note', note, true)
           },
           noteOff: (time) => {
             noteHandle.noteOff(time)
-            this.activeNoteEvents.delete(resolvedNote)
-            this._triggerEvent('note', resolvedNote, false)
+            this.activeNoteEvents.delete(note)
+            this._triggerEvent('note', note, false)
           },
           when: item.time,
           duration: item.timeEnd - item.time,

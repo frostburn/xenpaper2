@@ -77,7 +77,7 @@ RatioChord = pitches:RatioChordPitches tail:Hold? {
   return node('RatioChord', { pitches, tail: noteTail });
 }
 RatioChordItem = &(Int _ ":") rc:RatioChord { return rc; }
-Chord = "[" _ pitches:((&(Int _ ":") rp:RatioChordPitches { return rp; }) / ChordPitchGroup) _ "]" tail:Hold? {
+Chord = "[" _ pitches:ChordPitchGroup _ "]" tail:Hold? {
   const noteTail = tail ?? undefined;
   return node('Chord', { pitches, tail: noteTail });
 }
