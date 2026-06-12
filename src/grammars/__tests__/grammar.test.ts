@@ -1119,8 +1119,22 @@ describe('grammar', () => {
         ])
       })
 
-      it('should reject a ratio chord in square brackets', () => {
-        expect(() => parser('[4:5:6:7]--')).toThrow('but ":" found.')
+      it('should parse sequence with a ratio chord in square brackets', () => {
+        expect(strip(parser('[4:5:6:7]--')).sequence.items).toEqual([
+          {
+            type: 'Chord',
+            pitches: [
+              { type: 'RatioChordPitch', pitch: 4 },
+              { type: 'Colon' },
+              { type: 'RatioChordPitch', pitch: 5 },
+              { type: 'Colon' },
+              { type: 'RatioChordPitch', pitch: 6 },
+              { type: 'Colon' },
+              { type: 'RatioChordPitch', pitch: 7 },
+            ],
+            tail: { type: 'Hold', length: 2 },
+          },
+        ])
       })
 
       it('should parse sequence with a ratio chord with interpolation', () => {
