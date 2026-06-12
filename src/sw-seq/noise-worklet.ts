@@ -2,6 +2,12 @@ const NOISE_GENERATOR_PROCESSOR_NAME = 'sw-seq-noise-generator'
 
 const NOISE_GENERATOR_WORKLET_JS = `
 class SWSeqNoiseGenerator extends AudioWorkletProcessor {
+  constructor() {
+    super()
+    this.phase = 1
+    this.currentSample = 0
+  }
+
   static get parameterDescriptors() {
     return [
       { name: 'frequency', defaultValue: 440, automationRate: 'a-rate' },
@@ -12,14 +18,29 @@ class SWSeqNoiseGenerator extends AudioWorkletProcessor {
 
   process(inputs, outputs, parameters) {
     const output = outputs[0]
+    const frequencies = parameters.frequency
+    const detunes = parameters.detune
     const gains = parameters.gain
-    for (let channelIndex = 0; channelIndex < output.length; channelIndex++) {
-      const channel = output[channelIndex]
-      for (let sampleIndex = 0; sampleIndex < channel.length; sampleIndex++) {
-        const gain = gains.length === 1 ? gains[0] : gains[sampleIndex]
-        channel[sampleIndex] = (Math.random() * 2 - 1) * gain
+    const frameCount = output[0]?.length ?? 0
+
+    for (let sampleIndex = 0; sampleIndex < frameCount; sampleIndex++) {
+      const frequency = frequencies.length === 1 ? frequencies[0] : frequencies[sampleIndex]
+      const detune = detunes.length === 1 ? detunes[0] : detunes[sampleIndex]
+      const effectiveFrequency = Math.max(0, frequency * Math.pow(2, detune / 1200))
+
+      this.phase += effectiveFrequency / sampleRate
+      if (this.phase >= 1) {
+        this.currentSample = Math.random() * 2 - 1
+        this.phase -= Math.floor(this.phase)
+      }
+
+      const gain = gains.length === 1 ? gains[0] : gains[sampleIndex]
+      const value = this.currentSample * gain
+      for (let channelIndex = 0; channelIndex < output.length; channelIndex++) {
+        output[channelIndex][sampleIndex] = value
       }
     }
+
     return true
   }
 }
