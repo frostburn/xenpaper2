@@ -90,7 +90,7 @@ RepeatEnd = ":|" ending:RepeatEndingNumber? {
 RepeatEndingStart = "|" ending:RepeatEndingNumber {
   return node('RepeatEndingStart',{delimiter:true, alternateEnding: ending});
 }
-RepeatEndingNumber = "¹" { return 1; } / "²" { return 2; }
+RepeatEndingNumber = "¹" { return 1; } / "~1" { return 1; } / "²" { return 2; } / "~2" { return 2; }
 BarLine = "|" { return node('BarLine',{delimiter:true}); }
 Semicolon = _ ";" _ { return node('Semicolon', { delimiter: true }); }
 SetterGroup = "(" _ first:Setter rest:(Semicolon Setter)* _ ")" {

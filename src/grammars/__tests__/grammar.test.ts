@@ -82,14 +82,17 @@ describe('grammar', () => {
       })
 
       it('should parse repeat markers as sequence items', () => {
-        expect(strip(parser('|: 0 |¹ 1 :|² 2 :|').sequence.items)).toMatchObject([
+        expect(strip(parser('|: 0 |¹ 1 :|² 2 |~1 3 :|~2 4').sequence.items)).toMatchObject([
           { type: 'RepeatStart' },
           { type: 'Note' },
           { type: 'RepeatEndingStart', alternateEnding: 1 },
           { type: 'Note' },
           { type: 'RepeatEnd', alternateEnding: 2 },
           { type: 'Note' },
-          { type: 'RepeatEnd' },
+          { type: 'RepeatEndingStart', alternateEnding: 1 },
+          { type: 'Note' },
+          { type: 'RepeatEnd', alternateEnding: 2 },
+          { type: 'Note' },
         ])
       })
 

@@ -85,6 +85,15 @@ describe('grammar to mosc score', () => {
     ])
   })
 
+  it('expands ASCII alternate endings before translating to score items', () => {
+    expect(noteLabels('|: 0 |~1 1 :|~2 2')).toEqual([
+      '0\\12  0.0c',
+      '1\\12  100.0c',
+      '0\\12  0.0c',
+      '2\\12  200.0c',
+    ])
+  })
+
   it('should translate sample-rate notes', () => {
     const source = parseAndProcessSourceCode('!-')
 

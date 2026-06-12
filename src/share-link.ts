@@ -31,6 +31,7 @@ export const encodeSharedSource = (sourceCode: string): string =>
   sourceCode
     .replace(/%/g, '%25')
     .replace(/:/g, '%3A')
+    .replace(/~/g, ESCAPED_SOURCE_SEPARATOR)
     .replace(/_/g, ENCODED_UNDERSCORE_TOKEN)
     .replace(/ /g, ENCODED_SPACE_TOKEN)
 
@@ -57,15 +58,12 @@ export const decodeSharedSource = (encodedSource: string): string => {
     .join('_')
 }
 
-const encodeSharedSourceForMultiSourceHash = (sourceCode: string): string =>
-  encodeSharedSource(sourceCode).replace(/~/g, ESCAPED_SOURCE_SEPARATOR)
-
 export const encodeSharedSources = (sourceCodes: string[]): string => {
   const normalizedSourceCodes = normalizeSourceCodes(sourceCodes)
 
   return normalizedSourceCodes.length === 1
     ? encodeSharedSource(normalizedSourceCodes[0] ?? '')
-    : normalizedSourceCodes.map(encodeSharedSourceForMultiSourceHash).join(SOURCE_SEPARATOR)
+    : normalizedSourceCodes.map(encodeSharedSource).join(SOURCE_SEPARATOR)
 }
 
 export const decodeSharedSources = (encodedSources: string): string[] => {

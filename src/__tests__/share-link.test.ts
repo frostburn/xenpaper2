@@ -51,6 +51,17 @@ describe('share-link', () => {
     expect(getSharedSourceCodes(hash)).toEqual(sources)
   })
 
+  it('escapes ASCII alternate ending tildes in share links', () => {
+    const source = '|: 0 |~1 1 :|~2 2'
+    const hash = getShareHash(source)
+
+    expect(hash).toBe('#|%3A_0_|%7E1_1_%3A|%7E2_2')
+    expect(getSharedSourceCodes(hash)).toEqual([source])
+    expect(new URL(encodeShareHashForUrl(hash), 'https://example.test/').hash).toBe(
+      '#|%3A_0_|%7E1_1_%3A|%7E2_2',
+    )
+  })
+
   it('encodes control characters before hash fragments are used in absolute URLs', () => {
     const hash = getShareHash('0_2\n4_5\t6_7')
 
