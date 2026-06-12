@@ -1,3 +1,8 @@
+export const SAMPLE_RATE_NOTE_HZ = -1
+
+export const resolveNoteHz = (hz: number, sampleRate: number): number =>
+  hz === SAMPLE_RATE_NOTE_HZ ? sampleRate : hz
+
 //
 // types
 //

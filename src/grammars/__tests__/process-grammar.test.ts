@@ -6,6 +6,7 @@ declare module 'vitest' {
   }
 }
 
+import { SAMPLE_RATE_NOTE_HZ } from '../../mosc'
 import { parseAndProcessSourceCode } from '../../utils'
 import { processGrammar } from '../process-grammar'
 
@@ -57,6 +58,21 @@ const INITIAL_ENV = {
 const INITIAL = [INITIAL_TEMPO, INITIAL_OSC, INITIAL_ENV]
 
 describe('grammar to mosc score', () => {
+  it('should translate sample-rate notes', () => {
+    const source = parseAndProcessSourceCode('!-')
+
+    expect(source.playable).toBe(true)
+    if (!source.playable) throw new Error('Expected sample-rate note source to be playable.')
+
+    expect(source.score.sequence).toContainEqual({
+      type: 'NOTE_TIME',
+      time: 0,
+      timeEnd: 0.5,
+      hz: SAMPLE_RATE_NOTE_HZ,
+      label: 'sample rate',
+    })
+  })
+
   it('should translate noise setter', () => {
     const source = parseAndProcessSourceCode('(noise:white) 0')
 

@@ -81,6 +81,18 @@ describe('grammar', () => {
         expect(ast.sequence.items[0].tail).toBeUndefined()
       })
 
+      it('should parse sample-rate note grammar', () => {
+        expect(strip(parser('!-').sequence.items)).toEqual([
+          {
+            type: 'SampleRateNote',
+            tail: {
+              type: 'Hold',
+              length: 1,
+            },
+          },
+        ])
+      })
+
       it('should parse hash comments as sequence items', () => {
         expect(
           strip(parser('# a 7th chord\n[0,4,7,10]--..\n\n# a harmonic 7th chord\n4:5:6:7--..'))
@@ -510,7 +522,7 @@ describe('grammar', () => {
       it('should error if hold is attempted after a rest', () => {
         expectParserFormattedErrorMessage(
           '2-.-',
-          `Error: Expected "#", "(", ".", "[", "{", "|", apostrophe, end of input, grave, integer, number, quote, or whitespace but "-" found.
+          `Error: Expected "!", "#", "(", ".", "[", "{", "|", apostrophe, end of input, grave, integer, number, quote, or whitespace but "-" found.
  --> test-input:1:4
   |
 1 | 2-.-

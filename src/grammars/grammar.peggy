@@ -7,10 +7,14 @@ Start = seq:Sequence _ {
 }
 Sequence = items:ItemList { return node('Sequence', { items }); }
 ItemList = head:Item tail:(_ Item)* { return [head, ...tail.map(([,i]) => i)]; } / '' { return []; }
-Item = Comment / SetterGroup / SetRoot / SetScale / RatioChordItem / Note / Rest / Chord / BarLine / Whitespace
+Item = Comment / SetterGroup / SetRoot / SetScale / RatioChordItem / SampleRateNote / Note / Rest / Chord / BarLine / Whitespace
 Note = pitch:Pitch tail:Hold? {
   const noteTail = tail ?? undefined;
   return node('Note', { pitch, tail: noteTail });
+}
+SampleRateNote = "!" tail:Hold? {
+  const noteTail = tail ?? undefined;
+  return node('SampleRateNote', { tail: noteTail });
 }
 Pitch = oct:OctaveModifier? val:(PitchCents / PitchHz / PitchOctaveDivision / PitchRatio / PitchDegree) {
   if (oct) return node('Pitch', { octave: oct, value: val });

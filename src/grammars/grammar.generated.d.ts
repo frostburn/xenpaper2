@@ -73,6 +73,10 @@ export type NoteType = NodeType<'Note'> & {
   tail?: TailType
 }
 
+export type SampleRateNoteType = NodeType<'SampleRateNote'> & {
+  tail?: TailType
+}
+
 //
 // chords
 //
@@ -214,6 +218,7 @@ export type CommentType = NodeType<'Comment'> & {
 export type SequenceItemsType =
   | RatioChordType
   | NoteType
+  | SampleRateNoteType
   | ChordType
   | RestType
   | SetterGroupType

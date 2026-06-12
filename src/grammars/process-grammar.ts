@@ -5,6 +5,7 @@ import type {
   XenpaperAST,
   SetScaleType,
   NoteType,
+  SampleRateNoteType,
   ChordType,
   RatioChordType,
   TailType,
@@ -25,7 +26,7 @@ import type {
   MoscNote,
 } from '../mosc'
 
-import { beatToTime } from '../mosc'
+import { beatToTime, SAMPLE_RATE_NOTE_HZ } from '../mosc'
 
 //
 // utils
@@ -246,6 +247,24 @@ const noteToMosc = (note: NoteType, context: Context): MoscBeatNote[] => {
       type: 'NOTE_BEAT_TIME',
       hz,
       label,
+      ...timeProps,
+    },
+  ]
+}
+
+const sampleRateNoteToMosc = (note: SampleRateNoteType, context: Context): MoscBeatNote[] => {
+  const timeProps = tailToTime(note.tail, context)
+
+  // mutate ast node to add time
+  const arr: [number, number] = [timeProps.time, timeProps.timeEnd]
+  times.push(arr)
+  note.time = arr
+
+  return [
+    {
+      type: 'NOTE_BEAT_TIME',
+      hz: SAMPLE_RATE_NOTE_HZ,
+      label: 'sample rate',
       ...timeProps,
     },
   ]
@@ -676,6 +695,11 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
     if (type === 'Note') {
       moscItems.push(...noteToMosc(item, context))
       initialRulerState = rulerStateCaptureRootHz(initialRulerState, context)
+      return
+    }
+
+    if (type === 'SampleRateNote') {
+      moscItems.push(...sampleRateNoteToMosc(item, context))
       return
     }
 

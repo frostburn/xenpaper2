@@ -94,6 +94,28 @@ const newInV2Sections: SidebarSection[] = [
       },
     ],
   },
+
+  {
+    title: 'Noise and percussion',
+    demos: [
+      {
+        description:
+          'Noise generators use (noise:white), (noise:pink), (noise:brown), (noise:blue), or (noise:violet). White is flat, pink and brown are progressively darker, while blue and violet are progressively brighter.',
+      },
+      {
+        description:
+          'Use ! for a note whose noise clock runs at the audio context sample rate. With short envelopes it works well for hi-hats; 0 can drive lower pitched noise as kicks, and octave-shifted "0 notes can cut through as snares.',
+        tune: [
+          `(bpm:128)(4)(noise:brown)(env:0200)
+0 . . . 0 . . . | 0 . . 0 . . 0 . ||`,
+          `(bpm:128)(4)(noise:white)(env:0100)
+! ! ! ! ! ! ! ! | ! ! ! ! ! ! ! ! ||`,
+          `(bpm:128)(4)(noise:violet)(env:0300)
+. . "0 . . . "0 . | . . "0 . . "0 . "0 ||`,
+        ],
+      },
+    ],
+  },
   {
     title: 'Aperiodic oscillators',
     demos: [
@@ -138,7 +160,7 @@ const newInV2Sections: SidebarSection[] = [
   <aside class="sidebar" aria-labelledby="new-v2-title">
     <header class="header">
       <h1 id="new-v2-title">New in v2</h1>
-      <p>Tabs, shortcuts, notation, and expanded oscillator colors.</p>
+      <p>Tabs, shortcuts, notation, expanded oscillator colors, and noise percussion.</p>
     </header>
 
     <div class="content">
