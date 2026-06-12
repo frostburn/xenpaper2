@@ -43,6 +43,7 @@ const colorMap = new Map<string, HighlightColor>([
   // ['PitchHz', 'pitch'],
   // ['OctaveModifier', 'pitch'],
   ['Pitch', 'pitch'],
+  ['SampleRateNote', 'pitch'],
   ['RatioChordPitch', 'pitch'],
   ['Chord', 'chord'],
   ['Chord.Whitespace', 'pitch'],

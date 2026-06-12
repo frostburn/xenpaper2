@@ -5,6 +5,7 @@ import type {
   XenpaperAST,
   SetScaleType,
   NoteType,
+  SampleRateNoteType,
   ChordType,
   RatioChordType,
   TailType,
@@ -19,6 +20,7 @@ import type {
   MoscBeatScore,
   MoscBeatItem,
   MoscBeatNote,
+  MoscBeatSampleRateNote,
   MoscTempo,
   MoscBeatParam,
   MoscBeatEnd,
@@ -220,7 +222,7 @@ type Context = {
 
 const times: [number, number][] = []
 
-type ChordPitchType = PitchType | RatioChordPitchType | DelimiterType
+type ChordPitchType = PitchType | SampleRateNoteType | RatioChordPitchType | DelimiterType
 
 const isPitchType = (pitch: ChordPitchType): pitch is PitchType => {
   return pitch.type === 'Pitch'
@@ -229,6 +231,12 @@ const isPitchType = (pitch: ChordPitchType): pitch is PitchType => {
 const isRatioChordPitchType = (pitch: ChordPitchType): pitch is RatioChordPitchType => {
   return pitch.type === 'RatioChordPitch'
 }
+
+const isSampleRateNoteType = (pitch: ChordPitchType): pitch is SampleRateNoteType => {
+  return pitch.type === 'SampleRateNote'
+}
+
+type MoscBeatPlayableNote = MoscBeatNote | MoscBeatSampleRateNote
 
 const noteToMosc = (note: NoteType, context: Context): MoscBeatNote[] => {
   const timeProps = tailToTime(note.tail, context)
@@ -251,7 +259,30 @@ const noteToMosc = (note: NoteType, context: Context): MoscBeatNote[] => {
   ]
 }
 
-const chordToMosc = (chord: ChordType | RatioChordType, context: Context): MoscBeatNote[] => {
+const sampleRateNoteToMosc = (
+  note: SampleRateNoteType,
+  context: Context,
+): MoscBeatSampleRateNote[] => {
+  const timeProps = tailToTime(note.tail, context)
+
+  // mutate ast node to add time
+  const arr: [number, number] = [timeProps.time, timeProps.timeEnd]
+  times.push(arr)
+  note.time = arr
+
+  return [
+    {
+      type: 'SAMPLE_RATE_NOTE_BEAT_TIME',
+      label: 'sample rate',
+      ...timeProps,
+    },
+  ]
+}
+
+const chordToMosc = (
+  chord: ChordType | RatioChordType,
+  context: Context,
+): MoscBeatPlayableNote[] => {
   const { tail, pitches } = chord
   const chordPitches: ChordPitchType[] = pitches
   const timeProps = tailToTime(tail, context)
@@ -261,17 +292,30 @@ const chordToMosc = (chord: ChordType | RatioChordType, context: Context): MoscB
   times.push(arr)
   chord.time = arr
 
-  const pitchTypes: MoscBeatNote[] = chordPitches.filter(isPitchType).map((pitch) => {
-    const hz = pitchToHz(pitch, context)
-    const label = pitchToLabel(pitch, context)
+  const pitchTypes: MoscBeatPlayableNote[] = chordPitches
+    .filter(
+      (pitch): pitch is PitchType | SampleRateNoteType =>
+        isPitchType(pitch) || isSampleRateNoteType(pitch),
+    )
+    .map((pitch) => {
+      if (isSampleRateNoteType(pitch)) {
+        return {
+          type: 'SAMPLE_RATE_NOTE_BEAT_TIME',
+          label: 'sample rate',
+          ...timeProps,
+        }
+      }
 
-    return {
-      type: 'NOTE_BEAT_TIME',
-      hz,
-      label,
-      ...timeProps,
-    }
-  })
+      const hz = pitchToHz(pitch, context)
+      const label = pitchToLabel(pitch, context)
+
+      return {
+        type: 'NOTE_BEAT_TIME',
+        hz,
+        label,
+        ...timeProps,
+      }
+    })
 
   const firstRatioPitch = chordPitches.find(isRatioChordPitchType)
   const firstDenominator = firstRatioPitch?.pitch
@@ -676,6 +720,11 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
     if (type === 'Note') {
       moscItems.push(...noteToMosc(item, context))
       initialRulerState = rulerStateCaptureRootHz(initialRulerState, context)
+      return
+    }
+
+    if (type === 'SampleRateNote') {
+      moscItems.push(...sampleRateNoteToMosc(item, context))
       return
     }
 

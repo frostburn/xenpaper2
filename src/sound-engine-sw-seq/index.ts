@@ -116,19 +116,23 @@ export class SoundEngineSwSeq extends SoundEngine {
     }
 
     score.sequence.forEach((item) => {
-      if (item.type === 'NOTE_TIME') {
-        patch.frequency = item.hz
+      if (item.type === 'NOTE_TIME' || item.type === 'SAMPLE_RATE_NOTE_TIME') {
+        const note: MoscNote =
+          item.type === 'SAMPLE_RATE_NOTE_TIME'
+            ? { ...item, type: 'NOTE_TIME', hz: this.context.sampleRate }
+            : item
+        patch.frequency = note.hz
         const noteHandle = this.synth.trigger(patch)
         const noteEventId = this.transport.scheduleParametricNote({
           noteOn: (time) => {
             noteHandle.noteOn(time)
-            this.activeNoteEvents.add(item)
-            this._triggerEvent('note', item, true)
+            this.activeNoteEvents.add(note)
+            this._triggerEvent('note', note, true)
           },
           noteOff: (time) => {
             noteHandle.noteOff(time)
-            this.activeNoteEvents.delete(item)
-            this._triggerEvent('note', item, false)
+            this.activeNoteEvents.delete(note)
+            this._triggerEvent('note', note, false)
           },
           when: item.time,
           duration: item.timeEnd - item.time,

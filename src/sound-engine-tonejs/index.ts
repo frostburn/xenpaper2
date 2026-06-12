@@ -172,8 +172,11 @@ export class SoundEngineTonejs extends SoundEngine {
 
     // add all new notes to tone transport
     this.score.sequence.forEach((item): void => {
-      if (item.type === 'NOTE_TIME') {
-        const noteTime = item
+      if (item.type === 'NOTE_TIME' || item.type === 'SAMPLE_RATE_NOTE_TIME') {
+        const noteTime: MoscNote =
+          item.type === 'SAMPLE_RATE_NOTE_TIME'
+            ? { ...item, type: 'NOTE_TIME', hz: Tone.context.sampleRate }
+            : item
         const noteStartEventId = Tone.Transport.schedule((time: number) => {
           this.getSynth().triggerAttackRelease(noteTime.hz, noteTime.timeEnd - noteTime.time, time)
           this._activeNoteEvents.add(noteTime)

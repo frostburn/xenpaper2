@@ -10,11 +10,25 @@ export type MoscBeatNote = {
   label: string
 }
 
+export type MoscBeatSampleRateNote = {
+  type: 'SAMPLE_RATE_NOTE_BEAT_TIME'
+  time: number
+  timeEnd: number
+  label: string
+}
+
 export type MoscNote = {
   type: 'NOTE_TIME'
   time: number
   timeEnd: number
   hz: number
+  label: string
+}
+
+export type MoscSampleRateNote = {
+  type: 'SAMPLE_RATE_NOTE_TIME'
+  time: number
+  timeEnd: number
   label: string
 }
 
@@ -47,14 +61,19 @@ export type MoscEnd = {
   time: number
 }
 
-export type MoscBeatItem = MoscBeatNote | MoscTempo | MoscBeatParam | MoscBeatEnd
+export type MoscBeatItem =
+  | MoscBeatNote
+  | MoscBeatSampleRateNote
+  | MoscTempo
+  | MoscBeatParam
+  | MoscBeatEnd
 
 export type MoscBeatScore = {
   sequence: MoscBeatItem[]
   lengthTime: number
 }
 
-export type MoscItem = MoscNote | MoscParam | MoscEnd
+export type MoscItem = MoscNote | MoscSampleRateNote | MoscParam | MoscEnd
 
 export type MoscScore = {
   sequence: MoscItem[]
@@ -152,6 +171,14 @@ export const scoreToTime = (score: MoscBeatScore): MoscScore => {
         return {
           type: 'NOTE_TIME',
           hz: item.hz,
+          label: item.label,
+          time: thisBeatToTime(item.time),
+          timeEnd: thisBeatToTime(item.timeEnd),
+        }
+      }
+      if (item.type === 'SAMPLE_RATE_NOTE_BEAT_TIME') {
+        return {
+          type: 'SAMPLE_RATE_NOTE_TIME',
           label: item.label,
           time: thisBeatToTime(item.time),
           timeEnd: thisBeatToTime(item.timeEnd),

@@ -57,6 +57,41 @@ const INITIAL_ENV = {
 const INITIAL = [INITIAL_TEMPO, INITIAL_OSC, INITIAL_ENV]
 
 describe('grammar to mosc score', () => {
+  it('should translate sample-rate notes', () => {
+    const source = parseAndProcessSourceCode('!-')
+
+    expect(source.playable).toBe(true)
+    if (!source.playable) throw new Error('Expected sample-rate note source to be playable.')
+
+    expect(source.score.sequence).toContainEqual({
+      type: 'SAMPLE_RATE_NOTE_TIME',
+      time: 0,
+      timeEnd: 0.5,
+      label: 'sample rate',
+    })
+  })
+
+  it('should translate sample-rate notes in chords', () => {
+    const source = parseAndProcessSourceCode('[0 !]')
+
+    expect(source.playable).toBe(true)
+    if (!source.playable) throw new Error('Expected sample-rate chord source to be playable.')
+
+    expect(source.score.sequence).toContainEqual({
+      type: 'SAMPLE_RATE_NOTE_TIME',
+      time: 0,
+      timeEnd: 0.25,
+      label: 'sample rate',
+    })
+    expect(source.score.sequence).toContainEqual({
+      type: 'NOTE_TIME',
+      time: 0,
+      timeEnd: 0.25,
+      hz: 220,
+      label: '0\\12  0.0c',
+    })
+  })
+
   it('should translate noise setter', () => {
     const source = parseAndProcessSourceCode('(noise:white) 0')
 

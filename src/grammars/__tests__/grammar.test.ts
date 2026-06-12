@@ -81,6 +81,49 @@ describe('grammar', () => {
         expect(ast.sequence.items[0].tail).toBeUndefined()
       })
 
+      it('should parse sample-rate note grammar', () => {
+        expect(strip(parser('!-').sequence.items)).toEqual([
+          {
+            type: 'SampleRateNote',
+            tail: {
+              type: 'Hold',
+              length: 1,
+            },
+          },
+        ])
+      })
+
+      it('should parse sample-rate notes in chords', () => {
+        expect(strip(parser('[0 !]').sequence.items)).toEqual([
+          {
+            type: 'Chord',
+            pitches: [
+              {
+                type: 'Pitch',
+                value: {
+                  type: 'PitchDegree',
+                  degree: 0,
+                },
+              },
+              {
+                type: 'Whitespace',
+              },
+              {
+                type: 'SampleRateNote',
+                tail: undefined,
+              },
+            ],
+            tail: undefined,
+          },
+        ])
+      })
+
+      it('should not parse sample-rate notes in ratio chords', () => {
+        expect(() => parser('4:5:!').sequence.items).toThrow(
+          'Expected ":" or integer but "!" found.',
+        )
+      })
+
       it('should parse hash comments as sequence items', () => {
         expect(
           strip(parser('# a 7th chord\n[0,4,7,10]--..\n\n# a harmonic 7th chord\n4:5:6:7--..'))
@@ -510,7 +553,7 @@ describe('grammar', () => {
       it('should error if hold is attempted after a rest', () => {
         expectParserFormattedErrorMessage(
           '2-.-',
-          `Error: Expected "#", "(", ".", "[", "{", "|", apostrophe, end of input, grave, integer, number, quote, or whitespace but "-" found.
+          `Error: Expected "!", "#", "(", ".", "[", "{", "|", apostrophe, end of input, grave, integer, number, quote, or whitespace but "-" found.
  --> test-input:1:4
   |
 1 | 2-.-
@@ -1012,7 +1055,7 @@ describe('grammar', () => {
       it('should error if chord is empty or not delimited properly', () => {
         expectParserErrorMessage(
           '[]',
-          'Expected apostrophe, grave, integer, number, or quote but "]" found.',
+          'Expected "!", apostrophe, grave, integer, number, or quote but "]" found.',
         )
       })
 
