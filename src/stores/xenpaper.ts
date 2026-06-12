@@ -207,7 +207,6 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   const deadScoreEngines = computed(() =>
     scoreEngines.value
       .filter((engine) => !engine.alive.value)
-      .slice()
       .sort((a, b) => b.deadOrder.value - a.deadOrder.value),
   )
   const activeScoreEngine = computed(() => liveScoreEngines.value[activeScoreEngineIndex.value]!)
@@ -235,7 +234,9 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     get: () => activeScoreEngine.value.sourceCode.value,
     set: (source: string) => activeScoreEngine.value.applySourceCode(source),
   })
-  const sourceCodes = computed(() => liveScoreEngines.value.map((engine) => engine.sourceCode.value))
+  const sourceCodes = computed(() =>
+    liveScoreEngines.value.map((engine) => engine.sourceCode.value),
+  )
 
   const htmlTitle = computed(() => createHtmlTitle(sourceCode.value))
 
@@ -261,7 +262,9 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     canRedoSourceChange(activeScoreEngine.value.sourceHistory),
   )
   const getScoreEngineGain = (engine: ScoreEngine): number => {
-    const hasSoloedScoreEngine = liveScoreEngines.value.some((scoreEngine) => scoreEngine.soloed.value)
+    const hasSoloedScoreEngine = liveScoreEngines.value.some(
+      (scoreEngine) => scoreEngine.soloed.value,
+    )
 
     if (hasSoloedScoreEngine) return engine.soloed.value ? 1 : 0
 
