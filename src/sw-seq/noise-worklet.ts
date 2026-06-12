@@ -48,10 +48,8 @@ export function registerNoiseGeneratorWorklet(context: BaseAudioContext): Promis
 }
 
 export type NoiseGeneratorNode = AudioWorkletNode &
-  GainNode & {
-    detune: AudioParam
-    frequency: AudioParam
-  }
+  GainNode &
+  Pick<OscillatorNode, 'detune' | 'frequency'>
 
 export function createNoiseGeneratorNode(context: BaseAudioContext): NoiseGeneratorNode {
   const node = new AudioWorkletNode(context, getNoiseGeneratorProcessorName(), {

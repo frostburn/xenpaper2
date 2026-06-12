@@ -1,18 +1,9 @@
 import type { Bank } from './bank'
-import type { AperiodicWave } from 'aperiodic-oscillator'
-
+import type { EnvelopedAperiodicOscillator, EnvelopedOscillator, EnvelopedUnison } from './nodes'
+import type { NoiseGeneratorNode } from './noise-worklet'
 import type { SynthType as TimbreSynthType } from './timbre'
 
 const TIME_CONSTANT = 0.2
-
-type SynthSource = AudioNode & {
-  detune: AudioParam
-  frequency: AudioParam
-  gain: AudioParam
-  setAperiodicWave?: (aperiodicWave: AperiodicWave) => void
-  setPeriodicWave?: (periodicWave: PeriodicWave) => void
-  type?: OscillatorType
-}
 
 export type NoiseGeneratorType = 'white'
 
@@ -96,40 +87,19 @@ export class PolySynth {
         )
   }
 
-  private triggerWithOscillator<T extends SynthSource>(
-    params: SynthParams,
-    allocate: () => T | null,
-    release: (oscillator: T) => void,
-  ) {
-    const { frequency, synth } = params
-    const { type, periodicWave, aperiodicWave } = synth
-
-    return this.triggerWithGainSource(params, allocate, release, (oscillator, time) => {
-      if (aperiodicWave !== null && oscillator.setAperiodicWave !== undefined) {
-        oscillator.setAperiodicWave(aperiodicWave)
-      } else if (
-        type === 'custom' &&
-        periodicWave !== null &&
-        oscillator.setPeriodicWave !== undefined
-      ) {
-        oscillator.setPeriodicWave(periodicWave)
-      } else if (type !== 'custom' && type !== 'noise' && oscillator.type !== undefined) {
-        oscillator.type = type
-      }
-      oscillator.frequency.setValueAtTime(frequency, time)
-    })
-  }
-
-  private triggerWithGainSource<T extends AudioNode & { gain: AudioParam }>(
-    params: SynthParams,
-    allocate: () => T | null,
-    release: (oscillator: T) => void,
-    configure?: (oscillator: T, time: number) => void,
-  ) {
+  private triggerWithOscillator<
+    T extends
+      | EnvelopedOscillator
+      | EnvelopedUnison
+      | EnvelopedAperiodicOscillator
+      | NoiseGeneratorNode,
+  >(params: SynthParams, allocate: () => T | null, release: (oscillator: T) => void) {
     let oscillator: T | null = null
     let startTime = NaN
 
-    const { velocity } = params
+    const { frequency, velocity, synth } = params
+    const { type, periodicWave, aperiodicWave } = synth
+
     const {
       attack: attackTime,
       decay: decayTime,
@@ -145,7 +115,14 @@ export class PolySynth {
       if (oscillator === null) return
 
       startTime = time
-      configure?.(oscillator, time)
+      if (aperiodicWave !== null && 'setAperiodicWave' in oscillator) {
+        oscillator.setAperiodicWave(aperiodicWave)
+      } else if (type === 'custom' && periodicWave !== null && 'setPeriodicWave' in oscillator) {
+        oscillator.setPeriodicWave(periodicWave)
+      } else if (type !== 'custom' && type !== 'noise' && 'type' in oscillator) {
+        oscillator.type = type
+      }
+      oscillator.frequency.setValueAtTime(frequency, time)
       oscillator.connect(this.destination)
       oscillator.gain.setValueAtTime(0, startTime)
 
