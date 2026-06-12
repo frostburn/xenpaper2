@@ -47,7 +47,11 @@ export function registerNoiseGeneratorWorklet(context: BaseAudioContext): Promis
   return promise
 }
 
-export type NoiseGeneratorNode = AudioWorkletNode & GainNode
+export type NoiseGeneratorNode = AudioWorkletNode &
+  GainNode & {
+    detune: AudioParam
+    frequency: AudioParam
+  }
 
 export function createNoiseGeneratorNode(context: BaseAudioContext): NoiseGeneratorNode {
   const node = new AudioWorkletNode(context, getNoiseGeneratorProcessorName(), {
@@ -56,7 +60,11 @@ export function createNoiseGeneratorNode(context: BaseAudioContext): NoiseGenera
     outputChannelCount: [1],
   }) as NoiseGeneratorNode
 
-  Object.defineProperty(node, 'gain', { value: node.parameters.get('gain') })
+  Object.defineProperties(node, {
+    detune: { value: node.parameters.get('detune') },
+    frequency: { value: node.parameters.get('frequency') },
+    gain: { value: node.parameters.get('gain') },
+  })
 
   return node
 }

@@ -73,4 +73,37 @@ describe('PolySynth', () => {
     expect(allocated[0]!.frequency.setValueAtTime).toHaveBeenCalledWith(220, 1)
     expect(allocated[1]!.frequency.setValueAtTime).toHaveBeenCalledWith(330, 2)
   })
+
+  it('uses the shared source path for noise generator frequencies', () => {
+    const noise = createOscillator()
+    const bank = {
+      context: {},
+      allocateNoiseGenerator: vi.fn<() => MockOscillator | null>(() => noise),
+      freeNoiseGenerator: vi.fn<(oscillator: MockOscillator) => void>(),
+    } as unknown as Bank
+    const synth = new PolySynth(bank, {} as AudioNode)
+
+    const note = synth.trigger({
+      frequency: 440,
+      velocity: 0.5,
+      synth: {
+        type: 'noise',
+        noise: 'white',
+        periodicity: 'noise',
+        periodicWave: null,
+        aperiodicWave: null,
+      },
+      envelope: {
+        attack: 0.01,
+        decay: 0.25,
+        sustain: 0.5,
+        release: 0.5,
+      },
+    })
+
+    note.noteOn(1)
+
+    expect(bank.allocateNoiseGenerator).toHaveBeenCalledTimes(1)
+    expect(noise.frequency.setValueAtTime).toHaveBeenCalledWith(440, 1)
+  })
 })

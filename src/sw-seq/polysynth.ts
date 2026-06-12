@@ -1,8 +1,18 @@
 import type { Bank } from './bank'
-import type { EnvelopedAperiodicOscillator, EnvelopedOscillator, EnvelopedUnison } from './nodes'
+import type { AperiodicWave } from 'aperiodic-oscillator'
+
 import type { SynthType as TimbreSynthType } from './timbre'
 
 const TIME_CONSTANT = 0.2
+
+type SynthSource = AudioNode & {
+  detune: AudioParam
+  frequency: AudioParam
+  gain: AudioParam
+  setAperiodicWave?: (aperiodicWave: AperiodicWave) => void
+  setPeriodicWave?: (periodicWave: PeriodicWave) => void
+  type?: OscillatorType
+}
 
 export type NoiseGeneratorType = 'white'
 
@@ -66,7 +76,11 @@ export class PolySynth {
     }
 
     if (periodicity === 'noise') {
-      return this.triggerWithNoiseGenerator(params)
+      return this.triggerWithOscillator(
+        params,
+        this.bank.allocateNoiseGenerator.bind(this.bank),
+        this.bank.freeNoiseGenerator.bind(this.bank),
+      )
     }
 
     return periodicity === 'unison'
@@ -82,26 +96,24 @@ export class PolySynth {
         )
   }
 
-  private triggerWithNoiseGenerator(params: SynthParams) {
-    return this.triggerWithGainSource(
-      params,
-      this.bank.allocateNoiseGenerator.bind(this.bank),
-      this.bank.freeNoiseGenerator.bind(this.bank),
-    )
-  }
-
-  private triggerWithOscillator<
-    T extends EnvelopedOscillator | EnvelopedUnison | EnvelopedAperiodicOscillator,
-  >(params: SynthParams, allocate: () => T | null, release: (oscillator: T) => void) {
+  private triggerWithOscillator<T extends SynthSource>(
+    params: SynthParams,
+    allocate: () => T | null,
+    release: (oscillator: T) => void,
+  ) {
     const { frequency, synth } = params
     const { type, periodicWave, aperiodicWave } = synth
 
     return this.triggerWithGainSource(params, allocate, release, (oscillator, time) => {
-      if (aperiodicWave !== null && 'setAperiodicWave' in oscillator) {
+      if (aperiodicWave !== null && oscillator.setAperiodicWave !== undefined) {
         oscillator.setAperiodicWave(aperiodicWave)
-      } else if (type === 'custom' && periodicWave !== null && 'setPeriodicWave' in oscillator) {
+      } else if (
+        type === 'custom' &&
+        periodicWave !== null &&
+        oscillator.setPeriodicWave !== undefined
+      ) {
         oscillator.setPeriodicWave(periodicWave)
-      } else if (type !== 'custom' && type !== 'noise') {
+      } else if (type !== 'custom' && type !== 'noise' && oscillator.type !== undefined) {
         oscillator.type = type
       }
       oscillator.frequency.setValueAtTime(frequency, time)
