@@ -42,7 +42,7 @@ describe('grammarToChars', () => {
 
   it('highlights noise setters like osc setters', () => {
     expect(colors(grammarToChars(parse('(noise:white)')))).toEqual(
-      colors(grammarToChars(parse('(osc:sine---)'))),
+      colors(grammarToChars(parse('(osc:slender)'))),
     )
   })
 

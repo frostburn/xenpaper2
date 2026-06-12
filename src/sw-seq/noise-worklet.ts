@@ -29,15 +29,17 @@ registerProcessor('${NOISE_GENERATOR_PROCESSOR_NAME}', SWSeqNoiseGenerator)
 
 const registrationPromises = new WeakMap<BaseAudioContext, Promise<void>>()
 
-export const getNoiseGeneratorProcessorName = () => NOISE_GENERATOR_PROCESSOR_NAME
-
 export function registerNoiseGeneratorWorklet(context: BaseAudioContext): Promise<void> {
   const cached = registrationPromises.get(context)
   if (cached !== undefined) return cached
 
   const audioWorklet = context.audioWorklet
   if (audioWorklet === undefined) {
-    return Promise.reject(new Error('AudioWorklet is not available in this browser.'))
+    return Promise.reject(
+      new Error(
+        'AudioWorklet is not available in this context. Try running under HTTPS or localhost.',
+      ),
+    )
   }
 
   const blob = new Blob([NOISE_GENERATOR_WORKLET_JS], { type: 'text/javascript' })
@@ -52,7 +54,7 @@ export type NoiseGeneratorNode = AudioWorkletNode &
   Pick<OscillatorNode, 'detune' | 'frequency'>
 
 export function createNoiseGeneratorNode(context: BaseAudioContext): NoiseGeneratorNode {
-  const node = new AudioWorkletNode(context, getNoiseGeneratorProcessorName(), {
+  const node = new AudioWorkletNode(context, NOISE_GENERATOR_PROCESSOR_NAME, {
     numberOfInputs: 0,
     numberOfOutputs: 1,
     outputChannelCount: [1],

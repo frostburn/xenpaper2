@@ -144,6 +144,10 @@ export class Bank {
   }
 
   allocateNoiseGenerator() {
+    const audioWorklet = this.context.audioWorklet
+    if (audioWorklet === undefined) {
+      return null
+    }
     if (this.noiseGenerators.length < this.maxPolyphony) {
       const osc = { node: createNoiseGeneratorNode(this.context), age: -1 }
       this.noiseGenerators.push(osc)

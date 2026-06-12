@@ -84,10 +84,10 @@ SetSubdivision = ("div"i _ ":" _)? n:Int frac:(_ "/" _ d:Int)? {
     denominator: frac ? frac[3] : undefined,
   });
 }
-SetOsc = "osc"i _ ":" _ osc:OscName { return node('SetOsc', { osc: osc.toLowerCase() }); }
-OscName "oscillator name" = $([a-zA-Z0-9\-]+)
-SetNoise = "noise"i _ ":" _ noise:WhiteNoiseName { return node('SetNoise', { noise }); }
-WhiteNoiseName "noise generator name" = "white"i { return 'white'; }
+SetOsc = "osc"i _ ":" _ osc:OscName { return node('SetOsc', { osc }); }
+OscName "oscillator name" = [a-zA-Z0-9\-]+ { return text().toLowerCase(); }
+SetNoise = "noise"i _ ":" _ noise:NoiseName { return node('SetNoise', { noise }); }
+NoiseName "noise generator name" = [a-zA-Z0-9\-]+ { return text().toLowerCase(); }
 SetEnv = "env"i _ ":" _ vals:EnvValues {
   return node('SetEnv', vals);
 }

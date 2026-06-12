@@ -185,7 +185,6 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   const audioContext = new AudioContext()
   const swSeqTransport = new Transport(audioContext, { useSetTimeoutFallback: isApplePlatform() })
   const swSeqBank = new Bank(audioContext)
-  const noiseGeneratorWorkletReady = registerNoiseGeneratorWorklet(audioContext)
 
   swSeqTransport.addEventListener('ended', () => {
     swSeqBank.stop()
@@ -559,7 +558,11 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     if (!playableEngines.length) return
 
     const startTime = activeScoreEngine.value.getSelectedLineStartTime()
-    await noiseGeneratorWorkletReady
+    try {
+      await registerNoiseGeneratorWorklet(audioContext)
+    } catch (e) {
+      console.warn(e instanceof Error ? e.message : e)
+    }
     await audioContext.resume()
     swSeqTransport.start(startTime)
     isPlaying.value = true
