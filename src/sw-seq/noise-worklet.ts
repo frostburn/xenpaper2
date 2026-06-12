@@ -9,8 +9,8 @@ export function isNoiseGeneratorType(noise: string): noise is NoiseGeneratorType
 }
 
 const NOISE_GENERATOR_WORKLET_JS = `
-const PINK_OCTAVE_WEIGHTS = [1, 1, 1, 1, 1, 1, 1, 1]
-const PINK_GAIN = 1 / Math.sqrt(PINK_OCTAVE_WEIGHTS.reduce((sum, weight) => sum + weight * weight, 0))
+const PINK_OCTAVE_COUNT = 10
+const PINK_GAIN = 1 / Math.sqrt(PINK_OCTAVE_COUNT)
 
 class SWSeqNoiseGenerator extends AudioWorkletProcessor {
   constructor() {
@@ -21,8 +21,8 @@ class SWSeqNoiseGenerator extends AudioWorkletProcessor {
     this.previousWhiteSample = 0
     this.previousPinkSample = 0
     this.brownSample = 0
-    this.pinkOctaveSamples = new Float64Array(PINK_OCTAVE_WEIGHTS.length)
-    this.pinkOctaveCountdowns = new Uint32Array(PINK_OCTAVE_WEIGHTS.length)
+    this.pinkOctaveSamples = new Float64Array(PINK_OCTAVE_COUNT)
+    this.pinkOctaveCountdowns = new Uint32Array(PINK_OCTAVE_COUNT)
 
     this.port.onmessage = (event) => {
       if (event.data?.type !== 'noise') return
@@ -49,13 +49,13 @@ class SWSeqNoiseGenerator extends AudioWorkletProcessor {
   nextPinkSample() {
     let pinkSample = 0
 
-    for (let octave = 0; octave < PINK_OCTAVE_WEIGHTS.length; octave++) {
+    for (let octave = 0; octave < PINK_OCTAVE_COUNT; octave++) {
       if (this.pinkOctaveCountdowns[octave] === 0) {
         this.pinkOctaveSamples[octave] = Math.random() * 2 - 1
         this.pinkOctaveCountdowns[octave] = 1 << octave
       }
 
-      pinkSample += this.pinkOctaveSamples[octave] * PINK_OCTAVE_WEIGHTS[octave]
+      pinkSample += this.pinkOctaveSamples[octave]
       this.pinkOctaveCountdowns[octave]--
     }
 
