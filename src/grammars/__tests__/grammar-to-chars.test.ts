@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { grammarToChars, type CharData } from '../grammar-to-chars'
 import type { XenpaperAST } from '../grammar.generated'
 import * as parserModule from '../grammar.generated.js'
+import { processGrammar } from '../process-grammar'
 
 const parser = (
   parserModule as {
@@ -37,6 +38,21 @@ describe('grammarToChars', () => {
       'pitch',
       'chord',
     ])
+  })
+
+  it('keeps all repeated play times for characters inside repeats', () => {
+    const ast = parse('|: 0 :|')
+    processGrammar(ast)
+    const chars = grammarToChars(ast)
+
+    expect(chars[3]).toMatchObject({
+      color: 'pitch',
+      playTime: [0, 0.25],
+      playTimes: [
+        [0, 0.25],
+        [0.25, 0.5],
+      ],
+    })
   })
 
   it('highlights repeat markers as delimiters', () => {

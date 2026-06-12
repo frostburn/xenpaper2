@@ -134,14 +134,13 @@ onUnmounted(() => {
   document.removeEventListener('pointerdown', handleDocumentPointerdown)
 })
 const isCharacterActive = (charData?: CharData): boolean => {
-  const [start, end] = charData?.playTime ?? []
+  const playTimes = charData?.playTimes ?? (charData?.playTime ? [charData.playTime] : [])
 
   return (
     props.isPlaying &&
-    start !== undefined &&
-    end !== undefined &&
-    props.playbackPositionTime >= start &&
-    props.playbackPositionTime < end
+    playTimes.some(
+      ([start, end]) => props.playbackPositionTime >= start && props.playbackPositionTime < end,
+    )
   )
 }
 </script>

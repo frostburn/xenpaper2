@@ -18,6 +18,7 @@ export type HighlightColor =
 export type CharData = {
   color: HighlightColor
   playTime?: [number, number]
+  playTimes?: [number, number][]
 }
 
 type GrammarNode = {
@@ -32,6 +33,25 @@ const isGrammarNode = (data: unknown): data is GrammarNode =>
   typeof (data as Partial<GrammarNode>).type === 'string' &&
   typeof (data as Partial<GrammarNode>).location?.start.offset === 'number' &&
   typeof (data as Partial<GrammarNode>).location?.end.offset === 'number'
+
+const isSamePlayTime = (a: [number, number], b: [number, number]): boolean =>
+  a[0] === b[0] && a[1] === b[1]
+
+const appendPlayTime = (
+  existing: CharData | undefined,
+  time: [number, number] | undefined,
+): [number, number][] | undefined => {
+  if (!time) return existing?.playTimes
+
+  const existingPlayTimes = existing?.playTimes ?? (existing?.playTime ? [existing.playTime] : [])
+  if (existingPlayTimes.some((playTime) => isSamePlayTime(playTime, time))) {
+    return existing?.playTimes
+  }
+
+  if (existingPlayTimes.length > 0) return [...existingPlayTimes, time]
+
+  return undefined
+}
 
 const colorMap = new Map<string, HighlightColor>([
   ['Semicolon', 'delimiter'],
@@ -103,9 +123,13 @@ const extract = (
       const startOffset = grammarNode.location.start.offset
       const endOffset = grammarNode.location.end.offset
       for (let offset = startOffset; offset < endOffset; offset++) {
+        const existing = chars[offset]
+        const playTimes = appendPlayTime(existing, time)
+
         chars[offset] = {
           color: color === 'comment' && offset === startOffset ? 'commentStart' : color,
-          playTime: time,
+          playTime: existing?.playTime ?? time,
+          ...(playTimes ? { playTimes } : {}),
         }
       }
     }

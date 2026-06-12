@@ -615,13 +615,12 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   }
 
   const isCharacterActive = (charData?: CharData): boolean => {
-    const [start, end] = charData?.playTime ?? []
+    const playTimes = charData?.playTimes ?? (charData?.playTime ? [charData.playTime] : [])
     return (
       isPlaying.value &&
-      start !== undefined &&
-      end !== undefined &&
-      playbackPositionTime.value >= start &&
-      playbackPositionTime.value < end
+      playTimes.some(
+        ([start, end]) => playbackPositionTime.value >= start && playbackPositionTime.value < end,
+      )
     )
   }
 
