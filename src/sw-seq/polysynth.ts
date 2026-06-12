@@ -34,7 +34,7 @@ type Envelope = {
 export type SynthParams = {
   frequency: number
   velocity: number
-  oscillator: SynthType
+  synth: SynthType
   envelope: Envelope
 }
 
@@ -55,7 +55,7 @@ export class PolySynth {
   }
 
   trigger(params: SynthParams) {
-    const { periodicity } = params.oscillator
+    const { periodicity } = params.synth
 
     if (periodicity === 'aperiodic') {
       return this.triggerWithOscillator(
@@ -93,10 +93,10 @@ export class PolySynth {
   private triggerWithOscillator<
     T extends EnvelopedOscillator | EnvelopedUnison | EnvelopedAperiodicOscillator,
   >(params: SynthParams, allocate: () => T | null, release: (oscillator: T) => void) {
-    return this.triggerWithGainSource(params, allocate, release, (oscillator, time) => {
-      const { frequency } = params
-      const { type, periodicWave, aperiodicWave } = params.oscillator
+    const { frequency, synth } = params
+    const { type, periodicWave, aperiodicWave } = synth
 
+    return this.triggerWithGainSource(params, allocate, release, (oscillator, time) => {
       if (aperiodicWave !== null && 'setAperiodicWave' in oscillator) {
         oscillator.setAperiodicWave(aperiodicWave)
       } else if (type === 'custom' && periodicWave !== null && 'setPeriodicWave' in oscillator) {

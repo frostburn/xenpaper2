@@ -90,7 +90,7 @@ export class SoundEngineSwSeq extends SoundEngine {
     const patch: SynthParams = {
       frequency: 440,
       velocity: OSC_VOLUME,
-      oscillator: {
+      synth: {
         type: 'sine',
         periodicity: 'harmonic',
         periodicWave: null,
@@ -128,13 +128,13 @@ export class SoundEngineSwSeq extends SoundEngine {
         // No scheduling needed. Change the active patch directly.
         if (isOscParam(item.value)) {
           if (isSWOscillatorType(item.value.osc))
-            patch.oscillator = parseSWOscillatorType(item.value.osc, this.context)
+            patch.synth = parseSWOscillatorType(item.value.osc, this.context)
           else throw new Error(`"${item.value.osc}" is not a valid oscillator type.`)
         }
         if (isNoiseParam(item.value)) {
           if (item.value.noise !== 'white')
             throw new Error(`"${item.value.noise}" is not a valid noise generator.`)
-          patch.oscillator = WHITE_NOISE_SYNTH_TYPE
+          patch.synth = WHITE_NOISE_SYNTH_TYPE
         }
         if (isEnvParam(item.value)) {
           patch.envelope = {
