@@ -73,6 +73,28 @@ describe('grammar to mosc score', () => {
     })
   })
 
+  it('should translate sample-rate notes in chords', () => {
+    const source = parseAndProcessSourceCode('[0 !]')
+
+    expect(source.playable).toBe(true)
+    if (!source.playable) throw new Error('Expected sample-rate chord source to be playable.')
+
+    expect(source.score.sequence).toContainEqual({
+      type: 'NOTE_TIME',
+      time: 0,
+      timeEnd: 0.25,
+      hz: SAMPLE_RATE_NOTE_HZ,
+      label: 'sample rate',
+    })
+    expect(source.score.sequence).toContainEqual({
+      type: 'NOTE_TIME',
+      time: 0,
+      timeEnd: 0.25,
+      hz: 220,
+      label: '0\\12  0.0c',
+    })
+  })
+
   it('should translate noise setter', () => {
     const source = parseAndProcessSourceCode('(noise:white) 0')
 

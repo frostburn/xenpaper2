@@ -50,6 +50,8 @@ export type PitchType = NodeType<'Pitch'> & {
 }
 
 export type PitchGroupType = Array<PitchType | DelimiterType>
+export type ChordPitchType = PitchType | SampleRateNoteType
+export type ChordPitchGroupType = Array<ChordPitchType | DelimiterType>
 
 //
 // note
@@ -86,7 +88,7 @@ export type RatioChordPitchType = NodeType<'RatioChordPitch'> & {
 }
 
 export type ChordType = NodeType<'Chord'> & {
-  pitches: Array<RatioChordPitchType | PitchType | DelimiterType>
+  pitches: Array<RatioChordPitchType | PitchType | SampleRateNoteType | DelimiterType>
   tail?: TailType
 }
 

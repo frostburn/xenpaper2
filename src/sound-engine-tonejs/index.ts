@@ -1,4 +1,4 @@
-import type { MoscScore, MoscNote } from '../mosc'
+import type { MoscScore, MoscNote, ResolvedMoscNote } from '../mosc'
 import { resolveNoteHz } from '../mosc'
 import { SoundEngine } from '../mosc'
 import * as Tone from 'tone'
@@ -175,19 +175,24 @@ export class SoundEngineTonejs extends SoundEngine {
     this.score.sequence.forEach((item): void => {
       if (item.type === 'NOTE_TIME') {
         const noteTime = item
+        const resolvedHz = resolveNoteHz(noteTime.hz, Tone.context.sampleRate)
+        const resolvedNote: ResolvedMoscNote = {
+          ...noteTime,
+          hz: resolvedHz,
+        }
         const noteStartEventId = Tone.Transport.schedule((time: number) => {
           this.getSynth().triggerAttackRelease(
-            resolveNoteHz(noteTime.hz, Tone.context.sampleRate),
+            resolvedNote.hz,
             noteTime.timeEnd - noteTime.time,
             time,
           )
-          this._activeNoteEvents.add(noteTime)
-          this._triggerEvent('note', noteTime, true)
+          this._activeNoteEvents.add(resolvedNote)
+          this._triggerEvent('note', resolvedNote, true)
         }, noteTime.time + 0.1) // schedule in the future slightly to avoid double note playing at end
 
         const noteEndEventId = Tone.Transport.schedule(() => {
-          this._activeNoteEvents.delete(noteTime)
-          this._triggerEvent('note', noteTime, false)
+          this._activeNoteEvents.delete(resolvedNote)
+          this._triggerEvent('note', resolvedNote, false)
         }, noteTime.timeEnd + 0.1)
 
         this._transportEventIds.push(noteStartEventId, noteEndEventId)

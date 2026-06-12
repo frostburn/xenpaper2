@@ -30,6 +30,13 @@ describe('grammarToChars', () => {
 
   it('highlights sample-rate notes as pitch characters', () => {
     expect(colors(grammarToChars(parse('!-.')))).toEqual(['pitch', 'pitch', 'delimiter'])
+    expect(colors(grammarToChars(parse('[0 !]')))).toEqual([
+      'chord',
+      'pitch',
+      'pitch',
+      'pitch',
+      'chord',
+    ])
   })
 
   it('highlights barlines inside hold tails as delimiters', () => {

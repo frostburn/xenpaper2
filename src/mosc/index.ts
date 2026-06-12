@@ -1,6 +1,10 @@
-export const SAMPLE_RATE_NOTE_HZ = -1
+export const SAMPLE_RATE_NOTE_HZ: unique symbol = Symbol('xenpaper.sampleRateNoteHz')
 
-export const resolveNoteHz = (hz: number, sampleRate: number): number =>
+export type MoscHz = number | typeof SAMPLE_RATE_NOTE_HZ
+
+export const isResolvedHz = (hz: MoscHz): hz is number => typeof hz === 'number'
+
+export const resolveNoteHz = (hz: MoscHz, sampleRate: number): number =>
   hz === SAMPLE_RATE_NOTE_HZ ? sampleRate : hz
 
 //
@@ -11,7 +15,7 @@ export type MoscBeatNote = {
   type: 'NOTE_BEAT_TIME'
   time: number
   timeEnd: number
-  hz: number
+  hz: MoscHz
   label: string
 }
 
@@ -19,9 +23,14 @@ export type MoscNote = {
   type: 'NOTE_TIME'
   time: number
   timeEnd: number
-  hz: number
+  hz: MoscHz
   label: string
 }
+
+export type ResolvedMoscNote = MoscNote & { hz: number }
+
+export const isResolvedMoscNote = (note: MoscNote): note is ResolvedMoscNote =>
+  isResolvedHz(note.hz)
 
 export type MoscBeatParam = {
   type: 'PARAM_BEAT_TIME'

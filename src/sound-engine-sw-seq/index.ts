@@ -1,4 +1,4 @@
-import type { MoscNote, MoscScore } from '../mosc'
+import type { MoscNote, MoscScore, ResolvedMoscNote } from '../mosc'
 import { resolveNoteHz, SoundEngine } from '../mosc'
 import type { Bank } from '../sw-seq/bank'
 import { isNoiseGeneratorType, type NoiseGeneratorType } from '../sw-seq/noise-worklet'
@@ -118,17 +118,18 @@ export class SoundEngineSwSeq extends SoundEngine {
     score.sequence.forEach((item) => {
       if (item.type === 'NOTE_TIME') {
         patch.frequency = resolveNoteHz(item.hz, this.context.sampleRate)
+        const resolvedNote: ResolvedMoscNote = { ...item, hz: patch.frequency }
         const noteHandle = this.synth.trigger(patch)
         const noteEventId = this.transport.scheduleParametricNote({
           noteOn: (time) => {
             noteHandle.noteOn(time)
-            this.activeNoteEvents.add(item)
-            this._triggerEvent('note', item, true)
+            this.activeNoteEvents.add(resolvedNote)
+            this._triggerEvent('note', resolvedNote, true)
           },
           noteOff: (time) => {
             noteHandle.noteOff(time)
-            this.activeNoteEvents.delete(item)
-            this._triggerEvent('note', item, false)
+            this.activeNoteEvents.delete(resolvedNote)
+            this._triggerEvent('note', resolvedNote, false)
           },
           when: item.time,
           duration: item.timeEnd - item.time,

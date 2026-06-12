@@ -221,7 +221,7 @@ type Context = {
 
 const times: [number, number][] = []
 
-type ChordPitchType = PitchType | RatioChordPitchType | DelimiterType
+type ChordPitchType = PitchType | SampleRateNoteType | RatioChordPitchType | DelimiterType
 
 const isPitchType = (pitch: ChordPitchType): pitch is PitchType => {
   return pitch.type === 'Pitch'
@@ -229,6 +229,10 @@ const isPitchType = (pitch: ChordPitchType): pitch is PitchType => {
 
 const isRatioChordPitchType = (pitch: ChordPitchType): pitch is RatioChordPitchType => {
   return pitch.type === 'RatioChordPitch'
+}
+
+const isSampleRateNoteType = (pitch: ChordPitchType): pitch is SampleRateNoteType => {
+  return pitch.type === 'SampleRateNote'
 }
 
 const noteToMosc = (note: NoteType, context: Context): MoscBeatNote[] => {
@@ -280,17 +284,31 @@ const chordToMosc = (chord: ChordType | RatioChordType, context: Context): MoscB
   times.push(arr)
   chord.time = arr
 
-  const pitchTypes: MoscBeatNote[] = chordPitches.filter(isPitchType).map((pitch) => {
-    const hz = pitchToHz(pitch, context)
-    const label = pitchToLabel(pitch, context)
+  const pitchTypes: MoscBeatNote[] = chordPitches
+    .filter(
+      (pitch): pitch is PitchType | SampleRateNoteType =>
+        isPitchType(pitch) || isSampleRateNoteType(pitch),
+    )
+    .map((pitch) => {
+      if (isSampleRateNoteType(pitch)) {
+        return {
+          type: 'NOTE_BEAT_TIME',
+          hz: SAMPLE_RATE_NOTE_HZ,
+          label: 'sample rate',
+          ...timeProps,
+        }
+      }
 
-    return {
-      type: 'NOTE_BEAT_TIME',
-      hz,
-      label,
-      ...timeProps,
-    }
-  })
+      const hz = pitchToHz(pitch, context)
+      const label = pitchToLabel(pitch, context)
+
+      return {
+        type: 'NOTE_BEAT_TIME',
+        hz,
+        label,
+        ...timeProps,
+      }
+    })
 
   const firstRatioPitch = chordPitches.find(isRatioChordPitchType)
   const firstDenominator = firstRatioPitch?.pitch

@@ -3,14 +3,14 @@ import { centsToValue, valueToCents } from 'xen-dev-utils/conversion'
 import { clamp } from 'xen-dev-utils/core'
 import { computed, onBeforeUnmount, onMounted, reactive, ref, useTemplateRef, watch } from 'vue'
 
-import { type MoscNote } from '../mosc'
+import { isResolvedMoscNote, type MoscNote, type ResolvedMoscNote } from '../mosc'
 import type { InitialRulerState } from '../grammars/process-grammar'
 
 export type RulerColourMode = 'gradient' | 'proxnotes' | `proxplot${number}`
 
 export type RulerState = {
-  notes: Map<string, MoscNote>
-  notesActive: Map<string, MoscNote>
+  notes: Map<string, ResolvedMoscNote>
+  notesActive: Map<string, ResolvedMoscNote>
   collect: boolean
   viewPan: number
   viewZoom: number
@@ -154,7 +154,7 @@ const noteSetColumns = computed(() => {
 const getY = (hz: number): number =>
   panToPx(hzToPan(hz), rulerState.viewPan, rulerState.viewZoom, rulerHeight.value)
 
-const getGradientColorFromNote = (note: MoscNote): string => {
+const getGradientColorFromNote = (note: ResolvedMoscNote): string => {
   const matched = note.label.match(/([\d.]+)c/)
   if (!matched) return hsl(0, 100, 66)
 
@@ -163,8 +163,8 @@ const getGradientColorFromNote = (note: MoscNote): string => {
 }
 
 const getColorFromNoteProximity = (
-  note: MoscNote,
-  proxNotes: MoscNote[],
+  note: ResolvedMoscNote,
+  proxNotes: ResolvedMoscNote[],
   threshold: number,
   hard: boolean,
 ): string => {
@@ -183,15 +183,15 @@ const getColorFromNoteProximity = (
   return hsl(360 - Math.min(distance, 2) * 80, 100, Math.max(1 - distance * 0.5, 0) * 50 + 10)
 }
 
-const getNoteColor = (note: MoscNote): string => {
+const getNoteColor = (note: ResolvedMoscNote): string => {
   if (rulerState.colourMode === 'gradient') return getGradientColorFromNote(note)
 
-  let compare: MoscNote[] = []
+  let compare: ResolvedMoscNote[] = []
   if (rulerState.colourMode === 'proxnotes') {
     compare = Array.from(rulerState.notes.values())
   } else if (rulerState.colourMode.startsWith('proxplot')) {
     const plotIndex = Number(rulerState.colourMode.replace('proxplot', ''))
-    compare = rulerState.plots[plotIndex] ?? []
+    compare = (rulerState.plots[plotIndex] ?? []).filter(isResolvedMoscNote)
   }
 
   return getColorFromNoteProximity(
@@ -247,8 +247,8 @@ const centsGridLines = computed(() => {
   return lines
 })
 
-const visibleNotesForColumn = (notes: MoscNote[]) => {
-  return notes.filter((note) => hzInRange(note.hz, visibleRange.value))
+const visibleNotesForColumn = (notes: MoscNote[]): ResolvedMoscNote[] => {
+  return notes.filter(isResolvedMoscNote).filter((note) => hzInRange(note.hz, visibleRange.value))
 }
 
 const clearCollectedNotes = (): void => {
@@ -256,6 +256,8 @@ const clearCollectedNotes = (): void => {
 }
 
 const addNote = (note: MoscNote): void => {
+  if (!isResolvedMoscNote(note)) return
+
   rulerState.notesActive.set(`${note.time}-${note.hz}-${note.label}`, note)
   if (rulerState.collect) {
     rulerState.notes.set(`${note.hz}-${note.label}`, note)
@@ -263,6 +265,8 @@ const addNote = (note: MoscNote): void => {
 }
 
 const removeNote = (note: MoscNote): void => {
+  if (!isResolvedMoscNote(note)) return
+
   rulerState.notesActive.delete(`${note.time}-${note.hz}-${note.label}`)
 }
 

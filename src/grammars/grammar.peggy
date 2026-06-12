@@ -16,6 +16,7 @@ SampleRateNote = "!" tail:Hold? {
   const noteTail = tail ?? undefined;
   return node('SampleRateNote', { tail: noteTail });
 }
+SampleRatePitch = "!" { return node('SampleRateNote'); }
 Pitch = oct:OctaveModifier? val:(PitchCents / PitchHz / PitchOctaveDivision / PitchRatio / PitchDegree) {
   if (oct) return node('Pitch', { octave: oct, value: val });
   return node('Pitch', { value: val });
@@ -52,6 +53,14 @@ PitchGroup = first:Pitch rest:(Whitespace Pitch)* {
   }
   return result;
 }
+ChordPitch = Pitch / SampleRatePitch
+ChordPitchGroup = first:ChordPitch rest:(Whitespace ChordPitch)* {
+  const result = [first];
+  for (const pair of rest) {
+    result.push(pair[0], pair[1]);
+  }
+  return result;
+}
 RatioChordPitch = n:Int { return node('RatioChordPitch', { pitch: n }); }
 Colon = ":" { return node('Colon', { delimiter: true }); }
 RatioChordPitches = first:RatioChordPitch rest:((_ Colon _)+ RatioChordPitch)* {
@@ -68,7 +77,7 @@ RatioChord = pitches:RatioChordPitches tail:Hold? {
   return node('RatioChord', { pitches, tail: noteTail });
 }
 RatioChordItem = &(Int _ ":") rc:RatioChord { return rc; }
-Chord = "[" _ pitches:((&(Int _ ":") rp:RatioChordPitches { return rp; }) / PitchGroup) _ "]" tail:Hold? {
+Chord = "[" _ pitches:((&(Int _ ":") rp:RatioChordPitches { return rp; }) / ChordPitchGroup) _ "]" tail:Hold? {
   const noteTail = tail ?? undefined;
   return node('Chord', { pitches, tail: noteTail });
 }
