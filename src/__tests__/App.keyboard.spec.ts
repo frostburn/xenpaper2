@@ -19,7 +19,6 @@ type MockSoundEngine = {
   setLoopStart: MockFn<(time?: number) => void>
   setScore: MockFn<(...args: unknown[]) => Promise<void>>
   setOutputGain: MockFn<(gain: number) => void>
-  preparePlayback: MockFn<() => Promise<void>>
   onEnd: MockFn<(callback: () => void) => () => void>
   onNote: MockFn<(callback: (...args: unknown[]) => void) => () => void>
   dispose: MockFn<() => void>
@@ -30,6 +29,9 @@ vi.stubGlobal(
   'AudioContext',
   class MockAudioContext {
     currentTime = 0
+    audioWorklet = {
+      addModule: async () => undefined,
+    }
     createConstantSource() {
       return {
         addEventListener: () => undefined,
@@ -101,7 +103,6 @@ vi.mock('../sound-engine-sw-seq', () => ({
       setLoopStart: vi.fn<(ms?: number) => void>(),
       setScore: vi.fn<(...args: unknown[]) => Promise<void>>(async () => {}),
       setOutputGain: vi.fn<(gain: number) => void>(),
-      preparePlayback: vi.fn<() => Promise<void>>(async () => {}),
       onEnd: vi.fn<(callback: () => void) => () => void>((callback: () => void) => {
         engine.endCallback = callback
         return vi.fn<() => void>()
