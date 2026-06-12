@@ -28,14 +28,17 @@ export class SoundEngineSwSeq extends SoundEngine {
   private endTime = 0
   private activeNoteEvents = new Set<MoscNote>()
   private noteOffs: Array<(time: number) => void> = []
+  private bank: Bank
   private destination: GainNode
   private synth: PolySynth
   private transport: Transport
   private transportEventIds = new Map<number, true>()
+  private requiresNoiseGeneratorWorklet = false
 
   constructor(transport: Transport, bank: Bank) {
     super()
     this.transport = transport
+    this.bank = bank
     this.destination = transport.context.createGain()
     this.destination.gain.setValueAtTime(1, transport.context.currentTime)
     this.destination.connect(transport.context.destination)
@@ -78,9 +81,14 @@ export class SoundEngineSwSeq extends SoundEngine {
     this.destination.gain.setValueAtTime(gain, this.context.currentTime)
   }
 
+  async preparePlayback(): Promise<void> {
+    if (this.requiresNoiseGeneratorWorklet) await this.bank.registerNoiseGeneratorWorklet()
+  }
+
   setScore(score: MoscScore): void {
     this.score = score
     this.clearScheduledEvents()
+    this.requiresNoiseGeneratorWorklet = false
     this.endTime = score.lengthTime
 
     const patch: SynthParams = {
@@ -123,9 +131,10 @@ export class SoundEngineSwSeq extends SoundEngine {
       } else if (item.type === 'PARAM_TIME') {
         // No scheduling needed. Change the active patch directly.
         if (isOscParam(item.value)) {
-          if (isSWOscillatorType(item.value.osc))
+          if (isSWOscillatorType(item.value.osc)) {
             patch.oscillator = parseSWOscillatorType(item.value.osc, this.context)
-          else throw new Error(`"${item.value.osc}" is not a valid oscillator type.`)
+            if (patch.oscillator.periodicity === 'noise') this.requiresNoiseGeneratorWorklet = true
+          } else throw new Error(`"${item.value.osc}" is not a valid oscillator type.`)
         }
         if (isEnvParam(item.value)) {
           patch.envelope = {

@@ -557,6 +557,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     if (!playableEngines.length) return
 
     const startTime = activeScoreEngine.value.getSelectedLineStartTime()
+    await Promise.all(playableEngines.map((engine) => engine.soundEngine.preparePlayback()))
     await audioContext.resume()
     swSeqTransport.start(startTime)
     isPlaying.value = true

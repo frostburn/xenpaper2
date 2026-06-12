@@ -1,4 +1,10 @@
-import { EnvelopedAperiodicOscillator, EnvelopedOscillator, EnvelopedUnison } from './nodes'
+import {
+  EnvelopedAperiodicOscillator,
+  EnvelopedNoiseGenerator,
+  EnvelopedOscillator,
+  EnvelopedUnison,
+} from './nodes'
+import { registerNoiseGeneratorWorklet } from './noise-worklet'
 
 /**
  * Bank of re-usable enveloped oscillator nodes.
@@ -13,6 +19,7 @@ export class Bank {
   private oscillators: { node: EnvelopedOscillator; age: number }[]
   private unisons: { node: EnvelopedUnison; age: number }[]
   private aperiodics: { node: EnvelopedAperiodicOscillator; age: number }[]
+  private noiseGenerators: { node: EnvelopedNoiseGenerator; age: number }[]
 
   constructor(context: AudioContext, maxPolyphony = 32) {
     this.context = context
@@ -20,6 +27,7 @@ export class Bank {
     this.oscillators = []
     this.unisons = []
     this.aperiodics = []
+    this.noiseGenerators = []
   }
 
   allocateOscillator() {
@@ -140,6 +148,48 @@ export class Bank {
     })
   }
 
+  registerNoiseGeneratorWorklet() {
+    return registerNoiseGeneratorWorklet(this.context)
+  }
+
+  allocateNoiseGenerator() {
+    if (this.noiseGenerators.length < this.maxPolyphony) {
+      const osc = { node: new EnvelopedNoiseGenerator(this.context), age: -1 }
+      osc.node.start(this.context.currentTime)
+      this.noiseGenerators.push(osc)
+      return osc.node
+    }
+    const maxAge = this.noiseGenerators.reduce((a, b) => Math.max(a, b.age), -1)
+    if (maxAge < 0) {
+      console.warn('Maximum polyphony reached.')
+      return null
+    }
+    const osc = this.noiseGenerators.find((o) => o.age === maxAge)
+    if (!osc) {
+      return null
+    }
+    osc.age = -1
+    osc.node.detune.cancelScheduledValues(this.context.currentTime)
+    osc.node.frequency.cancelScheduledValues(this.context.currentTime)
+    osc.node.gain.cancelScheduledValues(this.context.currentTime)
+    osc.node.gain.setValueAtTime(0, this.context.currentTime)
+    osc.node.disconnect()
+    return osc.node
+  }
+
+  freeNoiseGenerator(node: EnvelopedNoiseGenerator) {
+    const osc = this.noiseGenerators.find((o) => o.node === node)
+    if (osc === undefined) {
+      throw new Error('Attempting to free unallocated noise generator.')
+    }
+    osc.age = 0
+    this.noiseGenerators.forEach((o) => {
+      if (o.age >= 0) {
+        o.age++
+      }
+    })
+  }
+
   stop() {
     this.oscillators.forEach((o) => {
       o.node.detune.cancelScheduledValues(this.context.currentTime)
@@ -161,6 +211,15 @@ export class Bank {
     })
 
     this.aperiodics.forEach((o) => {
+      o.node.detune.cancelScheduledValues(this.context.currentTime)
+      o.node.frequency.cancelScheduledValues(this.context.currentTime)
+      o.node.gain.cancelScheduledValues(this.context.currentTime)
+      o.node.gain.setValueAtTime(0, this.context.currentTime)
+      o.node.disconnect()
+      o.age = 1
+    })
+
+    this.noiseGenerators.forEach((o) => {
       o.node.detune.cancelScheduledValues(this.context.currentTime)
       o.node.frequency.cancelScheduledValues(this.context.currentTime)
       o.node.gain.cancelScheduledValues(this.context.currentTime)
