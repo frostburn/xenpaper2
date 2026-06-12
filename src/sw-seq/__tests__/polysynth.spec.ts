@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import type { Bank } from '../bank'
+import type { NoiseGeneratorType } from '../noise-worklet'
 import { PolySynth, type SynthParams } from '../polysynth'
 
 const createAudioParam = () => ({
@@ -16,7 +17,7 @@ type MockOscillator = {
   detune: MockAudioParam
   frequency: MockAudioParam
   gain: MockAudioParam
-  type: OscillatorType
+  type: NoiseGeneratorType | OscillatorType
   connect: ReturnType<typeof vi.fn<(destination: unknown) => void>>
   disconnect: ReturnType<typeof vi.fn<() => void>>
 }
@@ -105,5 +106,37 @@ describe('PolySynth', () => {
 
     expect(bank.allocateNoiseGenerator).toHaveBeenCalledTimes(1)
     expect(noise.frequency.setValueAtTime).toHaveBeenCalledWith(440, 1)
+  })
+
+  it('sets noise generator type through the shared type interface', () => {
+    const noise = createOscillator()
+    const bank = {
+      context: {},
+      allocateNoiseGenerator: vi.fn<() => MockOscillator | null>(() => noise),
+      freeNoiseGenerator: vi.fn<(oscillator: MockOscillator) => void>(),
+    } as unknown as Bank
+    const synth = new PolySynth(bank, {} as AudioNode)
+
+    const note = synth.trigger({
+      frequency: 330,
+      velocity: 0.5,
+      synth: {
+        type: 'noise',
+        noise: 'violet',
+        periodicity: 'noise',
+        periodicWave: null,
+        aperiodicWave: null,
+      },
+      envelope: {
+        attack: 0.01,
+        decay: 0.25,
+        sustain: 0.5,
+        release: 0.5,
+      },
+    })
+
+    note.noteOn(1)
+
+    expect(noise.type).toBe('violet')
   })
 })

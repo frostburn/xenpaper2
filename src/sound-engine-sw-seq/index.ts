@@ -1,7 +1,13 @@
 import type { MoscNote, MoscScore } from '../mosc'
 import { SoundEngine } from '../mosc'
 import type { Bank } from '../sw-seq/bank'
-import { PolySynth, WHITE_NOISE_SYNTH_TYPE, type SynthParams } from '../sw-seq/polysynth'
+import { isNoiseGeneratorType, type NoiseGeneratorType } from '../sw-seq/noise-worklet'
+import {
+  PolySynth,
+  type NoiseSynthType,
+  WHITE_NOISE_SYNTH_TYPE,
+  type SynthParams,
+} from '../sw-seq/polysynth'
 import { isSWOscillatorType, parseSWOscillatorType, type SWOscillatorType } from '../sw-seq/timbre'
 import type { Transport } from '../sw-seq/transport'
 
@@ -19,6 +25,11 @@ const isOscParam = (value: unknown): value is SoundEngineOscParam =>
 
 const isNoiseParam = (value: unknown): value is SoundEngineNoiseParam =>
   isRecord(value) && value.type === 'noise' && typeof value.noise === 'string'
+
+const createNoiseSynthType = (noise: NoiseGeneratorType): NoiseSynthType => ({
+  ...WHITE_NOISE_SYNTH_TYPE,
+  noise,
+})
 
 const isEnvParam = (value: unknown): value is SoundEngineEnvParam =>
   isRecord(value) &&
@@ -132,9 +143,9 @@ export class SoundEngineSwSeq extends SoundEngine {
           else throw new Error(`"${item.value.osc}" is not a valid oscillator type.`)
         }
         if (isNoiseParam(item.value)) {
-          if (item.value.noise !== 'white')
+          if (!isNoiseGeneratorType(item.value.noise))
             throw new Error(`"${item.value.noise}" is not a valid noise generator.`)
-          patch.synth = WHITE_NOISE_SYNTH_TYPE
+          patch.synth = createNoiseSynthType(item.value.noise)
         }
         if (isEnvParam(item.value)) {
           patch.envelope = {
