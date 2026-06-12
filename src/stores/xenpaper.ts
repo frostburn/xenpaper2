@@ -22,6 +22,7 @@ import {
 } from '../share-link'
 import { SoundEngineSwSeq } from '../sound-engine-sw-seq'
 import { Bank } from '../sw-seq/bank'
+import { registerNoiseGeneratorWorklet } from '../sw-seq/noise-worklet'
 import { Transport } from '../sw-seq/transport'
 import { createSourceDisplayTokens } from '../source-display'
 import type {
@@ -557,6 +558,11 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     if (!playableEngines.length) return
 
     const startTime = activeScoreEngine.value.getSelectedLineStartTime()
+    try {
+      await registerNoiseGeneratorWorklet(audioContext)
+    } catch (e) {
+      console.warn(e instanceof Error ? e.message : e)
+    }
     await audioContext.resume()
     swSeqTransport.start(startTime)
     isPlaying.value = true

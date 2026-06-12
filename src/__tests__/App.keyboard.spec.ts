@@ -29,6 +29,9 @@ vi.stubGlobal(
   'AudioContext',
   class MockAudioContext {
     currentTime = 0
+    audioWorklet = {
+      addModule: async () => undefined,
+    }
     createConstantSource() {
       return {
         addEventListener: () => undefined,

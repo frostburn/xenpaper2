@@ -111,7 +111,6 @@ export type SynthType =
       periodicWave: null
       aperiodicWave: AperiodicWave
     }
-
 type Spectrum = number[]
 type Timbre = { spectrum: Spectrum; amplitudes: number[]; source?: string }
 type Timbres = {
@@ -516,7 +515,6 @@ export function parseSWOscillatorType(
     periodicity = 'unison'
     name = name.slice(3) as BasicOscillatorType | BasicOscillatorWithPartials | CustomTimbre
   }
-
   if (isBasicOscillatorType(name)) {
     return {
       type: name,

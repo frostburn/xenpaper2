@@ -1794,6 +1794,27 @@ describe('grammar', () => {
         })
       })
 
+      it('should parse sequence with noise setter', () => {
+        expect(strip(parser('(noise:white; noise: WHITE)')).sequence.items).toEqual([
+          {
+            type: 'SetterGroup',
+            setters: [
+              {
+                type: 'SetNoise',
+                noise: 'white',
+              },
+              {
+                type: 'Semicolon',
+              },
+              {
+                type: 'SetNoise',
+                noise: 'white',
+              },
+            ],
+          },
+        ])
+      })
+
       it('should parse sequence with env setter', () => {
         expect(strip(parser('(env:0123; env: 9873)')).sequence.items).toEqual([
           {
@@ -1931,7 +1952,7 @@ describe('grammar', () => {
       it('should error if setter is empty or not delimited properly', () => {
         expectParserErrorMessage(
           '()',
-          'Expected "bms", "bpm", "div", "env", "osc", "plot", "rl", or integer but ")" found.',
+          'Expected "bms", "bpm", "div", "env", "noise", "osc", "plot", "rl", or integer but ")" found.',
         )
         expectParserErrorMessage('(div:16;)', 'but ")" found.')
         expectParserErrorMessage('(div:16;;div:16)', 'but ";" found.')

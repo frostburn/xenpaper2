@@ -57,6 +57,22 @@ const INITIAL_ENV = {
 const INITIAL = [INITIAL_TEMPO, INITIAL_OSC, INITIAL_ENV]
 
 describe('grammar to mosc score', () => {
+  it('should translate noise setter', () => {
+    const source = parseAndProcessSourceCode('(noise:white) 0')
+
+    expect(source.playable).toBe(true)
+    if (!source.playable) throw new Error('Expected noise setter source to be playable.')
+
+    expect(source.score.sequence).toContainEqual({
+      type: 'PARAM_TIME',
+      time: 0,
+      value: {
+        type: 'noise',
+        noise: 'white',
+      },
+    })
+  })
+
   //
   // # pitch types
   // 1/1,5/4,3/2,2/1
