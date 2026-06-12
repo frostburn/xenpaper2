@@ -54,7 +54,8 @@ PitchGroup = first:Pitch rest:(Whitespace Pitch)* {
   return result;
 }
 ChordPitch = Pitch / SampleRatePitch
-ChordPitchGroup = first:ChordPitch rest:(Whitespace ChordPitch)* {
+ChordPitchSeparator = Whitespace / &ChordPitch { return node('Whitespace', { delimiter: true }); }
+ChordPitchGroup = first:ChordPitch rest:(ChordPitchSeparator ChordPitch)* {
   const result = [first];
   for (const pair of rest) {
     result.push(pair[0], pair[1]);
