@@ -984,6 +984,12 @@ describe('grammar', () => {
         ])
       })
 
+      it('should parse adjacent chord pitches like adjacent sequence notes', () => {
+        expect(strip(parser("[0'1!]")).sequence.items).toEqual(
+          strip(parser("[0 '1 !]")).sequence.items,
+        )
+      })
+
       it('should parse sequence with chord holds across bar lines', () => {
         expect(strip(parser('[0c,100c, 200c]--|---|')).sequence.items).toEqual([
           {
