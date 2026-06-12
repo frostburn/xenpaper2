@@ -158,6 +158,12 @@ export type SetOscType = NodeType<'SetOsc'> & {
   osc: string
 }
 
+// noise
+
+export type SetNoiseType = NodeType<'SetNoise'> & {
+  noise: string
+}
+
 // env
 
 export type SetEnvType = NodeType<'SetEnv'> & {
@@ -185,6 +191,7 @@ export type SetterType =
   | SetBmsType
   | SetSubdivisionType
   | SetOscType
+  | SetNoiseType
   | SetEnvType
   | SetRulerType
 

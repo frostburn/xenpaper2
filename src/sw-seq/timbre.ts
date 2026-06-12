@@ -5,7 +5,6 @@ import { AperiodicWave } from 'aperiodic-oscillator'
 import TIMBRES from './timbres.json'
 
 const BASIC_OSCILLATOR_TYPES = ['sawtooth', 'square', 'sine', 'triangle'] as const
-const NOISE_GENERATOR_TYPES = ['noise'] as const
 
 const PARTIALS_RANGE = [
   1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27,
@@ -55,8 +54,6 @@ const GENERATED_APERIODIC_TIMBRES = [
 
 export type BasicOscillatorType = (typeof BASIC_OSCILLATOR_TYPES)[number]
 
-export type NoiseGeneratorType = (typeof NOISE_GENERATOR_TYPES)[number]
-
 export type PartialsRange = (typeof PARTIALS_RANGE)[number]
 
 export type BasicOscillatorWithPartials = `${BasicOscillatorType}${PartialsRange}`
@@ -91,10 +88,9 @@ export type SWOscillatorType =
   | BasicOscillatorWithPartials
   | CustomTimbre
   | AperiodicTimbre
-  | NoiseGeneratorType
   | FatOscillatorType
 
-export type Periodicity = 'harmonic' | 'unison' | 'aperiodic' | 'noise'
+export type Periodicity = 'harmonic' | 'unison' | 'aperiodic'
 
 export type SynthType =
   | {
@@ -115,13 +111,6 @@ export type SynthType =
       periodicWave: null
       aperiodicWave: AperiodicWave
     }
-  | {
-      type: 'noise'
-      periodicity: 'noise'
-      periodicWave: null
-      aperiodicWave: null
-    }
-
 type Spectrum = number[]
 type Timbre = { spectrum: Spectrum; amplitudes: number[]; source?: string }
 type Timbres = {
@@ -137,9 +126,6 @@ const APERIODIC_WAVE_CACHE = new Map<AperiodicTimbre, AperiodicWave>()
 
 const isBasicOscillatorType = (value: unknown): value is BasicOscillatorType =>
   typeof value === 'string' && BASIC_OSCILLATOR_TYPES.includes(value as BasicOscillatorType)
-
-const isNoiseGeneratorType = (value: unknown): value is NoiseGeneratorType =>
-  typeof value === 'string' && NOISE_GENERATOR_TYPES.includes(value as NoiseGeneratorType)
 
 const isCustomTimbre = (value: unknown): value is CustomTimbre =>
   typeof value === 'string' && CUSTOM_TIMBRES.includes(value as (typeof CUSTOM_TIMBRES)[number])
@@ -170,9 +156,7 @@ const isHarmonicSWOscillatorType = (value: unknown) =>
 export function isSWOscillatorType(value: unknown): value is SWOscillatorType {
   if (isFatOscillatorType(value)) return isHarmonicSWOscillatorType(value.slice(3))
 
-  return (
-    isHarmonicSWOscillatorType(value) || isAperiodicTimbre(value) || isNoiseGeneratorType(value)
-  )
+  return isHarmonicSWOscillatorType(value) || isAperiodicTimbre(value)
 }
 
 function ceilPow2(x: number) {
@@ -531,17 +515,6 @@ export function parseSWOscillatorType(
     periodicity = 'unison'
     name = name.slice(3) as BasicOscillatorType | BasicOscillatorWithPartials | CustomTimbre
   }
-
-  if (isNoiseGeneratorType(name)) {
-    if (periodicity === 'unison') throw new Error(`Invalid oscillator type 'fat${name}'`)
-    return {
-      type: 'noise',
-      periodicity: 'noise',
-      periodicWave: null,
-      aperiodicWave: null,
-    }
-  }
-
   if (isBasicOscillatorType(name)) {
     return {
       type: name,

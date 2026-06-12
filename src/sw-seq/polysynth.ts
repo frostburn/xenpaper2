@@ -5,9 +5,29 @@ import type {
   EnvelopedOscillator,
   EnvelopedUnison,
 } from './nodes'
-import type { SynthType } from './timbre'
+import type { SynthType as TimbreSynthType } from './timbre'
 
 const TIME_CONSTANT = 0.2
+
+export type NoiseGeneratorType = 'white'
+
+export type NoiseSynthType = {
+  type: 'noise'
+  noise: NoiseGeneratorType
+  periodicity: 'noise'
+  periodicWave: null
+  aperiodicWave: null
+}
+
+export type SynthType = TimbreSynthType | NoiseSynthType
+
+export const WHITE_NOISE_SYNTH_TYPE: NoiseSynthType = {
+  type: 'noise',
+  noise: 'white',
+  periodicity: 'noise',
+  periodicWave: null,
+  aperiodicWave: null,
+}
 
 type Envelope = {
   attack: number

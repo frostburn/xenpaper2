@@ -1,13 +1,14 @@
 import type { MoscNote, MoscScore } from '../mosc'
 import { SoundEngine } from '../mosc'
 import type { Bank } from '../sw-seq/bank'
-import { PolySynth, type SynthParams } from '../sw-seq/polysynth'
+import { PolySynth, WHITE_NOISE_SYNTH_TYPE, type SynthParams } from '../sw-seq/polysynth'
 import { isSWOscillatorType, parseSWOscillatorType, type SWOscillatorType } from '../sw-seq/timbre'
 import type { Transport } from '../sw-seq/transport'
 
 const OSC_VOLUME = 0.125
 
 type SoundEngineOscParam = { type: 'osc'; osc: SWOscillatorType }
+type SoundEngineNoiseParam = { type: 'noise'; noise: string }
 type SoundEngineEnvParam = { type: 'env'; a: number; d: number; s: number; r: number }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -15,6 +16,9 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 
 const isOscParam = (value: unknown): value is SoundEngineOscParam =>
   isRecord(value) && value.type === 'osc'
+
+const isNoiseParam = (value: unknown): value is SoundEngineNoiseParam =>
+  isRecord(value) && value.type === 'noise' && typeof value.noise === 'string'
 
 const isEnvParam = (value: unknown): value is SoundEngineEnvParam =>
   isRecord(value) &&
@@ -131,10 +135,15 @@ export class SoundEngineSwSeq extends SoundEngine {
       } else if (item.type === 'PARAM_TIME') {
         // No scheduling needed. Change the active patch directly.
         if (isOscParam(item.value)) {
-          if (isSWOscillatorType(item.value.osc)) {
+          if (isSWOscillatorType(item.value.osc))
             patch.oscillator = parseSWOscillatorType(item.value.osc, this.context)
-            if (patch.oscillator.periodicity === 'noise') this.requiresNoiseGeneratorWorklet = true
-          } else throw new Error(`"${item.value.osc}" is not a valid oscillator type.`)
+          else throw new Error(`"${item.value.osc}" is not a valid oscillator type.`)
+        }
+        if (isNoiseParam(item.value)) {
+          if (item.value.noise !== 'white')
+            throw new Error(`"${item.value.noise}" is not a valid noise generator.`)
+          patch.oscillator = WHITE_NOISE_SYNTH_TYPE
+          this.requiresNoiseGeneratorWorklet = true
         }
         if (isEnvParam(item.value)) {
           patch.envelope = {

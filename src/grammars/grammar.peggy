@@ -75,7 +75,7 @@ SetterGroup = "(" _ first:Setter rest:(Semicolon Setter)* _ ")" {
   for (const part of rest) setters.push(part[0], part[1]);
   return node('SetterGroup', { setters });
 }
-Setter = SetBpm / SetBms / SetSubdivision / SetOsc / SetEnv / SetRulerRange / SetRulerPlot
+Setter = SetBpm / SetBms / SetSubdivision / SetOsc / SetNoise / SetEnv / SetRulerRange / SetRulerPlot
 SetBpm = "bpm"i _ ":" _ bpm:Number { return node('SetBpm', { bpm }); }
 SetBms = "bms"i _ ":" _ bms:Number { return node('SetBms', { bms }); }
 SetSubdivision = ("div"i _ ":" _)? n:Int frac:(_ "/" _ d:Int)? {
@@ -86,6 +86,8 @@ SetSubdivision = ("div"i _ ":" _)? n:Int frac:(_ "/" _ d:Int)? {
 }
 SetOsc = "osc"i _ ":" _ osc:OscName { return node('SetOsc', { osc: osc.toLowerCase() }); }
 OscName "oscillator name" = $([a-zA-Z0-9\-]+)
+SetNoise = "noise"i _ ":" _ noise:WhiteNoiseName { return node('SetNoise', { noise }); }
+WhiteNoiseName "noise generator name" = "white"i { return 'white'; }
 SetEnv = "env"i _ ":" _ vals:EnvValues {
   return node('SetEnv', vals);
 }

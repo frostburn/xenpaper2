@@ -495,6 +495,20 @@ const setterToMosc = (setter: SetterType | DelimiterType, context: Context): Mos
     ]
   }
 
+  if (type === 'SetNoise') {
+    const { noise } = setter
+    return [
+      {
+        type: 'PARAM_BEAT_TIME',
+        time: context.time,
+        value: {
+          type: 'noise',
+          noise,
+        },
+      },
+    ]
+  }
+
   if (type === 'SetEnv') {
     const { a, d, s, r } = setter
     return [
