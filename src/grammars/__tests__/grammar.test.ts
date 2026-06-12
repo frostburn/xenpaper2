@@ -81,6 +81,18 @@ describe('grammar', () => {
         expect(ast.sequence.items[0].tail).toBeUndefined()
       })
 
+      it('should parse repeat markers as sequence items', () => {
+        expect(strip(parser('|: 0 |¹ 1 :|² 2 :|').sequence.items)).toMatchObject([
+          { type: 'RepeatStart' },
+          { type: 'Note' },
+          { type: 'RepeatEndingStart', alternateEnding: 1 },
+          { type: 'Note' },
+          { type: 'RepeatEnd', alternateEnding: 2 },
+          { type: 'Note' },
+          { type: 'RepeatEnd' },
+        ])
+      })
+
       it('should parse sample-rate note grammar', () => {
         expect(strip(parser('!-').sequence.items)).toEqual([
           {
@@ -553,7 +565,7 @@ describe('grammar', () => {
       it('should error if hold is attempted after a rest', () => {
         expectParserFormattedErrorMessage(
           '2-.-',
-          `Error: Expected "!", "#", "(", ".", "[", "{", "|", apostrophe, end of input, grave, integer, number, quote, or whitespace but "-" found.
+          `Error: Expected "!", "#", "(", ".", ":|", "[", "{", "|", "|:", apostrophe, end of input, grave, integer, number, quote, or whitespace but "-" found.
  --> test-input:1:4
   |
 1 | 2-.-

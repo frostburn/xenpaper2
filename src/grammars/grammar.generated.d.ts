@@ -206,6 +206,22 @@ export type SetterGroupType = NodeType<'SetterGroup'> & {
 }
 
 //
+// repeats
+//
+
+export type RepeatStartType = NodeType<'RepeatStart', true>
+
+export type RepeatEndType = NodeType<'RepeatEnd', true> & {
+  alternateEnding?: 1 | 2
+}
+
+export type RepeatEndingStartType = NodeType<'RepeatEndingStart', true> & {
+  alternateEnding: 1 | 2
+}
+
+export type RepeatType = RepeatStartType | RepeatEndType | RepeatEndingStartType
+
+//
 // comments
 //
 
@@ -227,6 +243,7 @@ export type SequenceItemsType =
   | SetScaleType
   | SetRootType
   | CommentType
+  | RepeatType
   | DelimiterType
 
 export type SequenceType = NodeType<'Sequence'> & {

@@ -39,6 +39,24 @@ describe('grammarToChars', () => {
     ])
   })
 
+  it('highlights repeat markers as delimiters', () => {
+    expect(colors(grammarToChars(parse('|: 0 |¹ 1 :|²')))).toEqual([
+      'delimiter',
+      'delimiter',
+      undefined,
+      'pitch',
+      undefined,
+      'delimiter',
+      'delimiter',
+      undefined,
+      'pitch',
+      undefined,
+      'delimiter',
+      'delimiter',
+      'delimiter',
+    ])
+  })
+
   it('highlights barlines inside hold tails as delimiters', () => {
     const chars = grammarToChars(parse('1--|--'))
 

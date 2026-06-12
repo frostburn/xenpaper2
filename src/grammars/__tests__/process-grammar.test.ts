@@ -7,6 +7,7 @@ declare module 'vitest' {
 }
 
 import { parseAndProcessSourceCode } from '../../utils'
+import { parse } from '../grammar.generated.js'
 import { processGrammar } from '../process-grammar'
 
 expect.extend({
@@ -56,7 +57,34 @@ const INITIAL_ENV = {
 
 const INITIAL = [INITIAL_TEMPO, INITIAL_OSC, INITIAL_ENV]
 
+const parseSource = (input: string) => parse(input, { grammarSource: 'test-input' })
+
+const noteLabels = (input: string): string[] =>
+  processGrammar(parseSource(input))
+    .score.sequence.filter((item) => item.type === 'NOTE_BEAT_TIME')
+    .map((item) => item.label)
+
 describe('grammar to mosc score', () => {
+  it('expands simple repeats before translating to score items', () => {
+    expect(noteLabels('0 |: 1 2 :| 3')).toEqual([
+      '0\\12  0.0c',
+      '1\\12  100.0c',
+      '2\\12  200.0c',
+      '1\\12  100.0c',
+      '2\\12  200.0c',
+      '3\\12  300.0c',
+    ])
+  })
+
+  it('expands alternate endings before translating to score items', () => {
+    expect(noteLabels('|: 0 |¹ 1 :|² 2')).toEqual([
+      '0\\12  0.0c',
+      '1\\12  100.0c',
+      '0\\12  0.0c',
+      '2\\12  200.0c',
+    ])
+  })
+
   it('should translate sample-rate notes', () => {
     const source = parseAndProcessSourceCode('!-')
 

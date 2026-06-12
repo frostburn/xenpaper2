@@ -7,7 +7,7 @@ Start = seq:Sequence _ {
 }
 Sequence = items:ItemList { return node('Sequence', { items }); }
 ItemList = head:Item tail:(_ Item)* { return [head, ...tail.map(([,i]) => i)]; } / '' { return []; }
-Item = Comment / SetterGroup / SetRoot / SetScale / RatioChordItem / SampleRateNote / Note / Rest / Chord / BarLine / Whitespace
+Item = Comment / SetterGroup / SetRoot / SetScale / RatioChordItem / SampleRateNote / Note / Rest / Chord / RepeatStart / RepeatEnd / RepeatEndingStart / BarLine / Whitespace
 Note = pitch:Pitch tail:Hold? {
   const noteTail = tail ?? undefined;
   return node('Note', { pitch, tail: noteTail });
@@ -77,11 +77,20 @@ RatioChord = pitches:RatioChordPitches tail:Hold? {
   const noteTail = tail ?? undefined;
   return node('RatioChord', { pitches, tail: noteTail });
 }
-RatioChordItem = &(Int _ ":") rc:RatioChord { return rc; }
-Chord = "[" _ pitches:((&(Int _ ":") rp:RatioChordPitches { return rp; }) / ChordPitchGroup) _ "]" tail:Hold? {
+RatioChordItem = &(Int _ ":" !"|") rc:RatioChord { return rc; }
+Chord = "[" _ pitches:((&(Int _ ":" !"|") rp:RatioChordPitches { return rp; }) / ChordPitchGroup) _ "]" tail:Hold? {
   const noteTail = tail ?? undefined;
   return node('Chord', { pitches, tail: noteTail });
 }
+RepeatStart = "|:" { return node('RepeatStart',{delimiter:true}); }
+RepeatEnd = ":|" ending:RepeatEndingNumber? {
+  const alternateEnding = ending ?? undefined;
+  return node('RepeatEnd',{delimiter:true, alternateEnding});
+}
+RepeatEndingStart = "|" ending:RepeatEndingNumber {
+  return node('RepeatEndingStart',{delimiter:true, alternateEnding: ending});
+}
+RepeatEndingNumber = "¹" { return 1; } / "²" { return 2; }
 BarLine = "|" { return node('BarLine',{delimiter:true}); }
 Semicolon = _ ";" _ { return node('Semicolon', { delimiter: true }); }
 SetterGroup = "(" _ first:Setter rest:(Semicolon Setter)* _ ")" {

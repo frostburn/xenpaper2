@@ -14,6 +14,7 @@ import type {
   RatioChordPitchType,
   SetterType,
   DelimiterType,
+  SequenceItemsType,
 } from './grammar.generated'
 
 import type {
@@ -221,6 +222,67 @@ type Context = {
 }
 
 const times: [number, number][] = []
+
+type RepetitionState = {
+  startIndex: number
+  firstEndingIndex?: number
+}
+
+const cloneSequenceItem = <T>(item: T): T => {
+  if (Array.isArray(item)) {
+    return item.map(cloneSequenceItem) as T
+  }
+
+  if (item && typeof item === 'object') {
+    return Object.fromEntries(
+      Object.entries(item).map(([key, value]) => [key, cloneSequenceItem(value)]),
+    ) as T
+  }
+
+  return item
+}
+
+const expandRepeatedSequenceItems = (items: SequenceItemsType[]): SequenceItemsType[] => {
+  const expandedItems: SequenceItemsType[] = []
+  let repetitionState: RepetitionState | undefined
+
+  items.forEach((item) => {
+    if (item.type === 'RepeatStart') {
+      expandedItems.push(item)
+      repetitionState = {
+        startIndex: expandedItems.length,
+      }
+      return
+    }
+
+    if (item.type === 'RepeatEndingStart') {
+      if (item.alternateEnding === 1) {
+        repetitionState = {
+          startIndex: repetitionState?.startIndex ?? 0,
+          firstEndingIndex: expandedItems.length,
+        }
+      }
+      expandedItems.push(item)
+      return
+    }
+
+    if (item.type === 'RepeatEnd') {
+      const startIndex = repetitionState?.startIndex ?? 0
+      const endIndex =
+        item.alternateEnding === 2 && repetitionState?.firstEndingIndex !== undefined
+          ? repetitionState.firstEndingIndex
+          : expandedItems.length
+      const repeatedItems = expandedItems.slice(startIndex, endIndex).map(cloneSequenceItem)
+      expandedItems.push(item, ...repeatedItems)
+      repetitionState = undefined
+      return
+    }
+
+    expandedItems.push(item)
+  })
+
+  return expandedItems
+}
 
 type ChordPitchType = PitchType | SampleRateNoteType | RatioChordPitchType | DelimiterType
 
@@ -654,6 +716,7 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
   times.length = 0
 
   const grammarSequence = grammar.sequence
+  grammarSequence.items = expandRepeatedSequenceItems(grammarSequence.items)
 
   const INITIAL_TEMPO: MoscTempo = {
     type: 'TEMPO',
@@ -701,7 +764,14 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
 
   grammarSequence.items.forEach((item): void => {
     const { type } = item
-    if (type === 'Comment' || type === 'BarLine' || type === 'Whitespace') {
+    if (
+      type === 'Comment' ||
+      type === 'BarLine' ||
+      type === 'Whitespace' ||
+      type === 'RepeatStart' ||
+      type === 'RepeatEnd' ||
+      type === 'RepeatEndingStart'
+    ) {
       // do nothing
       return
     }
