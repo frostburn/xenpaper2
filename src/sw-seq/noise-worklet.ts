@@ -35,8 +35,7 @@ class SWSeqNoiseGenerator extends AudioWorkletProcessor {
     const whiteSample = Math.random() * 2 - 1
 
     if (this.noise === 'brown') {
-      this.brownSample = this.brownSample * 0.997 + whiteSample * 0.05
-      this.brownSample = Math.max(-1, Math.min(1, this.brownSample))
+      this.brownSample = this.brownSample * 0.95 + whiteSample * 0.5
       return this.brownSample
     }
 
@@ -113,7 +112,9 @@ export function registerNoiseGeneratorWorklet(context: BaseAudioContext): Promis
 
 export type NoiseGeneratorNode = AudioWorkletNode &
   GainNode &
-  Pick<OscillatorNode, 'detune' | 'frequency'>
+  Pick<OscillatorNode, 'detune' | 'frequency'> & {
+    type: NoiseGeneratorType
+  }
 
 export function createNoiseGeneratorNode(context: BaseAudioContext): NoiseGeneratorNode {
   const node = new AudioWorkletNode(context, NOISE_GENERATOR_PROCESSOR_NAME, {
@@ -122,10 +123,22 @@ export function createNoiseGeneratorNode(context: BaseAudioContext): NoiseGenera
     outputChannelCount: [1],
   }) as NoiseGeneratorNode
 
+  let type: NoiseGeneratorType = 'white'
+
   Object.defineProperties(node, {
     detune: { value: node.parameters.get('detune') },
     frequency: { value: node.parameters.get('frequency') },
     gain: { value: node.parameters.get('gain') },
+    type: {
+      get: () => type,
+      set: (value: NoiseGeneratorType) => {
+        if (!isNoiseGeneratorType(value)) {
+          throw new Error(`"${value}" is not a valid noise generator.`)
+        }
+        type = value
+        node.port.postMessage({ type: 'noise', noise: value })
+      },
+    },
   })
 
   return node

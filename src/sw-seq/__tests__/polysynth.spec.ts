@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import type { Bank } from '../bank'
+import type { NoiseGeneratorType } from '../noise-worklet'
 import { PolySynth, type SynthParams } from '../polysynth'
 
 const createAudioParam = () => ({
@@ -16,8 +17,7 @@ type MockOscillator = {
   detune: MockAudioParam
   frequency: MockAudioParam
   gain: MockAudioParam
-  port: { postMessage: ReturnType<typeof vi.fn<(message: unknown) => void>> }
-  type: OscillatorType
+  type: NoiseGeneratorType | OscillatorType
   connect: ReturnType<typeof vi.fn<(destination: unknown) => void>>
   disconnect: ReturnType<typeof vi.fn<() => void>>
 }
@@ -26,7 +26,6 @@ const createOscillator = (): MockOscillator => ({
   detune: createAudioParam(),
   frequency: createAudioParam(),
   gain: createAudioParam(),
-  port: { postMessage: vi.fn<(message: unknown) => void>() },
   type: 'sine',
   connect: vi.fn<(destination: unknown) => void>(),
   disconnect: vi.fn<() => void>(),
@@ -109,7 +108,7 @@ describe('PolySynth', () => {
     expect(noise.frequency.setValueAtTime).toHaveBeenCalledWith(440, 1)
   })
 
-  it('sends noise generator type changes over the worklet port', () => {
+  it('sets noise generator type through the shared type interface', () => {
     const noise = createOscillator()
     const bank = {
       context: {},
@@ -138,6 +137,6 @@ describe('PolySynth', () => {
 
     note.noteOn(1)
 
-    expect(noise.port.postMessage).toHaveBeenCalledWith({ type: 'noise', noise: 'violet' })
+    expect(noise.type).toBe('violet')
   })
 })

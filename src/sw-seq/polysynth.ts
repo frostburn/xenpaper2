@@ -117,8 +117,9 @@ export class PolySynth {
         oscillator.setAperiodicWave(aperiodicWave)
       } else if (type === 'custom' && periodicWave !== null && 'setPeriodicWave' in oscillator) {
         oscillator.setPeriodicWave(periodicWave)
-      } else if (type === 'noise' && 'port' in oscillator) {
-        oscillator.port.postMessage({ type: 'noise', noise: synth.noise })
+      } else if (type === 'noise' && 'type' in oscillator) {
+        const noiseGenerator = oscillator as NoiseGeneratorNode
+        noiseGenerator.type = synth.noise
       } else if (type !== 'custom' && type !== 'noise' && 'type' in oscillator) {
         oscillator.type = type
       }
