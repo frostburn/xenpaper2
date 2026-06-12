@@ -1,14 +1,17 @@
 const NOISE_GENERATOR_PROCESSOR_NAME = 'sw-seq-noise-generator'
 
-export type NoiseGeneratorType = 'white' | 'brown' | 'violet'
+export type NoiseGeneratorType = 'white' | 'pink' | 'brown' | 'blue' | 'violet'
 
-const NOISE_GENERATOR_TYPES = new Set<string>(['white', 'brown', 'violet'])
+const NOISE_GENERATOR_TYPES = new Set<string>(['white', 'pink', 'brown', 'blue', 'violet'])
 
 export function isNoiseGeneratorType(noise: string): noise is NoiseGeneratorType {
   return NOISE_GENERATOR_TYPES.has(noise)
 }
 
 const NOISE_GENERATOR_WORKLET_JS = `
+const PINK_OCTAVE_COUNT = 10
+const PINK_GAIN = 1 / Math.sqrt(PINK_OCTAVE_COUNT)
+
 class SWSeqNoiseGenerator extends AudioWorkletProcessor {
   constructor() {
     super()
@@ -16,22 +19,61 @@ class SWSeqNoiseGenerator extends AudioWorkletProcessor {
     this.noise = 'white'
     this.currentSample = 0
     this.previousWhiteSample = 0
+    this.previousPinkSample = 0
     this.brownSample = 0
+    this.pinkOctaveSamples = new Float64Array(PINK_OCTAVE_COUNT)
+    this.pinkOctaveCountdowns = new Uint32Array(PINK_OCTAVE_COUNT)
 
     this.port.onmessage = (event) => {
       if (event.data?.type !== 'noise') return
-      if (event.data.noise !== 'white' && event.data.noise !== 'brown' && event.data.noise !== 'violet') {
+      if (
+        event.data.noise !== 'white' &&
+        event.data.noise !== 'pink' &&
+        event.data.noise !== 'brown' &&
+        event.data.noise !== 'blue' &&
+        event.data.noise !== 'violet'
+      ) {
         return
       }
       this.noise = event.data.noise
       this.currentSample = 0
       this.previousWhiteSample = 0
+      this.previousPinkSample = 0
       this.brownSample = 0
+      this.pinkOctaveSamples.fill(0)
+      this.pinkOctaveCountdowns.fill(0)
       this.phase = 1
     }
   }
 
+  nextPinkSample() {
+    let pinkSample = 0
+
+    for (let octave = 0; octave < PINK_OCTAVE_COUNT; octave++) {
+      if (this.pinkOctaveCountdowns[octave] === 0) {
+        this.pinkOctaveSamples[octave] = Math.random() * 2 - 1
+        this.pinkOctaveCountdowns[octave] = 1 << octave
+      }
+
+      pinkSample += this.pinkOctaveSamples[octave]
+      this.pinkOctaveCountdowns[octave]--
+    }
+
+    return pinkSample * PINK_GAIN
+  }
+
   nextSample() {
+    if (this.noise === 'pink') {
+      return this.nextPinkSample()
+    }
+
+    if (this.noise === 'blue') {
+      const pinkSample = this.nextPinkSample()
+      const blueSample = pinkSample - this.previousPinkSample
+      this.previousPinkSample = pinkSample
+      return blueSample
+    }
+
     const whiteSample = Math.random() * 2 - 1
 
     if (this.noise === 'brown') {
