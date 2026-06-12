@@ -35,12 +35,13 @@ class SWSeqNoiseGenerator extends AudioWorkletProcessor {
     const whiteSample = Math.random() * 2 - 1
 
     if (this.noise === 'brown') {
-      this.brownSample = this.brownSample * 0.95 + whiteSample * 0.5
+      this.brownSample = this.brownSample * 0.95 + whiteSample * 0.8
+      this.brownSample = Math.max(-2, Math.min(2, this.brownSample))
       return this.brownSample
     }
 
     if (this.noise === 'violet') {
-      const violetSample = (whiteSample - this.previousWhiteSample) * 0.5
+      const violetSample = (whiteSample - this.previousWhiteSample) * 0.66
       this.previousWhiteSample = whiteSample
       return violetSample
     }
