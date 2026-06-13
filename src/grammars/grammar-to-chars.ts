@@ -15,15 +15,16 @@ export type HighlightColor =
   | 'error'
   | 'errorMessage'
 
+export type PlayTime = [number, number]
+
 export type CharData = {
   color: HighlightColor
-  playTime?: [number, number]
-  playTimes?: [number, number][]
+  playTimes: PlayTime[]
 }
 
 type GrammarNode = {
   type: string
-  time?: [number, number]
+  time?: PlayTime
   location: LocationRange
   [key: string]: unknown
 }
@@ -34,23 +35,15 @@ const isGrammarNode = (data: unknown): data is GrammarNode =>
   typeof (data as Partial<GrammarNode>).location?.start.offset === 'number' &&
   typeof (data as Partial<GrammarNode>).location?.end.offset === 'number'
 
-const isSamePlayTime = (a: [number, number], b: [number, number]): boolean =>
-  a[0] === b[0] && a[1] === b[1]
+const isSamePlayTime = (a: PlayTime, b: PlayTime): boolean => a[0] === b[0] && a[1] === b[1]
 
-const appendPlayTime = (
-  existing: CharData | undefined,
-  time: [number, number] | undefined,
-): [number, number][] | undefined => {
-  if (!time) return existing?.playTimes
-
-  const existingPlayTimes = existing?.playTimes ?? (existing?.playTime ? [existing.playTime] : [])
-  if (existingPlayTimes.some((playTime) => isSamePlayTime(playTime, time))) {
-    return existing?.playTimes
+const appendPlayTime = (existing: CharData | undefined, time: PlayTime | undefined): PlayTime[] => {
+  const existingPlayTimes = existing?.playTimes ?? []
+  if (!time || existingPlayTimes.some((playTime) => isSamePlayTime(playTime, time))) {
+    return existingPlayTimes
   }
 
-  if (existingPlayTimes.length > 0) return [...existingPlayTimes, time]
-
-  return undefined
+  return [...existingPlayTimes, time]
 }
 
 const colorMap = new Map<string, HighlightColor>([
@@ -107,7 +100,7 @@ const extract = (
   chars: CharData[],
   data: unknown,
   parent: string,
-  withinTime?: [number, number],
+  withinTime?: PlayTime,
 ): void => {
   if (Array.isArray(data)) {
     data.forEach((value) => extract(chars, value, parent, withinTime))
@@ -129,8 +122,7 @@ const extract = (
 
         chars[offset] = {
           color: color === 'comment' && offset === startOffset ? 'commentStart' : color,
-          playTime: existing?.playTime ?? time,
-          ...(playTimes ? { playTimes } : {}),
+          playTimes,
         }
       }
     }

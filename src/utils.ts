@@ -115,7 +115,7 @@ export const parseAndProcessSourceCode = (source: string): ParsedSource => {
     const offset = getErrorOffset(source, error)
 
     if (typeof offset === 'number') {
-      chars[offset] = { color: 'error' }
+      chars[offset] = { color: 'error', playTimes: [] }
     }
 
     return {
@@ -125,6 +125,20 @@ export const parseAndProcessSourceCode = (source: string): ParsedSource => {
     }
   }
 }
+
+
+export const getCharacterPlayTimes = (charData?: CharData): CharData['playTimes'] =>
+  charData?.playTimes ?? []
+
+export const isCharacterActiveAtTime = (
+  charData: CharData | undefined,
+  isPlaying: boolean,
+  playbackPositionTime: number,
+): boolean =>
+  isPlaying &&
+  getCharacterPlayTimes(charData).some(
+    ([start, end]) => playbackPositionTime >= start && playbackPositionTime < end,
+  )
 
 export const getTimeAtLine = (
   source: string,
@@ -140,9 +154,7 @@ export const getTimeAtLine = (
   for (let i = 0; i < sourceCharacters.length; i++) {
     const character = sourceCharacters[i]
     const characterData = charData?.[i]
-    const characterPlayTimes =
-      characterData?.playTimes ?? (characterData?.playTime ? [characterData.playTime] : [])
-    const latestEnd = Math.max(...characterPlayTimes.map(([, end]) => end))
+    const latestEnd = Math.max(...getCharacterPlayTimes(characterData).map(([, end]) => end))
 
     if (Number.isFinite(latestEnd)) time = latestEnd
 

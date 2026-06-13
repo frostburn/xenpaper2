@@ -48,7 +48,6 @@ describe('grammarToChars', () => {
 
     expect(chars[3]).toMatchObject({
       color: 'pitch',
-      playTime: [0, 0.25],
       playTimes: [
         [0, 0.25],
         [0.25, 0.5],
@@ -174,7 +173,7 @@ describe('grammarToChars', () => {
       },
     } as unknown as XenpaperAST)
 
-    expect(chars[0]).toEqual({ color: 'pitch', playTime: [1, 2] })
+    expect(chars[0]).toEqual({ color: 'pitch', playTimes: [[1, 2]] })
   })
 
   it('returns no character data when the AST has no sequence', () => {

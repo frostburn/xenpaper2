@@ -3,6 +3,7 @@ import { computed, useTemplateRef } from 'vue'
 
 import type { CharData } from '../grammars/grammar-to-chars'
 import type { SourceDisplayToken, SourceTab } from '../types'
+import { isCharacterActiveAtTime } from '../utils'
 
 const props = defineProps<{
   sourceCode: string
@@ -31,16 +32,9 @@ const syncHighlightScroll = (): void => {
   sourceHighlights.value.scrollLeft = sourceInput.value.scrollLeft
 }
 
-const isCharacterActive = (charData?: CharData): boolean => {
-  const playTimes = charData?.playTimes ?? (charData?.playTime ? [charData.playTime] : [])
+const isCharacterActive = (charData?: CharData): boolean =>
+  isCharacterActiveAtTime(charData, props.isPlaying, props.playbackPositionTime)
 
-  return (
-    props.isPlaying &&
-    playTimes.some(
-      ([start, end]) => props.playbackPositionTime >= start && props.playbackPositionTime < end,
-    )
-  )
-}
 </script>
 
 <template>
