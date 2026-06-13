@@ -100,6 +100,26 @@ describe('grammar', () => {
         ])
       })
 
+      it('should parse musical control flow markers as sequence items', () => {
+        expect(
+          strip(
+            parser(
+              '(Segno) (Coda) (Fine) (D.C. al Fine) (Da Capo al Coda) (D.S. al Fine) (Dal Segno al Coda) (To Coda) (Al Coda)',
+            ).sequence.items,
+          ),
+        ).toMatchObject([
+          { type: 'Segno' },
+          { type: 'Coda' },
+          { type: 'Fine' },
+          { type: 'DaCapo', target: 'start', stop: 'fine' },
+          { type: 'DaCapo', target: 'start', stop: 'coda' },
+          { type: 'DalSegno', target: 'segno', stop: 'fine' },
+          { type: 'DalSegno', target: 'segno', stop: 'coda' },
+          { type: 'AlCoda' },
+          { type: 'AlCoda' },
+        ])
+      })
+
       it('should parse sample-rate note grammar', () => {
         expect(strip(parser('!-').sequence.items)).toEqual([
           {
@@ -2020,7 +2040,7 @@ describe('grammar', () => {
       it('should error if setter is empty or not delimited properly', () => {
         expectParserErrorMessage(
           '()',
-          'Expected "bms", "bpm", "div", "env", "noise", "osc", "plot", "rl", or integer but ")" found.',
+          'Expected "al", "bms", "bpm", "coda", "d", "da", "dal", "div", "env", "fine", "noise", "osc", "plot", "rl", "segno", "to", or integer but ")" found.',
         )
         expectParserErrorMessage('(div:16;)', 'but ")" found.')
         expectParserErrorMessage('(div:16;;div:16)', 'but ";" found.')

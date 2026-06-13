@@ -171,6 +171,27 @@ describe('grammar to mosc score', () => {
     ])
   })
 
+  it('expands D.C. al Fine control flow after repeats', () => {
+    expect(noteLabels('0 |: 1 :| (Fine) 2 (D.C. al Fine) 3')).toEqual([
+      '0\\12  0.0c',
+      '1\\12  100.0c',
+      '1\\12  100.0c',
+      '2\\12  200.0c',
+      '0\\12  0.0c',
+      '1\\12  100.0c',
+      '1\\12  100.0c',
+    ])
+  })
+
+  it('expands D.S. al Coda control flow with long-form syntax', () => {
+    expect(noteLabels('(Segno) 0 (To Coda) 1 (Dal Segno al Coda) 2 (Coda) 3')).toEqual([
+      '0\\12  0.0c',
+      '1\\12  100.0c',
+      '0\\12  0.0c',
+      '3\\12  300.0c',
+    ])
+  })
+
   it('rejects hold tails on repeat markers after rests', () => {
     const source = parseAndProcessSourceCode('|: 1.|¹-- 7:|²-. |')
 

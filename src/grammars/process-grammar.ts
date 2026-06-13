@@ -292,6 +292,54 @@ const addTailToLastPlayableItem = (
   throw new Error('Cannot attach a hold without a previous note, sample-rate note, or chord')
 }
 
+type MusicalControlInstruction = Extract<SequenceItemsType, { type: 'DaCapo' | 'DalSegno' }>
+
+const expandMusicalControlFlowItems = (items: SequenceItemsType[]): SequenceItemsType[] => {
+  const expandedItems: SequenceItemsType[] = []
+
+  const findIndex = (type: SequenceItemsType['type'], startIndex = 0): number =>
+    items.findIndex((item, index) => index >= startIndex && item.type === type)
+
+  const appendClonedRange = (startIndex: number, endIndex: number): void => {
+    expandedItems.push(...items.slice(startIndex, endIndex).map(cloneSequenceItem))
+  }
+
+  const expandInstruction = (item: MusicalControlInstruction): void => {
+    const targetIndex = item.type === 'DaCapo' ? 0 : findIndex('Segno')
+    if (targetIndex < 0) {
+      throw new Error('D.S. requires a Segno marker')
+    }
+
+    if (item.stop === 'fine') {
+      const fineIndex = findIndex('Fine', targetIndex)
+      appendClonedRange(targetIndex, fineIndex < 0 ? items.length : fineIndex)
+      return
+    }
+
+    const alCodaIndex = findIndex('AlCoda', targetIndex)
+    const codaIndex = findIndex('Coda', alCodaIndex < 0 ? targetIndex : alCodaIndex)
+    if (alCodaIndex < 0 || codaIndex < 0) {
+      throw new Error(
+        `${item.type === 'DaCapo' ? 'D.C.' : 'D.S.'} al Coda requires To Coda and Coda markers`,
+      )
+    }
+
+    appendClonedRange(targetIndex, alCodaIndex)
+    appendClonedRange(codaIndex, items.length)
+  }
+
+  for (const item of items) {
+    expandedItems.push(item)
+
+    if (item.type === 'DaCapo' || item.type === 'DalSegno') {
+      expandInstruction(item)
+      break
+    }
+  }
+
+  return expandedItems
+}
+
 const expandRepeatedSequenceItems = (items: SequenceItemsType[]): SequenceItemsType[] => {
   const expandedItems: SequenceItemsType[] = []
   const repetitionStack: RepetitionState[] = []
@@ -818,7 +866,9 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
   times.length = 0
 
   const grammarSequence = grammar.sequence
-  grammarSequence.items = expandRepeatedSequenceItems(grammarSequence.items)
+  grammarSequence.items = expandMusicalControlFlowItems(
+    expandRepeatedSequenceItems(grammarSequence.items),
+  )
 
   const INITIAL_TEMPO: MoscTempo = {
     type: 'TEMPO',
@@ -873,7 +923,13 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
       type === 'RepeatStart' ||
       type === 'RepeatEnd' ||
       type === 'RepeatEndStart' ||
-      type === 'RepeatEndingStart'
+      type === 'RepeatEndingStart' ||
+      type === 'Segno' ||
+      type === 'Coda' ||
+      type === 'Fine' ||
+      type === 'DaCapo' ||
+      type === 'DalSegno' ||
+      type === 'AlCoda'
     ) {
       // do nothing
       return
