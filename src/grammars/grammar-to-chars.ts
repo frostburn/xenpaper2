@@ -96,12 +96,7 @@ const colorMap = new Map<string, HighlightColor>([
 ])
 
 // need to pass playhead time in
-const extract = (
-  chars: CharData[],
-  data: unknown,
-  parent: string,
-  withinTime?: PlayTime,
-): void => {
+const extract = (chars: CharData[], data: unknown, parent: string, withinTime?: PlayTime): void => {
   if (Array.isArray(data)) {
     data.forEach((value) => extract(chars, value, parent, withinTime))
     return

@@ -136,7 +136,6 @@ onUnmounted(() => {
 })
 const isCharacterActive = (charData?: CharData): boolean =>
   isCharacterActiveAtTime(charData, props.isPlaying, props.playbackPositionTime)
-
 </script>
 
 <template>

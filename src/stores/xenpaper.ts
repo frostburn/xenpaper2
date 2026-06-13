@@ -1,7 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, reactive, ref, shallowRef, watch } from 'vue'
 
-import { type CharData } from '../grammars/grammar-to-chars'
 import type { MoscNote } from '../mosc'
 import {
   canRedoSourceChange,
@@ -38,7 +37,6 @@ import {
   escapeHtmlAttribute,
   getTimeAtLine,
   isApplePlatform,
-  isCharacterActiveAtTime,
   parseAndProcessSourceCode,
 } from '../utils'
 
@@ -615,9 +613,6 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     })
   }
 
-  const isCharacterActive = (charData?: CharData): boolean =>
-    isCharacterActiveAtTime(charData, isPlaying.value, playbackPositionTime.value)
-
   const disposeSoundEngines = (): void => {
     disposeScoreEngines(scoreEngines.value)
   }
@@ -676,7 +671,6 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     syncPlaybackPosition,
     resetPlaybackPosition,
     setActiveNoteHandler,
-    isCharacterActive,
     disposeSoundEngines,
     showSidebar,
     closeSidebar,

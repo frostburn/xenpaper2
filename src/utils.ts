@@ -126,7 +126,6 @@ export const parseAndProcessSourceCode = (source: string): ParsedSource => {
   }
 }
 
-
 export const getCharacterPlayTimes = (charData?: CharData): CharData['playTimes'] =>
   charData?.playTimes ?? []
 
