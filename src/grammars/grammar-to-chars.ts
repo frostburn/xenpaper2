@@ -18,8 +18,9 @@ export type HighlightColor =
 export type PlayTime = [number, number]
 
 export type CharData = {
-  color: HighlightColor
+  color?: HighlightColor
   playTimes: PlayTime[]
+  controlsPlayback?: boolean
 }
 
 type GrammarNode = {
@@ -45,6 +46,8 @@ const appendPlayTime = (existing: CharData | undefined, time: PlayTime | undefin
 
   return [...existingPlayTimes, time]
 }
+
+const controlFlowTypes = new Set(['DaCapo', 'DalSegno', 'Segno', 'AlCoda', 'Coda', 'Fine'])
 
 const colorMap = new Map<string, HighlightColor>([
   ['Semicolon', 'delimiter'],
@@ -108,7 +111,7 @@ const extract = (chars: CharData[], data: unknown, parent: string, withinTime?: 
     const color = type ? colorMap.get(`${parent}.${type}`) || colorMap.get(type) : undefined
     const time = withinTime ?? grammarNode?.time
 
-    if (grammarNode && color) {
+    if (grammarNode && (color || controlFlowTypes.has(type ?? ''))) {
       const startOffset = grammarNode.location.start.offset
       const endOffset = grammarNode.location.end.offset
       for (let offset = startOffset; offset < endOffset; offset++) {
@@ -116,8 +119,13 @@ const extract = (chars: CharData[], data: unknown, parent: string, withinTime?: 
         const playTimes = appendPlayTime(existing, time)
 
         chars[offset] = {
-          color: color === 'comment' && offset === startOffset ? 'commentStart' : color,
+          color:
+            color === 'comment' && offset === startOffset
+              ? 'commentStart'
+              : (color ?? existing?.color),
           playTimes,
+          controlsPlayback:
+            existing?.controlsPlayback || controlFlowTypes.has(type ?? '') || undefined,
         }
       }
     }

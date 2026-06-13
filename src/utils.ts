@@ -153,7 +153,7 @@ export const getTimeAtLine = (
     const linePlayStarts = charData
       ?.slice(lineStartOffset, searchEndOffset)
       .flatMap((characterData) =>
-        characterData?.color === 'delimiter'
+        characterData?.controlsPlayback
           ? []
           : getCharacterPlayTimes(characterData).map(([start]) => start),
       )
