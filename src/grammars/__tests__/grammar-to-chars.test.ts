@@ -106,6 +106,15 @@ describe('grammarToChars', () => {
     expect(getTimeAtLine(source, chars, 1)).toBe(1)
   })
 
+  it('finds a line time from the earliest start on that line', () => {
+    const source = '|: 1\n2 :|'
+    const parsed = parse(source)
+    processGrammar(parsed)
+    const chars = grammarToChars(parsed)
+
+    expect(getTimeAtLine(source, chars, 1)).toBe(0.25)
+  })
+
   it('highlights barlines inside hold tails as delimiters', () => {
     const chars = grammarToChars(parse('1--|--'))
 

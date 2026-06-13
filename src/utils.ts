@@ -144,26 +144,34 @@ export const getTimeAtLine = (
   charData: CharData[] | undefined,
   line: number,
 ): number => {
-  if (line === 0) return 0
-
-  let time = 0
-  let counted = 0
+  let currentLine = 0
+  let earliestStart = Infinity
   const sourceCharacters = source.split('')
 
   for (let i = 0; i < sourceCharacters.length; i++) {
     const character = sourceCharacters[i]
-    const characterData = charData?.[i]
-    const latestEnd = Math.max(...getCharacterPlayTimes(characterData).map(([, end]) => end))
-
-    if (Number.isFinite(latestEnd)) time = latestEnd
 
     if (character === '\n') {
-      counted++
-      if (counted === line) return time
+      if (currentLine === line) return Number.isFinite(earliestStart) ? earliestStart : 0
+
+      currentLine++
+      earliestStart = Infinity
+      continue
+    }
+
+    if (currentLine !== line) continue
+
+    const characterData = charData?.[i]
+    const characterEarliestStart = Math.min(
+      ...getCharacterPlayTimes(characterData).map(([start]) => start),
+    )
+
+    if (Number.isFinite(characterEarliestStart)) {
+      earliestStart = Math.min(earliestStart, characterEarliestStart)
     }
   }
 
-  return 0
+  return currentLine === line && Number.isFinite(earliestStart) ? earliestStart : 0
 }
 
 export const copyText = async (text: string): Promise<boolean> => {
