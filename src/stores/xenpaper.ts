@@ -38,6 +38,7 @@ import {
   escapeHtmlAttribute,
   getTimeAtLine,
   isApplePlatform,
+  isCharacterActiveAtTime,
   parseAndProcessSourceCode,
 } from '../utils'
 
@@ -614,15 +615,8 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     })
   }
 
-  const isCharacterActive = (charData?: CharData): boolean => {
-    const playTimes = charData?.playTimes ?? (charData?.playTime ? [charData.playTime] : [])
-    return (
-      isPlaying.value &&
-      playTimes.some(
-        ([start, end]) => playbackPositionTime.value >= start && playbackPositionTime.value < end,
-      )
-    )
-  }
+  const isCharacterActive = (charData?: CharData): boolean =>
+    isCharacterActiveAtTime(charData, isPlaying.value, playbackPositionTime.value)
 
   const disposeSoundEngines = (): void => {
     disposeScoreEngines(scoreEngines.value)

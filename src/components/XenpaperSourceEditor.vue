@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, useTemplateRef } from 'vue'
 
 import type { CharData } from '../grammars/grammar-to-chars'
 import { getSourceLineAtOffset } from '../source-display'
+import { isCharacterActiveAtTime } from '../utils'
 import type { SourceDisplayToken, SourceTab } from '../types'
 
 const props = defineProps<{
@@ -133,16 +134,9 @@ onMounted(() => {
 onUnmounted(() => {
   document.removeEventListener('pointerdown', handleDocumentPointerdown)
 })
-const isCharacterActive = (charData?: CharData): boolean => {
-  const playTimes = charData?.playTimes ?? (charData?.playTime ? [charData.playTime] : [])
+const isCharacterActive = (charData?: CharData): boolean =>
+  isCharacterActiveAtTime(charData, props.isPlaying, props.playbackPositionTime)
 
-  return (
-    props.isPlaying &&
-    playTimes.some(
-      ([start, end]) => props.playbackPositionTime >= start && props.playbackPositionTime < end,
-    )
-  )
-}
 </script>
 
 <template>
