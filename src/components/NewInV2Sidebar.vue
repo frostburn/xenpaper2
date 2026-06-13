@@ -54,6 +54,32 @@ const newInV2Sections: SidebarSection[] = [
     ],
   },
   {
+    title: 'Repeats and jumps',
+    demos: [
+      {
+        description:
+          'Alternate endings and D.S. al Coda markings let a single tab sketch compact song forms with first/second endings and a jump back to the segno before the coda.',
+        tune: `(bpm:132)(osc:warm2)(env:1624)
+{1/1 16/15 9/8 6/5 5/4 4/3 7/5 3/2 8/5 5/3 16/9 15/8}
+[0,4,7]- 2 |  5  4  2 |
+(Segno)    |: 0  4  7 | 5 4 2 |(^1) 0 2 4 :|(^2) 7 9 11 |
+(To Coda)  |  12 11 9 | 7 4 2 |     5 7 9  |     4-  2  |
+(D.S. al Coda)
+
+(Coda) | [0,2,7]-- | [5,7,12]-- | [0,4,7,12]--- ||`,
+      },
+      {
+        description:
+          'D.C. al Fine returns to the beginning and stops at Fine; this 4/4 example uses superscript alternate endings with |¹ and :|².',
+        tune: `(bpm:112)(osc:semisine)(env:1624)
+# square little 4/4 tune
+|: 0 2 4 5 |¹ 7 5 4 2 :|² 7 11 12- |
+(Fine) 12 11 9 7 | 5 4 2 \`11 |
+(D.C. al Fine)`,
+      },
+    ],
+  },
+  {
     title: 'More forgiving notation',
     demos: [
       {
