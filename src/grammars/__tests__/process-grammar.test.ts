@@ -171,6 +171,13 @@ describe('grammar to mosc score', () => {
     ])
   })
 
+  it('rejects hold tails on repeat markers after rests', () => {
+    const source = parseAndProcessSourceCode('|: 1.|¹-- 7:|²-. |')
+
+    expect(source.playable).toBe(false)
+    expect(source.error).toContain('Cannot attach a hold to a rest')
+  })
+
   it('rejects unpaired repeat starts during pre-processing', () => {
     const source = parseAndProcessSourceCode('|: 0')
 

@@ -277,11 +277,19 @@ const addTailToLastPlayableItem = (
 
   for (let index = items.length - 1; index >= 0; index--) {
     const item = items[index]
-    if (item && isSequenceItemWithTail(item)) {
+    if (!item) continue
+
+    if (item.type === 'Rest') {
+      throw new Error('Cannot attach a hold to a rest')
+    }
+
+    if (isSequenceItemWithTail(item)) {
       addTail(item, tail)
       return
     }
   }
+
+  throw new Error('Cannot attach a hold without a previous note, sample-rate note, or chord')
 }
 
 const expandRepeatedSequenceItems = (items: SequenceItemsType[]): SequenceItemsType[] => {
