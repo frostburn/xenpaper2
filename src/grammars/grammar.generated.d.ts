@@ -215,6 +215,7 @@ export type RepeatStartType = NodeType<'RepeatStart', true> & {
 
 export type RepeatEndType = NodeType<'RepeatEnd', true> & {
   alternateEnding?: number
+  tail?: TailType
 }
 
 export type RepeatEndStartType = NodeType<'RepeatEndStart', true> & {
@@ -223,6 +224,7 @@ export type RepeatEndStartType = NodeType<'RepeatEndStart', true> & {
 
 export type RepeatEndingStartType = NodeType<'RepeatEndingStart', true> & {
   alternateEnding: number
+  tail?: TailType
 }
 
 export type RepeatType =

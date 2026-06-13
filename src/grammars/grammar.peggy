@@ -86,12 +86,14 @@ RepeatEndStart = ":|:" count:RepeatCount? {
   return node('RepeatEndStart',{delimiter:true, repeatCount: count ?? 2});
 }
 RepeatStart = "|:" count:RepeatCount? { return node('RepeatStart',{delimiter:true, repeatCount: count ?? 2}); }
-RepeatEnd = ":|" ending:RepeatEndingNumber? {
+RepeatEnd = ":|" ending:RepeatEndingNumber? tail:Hold? {
   const alternateEnding = ending ?? undefined;
-  return node('RepeatEnd',{delimiter:true, alternateEnding});
+  const noteTail = tail ?? undefined;
+  return node('RepeatEnd',{delimiter:true, alternateEnding, tail: noteTail});
 }
-RepeatEndingStart = "|" ending:RepeatEndingNumber {
-  return node('RepeatEndingStart',{delimiter:true, alternateEnding: ending});
+RepeatEndingStart = "|" ending:RepeatEndingNumber tail:Hold? {
+  const noteTail = tail ?? undefined;
+  return node('RepeatEndingStart',{delimiter:true, alternateEnding: ending, tail: noteTail});
 }
 RepeatCount = "ˣ" count:SuperScriptInt { return count; } / "(" "x"i count:Int ")" { return count; }
 RepeatEndingNumber = SuperScriptInt / "(" "^" count:Int ")" { return count; }

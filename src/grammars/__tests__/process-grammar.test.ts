@@ -59,10 +59,13 @@ const INITIAL = [INITIAL_TEMPO, INITIAL_OSC, INITIAL_ENV]
 
 const parseSource = (input: string) => parse(input, { grammarSource: 'test-input' })
 
-const noteLabels = (input: string): string[] =>
-  processGrammar(parseSource(input))
-    .score.sequence.filter((item) => item.type === 'NOTE_BEAT_TIME')
-    .map((item) => item.label)
+const noteItems = (input: string) =>
+  processGrammar(parseSource(input)).score.sequence.filter((item) => item.type === 'NOTE_BEAT_TIME')
+
+const noteLabels = (input: string): string[] => noteItems(input).map((item) => item.label)
+
+const noteLabelDurations = (input: string): Array<[string, number]> =>
+  noteItems(input).map((item) => [item.label, item.timeEnd - item.time])
 
 describe('grammar to mosc score', () => {
   it('expands simple repeats before translating to score items', () => {
@@ -154,6 +157,17 @@ describe('grammar to mosc score', () => {
       '2\\12  200.0c',
       '0\\12  0.0c',
       '3\\12  300.0c',
+    ])
+  })
+
+  it('realizes hold tails from repeat markers during pre-processing', () => {
+    expect(noteLabelDurations('1 |: 2 3-|¹- 4 :|²--')).toEqual([
+      ['1\\12  100.0c', 0.5],
+      ['2\\12  200.0c', 0.5],
+      ['3\\12  300.0c', 1.5],
+      ['4\\12  400.0c', 0.5],
+      ['2\\12  200.0c', 0.5],
+      ['3\\12  300.0c', 2],
     ])
   })
 

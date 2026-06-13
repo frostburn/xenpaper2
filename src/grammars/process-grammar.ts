@@ -228,6 +228,7 @@ type RepetitionState = {
   repeatCount: number
   repetitionsAdded: number
   firstEndingIndex?: number
+  firstEndingSegment?: SequenceItemsType[]
 }
 
 const cloneSequenceItem = <T>(item: T): T => {
@@ -242,6 +243,45 @@ const cloneSequenceItem = <T>(item: T): T => {
   }
 
   return item
+}
+
+type SequenceItemWithTail = Extract<
+  SequenceItemsType,
+  { type: 'Note' | 'SampleRateNote' | 'Chord' | 'RatioChord' }
+>
+
+const isSequenceItemWithTail = (item: SequenceItemsType): item is SequenceItemWithTail =>
+  item.type === 'Note' ||
+  item.type === 'SampleRateNote' ||
+  item.type === 'Chord' ||
+  item.type === 'RatioChord'
+
+const addTail = (item: SequenceItemWithTail, tail: TailType): void => {
+  if (!item.tail) {
+    item.tail = cloneSequenceItem(tail)
+    return
+  }
+
+  item.tail = {
+    ...item.tail,
+    length: item.tail.length + tail.length,
+    parts: [...item.tail.parts, ...cloneSequenceItem(tail.parts)],
+  }
+}
+
+const addTailToLastPlayableItem = (
+  items: SequenceItemsType[],
+  tail: TailType | undefined,
+): void => {
+  if (!tail) return
+
+  for (let index = items.length - 1; index >= 0; index--) {
+    const item = items[index]
+    if (item && isSequenceItemWithTail(item)) {
+      addTail(item, tail)
+      return
+    }
+  }
 }
 
 const expandRepeatedSequenceItems = (items: SequenceItemsType[]): SequenceItemsType[] => {
@@ -278,9 +318,15 @@ const expandRepeatedSequenceItems = (items: SequenceItemsType[]): SequenceItemsT
         ? 1
         : repetitionState.repeatCount - 1 - repetitionState.repetitionsAdded
       : repetitionState.repeatCount - 1
-    const segment = expandedItems.slice(repetitionState.startIndex, endIndex)
+    const segment =
+      repetitionState.firstEndingSegment ??
+      expandedItems.slice(repetitionState.startIndex, endIndex)
     const repeatedItems = Array.from({ length: repeatCount }).flatMap(() =>
       segment.map(cloneSequenceItem),
+    )
+    addTailToLastPlayableItem(
+      repeatedItems.length ? repeatedItems : expandedItems,
+      item.type === 'RepeatEnd' ? item.tail : undefined,
     )
     expandedItems.push(item, ...repeatedItems)
 
@@ -308,7 +354,11 @@ const expandRepeatedSequenceItems = (items: SequenceItemsType[]): SequenceItemsT
       const repetitionState = repetitionStack[repetitionStack.length - 1]
       if (item.alternateEnding === 1 && repetitionState) {
         repetitionState.firstEndingIndex = expandedItems.length
+        repetitionState.firstEndingSegment = expandedItems
+          .slice(repetitionState.startIndex, repetitionState.firstEndingIndex)
+          .map(cloneSequenceItem)
       }
+      addTailToLastPlayableItem(expandedItems, item.tail)
       expandedItems.push(item)
       return
     }
