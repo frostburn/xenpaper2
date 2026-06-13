@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
+import { getTimeAtLine } from '../../utils'
 import { grammarToChars, type CharData } from '../grammar-to-chars'
 import type { XenpaperAST } from '../grammar.generated'
 import * as parserModule from '../grammar.generated.js'
+import { processGrammar } from '../process-grammar'
 
 const parser = (
   parserModule as {
@@ -37,6 +39,72 @@ describe('grammarToChars', () => {
       'pitch',
       'chord',
     ])
+  })
+
+  it('keeps all repeated play times for characters inside repeats', () => {
+    const ast = parse('|: 0 :|')
+    processGrammar(ast)
+    const chars = grammarToChars(ast)
+
+    expect(chars[3]).toMatchObject({
+      color: 'pitch',
+      playTime: [0, 0.25],
+      playTimes: [
+        [0, 0.25],
+        [0.25, 0.5],
+      ],
+    })
+  })
+
+  it('highlights repeat markers as delimiters', () => {
+    expect(colors(grammarToChars(parse('|: 0 |¹ 1 :|²')))).toEqual([
+      'delimiter',
+      'delimiter',
+      undefined,
+      'pitch',
+      undefined,
+      'delimiter',
+      'delimiter',
+      undefined,
+      'pitch',
+      undefined,
+      'delimiter',
+      'delimiter',
+      'delimiter',
+    ])
+  })
+
+  it('highlights ASCII repeat ending markers as delimiters', () => {
+    expect(colors(grammarToChars(parse('|: 0 |(^1) 1 :|(^2)')))).toEqual([
+      'delimiter',
+      'delimiter',
+      undefined,
+      'pitch',
+      undefined,
+      'delimiter',
+      'delimiter',
+      'delimiter',
+      'delimiter',
+      'delimiter',
+      undefined,
+      'pitch',
+      undefined,
+      'delimiter',
+      'delimiter',
+      'delimiter',
+      'delimiter',
+      'delimiter',
+      'delimiter',
+    ])
+  })
+
+  it('uses all repeated play times when finding a line start time', () => {
+    const source = '|: 1 2 :|\n3'
+    const parsed = parse(source)
+    processGrammar(parsed)
+    const chars = grammarToChars(parsed)
+
+    expect(getTimeAtLine(source, chars, 1)).toBe(1)
   })
 
   it('highlights barlines inside hold tails as delimiters', () => {

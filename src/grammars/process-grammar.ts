@@ -14,6 +14,7 @@ import type {
   RatioChordPitchType,
   SetterType,
   DelimiterType,
+  SequenceItemsType,
 } from './grammar.generated'
 
 import type {
@@ -221,6 +222,169 @@ type Context = {
 }
 
 const times: [number, number][] = []
+
+type RepetitionState = {
+  startIndex: number
+  repeatCount: number
+  repetitionsAdded: number
+  firstEndingIndex?: number
+  firstEndingSegment?: SequenceItemsType[]
+}
+
+const cloneSequenceItem = <T>(item: T): T => {
+  if (Array.isArray(item)) {
+    return item.map(cloneSequenceItem) as T
+  }
+
+  if (item && typeof item === 'object') {
+    return Object.fromEntries(
+      Object.entries(item).map(([key, value]) => [key, cloneSequenceItem(value)]),
+    ) as T
+  }
+
+  return item
+}
+
+type SequenceItemWithTail = Extract<
+  SequenceItemsType,
+  { type: 'Note' | 'SampleRateNote' | 'Chord' | 'RatioChord' }
+>
+
+const isSequenceItemWithTail = (item: SequenceItemsType): item is SequenceItemWithTail =>
+  item.type === 'Note' ||
+  item.type === 'SampleRateNote' ||
+  item.type === 'Chord' ||
+  item.type === 'RatioChord'
+
+const addTail = (item: SequenceItemWithTail, tail: TailType): void => {
+  if (!item.tail) {
+    item.tail = cloneSequenceItem(tail)
+    return
+  }
+
+  item.tail = {
+    ...item.tail,
+    length: item.tail.length + tail.length,
+    parts: [...item.tail.parts, ...cloneSequenceItem(tail.parts)],
+  }
+}
+
+const addTailToLastPlayableItem = (
+  items: SequenceItemsType[],
+  tail: TailType | undefined,
+): void => {
+  if (!tail) return
+
+  for (let index = items.length - 1; index >= 0; index--) {
+    const item = items[index]
+    if (!item) continue
+
+    if (item.type === 'Rest') {
+      throw new Error('Cannot attach a hold to a rest')
+    }
+
+    if (isSequenceItemWithTail(item)) {
+      addTail(item, tail)
+      return
+    }
+  }
+
+  throw new Error('Cannot attach a hold without a previous note, sample-rate note, or chord')
+}
+
+const expandRepeatedSequenceItems = (items: SequenceItemsType[]): SequenceItemsType[] => {
+  const expandedItems: SequenceItemsType[] = []
+  const repetitionStack: RepetitionState[] = []
+
+  const openRepeat = (
+    item: Extract<SequenceItemsType, { type: 'RepeatStart' | 'RepeatEndStart' }>,
+  ): void => {
+    limit('Repeat count', item.repeatCount, 1, 100)
+    expandedItems.push(item)
+    repetitionStack.push({
+      startIndex: expandedItems.length,
+      repeatCount: item.repeatCount,
+      repetitionsAdded: 0,
+    })
+  }
+
+  const closeRepeat = (
+    item: Extract<SequenceItemsType, { type: 'RepeatEnd' | 'RepeatEndStart' }>,
+  ): void => {
+    const repetitionState = repetitionStack.pop() ?? {
+      startIndex: 0,
+      repeatCount: 2,
+      repetitionsAdded: 0,
+    }
+    const hasAlternateEnding = item.type === 'RepeatEnd' && item.alternateEnding !== undefined
+    const endIndex =
+      hasAlternateEnding && repetitionState.firstEndingIndex !== undefined
+        ? repetitionState.firstEndingIndex
+        : expandedItems.length
+    const repeatCount = hasAlternateEnding
+      ? item.alternateEnding! < repetitionState.repeatCount
+        ? 1
+        : repetitionState.repeatCount - 1 - repetitionState.repetitionsAdded
+      : repetitionState.repeatCount - 1
+    const segment =
+      repetitionState.firstEndingSegment ??
+      expandedItems.slice(repetitionState.startIndex, endIndex)
+    const repeatedItems = Array.from({ length: repeatCount }).flatMap(() =>
+      segment.map(cloneSequenceItem),
+    )
+    addTailToLastPlayableItem(
+      repeatedItems.length ? repeatedItems : expandedItems,
+      item.type === 'RepeatEnd' ? item.tail : undefined,
+    )
+    expandedItems.push(item, ...repeatedItems)
+
+    if (hasAlternateEnding && item.alternateEnding! < repetitionState.repeatCount) {
+      repetitionStack.push({
+        ...repetitionState,
+        repetitionsAdded: repetitionState.repetitionsAdded + repeatCount,
+      })
+    }
+  }
+
+  items.forEach((item) => {
+    if (item.type === 'RepeatStart') {
+      openRepeat(item)
+      return
+    }
+
+    if (item.type === 'RepeatEndStart') {
+      closeRepeat(item)
+      openRepeat(item)
+      return
+    }
+
+    if (item.type === 'RepeatEndingStart') {
+      const repetitionState = repetitionStack[repetitionStack.length - 1]
+      if (item.alternateEnding === 1 && repetitionState) {
+        repetitionState.firstEndingIndex = expandedItems.length
+        repetitionState.firstEndingSegment = expandedItems
+          .slice(repetitionState.startIndex, repetitionState.firstEndingIndex)
+          .map(cloneSequenceItem)
+      }
+      addTailToLastPlayableItem(expandedItems, item.tail)
+      expandedItems.push(item)
+      return
+    }
+
+    if (item.type === 'RepeatEnd') {
+      closeRepeat(item)
+      return
+    }
+
+    expandedItems.push(item)
+  })
+
+  if (repetitionStack.length > 0) {
+    throw new Error('Unpaired repeat start marker "|:"')
+  }
+
+  return expandedItems
+}
 
 type ChordPitchType = PitchType | SampleRateNoteType | RatioChordPitchType | DelimiterType
 
@@ -654,6 +818,7 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
   times.length = 0
 
   const grammarSequence = grammar.sequence
+  grammarSequence.items = expandRepeatedSequenceItems(grammarSequence.items)
 
   const INITIAL_TEMPO: MoscTempo = {
     type: 'TEMPO',
@@ -701,7 +866,15 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
 
   grammarSequence.items.forEach((item): void => {
     const { type } = item
-    if (type === 'Comment' || type === 'BarLine' || type === 'Whitespace') {
+    if (
+      type === 'Comment' ||
+      type === 'BarLine' ||
+      type === 'Whitespace' ||
+      type === 'RepeatStart' ||
+      type === 'RepeatEnd' ||
+      type === 'RepeatEndStart' ||
+      type === 'RepeatEndingStart'
+    ) {
       // do nothing
       return
     }

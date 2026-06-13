@@ -139,9 +139,12 @@ export const getTimeAtLine = (
 
   for (let i = 0; i < sourceCharacters.length; i++) {
     const character = sourceCharacters[i]
-    const [, end] = charData?.[i]?.playTime ?? []
+    const characterData = charData?.[i]
+    const characterPlayTimes =
+      characterData?.playTimes ?? (characterData?.playTime ? [characterData.playTime] : [])
+    const latestEnd = Math.max(...characterPlayTimes.map(([, end]) => end))
 
-    if (end !== undefined) time = end
+    if (Number.isFinite(latestEnd)) time = latestEnd
 
     if (character === '\n') {
       counted++

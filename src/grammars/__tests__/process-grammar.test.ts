@@ -7,6 +7,7 @@ declare module 'vitest' {
 }
 
 import { parseAndProcessSourceCode } from '../../utils'
+import { parse } from '../grammar.generated.js'
 import { processGrammar } from '../process-grammar'
 
 expect.extend({
@@ -56,7 +57,134 @@ const INITIAL_ENV = {
 
 const INITIAL = [INITIAL_TEMPO, INITIAL_OSC, INITIAL_ENV]
 
+const parseSource = (input: string) => parse(input, { grammarSource: 'test-input' })
+
+const noteItems = (input: string) =>
+  processGrammar(parseSource(input)).score.sequence.filter((item) => item.type === 'NOTE_BEAT_TIME')
+
+const noteLabels = (input: string): string[] => noteItems(input).map((item) => item.label)
+
+const noteLabelDurations = (input: string): Array<[string, number]> =>
+  noteItems(input).map((item) => [item.label, item.timeEnd - item.time])
+
 describe('grammar to mosc score', () => {
+  it('expands simple repeats before translating to score items', () => {
+    expect(noteLabels('0 |: 1 2 :| 3')).toEqual([
+      '0\\12  0.0c',
+      '1\\12  100.0c',
+      '2\\12  200.0c',
+      '1\\12  100.0c',
+      '2\\12  200.0c',
+      '3\\12  300.0c',
+    ])
+  })
+
+  it('expands alternate endings before translating to score items', () => {
+    expect(noteLabels('|: 0 |¹ 1 :|² 2')).toEqual([
+      '0\\12  0.0c',
+      '1\\12  100.0c',
+      '0\\12  0.0c',
+      '2\\12  200.0c',
+    ])
+  })
+
+  it('expands ASCII alternate endings before translating to score items', () => {
+    expect(noteLabels('|: 0 |(^1) 1 :|(^2) 2')).toEqual([
+      '0\\12  0.0c',
+      '1\\12  100.0c',
+      '0\\12  0.0c',
+      '2\\12  200.0c',
+    ])
+  })
+
+  it('repeats from the beginning for unpaired repeat ends', () => {
+    expect(noteLabels('0 1 :| 2')).toEqual([
+      '0\\12  0.0c',
+      '1\\12  100.0c',
+      '0\\12  0.0c',
+      '1\\12  100.0c',
+      '2\\12  200.0c',
+    ])
+  })
+
+  it('treats repeat-end-start as closing and opening a repeat', () => {
+    expect(noteLabels('0 :|: 1 :| 2')).toEqual([
+      '0\\12  0.0c',
+      '0\\12  0.0c',
+      '1\\12  100.0c',
+      '1\\12  100.0c',
+      '2\\12  200.0c',
+    ])
+  })
+
+  it('expands nested repeats from the inside out', () => {
+    expect(noteLabels('1 2 |: 3 |: 4 5 :| 6 :| 7')).toEqual([
+      '1\\12  100.0c',
+      '2\\12  200.0c',
+      '3\\12  300.0c',
+      '4\\12  400.0c',
+      '5\\12  500.0c',
+      '4\\12  400.0c',
+      '5\\12  500.0c',
+      '6\\12  600.0c',
+      '3\\12  300.0c',
+      '4\\12  400.0c',
+      '5\\12  500.0c',
+      '4\\12  400.0c',
+      '5\\12  500.0c',
+      '6\\12  600.0c',
+      '7\\12  700.0c',
+    ])
+  })
+
+  it('expands repeat counts from superscript and ASCII repeat starts', () => {
+    expect(noteLabels('|:ˣ³ 0 :| |:(x4) 1 :|')).toEqual([
+      '0\\12  0.0c',
+      '0\\12  0.0c',
+      '0\\12  0.0c',
+      '1\\12  100.0c',
+      '1\\12  100.0c',
+      '1\\12  100.0c',
+      '1\\12  100.0c',
+    ])
+  })
+
+  it('expands multi-repeat alternate endings', () => {
+    expect(noteLabels('|:ˣ³ 0 |¹ 1 :|² 2 :|³ 3')).toEqual([
+      '0\\12  0.0c',
+      '1\\12  100.0c',
+      '0\\12  0.0c',
+      '2\\12  200.0c',
+      '0\\12  0.0c',
+      '3\\12  300.0c',
+    ])
+  })
+
+  it('realizes hold tails from repeat markers during pre-processing', () => {
+    expect(noteLabelDurations('1 |: 2 3-|¹- 4 :|²--')).toEqual([
+      ['1\\12  100.0c', 0.5],
+      ['2\\12  200.0c', 0.5],
+      ['3\\12  300.0c', 1.5],
+      ['4\\12  400.0c', 0.5],
+      ['2\\12  200.0c', 0.5],
+      ['3\\12  300.0c', 2],
+    ])
+  })
+
+  it('rejects hold tails on repeat markers after rests', () => {
+    const source = parseAndProcessSourceCode('|: 1.|¹-- 7:|²-. |')
+
+    expect(source.playable).toBe(false)
+    expect(source.error).toContain('Cannot attach a hold to a rest')
+  })
+
+  it('rejects unpaired repeat starts during pre-processing', () => {
+    const source = parseAndProcessSourceCode('|: 0')
+
+    expect(source.playable).toBe(false)
+    expect(source.error).toContain('Unpaired repeat start marker "|:"')
+  })
+
   it('should translate sample-rate notes', () => {
     const source = parseAndProcessSourceCode('!-')
 

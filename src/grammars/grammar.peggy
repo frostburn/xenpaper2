@@ -7,7 +7,7 @@ Start = seq:Sequence _ {
 }
 Sequence = items:ItemList { return node('Sequence', { items }); }
 ItemList = head:Item tail:(_ Item)* { return [head, ...tail.map(([,i]) => i)]; } / '' { return []; }
-Item = Comment / SetterGroup / SetRoot / SetScale / RatioChordItem / SampleRateNote / Note / Rest / Chord / BarLine / Whitespace
+Item = Comment / SetterGroup / SetRoot / SetScale / RatioChordItem / SampleRateNote / Note / Rest / Chord / RepeatEndStart / RepeatStart / RepeatEnd / RepeatEndingStart / BarLine / Whitespace
 Note = pitch:Pitch tail:Hold? {
   const noteTail = tail ?? undefined;
   return node('Note', { pitch, tail: noteTail });
@@ -77,11 +77,26 @@ RatioChord = pitches:RatioChordPitches tail:Hold? {
   const noteTail = tail ?? undefined;
   return node('RatioChord', { pitches, tail: noteTail });
 }
-RatioChordItem = &(Int _ ":") rc:RatioChord { return rc; }
-Chord = "[" _ pitches:((&(Int _ ":") rp:RatioChordPitches { return rp; }) / ChordPitchGroup) _ "]" tail:Hold? {
+RatioChordItem = &(Int _ ":" !"|") rc:RatioChord { return rc; }
+Chord = "[" _ pitches:((&(Int _ ":" !"|") rp:RatioChordPitches { return rp; }) / ChordPitchGroup) _ "]" tail:Hold? {
   const noteTail = tail ?? undefined;
   return node('Chord', { pitches, tail: noteTail });
 }
+RepeatEndStart = ":|:" count:RepeatCount? {
+  return node('RepeatEndStart',{delimiter:true, repeatCount: count ?? 2});
+}
+RepeatStart = "|:" count:RepeatCount? { return node('RepeatStart',{delimiter:true, repeatCount: count ?? 2}); }
+RepeatEnd = ":|" ending:RepeatEndingNumber? tail:Hold? {
+  const alternateEnding = ending ?? undefined;
+  const noteTail = tail ?? undefined;
+  return node('RepeatEnd',{delimiter:true, alternateEnding, tail: noteTail});
+}
+RepeatEndingStart = "|" ending:RepeatEndingNumber tail:Hold? {
+  const noteTail = tail ?? undefined;
+  return node('RepeatEndingStart',{delimiter:true, alternateEnding: ending, tail: noteTail});
+}
+RepeatCount = "ˣ" count:SuperScriptInt { return count; } / "(" "x"i count:Int ")" { return count; }
+RepeatEndingNumber = SuperScriptInt / "(" "^" count:Int ")" { return count; }
 BarLine = "|" { return node('BarLine',{delimiter:true}); }
 Semicolon = _ ";" _ { return node('Semicolon', { delimiter: true }); }
 SetterGroup = "(" _ first:Setter rest:(Semicolon Setter)* _ ")" {
@@ -106,7 +121,7 @@ SetEnv = "env"i _ ":" _ vals:EnvValues {
   return node('SetEnv', vals);
 }
 EnvValues "four digits" = a:EnvDigit _ d:EnvDigit _ s:EnvDigit _ r:EnvDigit { return { a, d, s, r }; }
-EnvDigit = digit:[0-9] { return Number(digit); }
+EnvDigit = digit:[0-9] { return parseInt(digit, 10); }
 SetRulerRange = "rl"i _ ":" _ low:Pitch _ "," _ high:Pitch { return node('SetRulerRange', { low, high }); }
 SetRulerPlot = "plot"i { return node('SetRulerPlot'); }
 SetRoot = "{" _ "r"i _ p:Pitch _ "}" { return node('SetRoot', { pitch: p }); }
@@ -140,5 +155,7 @@ Comment = "#" comment:$([^\n\r]*) {
 }
 Whitespace "whitespace" = [,\n\r\t ]+ { return node('Whitespace',{delimiter:true}); }
 Number "number" = n:$([0-9]+ ("." [0-9]*)?) { return Number(n); }
-Int "integer" = n:$([0-9]+) { return Number(n); }
+Int "integer" = n:$([0-9]+) { return parseInt(n, 10); }
+SuperScriptInt "superscript integer" = digits:SuperScriptDigit+ { return parseInt(digits.join(''), 10); }
+SuperScriptDigit = "⁰" { return '0'; } / "¹" { return '1'; } / "²" { return '2'; } / "³" { return '3'; } / "⁴" { return '4'; } / "⁵" { return '5'; } / "⁶" { return '6'; } / "⁷" { return '7'; } / "⁸" { return '8'; } / "⁹" { return '9'; }
 _ "whitespace" = [ \t\n\r]*
