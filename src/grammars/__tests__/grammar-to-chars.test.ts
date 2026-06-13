@@ -106,6 +106,15 @@ describe('grammarToChars', () => {
     expect(getTimeAtLine(source, chars, 1)).toBe(1)
   })
 
+  it('uses the selected line play time when finding a coda jump line start time', () => {
+    const source = '(Segno) 0\n(To Coda) 1\n(D.S. al Coda)\n(Coda) 2'
+    const parsed = parse(source)
+    processGrammar(parsed)
+    const chars = grammarToChars(parsed)
+
+    expect(getTimeAtLine(source, chars, 1)).toBe(0.25)
+  })
+
   it('highlights barlines inside hold tails as delimiters', () => {
     const chars = grammarToChars(parse('1--|--'))
 
