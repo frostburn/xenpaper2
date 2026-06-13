@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { getTimeAtLine } from '../../utils'
 import { grammarToChars, type CharData } from '../grammar-to-chars'
 import type { XenpaperAST } from '../grammar.generated'
 import * as parserModule from '../grammar.generated.js'
@@ -74,7 +75,7 @@ describe('grammarToChars', () => {
   })
 
   it('highlights ASCII repeat ending markers as delimiters', () => {
-    expect(colors(grammarToChars(parse('|: 0 |~1 1 :|~2')))).toEqual([
+    expect(colors(grammarToChars(parse('|: 0 |(^1) 1 :|(^2)')))).toEqual([
       'delimiter',
       'delimiter',
       undefined,
@@ -83,14 +84,27 @@ describe('grammarToChars', () => {
       'delimiter',
       'delimiter',
       'delimiter',
+      'delimiter',
+      'delimiter',
       undefined,
       'pitch',
       undefined,
+      'delimiter',
+      'delimiter',
       'delimiter',
       'delimiter',
       'delimiter',
       'delimiter',
     ])
+  })
+
+  it('uses all repeated play times when finding a line start time', () => {
+    const source = '|: 1 2 :|\n3'
+    const parsed = parse(source)
+    processGrammar(parsed)
+    const chars = grammarToChars(parsed)
+
+    expect(getTimeAtLine(source, chars, 1)).toBe(1)
   })
 
   it('highlights barlines inside hold tails as delimiters', () => {

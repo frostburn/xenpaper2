@@ -225,6 +225,8 @@ const times: [number, number][] = []
 
 type RepetitionState = {
   startIndex: number
+  repeatCount: number
+  repetitionsAdded: number
   firstEndingIndex?: number
 }
 
@@ -244,42 +246,84 @@ const cloneSequenceItem = <T>(item: T): T => {
 
 const expandRepeatedSequenceItems = (items: SequenceItemsType[]): SequenceItemsType[] => {
   const expandedItems: SequenceItemsType[] = []
-  let repetitionState: RepetitionState | undefined
+  const repetitionStack: RepetitionState[] = []
+
+  const openRepeat = (
+    item: Extract<SequenceItemsType, { type: 'RepeatStart' | 'RepeatEndStart' }>,
+  ): void => {
+    limit('Repeat count', item.repeatCount, 1, 100)
+    expandedItems.push(item)
+    repetitionStack.push({
+      startIndex: expandedItems.length,
+      repeatCount: item.repeatCount,
+      repetitionsAdded: 0,
+    })
+  }
+
+  const closeRepeat = (
+    item: Extract<SequenceItemsType, { type: 'RepeatEnd' | 'RepeatEndStart' }>,
+  ): void => {
+    const repetitionState = repetitionStack.pop() ?? {
+      startIndex: 0,
+      repeatCount: 2,
+      repetitionsAdded: 0,
+    }
+    const hasAlternateEnding = item.type === 'RepeatEnd' && item.alternateEnding !== undefined
+    const endIndex =
+      hasAlternateEnding && repetitionState.firstEndingIndex !== undefined
+        ? repetitionState.firstEndingIndex
+        : expandedItems.length
+    const repeatCount = hasAlternateEnding
+      ? item.alternateEnding! < repetitionState.repeatCount
+        ? 1
+        : repetitionState.repeatCount - 1 - repetitionState.repetitionsAdded
+      : repetitionState.repeatCount - 1
+    const segment = expandedItems.slice(repetitionState.startIndex, endIndex)
+    const repeatedItems = Array.from({ length: repeatCount }).flatMap(() =>
+      segment.map(cloneSequenceItem),
+    )
+    expandedItems.push(item, ...repeatedItems)
+
+    if (hasAlternateEnding && item.alternateEnding! < repetitionState.repeatCount) {
+      repetitionStack.push({
+        ...repetitionState,
+        repetitionsAdded: repetitionState.repetitionsAdded + repeatCount,
+      })
+    }
+  }
 
   items.forEach((item) => {
     if (item.type === 'RepeatStart') {
-      expandedItems.push(item)
-      repetitionState = {
-        startIndex: expandedItems.length,
-      }
+      openRepeat(item)
+      return
+    }
+
+    if (item.type === 'RepeatEndStart') {
+      closeRepeat(item)
+      openRepeat(item)
       return
     }
 
     if (item.type === 'RepeatEndingStart') {
-      if (item.alternateEnding === 1) {
-        repetitionState = {
-          startIndex: repetitionState?.startIndex ?? 0,
-          firstEndingIndex: expandedItems.length,
-        }
+      const repetitionState = repetitionStack[repetitionStack.length - 1]
+      if (item.alternateEnding === 1 && repetitionState) {
+        repetitionState.firstEndingIndex = expandedItems.length
       }
       expandedItems.push(item)
       return
     }
 
     if (item.type === 'RepeatEnd') {
-      const startIndex = repetitionState?.startIndex ?? 0
-      const endIndex =
-        item.alternateEnding === 2 && repetitionState?.firstEndingIndex !== undefined
-          ? repetitionState.firstEndingIndex
-          : expandedItems.length
-      const repeatedItems = expandedItems.slice(startIndex, endIndex).map(cloneSequenceItem)
-      expandedItems.push(item, ...repeatedItems)
-      repetitionState = undefined
+      closeRepeat(item)
       return
     }
 
     expandedItems.push(item)
   })
+
+  if (repetitionStack.length > 0) {
+    throw new Error('Unpaired repeat start marker "|:"')
+  }
 
   return expandedItems
 }
@@ -770,6 +814,7 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
       type === 'Whitespace' ||
       type === 'RepeatStart' ||
       type === 'RepeatEnd' ||
+      type === 'RepeatEndStart' ||
       type === 'RepeatEndingStart'
     ) {
       // do nothing

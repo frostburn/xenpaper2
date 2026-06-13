@@ -86,12 +86,82 @@ describe('grammar to mosc score', () => {
   })
 
   it('expands ASCII alternate endings before translating to score items', () => {
-    expect(noteLabels('|: 0 |~1 1 :|~2 2')).toEqual([
+    expect(noteLabels('|: 0 |(^1) 1 :|(^2) 2')).toEqual([
       '0\\12  0.0c',
       '1\\12  100.0c',
       '0\\12  0.0c',
       '2\\12  200.0c',
     ])
+  })
+
+  it('repeats from the beginning for unpaired repeat ends', () => {
+    expect(noteLabels('0 1 :| 2')).toEqual([
+      '0\\12  0.0c',
+      '1\\12  100.0c',
+      '0\\12  0.0c',
+      '1\\12  100.0c',
+      '2\\12  200.0c',
+    ])
+  })
+
+  it('treats repeat-end-start as closing and opening a repeat', () => {
+    expect(noteLabels('0 :|: 1 :| 2')).toEqual([
+      '0\\12  0.0c',
+      '0\\12  0.0c',
+      '1\\12  100.0c',
+      '1\\12  100.0c',
+      '2\\12  200.0c',
+    ])
+  })
+
+  it('expands nested repeats from the inside out', () => {
+    expect(noteLabels('1 2 |: 3 |: 4 5 :| 6 :| 7')).toEqual([
+      '1\\12  100.0c',
+      '2\\12  200.0c',
+      '3\\12  300.0c',
+      '4\\12  400.0c',
+      '5\\12  500.0c',
+      '4\\12  400.0c',
+      '5\\12  500.0c',
+      '6\\12  600.0c',
+      '3\\12  300.0c',
+      '4\\12  400.0c',
+      '5\\12  500.0c',
+      '4\\12  400.0c',
+      '5\\12  500.0c',
+      '6\\12  600.0c',
+      '7\\12  700.0c',
+    ])
+  })
+
+  it('expands repeat counts from superscript and ASCII repeat starts', () => {
+    expect(noteLabels('|:ˣ³ 0 :| |:(x4) 1 :|')).toEqual([
+      '0\\12  0.0c',
+      '0\\12  0.0c',
+      '0\\12  0.0c',
+      '1\\12  100.0c',
+      '1\\12  100.0c',
+      '1\\12  100.0c',
+      '1\\12  100.0c',
+    ])
+  })
+
+  it('expands multi-repeat alternate endings', () => {
+    expect(noteLabels('|:ˣ³ 0 |¹ 1 :|² 2 :|³ 3')).toEqual([
+      '0\\12  0.0c',
+      '1\\12  100.0c',
+      '0\\12  0.0c',
+      '2\\12  200.0c',
+      '0\\12  0.0c',
+      '3\\12  300.0c',
+    ])
+  })
+
+  it('rejects unpaired repeat starts during pre-processing', () => {
+    const source = parseAndProcessSourceCode('|: 0')
+
+    expect(source.playable).toBe(false)
+    expect(source.error).toContain('Unpaired repeat start marker "|:"')
   })
 
   it('should translate sample-rate notes', () => {

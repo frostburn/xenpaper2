@@ -7,7 +7,7 @@ Start = seq:Sequence _ {
 }
 Sequence = items:ItemList { return node('Sequence', { items }); }
 ItemList = head:Item tail:(_ Item)* { return [head, ...tail.map(([,i]) => i)]; } / '' { return []; }
-Item = Comment / SetterGroup / SetRoot / SetScale / RatioChordItem / SampleRateNote / Note / Rest / Chord / RepeatStart / RepeatEnd / RepeatEndingStart / BarLine / Whitespace
+Item = Comment / SetterGroup / SetRoot / SetScale / RatioChordItem / SampleRateNote / Note / Rest / Chord / RepeatEndStart / RepeatStart / RepeatEnd / RepeatEndingStart / BarLine / Whitespace
 Note = pitch:Pitch tail:Hold? {
   const noteTail = tail ?? undefined;
   return node('Note', { pitch, tail: noteTail });
@@ -82,7 +82,10 @@ Chord = "[" _ pitches:((&(Int _ ":" !"|") rp:RatioChordPitches { return rp; }) /
   const noteTail = tail ?? undefined;
   return node('Chord', { pitches, tail: noteTail });
 }
-RepeatStart = "|:" { return node('RepeatStart',{delimiter:true}); }
+RepeatEndStart = ":|:" count:RepeatCount? {
+  return node('RepeatEndStart',{delimiter:true, repeatCount: count ?? 2});
+}
+RepeatStart = "|:" count:RepeatCount? { return node('RepeatStart',{delimiter:true, repeatCount: count ?? 2}); }
 RepeatEnd = ":|" ending:RepeatEndingNumber? {
   const alternateEnding = ending ?? undefined;
   return node('RepeatEnd',{delimiter:true, alternateEnding});
@@ -90,7 +93,10 @@ RepeatEnd = ":|" ending:RepeatEndingNumber? {
 RepeatEndingStart = "|" ending:RepeatEndingNumber {
   return node('RepeatEndingStart',{delimiter:true, alternateEnding: ending});
 }
-RepeatEndingNumber = "¹" { return 1; } / "~1" { return 1; } / "²" { return 2; } / "~2" { return 2; }
+RepeatCount = "ˣ" count:SuperscriptNumber { return count; } / "(" "x"i count:Int ")" { return count; }
+RepeatEndingNumber = SuperscriptNumber / "(" "^" count:Int ")" { return count; }
+SuperscriptNumber = digits:SuperscriptDigit+ { return Number(digits.join('')); }
+SuperscriptDigit = "⁰" { return 0; } / "¹" { return 1; } / "²" { return 2; } / "³" { return 3; } / "⁴" { return 4; } / "⁵" { return 5; } / "⁶" { return 6; } / "⁷" { return 7; } / "⁸" { return 8; } / "⁹" { return 9; }
 BarLine = "|" { return node('BarLine',{delimiter:true}); }
 Semicolon = _ ";" _ { return node('Semicolon', { delimiter: true }); }
 SetterGroup = "(" _ first:Setter rest:(Semicolon Setter)* _ ")" {

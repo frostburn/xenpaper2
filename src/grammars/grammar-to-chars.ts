@@ -73,6 +73,7 @@ const colorMap = new Map<string, HighlightColor>([
   ['BarLine', 'delimiter'],
   ['RepeatStart', 'delimiter'],
   ['RepeatEnd', 'delimiter'],
+  ['RepeatEndStart', 'delimiter'],
   ['RepeatEndingStart', 'delimiter'],
   ['Whitespace', 'delimiter'],
   ['EdoScale', 'scale'],

@@ -209,17 +209,27 @@ export type SetterGroupType = NodeType<'SetterGroup'> & {
 // repeats
 //
 
-export type RepeatStartType = NodeType<'RepeatStart', true>
+export type RepeatStartType = NodeType<'RepeatStart', true> & {
+  repeatCount: number
+}
 
 export type RepeatEndType = NodeType<'RepeatEnd', true> & {
-  alternateEnding?: 1 | 2
+  alternateEnding?: number
+}
+
+export type RepeatEndStartType = NodeType<'RepeatEndStart', true> & {
+  repeatCount: number
 }
 
 export type RepeatEndingStartType = NodeType<'RepeatEndingStart', true> & {
-  alternateEnding: 1 | 2
+  alternateEnding: number
 }
 
-export type RepeatType = RepeatStartType | RepeatEndType | RepeatEndingStartType
+export type RepeatType =
+  | RepeatStartType
+  | RepeatEndType
+  | RepeatEndStartType
+  | RepeatEndingStartType
 
 //
 // comments
