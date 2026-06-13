@@ -54,6 +54,20 @@ const newInV2Sections: SidebarSection[] = [
     ],
   },
   {
+    title: 'Repeats and jumps',
+    demos: [
+      {
+        description:
+          'Alternate endings and D.S. al Coda markings let a single tab sketch compact song forms with first/second endings and a jump back to the segno before the coda.',
+        tune: `(bpm:132)(osc:warm2)(env:1624)
+# tiny v2 waltz: 1-2-3, 1-2-3
+(Segno) |: 0 4 7 | 5 4 2 |(^1) 0 2 4 :|(^2) 7 9 11 |
+(To Coda) 12 11 9 | 7 4 2 | 5 7 9 | 4 2 0 |
+(D.S. al Coda) (Coda) [0,4,7]-- | [0,4,12]-- ||`,
+      },
+    ],
+  },
+  {
     title: 'More forgiving notation',
     demos: [
       {
