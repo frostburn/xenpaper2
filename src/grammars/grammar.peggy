@@ -7,7 +7,7 @@ Start = seq:Sequence _ {
 }
 Sequence = items:ItemList { return node('Sequence', { items }); }
 ItemList = head:Item tail:(_ Item)* { return [head, ...tail.map(([,i]) => i)]; } / '' { return []; }
-Item = Comment / SetterGroup / SetRoot / SetScale / RatioChordItem / SampleRateNote / Note / Rest / Chord / RepeatEndStart / RepeatStart / RepeatEnd / RepeatEndingStart / BarLine / Whitespace
+Item = Comment / MusicalControlFlow / SetterGroup / SetRoot / SetScale / RatioChordItem / SampleRateNote / Note / Rest / Chord / RepeatEndStart / RepeatStart / RepeatEnd / RepeatEndingStart / BarLine / Whitespace
 Note = pitch:Pitch tail:Hold? {
   const noteTail = tail ?? undefined;
   return node('Note', { pitch, tail: noteTail });
@@ -98,6 +98,17 @@ RepeatEndingStart = "|" ending:RepeatEndingNumber tail:Hold? {
 RepeatCount = "ˣ" count:SuperScriptInt { return count; } / "(" "x"i count:Int ")" { return count; }
 RepeatEndingNumber = SuperScriptInt / "(" "^" count:Int ")" { return count; }
 BarLine = "|" { return node('BarLine',{delimiter:true}); }
+MusicalControlFlow =
+  "(" _ "segno"i _ ")" { return node('Segno', { delimiter: true }); }
+  / "(" _ "coda"i _ ")" { return node('Coda', { delimiter: true }); }
+  / "(" _ "fine"i _ ")" { return node('Fine', { delimiter: true }); }
+  / "(" _ DaCapoToken _ "al"i _ "fine"i _ ")" { return node('DaCapo', { delimiter: true, target: 'start', stop: 'fine' }); }
+  / "(" _ DaCapoToken _ "al"i _ "coda"i _ ")" { return node('DaCapo', { delimiter: true, target: 'start', stop: 'coda' }); }
+  / "(" _ DalSegnoToken _ "al"i _ "fine"i _ ")" { return node('DalSegno', { delimiter: true, target: 'segno', stop: 'fine' }); }
+  / "(" _ DalSegnoToken _ "al"i _ "coda"i _ ")" { return node('DalSegno', { delimiter: true, target: 'segno', stop: 'coda' }); }
+  / "(" _ ("to"i / "al"i) _ "coda"i _ ")" { return node('AlCoda', { delimiter: true }); }
+DaCapoToken = "d"i "."? _ "c"i "."? / "da"i _ "capo"i
+DalSegnoToken = "d"i "."? _ "s"i "."? / "dal"i _ "segno"i
 Semicolon = _ ";" _ { return node('Semicolon', { delimiter: true }); }
 SetterGroup = "(" _ first:Setter rest:(Semicolon Setter)* _ ")" {
   const setters = [first];

@@ -234,6 +234,34 @@ export type RepeatType =
   | RepeatEndingStartType
 
 //
+// musical control flow
+//
+
+export type SegnoType = NodeType<'Segno', true>
+export type CodaType = NodeType<'Coda', true>
+export type FineType = NodeType<'Fine', true>
+
+export type DaCapoType = NodeType<'DaCapo', true> & {
+  target: 'start'
+  stop: 'fine' | 'coda'
+}
+
+export type DalSegnoType = NodeType<'DalSegno', true> & {
+  target: 'segno'
+  stop: 'fine' | 'coda'
+}
+
+export type AlCodaType = NodeType<'AlCoda', true>
+
+export type MusicalControlFlowType =
+  | SegnoType
+  | CodaType
+  | FineType
+  | DaCapoType
+  | DalSegnoType
+  | AlCodaType
+
+//
 // comments
 //
 
@@ -256,6 +284,7 @@ export type SequenceItemsType =
   | SetRootType
   | CommentType
   | RepeatType
+  | MusicalControlFlowType
   | DelimiterType
 
 export type SequenceType = NodeType<'Sequence'> & {
