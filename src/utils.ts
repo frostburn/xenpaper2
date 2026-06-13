@@ -146,6 +146,21 @@ export const getTimeAtLine = (
 ): number => {
   if (line === 0) return 0
 
+  const lineStartOffset = findOffsetFromLineColumn(source, line + 1, 1)
+  if (lineStartOffset !== undefined) {
+    const lineEndOffset = source.indexOf('\n', lineStartOffset)
+    const searchEndOffset = lineEndOffset === -1 ? source.length : lineEndOffset
+    const linePlayStarts = charData
+      ?.slice(lineStartOffset, searchEndOffset)
+      .flatMap((characterData) =>
+        characterData?.controlsPlayback
+          ? []
+          : getCharacterPlayTimes(characterData).map(([start]) => start),
+      )
+
+    if (linePlayStarts?.length) return Math.min(...linePlayStarts)
+  }
+
   let time = 0
   let counted = 0
   const sourceCharacters = source.split('')
