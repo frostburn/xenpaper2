@@ -144,26 +144,41 @@ export const getTimeAtLine = (
   charData: CharData[] | undefined,
   line: number,
 ): number => {
-  if (line === 0) return 0
-
-  let time = 0
-  let counted = 0
+  let currentLine = 0
+  let latestPreviousEnd = 0
+  let earliestLineStart = Infinity
   const sourceCharacters = source.split('')
 
   for (let i = 0; i < sourceCharacters.length; i++) {
     const character = sourceCharacters[i]
-    const characterData = charData?.[i]
-    const latestEnd = Math.max(...getCharacterPlayTimes(characterData).map(([, end]) => end))
+    const characterPlayTimes = getCharacterPlayTimes(charData?.[i])
 
-    if (Number.isFinite(latestEnd)) time = latestEnd
+    if (currentLine < line) {
+      const latestEnd = Math.max(...characterPlayTimes.map(([, end]) => end))
+      if (Number.isFinite(latestEnd)) latestPreviousEnd = Math.max(latestPreviousEnd, latestEnd)
+    }
+
+    if (currentLine === line) {
+      const characterEarliestStart = Math.min(...characterPlayTimes.map(([start]) => start))
+
+      if (Number.isFinite(characterEarliestStart)) {
+        earliestLineStart = Math.min(earliestLineStart, characterEarliestStart)
+      }
+    }
 
     if (character === '\n') {
-      counted++
-      if (counted === line) return time
+      if (currentLine === line) {
+        return Number.isFinite(earliestLineStart) ? earliestLineStart : latestPreviousEnd
+      }
+
+      currentLine++
+      earliestLineStart = Infinity
     }
   }
 
-  return 0
+  if (currentLine !== line) return 0
+
+  return Number.isFinite(earliestLineStart) ? earliestLineStart : latestPreviousEnd
 }
 
 export const copyText = async (text: string): Promise<boolean> => {
