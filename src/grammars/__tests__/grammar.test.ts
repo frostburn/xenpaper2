@@ -1380,6 +1380,11 @@ describe('grammar', () => {
         ])
       })
 
+      it('should not parse octave-size denominator without a numerator', () => {
+        expectParserErrorMessage('{12edo/3}', 'Expected "}" or integer but "/" found.')
+        expectParserErrorMessage('{12ed/3}', 'Expected "o", "}", or integer but "/" found.')
+      })
+
       it('should parse sequence with ratio scale setter', () => {
         expect(strip(parser('{4:5:6}')).sequence.items).toEqual([
           {
