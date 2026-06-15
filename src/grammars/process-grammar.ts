@@ -128,10 +128,7 @@ const pitchToHz = (pitch: PitchType, context: Context): number => {
   return pitchToRatio(pitch, context) * context.rootHz
 }
 
-const tailToTime = (
-  tail: TailType | undefined,
-  context: Context,
-): { time: number; timeEnd: number } => {
+const tailToTime = (tail: TailType | null, context: Context): { time: number; timeEnd: number } => {
   const time = context.time
 
   const duration = tail?.type === 'Hold' ? tail.length + 1 : 1
@@ -269,10 +266,7 @@ const addTail = (item: SequenceItemWithTail, tail: TailType): void => {
   }
 }
 
-const addTailToLastPlayableItem = (
-  items: SequenceItemsType[],
-  tail: TailType | undefined,
-): void => {
+const addTailToLastPlayableItem = (items: SequenceItemsType[], tail: TailType | null): void => {
   if (!tail) return
 
   for (let index = items.length - 1; index >= 0; index--) {
@@ -364,7 +358,7 @@ const expandRepeatedSequenceItems = (items: SequenceItemsType[]): SequenceItemsT
       repeatCount: 2,
       repetitionsAdded: 0,
     }
-    const hasAlternateEnding = item.type === 'RepeatEnd' && item.alternateEnding !== undefined
+    const hasAlternateEnding = item.type === 'RepeatEnd' && item.alternateEnding !== null
     const endIndex =
       hasAlternateEnding && repetitionState.firstEndingIndex !== undefined
         ? repetitionState.firstEndingIndex
@@ -382,7 +376,7 @@ const expandRepeatedSequenceItems = (items: SequenceItemsType[]): SequenceItemsT
     )
     addTailToLastPlayableItem(
       repeatedItems.length ? repeatedItems : expandedItems,
-      item.type === 'RepeatEnd' ? item.tail : undefined,
+      item.type === 'RepeatEnd' ? item.tail : null,
     )
     expandedItems.push(item, ...repeatedItems)
 
@@ -617,6 +611,7 @@ const setScale = (setScale: SetScaleType, context: Context): void => {
         delimiter: false,
         location: value.location,
         value,
+        octave: null,
       }))
     }
 
@@ -729,10 +724,9 @@ const setterToMosc = (setter: SetterType | DelimiterType, context: Context): Mos
   if (type === 'SetSubdivision') {
     const { subdivision, denominator } = setter
     assertFinitePositive('SetSubdivision.subdivision', subdivision)
-    if (denominator !== undefined) {
-      assertFinitePositive('SetSubdivision.denominator', denominator)
-    }
-    context.subdivision = (denominator ?? 1) / subdivision
+    const normalizedDenominator = denominator ?? 1
+    assertFinitePositive('SetSubdivision.denominator', normalizedDenominator)
+    context.subdivision = normalizedDenominator / subdivision
     assertFinitePositive('context.subdivision', context.subdivision)
     return []
   }

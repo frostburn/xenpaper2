@@ -47,7 +47,13 @@ const strip = <T>(data: T): T => {
     const record = data as Record<string, unknown>
     const result = Object.keys(record).reduce(
       (obj, key) => {
-        if (key !== 'pos' && key !== 'location' && key !== 'delimiter' && key !== 'parts') {
+        if (
+          key !== 'pos' &&
+          key !== 'location' &&
+          key !== 'delimiter' &&
+          key !== 'parts' &&
+          !(key === 'octave' && record[key] === null)
+        ) {
           obj[key] = strip(record[key])
         }
         return obj
@@ -78,7 +84,7 @@ describe('grammar', () => {
             },
           },
         })
-        expect(ast.sequence.items[0].tail).toBeUndefined()
+        expect(ast.sequence.items[0].tail).toBeNull()
       })
 
       it('should parse repeat markers as sequence items', () => {
@@ -149,10 +155,10 @@ describe('grammar', () => {
               },
               {
                 type: 'SampleRateNote',
-                tail: undefined,
+                tail: null,
               },
             ],
-            tail: undefined,
+            tail: null,
           },
         ])
       })
@@ -214,7 +220,7 @@ describe('grammar', () => {
                 degree: 2,
               },
             },
-            tail: undefined,
+            tail: null,
           },
           {
             type: 'Whitespace',
@@ -228,7 +234,7 @@ describe('grammar', () => {
                 degree: 34,
               },
             },
-            tail: undefined,
+            tail: null,
           },
           {
             type: 'Whitespace',
@@ -242,7 +248,7 @@ describe('grammar', () => {
                 degree: 56,
               },
             },
-            tail: undefined,
+            tail: null,
           },
         ])
       })
@@ -258,7 +264,7 @@ describe('grammar', () => {
                 degree: 2,
               },
             },
-            tail: undefined,
+            tail: null,
           },
           {
             type: 'Note',
@@ -269,7 +275,7 @@ describe('grammar', () => {
                 degree: 34,
               },
             },
-            tail: undefined,
+            tail: null,
           },
           {
             type: 'Note',
@@ -280,7 +286,7 @@ describe('grammar', () => {
                 degree: 56,
               },
             },
-            tail: undefined,
+            tail: null,
           },
         ])
       })
@@ -296,7 +302,7 @@ describe('grammar', () => {
                 degree: 2,
               },
             },
-            tail: undefined,
+            tail: null,
           },
           {
             type: 'BarLine',
@@ -310,7 +316,7 @@ describe('grammar', () => {
                 degree: 34,
               },
             },
-            tail: undefined,
+            tail: null,
           },
           {
             type: 'BarLine',
@@ -324,7 +330,7 @@ describe('grammar', () => {
                 degree: 56,
               },
             },
-            tail: undefined,
+            tail: null,
           },
           {
             type: 'BarLine',
@@ -373,7 +379,7 @@ describe('grammar', () => {
                 degree: 56,
               },
             },
-            tail: undefined,
+            tail: null,
           },
         ])
       })
@@ -430,7 +436,7 @@ describe('grammar', () => {
                 degree: 3,
               },
             },
-            tail: undefined,
+            tail: null,
           },
         ])
       })
@@ -446,7 +452,7 @@ describe('grammar', () => {
                 degree: 2,
               },
             },
-            tail: undefined,
+            tail: null,
           },
           {
             type: 'Rest',
@@ -487,7 +493,7 @@ describe('grammar', () => {
                 degree: 56,
               },
             },
-            tail: undefined,
+            tail: null,
           },
         ])
       })
@@ -503,7 +509,7 @@ describe('grammar', () => {
                 degree: 2,
               },
             },
-            tail: undefined,
+            tail: null,
           },
           {
             type: 'Rest',
@@ -521,7 +527,7 @@ describe('grammar', () => {
                 degree: 3,
               },
             },
-            tail: undefined,
+            tail: null,
           },
         ])
       })
@@ -543,7 +549,7 @@ describe('grammar', () => {
                 degree: 2,
               },
             },
-            tail: undefined,
+            tail: null,
           },
           {
             type: 'Rest',
@@ -584,7 +590,7 @@ describe('grammar', () => {
                 degree: 56,
               },
             },
-            tail: undefined,
+            tail: null,
           },
         ])
       })
@@ -683,7 +689,7 @@ describe('grammar', () => {
                 octave: 1,
               },
             },
-            tail: undefined,
+            tail: null,
           },
           {
             type: 'Whitespace',
@@ -701,7 +707,7 @@ describe('grammar', () => {
                 octave: 2,
               },
             },
-            tail: undefined,
+            tail: null,
           },
           {
             type: 'Whitespace',
@@ -719,7 +725,7 @@ describe('grammar', () => {
                 octave: 3,
               },
             },
-            tail: undefined,
+            tail: null,
           },
           {
             type: 'Whitespace',
@@ -737,7 +743,7 @@ describe('grammar', () => {
                 octave: -1,
               },
             },
-            tail: undefined,
+            tail: null,
           },
           {
             type: 'Whitespace',
@@ -755,7 +761,7 @@ describe('grammar', () => {
                 octave: -2,
               },
             },
-            tail: undefined,
+            tail: null,
           },
         ])
       })
@@ -772,7 +778,7 @@ describe('grammar', () => {
                 denominator: 3,
               },
             },
-            tail: undefined,
+            tail: null,
           },
           {
             type: 'Whitespace',
@@ -787,7 +793,7 @@ describe('grammar', () => {
                 denominator: 4,
               },
             },
-            tail: undefined,
+            tail: null,
           },
         ])
       })
@@ -805,7 +811,7 @@ describe('grammar', () => {
                 octaveSize: 2,
               },
             },
-            tail: undefined,
+            tail: null,
           },
           {
             type: 'Whitespace',
@@ -821,7 +827,7 @@ describe('grammar', () => {
                 octaveSize: 3,
               },
             },
-            tail: undefined,
+            tail: null,
           },
           {
             type: 'Whitespace',
@@ -837,7 +843,7 @@ describe('grammar', () => {
                 octaveSize: 1.5,
               },
             },
-            tail: undefined,
+            tail: null,
           },
         ])
       })
@@ -855,7 +861,7 @@ describe('grammar', () => {
                 octaveSize: 2,
               },
             },
-            tail: undefined,
+            tail: null,
           },
           {
             type: 'Whitespace',
@@ -871,7 +877,7 @@ describe('grammar', () => {
                 octaveSize: 3,
               },
             },
-            tail: undefined,
+            tail: null,
           },
           {
             type: 'Whitespace',
@@ -887,7 +893,7 @@ describe('grammar', () => {
                 octaveSize: 3,
               },
             },
-            tail: undefined,
+            tail: null,
           },
         ])
       })
@@ -903,7 +909,7 @@ describe('grammar', () => {
                 cents: 2,
               },
             },
-            tail: undefined,
+            tail: null,
           },
           {
             type: 'Whitespace',
@@ -917,7 +923,7 @@ describe('grammar', () => {
                 cents: 2,
               },
             },
-            tail: undefined,
+            tail: null,
           },
           {
             type: 'Whitespace',
@@ -931,7 +937,7 @@ describe('grammar', () => {
                 cents: 2.2,
               },
             },
-            tail: undefined,
+            tail: null,
           },
         ])
       })
@@ -947,7 +953,7 @@ describe('grammar', () => {
                 hz: 2,
               },
             },
-            tail: undefined,
+            tail: null,
           },
           {
             type: 'Whitespace',
@@ -961,7 +967,7 @@ describe('grammar', () => {
                 hz: 2,
               },
             },
-            tail: undefined,
+            tail: null,
           },
           {
             type: 'Whitespace',
@@ -975,7 +981,7 @@ describe('grammar', () => {
                 hz: 2.2,
               },
             },
-            tail: undefined,
+            tail: null,
           },
         ])
       })
@@ -1237,7 +1243,7 @@ describe('grammar', () => {
                 },
               },
             ],
-            tail: undefined,
+            tail: null,
           },
         ])
       })
@@ -1279,7 +1285,7 @@ describe('grammar', () => {
                 },
               },
             ],
-            tail: undefined,
+            tail: null,
           },
           {
             type: 'RatioChord',
@@ -1291,7 +1297,7 @@ describe('grammar', () => {
               { type: 'Colon' },
               { type: 'RatioChordPitch', pitch: 6 },
             ],
-            tail: undefined,
+            tail: null,
           },
         ])
       })
@@ -1400,7 +1406,7 @@ describe('grammar', () => {
                   pitch: 6,
                 },
               ],
-              scaleOctaveMarker: undefined,
+              scaleOctaveMarker: null,
             },
           },
         ])
@@ -1465,7 +1471,7 @@ describe('grammar', () => {
                   pitch: 8,
                 },
               ],
-              scaleOctaveMarker: undefined,
+              scaleOctaveMarker: null,
             },
           },
         ])
@@ -1477,7 +1483,7 @@ describe('grammar', () => {
             type: 'SetScale',
             scale: {
               type: 'PitchGroupScale',
-              pitchGroupScalePrefix: undefined,
+              pitchGroupScalePrefix: null,
               pitches: [
                 {
                   type: 'Pitch',
@@ -1510,7 +1516,7 @@ describe('grammar', () => {
                   },
                 },
               ],
-              scaleOctaveMarker: undefined,
+              scaleOctaveMarker: null,
             },
           },
         ])
@@ -1520,7 +1526,7 @@ describe('grammar', () => {
             type: 'SetScale',
             scale: {
               type: 'PitchGroupScale',
-              pitchGroupScalePrefix: undefined,
+              pitchGroupScalePrefix: null,
               pitches: [
                 {
                   type: 'Pitch',
@@ -1588,7 +1594,7 @@ describe('grammar', () => {
                   },
                 },
               ],
-              scaleOctaveMarker: undefined,
+              scaleOctaveMarker: null,
             },
           },
         ])
@@ -1621,7 +1627,7 @@ describe('grammar', () => {
                   },
                 },
               ],
-              scaleOctaveMarker: undefined,
+              scaleOctaveMarker: null,
             },
           },
         ])
@@ -1745,7 +1751,7 @@ describe('grammar', () => {
               {
                 type: 'SetSubdivision',
                 subdivision: 4,
-                denominator: undefined,
+                denominator: 1,
               },
               {
                 type: 'Semicolon',
@@ -1768,7 +1774,7 @@ describe('grammar', () => {
               {
                 type: 'SetSubdivision',
                 subdivision: 4,
-                denominator: undefined,
+                denominator: 1,
               },
             ],
           },
@@ -1795,11 +1801,11 @@ describe('grammar', () => {
         expect(ast.sequence.items.filter((item) => item.type === 'SetterGroup')).toEqual([
           {
             type: 'SetterGroup',
-            setters: [{ type: 'SetSubdivision', subdivision: 3, denominator: undefined }],
+            setters: [{ type: 'SetSubdivision', subdivision: 3, denominator: 1 }],
           },
           {
             type: 'SetterGroup',
-            setters: [{ type: 'SetSubdivision', subdivision: 4, denominator: undefined }],
+            setters: [{ type: 'SetSubdivision', subdivision: 4, denominator: 1 }],
           },
           {
             type: 'SetterGroup',
