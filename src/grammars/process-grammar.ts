@@ -59,9 +59,12 @@ export const pitchToRatio = (pitch: PitchType, context: Context): number => {
   const octaveMulti = Math.pow(octaveSize, pitch.octave?.octave ?? 0)
 
   if (type === 'PitchRatio') {
-    const { numerator, denominator } = pitch.value
+    const { prefix, numerator, denominator } = pitch.value
     assertFinitePositive('PitchRatio.denominator', denominator)
-    const ratio = numerator / denominator
+    let ratio = numerator / denominator
+    if (prefix === '√' || prefix === 'sqrt') {
+      ratio = Math.sqrt(ratio)
+    }
     limit('Pitch ratio', ratio, 0, 100)
     return ratio * octaveMulti
   }
@@ -176,8 +179,9 @@ export const pitchToLabel = (pitch: PitchType, context: Context): string => {
   const centsLabel = ratioToCentsLabel(pitchToRatio(pitch, context), context.octaveSize)
 
   if (type === 'PitchRatio') {
-    const { numerator, denominator } = pitch.value
-    return `${numerator}/${denominator}  ${centsLabel}`
+    const { prefix, numerator, denominator } = pitch.value
+    if (prefix === undefined) return `${numerator}/${denominator}  ${centsLabel}`
+    return `√${numerator}/${denominator}  ${centsLabel}`
   }
 
   if (type === 'PitchOctaveDivision') {
@@ -549,7 +553,8 @@ const chordToMosc = (
   let lastNumerator = 1
   chordPitches.forEach((pitch) => {
     if (isRatioChordPitchType(pitch)) {
-      const numerator = pitch.pitch
+      let numerator = pitch.pitch
+      if (pitch.prefix === '√' || pitch.prefix === 'sqrt') numerator = Math.sqrt(numerator)
       assertFinitePositive('Ratio numerator', numerator)
 
       if (colons == 2) {

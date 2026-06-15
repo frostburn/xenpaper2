@@ -165,7 +165,7 @@ describe('grammar', () => {
 
       it('should not parse sample-rate notes in ratio chords', () => {
         expect(() => parser('4:5:!').sequence.items).toThrow(
-          'Expected ":" or integer but "!" found.',
+          'Expected ":", "sqrt", "√", or integer but "!" found.',
         )
       })
 
@@ -598,7 +598,7 @@ describe('grammar', () => {
       it('should error if hold is attempted after a rest', () => {
         expectParserFormattedErrorMessage(
           '2-.-',
-          `Error: Expected "!", "#", "(", ".", ":|", ":|:", "[", "{", "|", "|:", apostrophe, end of input, grave, integer, number, quote, or whitespace but "-" found.
+          `Error: Expected "!", "#", "(", ".", ":|", ":|:", "[", "sqrt", "{", "|", "|:", "√", apostrophe, end of input, grave, integer, number, quote, or whitespace but "-" found.
  --> test-input:1:4
   |
 1 | 2-.-
@@ -774,6 +774,7 @@ describe('grammar', () => {
               type: 'Pitch',
               value: {
                 type: 'PitchRatio',
+                prefix: null,
                 numerator: 2,
                 denominator: 3,
               },
@@ -789,6 +790,7 @@ describe('grammar', () => {
               type: 'Pitch',
               value: {
                 type: 'PitchRatio',
+                prefix: null,
                 numerator: 3,
                 denominator: 4,
               },
@@ -1106,7 +1108,7 @@ describe('grammar', () => {
       it('should error if chord is empty or not delimited properly', () => {
         expectParserErrorMessage(
           '[]',
-          'Expected "!", apostrophe, grave, integer, number, or quote but "]" found.',
+          'Expected "!", "sqrt", "√", apostrophe, grave, integer, number, or quote but "]" found.',
         )
       })
 
@@ -1115,13 +1117,13 @@ describe('grammar', () => {
           {
             type: 'RatioChord',
             pitches: [
-              { type: 'RatioChordPitch', pitch: 4 },
+              { type: 'RatioChordPitch', pitch: 4, prefix: null },
               { type: 'Colon' },
-              { type: 'RatioChordPitch', pitch: 5 },
+              { type: 'RatioChordPitch', pitch: 5, prefix: null },
               { type: 'Colon' },
-              { type: 'RatioChordPitch', pitch: 6 },
+              { type: 'RatioChordPitch', pitch: 6, prefix: null },
               { type: 'Colon' },
-              { type: 'RatioChordPitch', pitch: 7 },
+              { type: 'RatioChordPitch', pitch: 7, prefix: null },
             ],
             tail: { type: 'Hold', length: 2 },
           },
@@ -1133,13 +1135,13 @@ describe('grammar', () => {
           {
             type: 'RatioChord',
             pitches: [
-              { type: 'RatioChordPitch', pitch: 4 },
+              { type: 'RatioChordPitch', pitch: 4, prefix: null },
               { type: 'Colon' },
-              { type: 'RatioChordPitch', pitch: 5 },
+              { type: 'RatioChordPitch', pitch: 5, prefix: null },
               { type: 'Colon' },
-              { type: 'RatioChordPitch', pitch: 6 },
+              { type: 'RatioChordPitch', pitch: 6, prefix: null },
               { type: 'Colon' },
-              { type: 'RatioChordPitch', pitch: 7 },
+              { type: 'RatioChordPitch', pitch: 7, prefix: null },
             ],
             tail: { type: 'Hold', length: 5 },
           },
@@ -1154,13 +1156,13 @@ describe('grammar', () => {
           {
             type: 'RatioChord',
             pitches: [
-              { type: 'RatioChordPitch', pitch: 4 },
+              { type: 'RatioChordPitch', pitch: 4, prefix: null },
               { type: 'Colon' },
-              { type: 'RatioChordPitch', pitch: 5 },
+              { type: 'RatioChordPitch', pitch: 5, prefix: null },
               { type: 'Colon' },
-              { type: 'RatioChordPitch', pitch: 6 },
+              { type: 'RatioChordPitch', pitch: 6, prefix: null },
               { type: 'Colon' },
-              { type: 'RatioChordPitch', pitch: 7 },
+              { type: 'RatioChordPitch', pitch: 7, prefix: null },
             ],
             tail: { type: 'Hold', length: 5 },
           },
@@ -1175,13 +1177,13 @@ describe('grammar', () => {
           {
             type: 'Chord',
             pitches: [
-              { type: 'RatioChordPitch', pitch: 4 },
+              { type: 'RatioChordPitch', pitch: 4, prefix: null },
               { type: 'Colon' },
-              { type: 'RatioChordPitch', pitch: 5 },
+              { type: 'RatioChordPitch', pitch: 5, prefix: null },
               { type: 'Colon' },
-              { type: 'RatioChordPitch', pitch: 6 },
+              { type: 'RatioChordPitch', pitch: 6, prefix: null },
               { type: 'Colon' },
-              { type: 'RatioChordPitch', pitch: 7 },
+              { type: 'RatioChordPitch', pitch: 7, prefix: null },
             ],
             tail: { type: 'Hold', length: 2 },
           },
@@ -1193,13 +1195,13 @@ describe('grammar', () => {
           {
             type: 'RatioChord',
             pitches: [
-              { type: 'RatioChordPitch', pitch: 4 },
+              { type: 'RatioChordPitch', pitch: 4, prefix: null },
               { type: 'Colon' },
               { type: 'Colon' },
-              { type: 'RatioChordPitch', pitch: 7 },
+              { type: 'RatioChordPitch', pitch: 7, prefix: null },
               { type: 'Colon' },
               { type: 'Colon' },
-              { type: 'RatioChordPitch', pitch: 10 },
+              { type: 'RatioChordPitch', pitch: 10, prefix: null },
             ],
             tail: { type: 'Hold', length: 2 },
           },
@@ -1290,12 +1292,12 @@ describe('grammar', () => {
           {
             type: 'RatioChord',
             pitches: [
-              { type: 'RatioChordPitch', pitch: 4 },
+              { type: 'RatioChordPitch', pitch: 4, prefix: null },
               { type: 'Colon' },
-              { type: 'RatioChordPitch', pitch: 5 },
+              { type: 'RatioChordPitch', pitch: 5, prefix: null },
               { type: 'Colon' },
               { type: 'Colon' },
-              { type: 'RatioChordPitch', pitch: 6 },
+              { type: 'RatioChordPitch', pitch: 6, prefix: null },
             ],
             tail: null,
           },
@@ -1395,6 +1397,7 @@ describe('grammar', () => {
                 {
                   type: 'RatioChordPitch',
                   pitch: 4,
+                  prefix: null,
                 },
                 {
                   type: 'Colon',
@@ -1402,6 +1405,7 @@ describe('grammar', () => {
                 {
                   type: 'RatioChordPitch',
                   pitch: 5,
+                  prefix: null,
                 },
                 {
                   type: 'Colon',
@@ -1409,6 +1413,7 @@ describe('grammar', () => {
                 {
                   type: 'RatioChordPitch',
                   pitch: 6,
+                  prefix: null,
                 },
               ],
               scaleOctaveMarker: null,
@@ -1425,6 +1430,7 @@ describe('grammar', () => {
                 {
                   type: 'RatioChordPitch',
                   pitch: 4,
+                  prefix: null,
                 },
                 {
                   type: 'Colon',
@@ -1432,6 +1438,7 @@ describe('grammar', () => {
                 {
                   type: 'RatioChordPitch',
                   pitch: 5,
+                  prefix: null,
                 },
                 {
                   type: 'Colon',
@@ -1439,6 +1446,7 @@ describe('grammar', () => {
                 {
                   type: 'RatioChordPitch',
                   pitch: 6,
+                  prefix: null,
                 },
               ],
               scaleOctaveMarker: {
@@ -1457,6 +1465,7 @@ describe('grammar', () => {
                 {
                   type: 'RatioChordPitch',
                   pitch: 4,
+                  prefix: null,
                 },
                 {
                   type: 'Colon',
@@ -1464,6 +1473,7 @@ describe('grammar', () => {
                 {
                   type: 'RatioChordPitch',
                   pitch: 6,
+                  prefix: null,
                 },
                 {
                   type: 'Colon',
@@ -1474,6 +1484,7 @@ describe('grammar', () => {
                 {
                   type: 'RatioChordPitch',
                   pitch: 8,
+                  prefix: null,
                 },
               ],
               scaleOctaveMarker: null,
@@ -1494,6 +1505,7 @@ describe('grammar', () => {
                   type: 'Pitch',
                   value: {
                     type: 'PitchRatio',
+                    prefix: null,
                     numerator: 1,
                     denominator: 1,
                   },
@@ -1505,6 +1517,7 @@ describe('grammar', () => {
                   type: 'Pitch',
                   value: {
                     type: 'PitchRatio',
+                    prefix: null,
                     numerator: 9,
                     denominator: 8,
                   },
@@ -1516,6 +1529,7 @@ describe('grammar', () => {
                   type: 'Pitch',
                   value: {
                     type: 'PitchRatio',
+                    prefix: null,
                     numerator: 5,
                     denominator: 4,
                   },
@@ -1537,6 +1551,7 @@ describe('grammar', () => {
                   type: 'Pitch',
                   value: {
                     type: 'PitchRatio',
+                    prefix: null,
                     numerator: 1,
                     denominator: 1,
                   },
@@ -1548,6 +1563,7 @@ describe('grammar', () => {
                   type: 'Pitch',
                   value: {
                     type: 'PitchRatio',
+                    prefix: null,
                     numerator: 9,
                     denominator: 8,
                   },
@@ -1559,6 +1575,7 @@ describe('grammar', () => {
                   type: 'Pitch',
                   value: {
                     type: 'PitchRatio',
+                    prefix: null,
                     numerator: 5,
                     denominator: 4,
                   },
@@ -1655,12 +1672,12 @@ describe('grammar', () => {
             scale: {
               type: 'RatioChordScale',
               pitches: [
-                { type: 'RatioChordPitch', pitch: 4 },
+                { type: 'RatioChordPitch', pitch: 4, prefix: null },
                 { type: 'Colon' },
-                { type: 'RatioChordPitch', pitch: 5 },
+                { type: 'RatioChordPitch', pitch: 5, prefix: null },
                 { type: 'Colon' },
                 { type: 'Colon' },
-                { type: 'RatioChordPitch', pitch: 6 },
+                { type: 'RatioChordPitch', pitch: 6, prefix: null },
               ],
               scaleOctaveMarker: {
                 type: 'ScaleOctaveMarker',
@@ -1680,6 +1697,7 @@ describe('grammar', () => {
                   type: 'Pitch',
                   value: {
                     type: 'PitchRatio',
+                    prefix: null,
                     numerator: 1,
                     denominator: 1,
                   },
@@ -1691,6 +1709,7 @@ describe('grammar', () => {
                   type: 'Pitch',
                   value: {
                     type: 'PitchRatio',
+                    prefix: null,
                     numerator: 9,
                     denominator: 8,
                   },
@@ -1838,6 +1857,7 @@ describe('grammar', () => {
               value: {
                 numerator: 7,
                 denominator: 5,
+                prefix: null,
                 type: 'PitchRatio',
               },
             },
@@ -2040,6 +2060,7 @@ describe('grammar', () => {
               type: 'Pitch',
               value: {
                 type: 'PitchRatio',
+                prefix: null,
                 numerator: 7,
                 denominator: 5,
               },

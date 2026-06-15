@@ -32,6 +32,7 @@ export type PitchOctaveDivisionType = NodeType<'PitchOctaveDivision'> & {
 }
 
 export type PitchRatioType = NodeType<'PitchRatio'> & {
+  prefix: '√' | 'sqrt' | null
   numerator: number
   denominator: number
 }
@@ -84,6 +85,7 @@ export type SampleRateNoteType = NodeType<'SampleRateNote'> & {
 //
 
 export type RatioChordPitchType = NodeType<'RatioChordPitch'> & {
+  prefix: '√' | 'sqrt' | null
   pitch: number
 }
 

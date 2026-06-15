@@ -31,7 +31,7 @@ export type SourceHistory = {
   future: string[]
 }
 
-export type SidebarMode = 'info' | 'new-v2' | 'share' | 'ruler' | 'none'
+export type SidebarMode = 'info' | 'new-v2' | 'notation' | 'share' | 'ruler' | 'none'
 
 export type OpenSidebarMode = Exclude<SidebarMode, 'none'>
 

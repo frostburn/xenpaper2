@@ -57,6 +57,8 @@ const INITIAL_ENV = {
 
 const INITIAL = [INITIAL_TEMPO, INITIAL_OSC, INITIAL_ENV]
 
+const ROOT_HZ = 220
+
 const parseSource = (input: string) => parse(input, { grammarSource: 'test-input' })
 
 const noteItems = (input: string) =>
@@ -979,5 +981,32 @@ describe('grammar numeric validation', () => {
 
     expect(result.playable).toBe(false)
     expect(result.error).toContain(expectedError)
+  })
+})
+
+function firstNote(source: string) {
+  const parsed = parseAndProcessSourceCode(source)
+  if (parsed.playable) return parsed.score.sequence.find((item) => item.type === 'NOTE_TIME')!
+  console.log(parsed)
+  throw new Error('Failed to parse source')
+}
+
+describe('hemipyth processing', () => {
+  it('computes and labels the semifourth', () => {
+    const { hz, label } = firstNote('sqrt4/3')
+    expect(hz).toBeCloseTo(ROOT_HZ * Math.sqrt(4 / 3))
+    expect(label).toBe('√4/3  249.0c')
+  })
+
+  it('computes and labels the neutral third', () => {
+    const { hz, label } = firstNote('sqrt 3/2')
+    expect(hz).toBeCloseTo(ROOT_HZ * Math.sqrt(3 / 2))
+    expect(label).toBe('√3/2  351.0c')
+  })
+
+  it('computes and labels the semioctave', () => {
+    const { hz, label } = firstNote('√2/1')
+    expect(hz).toBeCloseTo(ROOT_HZ * Math.sqrt(2))
+    expect(label).toBe('√2/1  600.0c')
   })
 })

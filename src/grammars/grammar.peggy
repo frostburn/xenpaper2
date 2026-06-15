@@ -34,7 +34,7 @@ PitchOctaveDivisionSuffix = _ "ed"i _ os:OctaveSize? { return os ?? 2; } / _ "<"
 OctaveSize = fraction:Fraction {
   return fraction.numerator / fraction.denominator;
 }
-PitchRatio = fraction:SlashFraction { return node('PitchRatio', fraction); }
+PitchRatio = prefix:(@NumericPrefix _)? fraction:SlashFraction { return node('PitchRatio', {prefix, ...fraction}); }
 PitchDegree = degree:Int { return node('PitchDegree',{degree}); }
 Hold = parts:(HoldDash / BarLineInHold)+ {
   const length = parts.filter((part) => part.type === 'HoldDash').length;
@@ -59,7 +59,7 @@ ChordPitchGroup = first:ChordPitch rest:(ChordPitchSeparator ChordPitch)* {
   }
   return result;
 }
-RatioChordPitch = n:Int { return node('RatioChordPitch', { pitch: n }); }
+RatioChordPitch = prefix:(@NumericPrefix _)? pitch:Int { return node('RatioChordPitch', { prefix, pitch }); }
 Colon = ":" { return node('Colon', { delimiter: true }); }
 RatioChordPitches = first:RatioChordPitch rest:((_ Colon _)+ RatioChordPitch)* {
   const result = [first];
@@ -152,6 +152,7 @@ Comment = "#" comment:$([^\n\r]*) {
   return node('Comment', { comment });
 }
 Whitespace "whitespace" = [,\n\r\t ]+ { return node('Whitespace',{delimiter:true}); }
+NumericPrefix = "√"/"sqrt"i { return text().toLowerCase() }
 Number "number" = n:$([0-9]+ ("." [0-9]*)?) { return Number(n); }
 Fraction = numerator:Int denominator:(_ "/" _ @Int)? { return { numerator, denominator: denominator ?? 1 }; }
 SlashFraction = numerator:Int _ "/" _ denominator:Int { return { numerator, denominator }; }
