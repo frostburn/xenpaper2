@@ -1018,7 +1018,7 @@ describe('hemipyth processing', () => {
     expect(notes[0]!.hz).toBeCloseTo(ROOT_HZ)
     expect(notes[0]!.label).toBe('4/4  0.0c')
     expect(notes[1]!.hz).toBeCloseTo((ROOT_HZ * Math.sqrt(5)) / 4)
-    expect(notes[1]!.label).toBe('√5/4  193.2c')
+    expect(notes[1]!.label).toBe('√5/16  -1006.8c')
     expect(notes[2]!.hz).toBeCloseTo(ROOT_HZ * (6 / 4))
     expect(notes[2]!.label).toBe('6/4  702.0c')
   })
@@ -1029,7 +1029,7 @@ describe('hemipyth processing', () => {
 
     const notes = parsed.score.sequence.filter((item) => item.type === 'NOTE_TIME')
     expect(notes[3]!.hz).toBeCloseTo((ROOT_HZ * Math.sqrt(50)) / 4)
-    expect(notes[3]!.label).toBe('√50/4  986.3c')
+    expect(notes[3]!.label).toBe('√50/16  986.3c')
   })
 
   it('computes prefixed intervals inside ratio scale definitions', () => {
@@ -1038,6 +1038,6 @@ describe('hemipyth processing', () => {
 
     const note = parsed.score.sequence.find((item) => item.type === 'NOTE_TIME')!
     expect(note.hz).toBeCloseTo((ROOT_HZ * Math.sqrt(5)) / 4)
-    expect(note.label).toBe('√5/4  193.2c')
+    expect(note.label).toBe('√5/16  -1006.8c')
   })
 })

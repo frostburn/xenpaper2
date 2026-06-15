@@ -219,8 +219,10 @@ const ratioChordPitchToLabel = (
   octaveSize: number,
 ): string => {
   const ratio = ratioChordPitchToRatio(pitch, denominator)
-  const prefix = pitch.prefix ? '√' : ''
-  return `${prefix}${pitch.pitch}/${denominator}  ${ratioToCentsLabel(ratio, octaveSize)}`
+  if (pitch.prefix) {
+    return `√${pitch.pitch}/${denominator * denominator}  ${valueToCents(ratio).toFixed(1)}c`
+  }
+  return `${pitch.pitch}/${denominator}  ${ratioToCentsLabel(ratio, octaveSize)}`
 }
 
 //
