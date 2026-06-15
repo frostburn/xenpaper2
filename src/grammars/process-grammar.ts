@@ -208,11 +208,9 @@ const edoToLabels = (edoSize: number, ratios: number[], octaveSize: number): str
 }
 
 const ratioChordPitchToRatio = (pitch: RatioChordPitchType, denominator: number): number => {
-  const ratio = pitch.pitch / denominator
-  if (pitch.prefix === '√' || pitch.prefix === 'sqrt') {
-    return Math.sqrt(ratio)
-  }
-  return ratio
+  const numerator =
+    pitch.prefix === '√' || pitch.prefix === 'sqrt' ? Math.sqrt(pitch.pitch) : pitch.pitch
+  return numerator / denominator
 }
 
 const ratioChordPitchToLabel = (
