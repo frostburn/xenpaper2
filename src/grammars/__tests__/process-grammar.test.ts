@@ -1009,4 +1009,26 @@ describe('hemipyth processing', () => {
     expect(hz).toBeCloseTo(ROOT_HZ * Math.sqrt(2))
     expect(label).toBe('√2/1  600.0c')
   })
+
+  it('computes prefixed intervals inside ratio chords', () => {
+    const parsed = parseAndProcessSourceCode('4:sqrt5:6')
+    if (!parsed.playable) throw new Error('Failed to parse source')
+
+    const notes = parsed.score.sequence.filter((item) => item.type === 'NOTE_TIME')
+    expect(notes[0]!.hz).toBeCloseTo(ROOT_HZ)
+    expect(notes[0]!.label).toBe('4/4  0.0c')
+    expect(notes[1]!.hz).toBeCloseTo(ROOT_HZ * Math.sqrt(5 / 4))
+    expect(notes[1]!.label).toBe('√5/4  193.2c')
+    expect(notes[2]!.hz).toBeCloseTo(ROOT_HZ * (6 / 4))
+    expect(notes[2]!.label).toBe('6/4  702.0c')
+  })
+
+  it('computes prefixed intervals inside ratio scale definitions', () => {
+    const parsed = parseAndProcessSourceCode('{4:sqrt5:6} 1')
+    if (!parsed.playable) throw new Error('Failed to parse source')
+
+    const note = parsed.score.sequence.find((item) => item.type === 'NOTE_TIME')!
+    expect(note.hz).toBeCloseTo(ROOT_HZ * Math.sqrt(5 / 4))
+    expect(note.label).toBe('√5/4  193.2c')
+  })
 })

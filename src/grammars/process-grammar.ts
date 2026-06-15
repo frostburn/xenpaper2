@@ -180,7 +180,7 @@ export const pitchToLabel = (pitch: PitchType, context: Context): string => {
 
   if (type === 'PitchRatio') {
     const { prefix, numerator, denominator } = pitch.value
-    if (prefix === undefined) return `${numerator}/${denominator}  ${centsLabel}`
+    if (!prefix) return `${numerator}/${denominator}  ${centsLabel}`
     return `√${numerator}/${denominator}  ${centsLabel}`
   }
 
@@ -205,6 +205,24 @@ const edoToLabels = (edoSize: number, ratios: number[], octaveSize: number): str
     labels.push(`${i}\\${edoSize}  ${centsLabel}`)
   }
   return labels
+}
+
+const ratioChordPitchToRatio = (pitch: RatioChordPitchType, denominator: number): number => {
+  const ratio = pitch.pitch / denominator
+  if (pitch.prefix === '√' || pitch.prefix === 'sqrt') {
+    return Math.sqrt(ratio)
+  }
+  return ratio
+}
+
+const ratioChordPitchToLabel = (
+  pitch: RatioChordPitchType,
+  denominator: number,
+  octaveSize: number,
+): string => {
+  const ratio = ratioChordPitchToRatio(pitch, denominator)
+  const prefix = pitch.prefix ? '√' : ''
+  return `${prefix}${pitch.pitch}/${denominator}  ${ratioToCentsLabel(ratio, octaveSize)}`
 }
 
 //
@@ -528,24 +546,32 @@ const chordToMosc = (
     })
 
   const firstRatioPitch = chordPitches.find(isRatioChordPitchType)
-  const firstDenominator = firstRatioPitch?.pitch
-
-  if (firstDenominator === undefined) {
+  if (!firstRatioPitch) {
     return pitchTypes
   }
+
+  const firstDenominator = firstRatioPitch.pitch
 
   assertFinitePositive('Ratio denominator', firstDenominator)
 
   const ratioPitchTypes: MoscBeatNote[] = []
-  const addRatioPitchType = (numerator: number): void => {
+  const addRatioPitchType = (pitch: RatioChordPitchType): void => {
+    const ratio = ratioChordPitchToRatio(pitch, firstDenominator)
     ratioPitchTypes.push({
       type: 'NOTE_BEAT_TIME',
-      hz: (numerator / firstDenominator) * context.rootHz,
-      label: `${numerator}/${firstDenominator}  ${ratioToCentsLabel(
-        numerator / firstDenominator,
-        context.octaveSize,
-      )}`,
+      hz: ratio * context.rootHz,
+      label: ratioChordPitchToLabel(pitch, firstDenominator, context.octaveSize),
       ...timeProps,
+    })
+  }
+
+  const addInterpolatedRatioPitchType = (numerator: number): void => {
+    addRatioPitchType({
+      type: 'RatioChordPitch',
+      delimiter: false,
+      location: firstRatioPitch.location,
+      prefix: null,
+      pitch: numerator,
     })
   }
 
@@ -553,18 +579,17 @@ const chordToMosc = (
   let lastNumerator = 1
   chordPitches.forEach((pitch) => {
     if (isRatioChordPitchType(pitch)) {
-      let numerator = pitch.pitch
-      if (pitch.prefix === '√' || pitch.prefix === 'sqrt') numerator = Math.sqrt(numerator)
+      const numerator = pitch.pitch
       assertFinitePositive('Ratio numerator', numerator)
 
       if (colons == 2) {
         while (lastNumerator < numerator - 1) {
           lastNumerator++
-          addRatioPitchType(lastNumerator)
+          addInterpolatedRatioPitchType(lastNumerator)
         }
       }
 
-      addRatioPitchType(numerator)
+      addRatioPitchType(pitch)
       lastNumerator = numerator
       colons = 0
       return
@@ -651,11 +676,23 @@ const setScale = (setScale: SetScaleType, context: Context): void => {
     let colons = 0
     let lastNumerator = 0
 
-    const addRatio = (numerator: number): void => {
-      const ratio = numerator / firstDenominator
+    const addRatio = (pitch: RatioChordPitchType): void => {
+      const ratio = ratioChordPitchToRatio(pitch, firstDenominator)
       context.scale.push(ratio)
-      const centsLabel = ratioToCentsLabel(ratio, 2)
-      context.scaleLabels.push(`${numerator}/${firstDenominator}  ${centsLabel}`)
+      context.scaleLabels.push(ratioChordPitchToLabel(pitch, firstDenominator, 2))
+    }
+
+    const addInterpolatedRatio = (
+      numerator: number,
+      location: RatioChordPitchType['location'],
+    ): void => {
+      addRatio({
+        type: 'RatioChordPitch',
+        delimiter: false,
+        location,
+        prefix: null,
+        pitch: numerator,
+      })
     }
 
     pitches.forEach((pitch) => {
@@ -675,11 +712,11 @@ const setScale = (setScale: SetScaleType, context: Context): void => {
       if (colons === 2) {
         while (lastNumerator < numerator - 1) {
           lastNumerator++
-          addRatio(lastNumerator)
+          addInterpolatedRatio(lastNumerator, pitch.location)
         }
       }
 
-      addRatio(numerator)
+      addRatio(pitch)
       lastNumerator = numerator
       colons = 0
     })

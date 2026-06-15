@@ -73,8 +73,8 @@ RatioChordPitches = first:RatioChordPitch rest:((_ Colon _)+ RatioChordPitch)* {
 RatioChord = pitches:RatioChordPitches tail:Hold? {
   return node('RatioChord', { pitches, tail });
 }
-RatioChordItem = &(Int _ ":" !"|") rc:RatioChord { return rc; }
-Chord = "[" _ pitches:((&(Int _ ":" !"|") rp:RatioChordPitches { return rp; }) / ChordPitchGroup) _ "]" tail:Hold? {
+RatioChordItem = &(RatioChordPitch _ ":" !"|") rc:RatioChord { return rc; }
+Chord = "[" _ pitches:((&(RatioChordPitch _ ":" !"|") rp:RatioChordPitches { return rp; }) / ChordPitchGroup) _ "]" tail:Hold? {
   return node('Chord', { pitches, tail });
 }
 RepeatEndStart = ":|:" count:RepeatCount? {
@@ -135,7 +135,7 @@ EdoScale = divisions:Int _ "ed"i "o"i? _ octaveSize:OctaveSize? {
   return node('EdoScale', { divisions, octaveSize: octaveSize ?? 2 });
 }
 ScaleOctaveMarker = "'" { return node('ScaleOctaveMarker'); }
-RatioChordScale = &(Int _ ":") pitches:RatioChordPitches _ scaleOctaveMarker:ScaleOctaveMarker? {
+RatioChordScale = &(RatioChordPitch _ ":") pitches:RatioChordPitches _ scaleOctaveMarker:ScaleOctaveMarker? {
   return node('RatioChordScale', { pitches, scaleOctaveMarker });
 }
 PitchGroupScalePrefix = p:"m"i _ {
