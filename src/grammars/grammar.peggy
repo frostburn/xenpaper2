@@ -9,17 +9,14 @@ Sequence = items:ItemList { return node('Sequence', { items }); }
 ItemList = head:Item tail:(_ Item)* { return [head, ...tail.map(([,i]) => i)]; } / '' { return []; }
 Item = Comment / MusicalControlFlow / SetterGroup / SetRoot / SetScale / RatioChordItem / SampleRateNote / Note / Rest / Chord / RepeatEndStart / RepeatStart / RepeatEnd / RepeatEndingStart / BarLine / Whitespace
 Note = pitch:Pitch tail:Hold? {
-  const noteTail = tail ?? undefined;
-  return node('Note', { pitch, tail: noteTail });
+  return node('Note', { pitch, tail });
 }
 SampleRateNote = "!" tail:Hold? {
-  const noteTail = tail ?? undefined;
-  return node('SampleRateNote', { tail: noteTail });
+  return node('SampleRateNote', { tail });
 }
-SampleRatePitch = "!" { return node('SampleRateNote'); }
-Pitch = oct:OctaveModifier? value:(PitchCents / PitchHz / PitchOctaveDivision / PitchRatio / PitchDegree) {
-  if (oct) return node('Pitch', { octave: oct, value });
-  return node('Pitch', { value });
+SampleRatePitch = "!" { return node('SampleRateNote', { tail: null }); }
+Pitch = octave:OctaveModifier? value:(PitchCents / PitchHz / PitchOctaveDivision / PitchRatio / PitchDegree) {
+  return node('Pitch', { octave, value });
 }
 OctaveModifier = shifts:(Apostrophe / Quote / Grave)+ {
   const octave = shifts.reduce((sum, shift) => sum + shift, 0);
@@ -34,10 +31,10 @@ PitchOctaveDivision = numerator:Int _ [\\/] _ denominator:Int octaveSize:PitchOc
   return node('PitchOctaveDivision',{numerator,denominator,octaveSize});
 } / numerator:Int _ "\\" _ denominator:Int { return node('PitchOctaveDivision',{numerator,denominator,octaveSize:2}); }
 PitchOctaveDivisionSuffix = _ "ed"i _ os:OctaveSize? { return os ?? 2; } / _ "<" _ os:OctaveSize _ ">" { return os; }
-OctaveSize = os:Int frac:(_ "/" _ @Int)? {
-  return os / (frac ?? 1);
+OctaveSize = fraction:Fraction {
+  return fraction.numerator / fraction.denominator;
 }
-PitchRatio = numerator:Int _ "/" _ denominator:Int { return node('PitchRatio',{numerator,denominator}); }
+PitchRatio = fraction:SlashFraction { return node('PitchRatio', fraction); }
 PitchDegree = degree:Int { return node('PitchDegree',{degree}); }
 Hold = parts:(HoldDash / BarLineInHold)+ {
   const length = parts.filter((part) => part.type === 'HoldDash').length;
@@ -74,26 +71,21 @@ RatioChordPitches = first:RatioChordPitch rest:((_ Colon _)+ RatioChordPitch)* {
   return result;
 }
 RatioChord = pitches:RatioChordPitches tail:Hold? {
-  const noteTail = tail ?? undefined;
-  return node('RatioChord', { pitches, tail: noteTail });
+  return node('RatioChord', { pitches, tail });
 }
 RatioChordItem = &(Int _ ":" !"|") rc:RatioChord { return rc; }
 Chord = "[" _ pitches:((&(Int _ ":" !"|") rp:RatioChordPitches { return rp; }) / ChordPitchGroup) _ "]" tail:Hold? {
-  const noteTail = tail ?? undefined;
-  return node('Chord', { pitches, tail: noteTail });
+  return node('Chord', { pitches, tail });
 }
 RepeatEndStart = ":|:" count:RepeatCount? {
   return node('RepeatEndStart',{delimiter:true, repeatCount: count ?? 2});
 }
 RepeatStart = "|:" count:RepeatCount? { return node('RepeatStart',{delimiter:true, repeatCount: count ?? 2}); }
-RepeatEnd = ":|" ending:RepeatEndingNumber? tail:Hold? {
-  const alternateEnding = ending ?? undefined;
-  const noteTail = tail ?? undefined;
-  return node('RepeatEnd',{delimiter:true, alternateEnding, tail: noteTail});
+RepeatEnd = ":|" alternateEnding:RepeatEndingNumber? tail:Hold? {
+  return node('RepeatEnd',{delimiter:true, alternateEnding, tail});
 }
 RepeatEndingStart = "|" ending:RepeatEndingNumber tail:Hold? {
-  const noteTail = tail ?? undefined;
-  return node('RepeatEndingStart',{delimiter:true, alternateEnding: ending, tail: noteTail});
+  return node('RepeatEndingStart',{delimiter:true, alternateEnding: ending, tail});
 }
 RepeatCount = "ˣ" count:SuperScriptInt { return count; } / "(" "x"i count:Int ")" { return count; }
 RepeatEndingNumber = SuperScriptInt / "(" "^" count:Int ")" { return count; }
@@ -118,10 +110,10 @@ SetterGroup = "(" _ first:Setter rest:(Semicolon Setter)* _ ")" {
 Setter = SetBpm / SetBms / SetSubdivision / SetOsc / SetNoise / SetEnv / SetRulerRange / SetRulerPlot
 SetBpm = "bpm"i _ ":" _ bpm:Number { return node('SetBpm', { bpm }); }
 SetBms = "bms"i _ ":" _ bms:Number { return node('SetBms', { bms }); }
-SetSubdivision = ("div"i _ ":" _)? subdivision:Int frac:(_ "/" _ @Int)? {
+SetSubdivision = ("div"i _ ":" _)? fraction:Fraction {
   return node('SetSubdivision', {
-    subdivision,
-    denominator: frac ?? undefined,
+    subdivision: fraction.numerator,
+    denominator: fraction.denominator,
   });
 }
 SetOsc = "osc"i _ ":" _ osc:OscName { return node('SetOsc', { osc }); }
@@ -139,22 +131,17 @@ SetRoot = "{" _ "r"i _ pitch:Pitch _ "}" { return node('SetRoot', { pitch }); }
 SetScale = "{" _ scale:(EdoScale / RatioChordScale / PitchGroupScale) _ "}" {
   return node('SetScale', { scale });
 }
-EdoScale = divisions:Int _ "ed"i "o"i? _ os:Int? frac:(_ "/" _ @Int)? {
-  const den = frac ?? 1;
-  const octaveSize = (os ?? 2) / den;
-  return node('EdoScale', { divisions, octaveSize });
+EdoScale = divisions:Int _ "ed"i "o"i? _ octaveSize:OctaveSize? {
+  return node('EdoScale', { divisions, octaveSize: octaveSize ?? 2 });
 }
 ScaleOctaveMarker = "'" { return node('ScaleOctaveMarker'); }
-RatioChordScale = &(Int _ ":") pitches:RatioChordPitches _ som:ScaleOctaveMarker? {
-  const scaleOctaveMarker = som ?? undefined;
+RatioChordScale = &(Int _ ":") pitches:RatioChordPitches _ scaleOctaveMarker:ScaleOctaveMarker? {
   return node('RatioChordScale', { pitches, scaleOctaveMarker });
 }
 PitchGroupScalePrefix = p:"m"i _ {
   return node('PitchGroupScalePrefix', { prefix: p.toLowerCase() });
 }
-PitchGroupScale = pref:PitchGroupScalePrefix? pitches:PitchGroup _ som:ScaleOctaveMarker? {
-  const pitchGroupScalePrefix = pref ?? undefined;
-  const scaleOctaveMarker = som ?? undefined;
+PitchGroupScale = pitchGroupScalePrefix:PitchGroupScalePrefix? pitches:PitchGroup _ scaleOctaveMarker:ScaleOctaveMarker? {
   return node('PitchGroupScale', {
     pitchGroupScalePrefix,
     pitches,
@@ -166,6 +153,8 @@ Comment = "#" comment:$([^\n\r]*) {
 }
 Whitespace "whitespace" = [,\n\r\t ]+ { return node('Whitespace',{delimiter:true}); }
 Number "number" = n:$([0-9]+ ("." [0-9]*)?) { return Number(n); }
+Fraction = numerator:Int denominator:(_ "/" _ @Int)? { return { numerator, denominator: denominator ?? 1 }; }
+SlashFraction = numerator:Int _ "/" _ denominator:Int { return { numerator, denominator }; }
 Int "integer" = n:$([0-9]+) { return parseInt(n, 10); }
 SuperScriptInt "superscript integer" = digits:SuperScriptDigit+ { return parseInt(digits.join(''), 10); }
 SuperScriptDigit = "⁰" { return '0'; } / "¹" { return '1'; } / "²" { return '2'; } / "³" { return '3'; } / "⁴" { return '4'; } / "⁵" { return '5'; } / "⁶" { return '6'; } / "⁷" { return '7'; } / "⁸" { return '8'; } / "⁹" { return '9'; }

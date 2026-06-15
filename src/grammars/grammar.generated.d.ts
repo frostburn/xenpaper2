@@ -46,7 +46,7 @@ export type PitchHzType = NodeType<'PitchHz'> & {
 
 export type PitchType = NodeType<'Pitch'> & {
   value: PitchCentsType | PitchOctaveDivisionType | PitchRatioType | PitchDegreeType | PitchHzType
-  octave?: OctaveModifierType
+  octave: OctaveModifierType | null
 }
 
 export type PitchGroupType = Array<PitchType | DelimiterType>
@@ -72,11 +72,11 @@ export type RestType = NodeType<'Rest'> & {
 
 export type NoteType = NodeType<'Note'> & {
   pitch: PitchType
-  tail?: TailType
+  tail: TailType | null
 }
 
 export type SampleRateNoteType = NodeType<'SampleRateNote'> & {
-  tail?: TailType
+  tail: TailType | null
 }
 
 //
@@ -89,12 +89,12 @@ export type RatioChordPitchType = NodeType<'RatioChordPitch'> & {
 
 export type ChordType = NodeType<'Chord'> & {
   pitches: Array<RatioChordPitchType | PitchType | SampleRateNoteType | DelimiterType>
-  tail?: TailType
+  tail: TailType | null
 }
 
 export type RatioChordType = NodeType<'RatioChord'> & {
   pitches: Array<RatioChordPitchType | DelimiterType>
-  tail?: TailType
+  tail: TailType | null
 }
 
 //
@@ -113,14 +113,14 @@ export type PitchGroupScalePrefixType = NodeType<'PitchGroupScalePrefix'> & {
 }
 
 export type PitchGroupScaleType = NodeType<'PitchGroupScale'> & {
-  pitchGroupScalePrefix?: PitchGroupScalePrefixType
+  pitchGroupScalePrefix: PitchGroupScalePrefixType | null
   pitches: PitchGroupType
-  scaleOctaveMarker?: ScaleOctaveMarkerType
+  scaleOctaveMarker: ScaleOctaveMarkerType | null
 }
 
 export type RatioChordScaleType = NodeType<'RatioChordScale'> & {
   pitches: Array<RatioChordPitchType | DelimiterType>
-  scaleOctaveMarker?: ScaleOctaveMarkerType
+  scaleOctaveMarker: ScaleOctaveMarkerType | null
 }
 
 //
@@ -155,7 +155,7 @@ export type SetBmsType = NodeType<'SetBms'> & {
 
 export type SetSubdivisionType = NodeType<'SetSubdivision'> & {
   subdivision: number
-  denominator?: number
+  denominator: number
 }
 
 // osc
@@ -214,8 +214,8 @@ export type RepeatStartType = NodeType<'RepeatStart', true> & {
 }
 
 export type RepeatEndType = NodeType<'RepeatEnd', true> & {
-  alternateEnding?: number
-  tail?: TailType
+  alternateEnding: number | null
+  tail: TailType | null
 }
 
 export type RepeatEndStartType = NodeType<'RepeatEndStart', true> & {
@@ -224,7 +224,7 @@ export type RepeatEndStartType = NodeType<'RepeatEndStart', true> & {
 
 export type RepeatEndingStartType = NodeType<'RepeatEndingStart', true> & {
   alternateEnding: number
-  tail?: TailType
+  tail: TailType | null
 }
 
 export type RepeatType =
