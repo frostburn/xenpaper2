@@ -1146,6 +1146,22 @@ describe('grammar', () => {
         ])
       })
 
+      it('should parse ratio chords with prefixed roots', () => {
+        expect(strip(parser('sqrt2:3:4')).sequence.items).toEqual([
+          {
+            type: 'RatioChord',
+            pitches: [
+              { type: 'RatioChordPitch', pitch: 2, prefix: 'sqrt' },
+              { type: 'Colon' },
+              { type: 'RatioChordPitch', pitch: 3, prefix: null },
+              { type: 'Colon' },
+              { type: 'RatioChordPitch', pitch: 4, prefix: null },
+            ],
+            tail: null,
+          },
+        ])
+      })
+
       it('should parse sequence with ratio chord holds across bar lines', () => {
         expect(strip(parser('4:5:6:7--|---|')).sequence.items).toEqual([
           {

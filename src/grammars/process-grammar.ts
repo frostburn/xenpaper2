@@ -207,22 +207,64 @@ const edoToLabels = (edoSize: number, ratios: number[], octaveSize: number): str
   return labels
 }
 
-const ratioChordPitchToRatio = (pitch: RatioChordPitchType, denominator: number): number => {
-  const numerator =
-    pitch.prefix === '√' || pitch.prefix === 'sqrt' ? Math.sqrt(pitch.pitch) : pitch.pitch
-  return numerator / denominator
+const gcd = (a: number, b: number): number => {
+  let x = Math.abs(a)
+  let y = Math.abs(b)
+  while (y !== 0) {
+    const next = x % y
+    x = y
+    y = next
+  }
+  return x || 1
+}
+
+const reduceFraction = (numerator: number, denominator: number): [number, number] => {
+  const divisor = gcd(numerator, denominator)
+  return [numerator / divisor, denominator / divisor]
+}
+
+const ratioChordPitchValue = (pitch: RatioChordPitchType): number => {
+  if (pitch.prefix === '√' || pitch.prefix === 'sqrt') {
+    return Math.sqrt(pitch.pitch)
+  }
+  return pitch.pitch
+}
+
+const ratioChordPitchToRatio = (
+  pitch: RatioChordPitchType,
+  denominator: RatioChordPitchType,
+): number => {
+  return ratioChordPitchValue(pitch) / ratioChordPitchValue(denominator)
 }
 
 const ratioChordPitchToLabel = (
   pitch: RatioChordPitchType,
-  denominator: number,
+  denominator: RatioChordPitchType,
   octaveSize: number,
 ): string => {
   const ratio = ratioChordPitchToRatio(pitch, denominator)
-  if (pitch.prefix) {
-    return `√${pitch.pitch}/${denominator * denominator}  ${valueToCents(ratio).toFixed(1)}c`
+
+  if (pitch.prefix && denominator.prefix && pitch.pitch === denominator.pitch) {
+    return `1/1  ${ratioToCentsLabel(ratio, octaveSize)}`
   }
-  return `${pitch.pitch}/${denominator}  ${ratioToCentsLabel(ratio, octaveSize)}`
+
+  if (pitch.prefix && denominator.prefix) {
+    const [numerator, labelDenominator] = reduceFraction(pitch.pitch, denominator.pitch)
+    return `√${numerator}/${labelDenominator}  ${valueToCents(ratio).toFixed(1)}c`
+  }
+
+  if (denominator.prefix) {
+    const [numerator, labelDenominator] = reduceFraction(
+      pitch.pitch * pitch.pitch,
+      denominator.pitch,
+    )
+    return `√${numerator}/${labelDenominator}  ${valueToCents(ratio).toFixed(1)}c`
+  }
+
+  if (pitch.prefix) {
+    return `√${pitch.pitch}/${denominator.pitch * denominator.pitch}  ${valueToCents(ratio).toFixed(1)}c`
+  }
+  return `${pitch.pitch}/${denominator.pitch}  ${ratioToCentsLabel(ratio, octaveSize)}`
 }
 
 //
@@ -556,11 +598,11 @@ const chordToMosc = (
 
   const ratioPitchTypes: MoscBeatNote[] = []
   const addRatioPitchType = (pitch: RatioChordPitchType): void => {
-    const ratio = ratioChordPitchToRatio(pitch, firstDenominator)
+    const ratio = ratioChordPitchToRatio(pitch, firstRatioPitch)
     ratioPitchTypes.push({
       type: 'NOTE_BEAT_TIME',
       hz: ratio * context.rootHz,
-      label: ratioChordPitchToLabel(pitch, firstDenominator, context.octaveSize),
+      label: ratioChordPitchToLabel(pitch, firstRatioPitch, context.octaveSize),
       ...timeProps,
     })
   }
@@ -672,14 +714,15 @@ const setScale = (setScale: SetScaleType, context: Context): void => {
     context.scale = []
     context.scaleLabels = []
 
-    let firstDenominator = -1
+    let firstDenominatorPitch: RatioChordPitchType | null = null
     let colons = 0
     let lastNumerator = 0
 
     const addRatio = (pitch: RatioChordPitchType): void => {
-      const ratio = ratioChordPitchToRatio(pitch, firstDenominator)
+      if (!firstDenominatorPitch) return
+      const ratio = ratioChordPitchToRatio(pitch, firstDenominatorPitch)
       context.scale.push(ratio)
-      context.scaleLabels.push(ratioChordPitchToLabel(pitch, firstDenominator, 2))
+      context.scaleLabels.push(ratioChordPitchToLabel(pitch, firstDenominatorPitch, 2))
     }
 
     const addInterpolatedRatio = (
@@ -702,9 +745,9 @@ const setScale = (setScale: SetScaleType, context: Context): void => {
       }
 
       const numerator = pitch.pitch
-      if (firstDenominator === -1) {
-        assertFinitePositive('Ratio denominator', numerator)
-        firstDenominator = numerator
+      if (!firstDenominatorPitch) {
+        assertFinitePositive('Ratio denominator', ratioChordPitchValue(pitch))
+        firstDenominatorPitch = pitch
       }
 
       assertFinitePositive('Ratio numerator', numerator)

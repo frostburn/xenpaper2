@@ -1040,4 +1040,23 @@ describe('hemipyth processing', () => {
     expect(note.hz).toBeCloseTo((ROOT_HZ * Math.sqrt(5)) / 4)
     expect(note.label).toBe('√5/16  -1006.8c')
   })
+
+  it('normalizes ratio chords with square-rooted roots', () => {
+    const rooted = parseAndProcessSourceCode('sqrt2:3:4')
+    const explicit = parseAndProcessSourceCode('[1/1 sqrt9/2 sqrt8/1]')
+    if (!rooted.playable || !explicit.playable) throw new Error('Failed to parse source')
+
+    const rootedNotes = rooted.score.sequence.filter((item) => item.type === 'NOTE_TIME')
+    const explicitNotes = explicit.score.sequence.filter((item) => item.type === 'NOTE_TIME')
+
+    expect(rootedNotes).toHaveLength(explicitNotes.length)
+    rootedNotes.forEach((note, index) => {
+      expect(note.hz).toBeCloseTo(explicitNotes[index]!.hz)
+    })
+    expect(rootedNotes.map((note) => note.label)).toEqual([
+      '1/1  0.0c',
+      '√9/2  1302.0c',
+      '√8/1  1800.0c',
+    ])
+  })
 })
