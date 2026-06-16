@@ -183,6 +183,10 @@ a {
   color: var(--xenpaper-cyan);
 }
 
+.highlight-alternatePitch {
+  color: var(--xenpaper-blue);
+}
+
 .highlight-scaleGroup {
   color: #94472f;
 }

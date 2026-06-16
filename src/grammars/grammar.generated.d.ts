@@ -21,6 +21,36 @@ type OctaveModifierType = NodeType<'OctaveModifier'> & {
   octave: number
 }
 
+export type AccidentalType =
+  | '𝄪'
+  | '𝄫'
+  | '𝄲'
+  | '𝄳'
+  | 'x'
+  | '♯'
+  | '#'
+  | '‡'
+  | 't'
+  | '♮'
+  | '_'
+  | 'd'
+  | '♭'
+  | 'b'
+  | '𝄬'
+  | '𝄭'
+  | '𝄮'
+  | '𝄯'
+  | '𝄰'
+  | '𝄱'
+
+export type PitchAbsoluteType = NodeType<'PitchAbsolute'> & {
+  ups: number
+  lifts: number
+  nominal: string
+  greek: boolean
+  accidentals: AccidentalType[]
+}
+
 export type PitchCentsType = NodeType<'PitchCents'> & {
   cents: number
 }
@@ -45,7 +75,13 @@ export type PitchHzType = NodeType<'PitchHz'> & {
 }
 
 export type PitchType = NodeType<'Pitch'> & {
-  value: PitchCentsType | PitchOctaveDivisionType | PitchRatioType | PitchDegreeType | PitchHzType
+  value:
+    | PitchAbsoluteType
+    | PitchCentsType
+    | PitchOctaveDivisionType
+    | PitchRatioType
+    | PitchDegreeType
+    | PitchHzType
   octave: OctaveModifierType | null
 }
 
@@ -106,6 +142,8 @@ export type EdoScaleType = NodeType<'EdoScale'> & {
   octaveSize: number
 }
 
+export type PythagoreanScaleType = NodeType<'PythagoreanScale'>
+
 export type ScaleOctaveMarkerType = NodeType<'ScaleOctaveMarker'>
 
 export type PitchGroupScalePrefixType = NodeType<'PitchGroupScalePrefix'> & {
@@ -128,7 +166,7 @@ export type RatioChordScaleType = NodeType<'RatioChordScale'> & {
 //
 
 export type SetScaleType = NodeType<'SetScale'> & {
-  scale: EdoScaleType | RatioChordScaleType | PitchGroupScaleType
+  scale: EdoScaleType | PythagoreanScaleType | RatioChordScaleType | PitchGroupScaleType
 }
 
 export type SetRootType = NodeType<'SetRoot'> & {

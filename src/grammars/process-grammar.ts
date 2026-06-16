@@ -1,3 +1,5 @@
+import { dot } from 'xen-dev-utils/number-array'
+import { PRIME_CENTS } from 'xen-dev-utils/primes'
 import { mmod, geoMod } from 'xen-dev-utils/fraction'
 import { centsToValue, equaveDivisionToValue, valueToCents } from 'xen-dev-utils/conversion'
 
@@ -17,6 +19,8 @@ import type {
   SequenceItemsType,
 } from './grammar.generated'
 
+import { nominalToMonzo, normalizeNominal, normalizeAccidentals } from './pythagorean'
+
 import type {
   MoscBeatScore,
   MoscBeatItem,
@@ -29,6 +33,11 @@ import type {
 } from '../mosc'
 
 import { beatToTime } from '../mosc'
+
+const NUM_COMPONENTS = 24
+const DEFAULT_MAPPING = PRIME_CENTS.slice(0, NUM_COMPONENTS)
+const DEFAULT_UP = valueToCents(243 / 242) / 2
+const DEFAULT_LIFT = valueToCents(50 / 49) / 2
 
 //
 // utils
@@ -51,7 +60,7 @@ const limit = (name: string, value: number, min: number, max: number): void => {
 //
 
 export const pitchToRatio = (pitch: PitchType, context: Context): number => {
-  const { scale, octaveSize } = context
+  const { scale, octaveSize, mapping, up, lift } = context
   assertFinitePositive('context.octaveSize', octaveSize)
   limit('Equave size', octaveSize, -20, 20)
 
@@ -82,6 +91,13 @@ export const pitchToRatio = (pitch: PitchType, context: Context): number => {
   if (type === 'PitchDegree') {
     const { degree } = pitch.value
     return pitchDegreeToRatio(degree, scale, octaveSize) * octaveMulti
+  }
+
+  if (type === 'PitchAbsolute') {
+    const { ups, lifts, nominal, accidentals } = pitch.value
+    const monzo = nominalToMonzo(nominal, accidentals)
+    const cents = dot(mapping, monzo) + ups * up + lifts * lift
+    return centsToValue(cents) * octaveMulti
   }
 
   throw new Error(`Unknown pitch type "${type}"`)
@@ -191,6 +207,16 @@ export const pitchToLabel = (pitch: PitchType, context: Context): string => {
     return context.scaleLabels[wrappedDegree]!
   }
 
+  if (type === 'PitchAbsolute') {
+    const { ups, lifts, nominal, accidentals } = pitch.value
+    return (
+      (ups > 0 ? '^' : 'v').repeat(Math.abs(ups)) +
+      (lifts > 0 ? '/' : '\\').repeat(Math.abs(lifts)) +
+      normalizeNominal(nominal) +
+      normalizeAccidentals(accidentals).join('')
+    )
+  }
+
   throw new Error(`Unknown pitch type "${type}"`)
 }
 
@@ -216,6 +242,9 @@ type Context = {
   scale: number[]
   scaleLabels: string[]
   octaveSize: number
+  up: number
+  lift: number
+  mapping: number[]
 }
 
 const times: [number, number][] = []
@@ -633,6 +662,18 @@ const setScale = (setScale: SetScaleType, context: Context): void => {
     context.scale = edoToRatios(divisions, octaveSize)
     context.scaleLabels = edoToLabels(divisions, context.scale, octaveSize)
     context.octaveSize = octaveSize
+    context.up = valueToCents(octaveSize) / divisions
+    context.lift = 5 * context.up
+    context.mapping = PRIME_CENTS.slice(0, NUM_COMPONENTS).map(
+      (c) => Math.round(c / context.up) * context.up,
+    )
+    return
+  }
+
+  if (type === 'PythagoreanScale') {
+    context.up = DEFAULT_UP
+    context.lift = DEFAULT_LIFT
+    context.mapping = DEFAULT_MAPPING
     return
   }
 
@@ -901,6 +942,9 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
     scale,
     scaleLabels: edoToLabels(12, scale, 2),
     octaveSize: 2,
+    up: DEFAULT_UP,
+    lift: DEFAULT_LIFT,
+    mapping: DEFAULT_MAPPING,
   }
 
   const moscItems: MoscBeatItem[] = []

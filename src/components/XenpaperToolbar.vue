@@ -70,6 +70,14 @@ const emit = defineEmits<{
     </button>
     <button
       class="action-button"
+      :class="{ active: sidebarMode === 'notation' }"
+      type="button"
+      @click="emit('showSidebar', 'notation')"
+    >
+      Notation
+    </button>
+    <button
+      class="action-button"
       :class="{ active: sidebarMode === 'share' }"
       type="button"
       @click="emit('showSidebar', 'share')"

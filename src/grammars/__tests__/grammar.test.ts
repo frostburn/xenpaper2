@@ -598,7 +598,7 @@ describe('grammar', () => {
       it('should error if hold is attempted after a rest', () => {
         expectParserFormattedErrorMessage(
           '2-.-',
-          `Error: Expected "!", "#", "(", ".", ":|", ":|:", "[", "{", "|", "|:", apostrophe, end of input, grave, integer, number, quote, or whitespace but "-" found.
+          `Error: Expected "!", "#", "(", ".", ":|", ":|:", "[", "{", "|", "|:", Greek nominal, [a-z], apostrophe, end of input, grave, integer, number, quote, or whitespace but "-" found.
  --> test-input:1:4
   |
 1 | 2-.-
@@ -1106,7 +1106,7 @@ describe('grammar', () => {
       it('should error if chord is empty or not delimited properly', () => {
         expectParserErrorMessage(
           '[]',
-          'Expected "!", apostrophe, grave, integer, number, or quote but "]" found.',
+          'Expected "!", Greek nominal, [a-z], apostrophe, grave, integer, number, or quote but "]" found.',
         )
       })
 
@@ -1984,7 +1984,7 @@ describe('grammar', () => {
       it('should parse setters with additional whitespace', () => {
         expect(
           strip(
-            parser('( bpm : 440 ; div : 1 / 4 ; env : 0 1 2 3 ; rl : 200 c , 400 hz ){ r 7 / 5 }'),
+            parser('( bpm : 440 ; div : 1 / 4 ; env : 0 1 2 3 ; rl : 200c , 400 hz ){ r 7 / 5 }'),
           ).sequence.items,
         ).toEqual([
           {
