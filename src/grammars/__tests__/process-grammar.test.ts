@@ -945,6 +945,44 @@ describe('grammar to mosc score', () => {
       lengthTime: 2,
     })
   })
+
+  it('translates spiral-of-fifths nominals in default Pythagorean tuning', () => {
+    const notes = noteItems('F C G D `A E B')
+
+    expect(notes.map((note) => note.label)).toEqual(['F♮', 'C♮', 'G♮', 'D♮', 'A♮', 'E♮', 'B♮'])
+
+    const expectedRatios = [128 / 81, 32 / 27, 16 / 9, 4 / 3, 1, 3 / 2, 9 / 4]
+    notes.forEach((note, index) => expect(note.hz / 220).toBeAround(expectedRatios[index]!, 10))
+  })
+
+  it('tempers spiral-of-fifths nominals and accidentals to the active edo mapping', () => {
+    const notes = noteItems('{31edo} `A E B F# Cb')
+
+    expect(notes.map((note) => note.label)).toEqual(['A♮', 'E♮', 'B♮', 'F♯', 'C♭'])
+    const expectedRatios = [
+      1,
+      Math.pow(2, 18 / 31),
+      Math.pow(2, 36 / 31),
+      Math.pow(2, 23 / 31),
+      Math.pow(2, 6 / 31),
+    ]
+    notes.forEach((note, index) => expect(note.hz / 220).toBeAround(expectedRatios[index]!, 10))
+  })
+
+  it('translates interordinal Greek nominals halfway around the octave spiral', () => {
+    const notes = noteItems('Alp Bet Gam Del Eps Zet')
+
+    expect(notes.map((note) => note.label)).toEqual(['Α♮', 'Β♮', 'Γ♮', 'Δ♮', 'Ε♮', 'Ζ♮'])
+    const expectedRatios = [
+      Math.SQRT2,
+      9 / 4 / Math.SQRT2,
+      (32 / 27) * Math.SQRT2,
+      (4 / 3) * Math.SQRT2,
+      (3 / 2) * Math.SQRT2,
+      (128 / 81) * Math.SQRT2,
+    ]
+    notes.forEach((note, index) => expect(note.hz / 220).toBeAround(expectedRatios[index]!, 10))
+  })
 })
 
 describe('grammar to ruler state', () => {

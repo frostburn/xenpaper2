@@ -4,6 +4,7 @@ import type { XenpaperAST } from './grammar.generated'
 export type HighlightColor =
   | 'delimiter'
   | 'pitch'
+  | 'alternatePitch'
   | 'chord'
   | 'scaleGroup'
   | 'scale'
@@ -25,6 +26,7 @@ export type CharData = {
 type GrammarNode = {
   type: string
   time?: PlayTime
+  value?: { greek?: boolean }
   location: LocationRange
   [key: string]: unknown
 }
@@ -70,6 +72,7 @@ const colorMap = new Map<string, HighlightColor>([
   ['RepeatEndingStart', 'delimiter'],
   ['Whitespace', 'delimiter'],
   ['EdoScale', 'scale'],
+  ['PythagoreanScale', 'scale'],
   ['PitchGroupScale', 'scale'],
   ['PitchGroupScale.Pitch', 'scale'],
   ['PitchGroupScale.Whitespace', 'scale'],
@@ -105,7 +108,10 @@ const extract = (chars: CharData[], data: unknown, parent: string, withinTime?: 
     const node = data as Record<string, unknown>
     const grammarNode = isGrammarNode(node) ? node : undefined
     const type = grammarNode?.type
-    const color = type ? colorMap.get(`${parent}.${type}`) || colorMap.get(type) : undefined
+    let color = type ? colorMap.get(`${parent}.${type}`) || colorMap.get(type) : undefined
+    if (type === 'Pitch' && grammarNode?.value?.greek) {
+      color = 'alternatePitch'
+    }
     const time = withinTime ?? grammarNode?.time
 
     if (grammarNode && color) {

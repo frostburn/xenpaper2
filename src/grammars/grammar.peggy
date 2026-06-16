@@ -15,7 +15,7 @@ SampleRateNote = "!" tail:Hold? {
   return node('SampleRateNote', { tail });
 }
 SampleRatePitch = "!" { return node('SampleRateNote', { tail: null }); }
-Pitch = octave:OctaveModifier? value:(PitchCents / PitchHz / PitchOctaveDivision / PitchRatio / PitchDegree) {
+Pitch = octave:OctaveModifier? value:(PitchAbsolute / PitchCents / PitchHz / PitchOctaveDivision / PitchRatio / PitchDegree) {
   return node('Pitch', { octave, value });
 }
 OctaveModifier = shifts:(Apostrophe / Quote / Grave)+ {
@@ -25,7 +25,27 @@ OctaveModifier = shifts:(Apostrophe / Quote / Grave)+ {
 Apostrophe "apostrophe" = "'" { return 1; }
 Quote "quote" = '"' { return 2; }
 Grave "grave" = "`" { return -1; }
-PitchCents = cents:Number _ "c"i { return node('PitchCents',{cents}); }
+LatinNominal = nominal:[a-z]i { return { nominal, greek: false } }
+GreekNominal "Greek nominal" = ([α-ω]i / "alp"i / "bet"i / "gam"i / "del"i / "eps"i / "zet"i / "eta"i / "the"i / "iot"i / "kap"i / "muu"i / "nuu"i / "xii"i / "omi"i / "pii"i / "rho"i / "fsi"i / "sig"i / "tau"i / "ups"i / "phi"i / "chi"i / "psi"i / "ome"i) {
+  return { nominal: text(), greek: true };
+}
+Accidental = '𝄪' / '𝄫' / '𝄲' / '𝄳' / '𝄬' / '𝄭' / '𝄮' / '𝄯' / '𝄰' / '𝄱' / [x♯#‡t♮_d♭b]
+UpsAndDowns "Ups and Downs" = ('^' / 'v' / '/' / '\\')* {
+  let ups = 0;
+  let lifts = 0;
+  for (const c of text()) {
+    switch (c) {
+      case '^': ++ups; break;
+      case 'v': --ups; break;
+      case '/': ++lifts; break;
+      case '\\': --lifts; break;
+    }
+  }
+  return { ups, lifts }
+}
+PitchAbsolute
+ = updowns: UpsAndDowns nominal: (GreekNominal / LatinNominal) accidentals: Accidental* { return node('PitchAbsolute', {...updowns, ...nominal, accidentals}) }
+PitchCents = cents:Number "c"i { return node('PitchCents',{cents}); }
 PitchHz = hz:Number _ "hz"i { return node('PitchHz',{hz}); }
 PitchOctaveDivision = numerator:Int _ [\\/] _ denominator:Int octaveSize:PitchOctaveDivisionSuffix {
   return node('PitchOctaveDivision',{numerator,denominator,octaveSize});
@@ -128,12 +148,13 @@ EnvDigit = digit:[0-9] { return parseInt(digit, 10); }
 SetRulerRange = "rl"i _ ":" _ low:Pitch _ "," _ high:Pitch { return node('SetRulerRange', { low, high }); }
 SetRulerPlot = "plot"i { return node('SetRulerPlot'); }
 SetRoot = "{" _ "r"i _ pitch:Pitch _ "}" { return node('SetRoot', { pitch }); }
-SetScale = "{" _ scale:(EdoScale / RatioChordScale / PitchGroupScale) _ "}" {
+SetScale = "{" _ scale:(EdoScale / PythagoreanScale / RatioChordScale / PitchGroupScale) _ "}" {
   return node('SetScale', { scale });
 }
 EdoScale = divisions:Int _ "ed"i "o"i? _ octaveSize:OctaveSize? {
   return node('EdoScale', { divisions, octaveSize: octaveSize ?? 2 });
 }
+PythagoreanScale = "pythagorean"i { return node('PythagoreanScale') };
 ScaleOctaveMarker = "'" { return node('ScaleOctaveMarker'); }
 RatioChordScale = &(Int _ ":") pitches:RatioChordPitches _ scaleOctaveMarker:ScaleOctaveMarker? {
   return node('RatioChordScale', { pitches, scaleOctaveMarker });
