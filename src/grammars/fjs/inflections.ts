@@ -19,6 +19,8 @@ const TONE_SPLITTER_BRIDGING_RADIUS = SEMIQUARTAL_BRIDGING_RADIUS
 const FIFTH = PRIME_CENTS[1]! - PRIME_CENTS[0]!
 const FOURTH = 2 * PRIME_CENTS[0]! - PRIME_CENTS[1]!
 const OCTAVE = PRIME_CENTS[0]!
+const commaCache = new Map<string, Monzo>()
+const inflectionCache = new Map<string, Monzo>()
 
 const formalMaster = (primeCents: number, radius = RADIUS_OF_TOLERANCE): [number, number] => {
   let pythagoras = 0
@@ -69,17 +71,20 @@ const toneSplitterMaster = (primeCents: number): [number, number] => {
 const getCommaMonzo = (primeIndex: number, flavor: InflectionFlavorType): Monzo => {
   if (primeIndex < 2) return []
 
-  if (PRIMES[primeIndex] === 5 && (flavor === '' || flavor === 'f' || flavor === 'c')) {
-    return [4, -4, 1]
+  const cacheKey = `${primeIndex}:${flavor}`
+  const cached = commaCache.get(cacheKey)
+  if (cached) return cached
+
+  if (flavor === 'h') {
+    const comma = getHelmholtzEllisComma(primeIndex)
+    commaCache.set(cacheKey, comma)
+    return comma
   }
-  if (PRIMES[primeIndex] === 31 && (flavor === '' || flavor === 'f')) {
-    return [-5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
+  if (flavor === 'm') {
+    const comma = getHewm53Comma(primeIndex)
+    commaCache.set(cacheKey, comma)
+    return comma
   }
-  if (PRIMES[primeIndex] === 31 && flavor === 'c') {
-    return [3, -5, 0, 0, 0, 0, 0, 0, 0, 0, 1]
-  }
-  if (flavor === 'h') return getHelmholtzEllisComma(primeIndex)
-  if (flavor === 'm') return getHewm53Comma(primeIndex)
 
   const master =
     flavor === 'n'
@@ -108,12 +113,25 @@ const getCommaMonzo = (primeIndex: number, flavor: InflectionFlavorType): Monzo 
   result[0] = twos
   result[1] = threes
   result[primeIndex] = 1
+  commaCache.set(cacheKey, result)
   return result
 }
 
 const inflectionToMonzo = ({ value, flavor }: InflectionType): Monzo => {
-  if (flavor === 'l') return getLumisComma(value)
-  if (flavor === 's') return getSyntonicRastmicComma(value)
+  const cacheKey = `${value}:${flavor}`
+  const cached = inflectionCache.get(cacheKey)
+  if (cached) return cached
+
+  if (flavor === 'l') {
+    const comma = getLumisComma(value)
+    inflectionCache.set(cacheKey, comma)
+    return comma
+  }
+  if (flavor === 's') {
+    const comma = getSyntonicRastmicComma(value)
+    inflectionCache.set(cacheKey, comma)
+    return comma
+  }
 
   const result: Monzo = []
   const valueMonzo = toMonzo(value)
@@ -125,6 +143,7 @@ const inflectionToMonzo = ({ value, flavor }: InflectionType): Monzo => {
       result[commaIndex] = (result[commaIndex] ?? 0) + (comma[commaIndex] ?? 0) * exponent
     }
   }
+  inflectionCache.set(cacheKey, result)
   return result
 }
 
