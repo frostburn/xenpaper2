@@ -225,6 +225,13 @@ describe('grammar to mosc score', () => {
     ])
   })
 
+  it('rejects undefined key signature tonics', () => {
+    const source = parseAndProcessSourceCode('(key:X Major) F')
+
+    expect(source.playable).toBe(false)
+    expect(source.error).toContain("Undefined key signature tonic 'X'.")
+  })
+
   it('should translate sample-rate notes', () => {
     const source = parseAndProcessSourceCode('!-')
 

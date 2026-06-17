@@ -1,23 +1,8 @@
 import { type Monzo, accumulate, decumulate } from 'xen-dev-utils/monzo'
 
-import type { AccidentalType } from './grammar.generated'
+import type { AccidentalType, KeyModeType, KeyTonicType } from './grammar.generated'
 
 export type PtolMonzo = readonly [number, number, number]
-
-export type KeyTonic = {
-  nominal: string
-  greek: boolean
-  accidentals: AccidentalType[]
-}
-
-export type KeyMode =
-  | 'ionian'
-  | 'dorian'
-  | 'phrygian'
-  | 'lydian'
-  | 'mixolydian'
-  | 'aeolian'
-  | 'locrian'
 
 const NOMINAL_MONZOS = new Map<string, PtolMonzo>([
   // Up
@@ -148,7 +133,7 @@ const MAJOR_KEY_FIFTHS = new Map<string, number>([
   ['F', -1],
 ])
 
-const KEY_MODE_FIFTH_OFFSETS = new Map<KeyMode, number>([
+const KEY_MODE_FIFTH_OFFSETS = new Map<KeyModeType, number>([
   ['ionian', 0],
   ['dorian', -2],
   ['phrygian', -4],
@@ -203,10 +188,14 @@ export function nominalToMonzo(nominal: string, accidentals: AccidentalType[]) {
 }
 
 export function keySignatureAccidentals(
-  tonic: KeyTonic,
-  mode: KeyMode,
+  tonic: KeyTonicType,
+  mode: KeyModeType,
 ): Map<string, AccidentalType[]> {
   const key = tonic.nominal.toUpperCase()
+  if (!NOMINAL_MONZOS.has(key)) {
+    throw new Error(`Undefined key signature tonic '${tonic.nominal}'.`)
+  }
+
   const keyLetter = NOMINAL_TO_KEY_LETTER.get(key) ?? key
   const fifths =
     (MAJOR_KEY_FIFTHS.get(keyLetter) ?? 0) +
