@@ -75,9 +75,10 @@ describe('grammar to mosc score', () => {
       neutralEleven,
       lumisComma,
       helmholtzEllis,
+      helmholtzEllisDown,
       hewm53,
       flora,
-    ] = noteItems('Cv5 C#^5 Ct^11n A^0l A^5h A^17m A^5f')
+    ] = noteItems('Cv5 C#^5 Ct^11n A^0l A^5h C#v5h A^17m A^5f')
 
     expect(fifthLimitSubscript?.hz).toBeAround(264, 6)
     expect(fifthLimitSubscript?.label).toBe('C♮v5')
@@ -89,6 +90,8 @@ describe('grammar to mosc score', () => {
     expect(lumisComma?.label).toBe('A♮^0l')
     expect(helmholtzEllis?.hz).toBeAround(445.5, 6)
     expect(helmholtzEllis?.label).toBe('A♮^5h')
+    expect(helmholtzEllisDown?.hz).toBeAround(275, 6)
+    expect(helmholtzEllisDown?.label).toBe('C♯v5h')
     expect(hewm53?.hz).toBeAround((440 * 18) / 17, 6)
     expect(hewm53?.label).toBe('A♮^17m')
     expect(flora?.hz).toBeAround((440 * 80) / 81, 6)
