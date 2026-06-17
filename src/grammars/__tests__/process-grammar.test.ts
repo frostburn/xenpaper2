@@ -68,6 +68,13 @@ const noteLabelDurations = (input: string): Array<[string, number]> =>
   noteItems(input).map((item) => [item.label, item.timeEnd - item.time])
 
 describe('grammar to mosc score', () => {
+  it('applies FJS inflections to absolute pitch ratios', () => {
+    const [note] = noteItems('Cv5')
+
+    expect(note?.hz).toBeAround(264, 6)
+    expect(note?.label).toBe('C♮v5')
+  })
+
   it('expands simple repeats before translating to score items', () => {
     expect(noteLabels('0 |: 1 2 :| 3')).toEqual([
       '0\\12  0.0c',

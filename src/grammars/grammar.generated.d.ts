@@ -57,7 +57,7 @@ export type PitchAbsoluteType = NodeType<'PitchAbsolute'> & {
   nominal: string
   greek: boolean
   accidentals: AccidentalType[]
-  inflections: InflectionType
+  inflections: InflectionType[]
 }
 
 export type PitchCentsType = NodeType<'PitchCents'> & {

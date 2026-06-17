@@ -1,5 +1,6 @@
 import { dot } from 'xen-dev-utils/number-array'
-import { PRIME_CENTS } from 'xen-dev-utils/primes'
+import { PRIMES, PRIME_CENTS } from 'xen-dev-utils/primes'
+import { accumulate, toMonzo, type Monzo } from 'xen-dev-utils/monzo'
 import { mmod, geoMod } from 'xen-dev-utils/fraction'
 import { centsToValue, equaveDivisionToValue, valueToCents } from 'xen-dev-utils/conversion'
 
@@ -14,6 +15,8 @@ import type {
   PitchType,
   PitchDegreeType,
   AccidentalType,
+  InflectionFlavorType,
+  InflectionType,
   RatioChordPitchType,
   SetterType,
   DelimiterType,
@@ -44,6 +47,14 @@ const NUM_COMPONENTS = 24
 const DEFAULT_MAPPING = PRIME_CENTS.slice(0, NUM_COMPONENTS)
 const DEFAULT_UP = valueToCents(243 / 242) / 2
 const DEFAULT_LIFT = valueToCents(50 / 49) / 2
+const RADIUS_OF_TOLERANCE = valueToCents(65 / 63)
+const SEMIAPOTOME = 0.5 * valueToCents(2187 / 2048) + 1e-6
+const NEUTRAL_BRIDGING_RADIUS = 92.1
+const SEMIQUARTAL_BRIDGING_RADIUS = 137.2
+const TONE_SPLITTER_BRIDGING_RADIUS = SEMIQUARTAL_BRIDGING_RADIUS
+const FIFTH = PRIME_CENTS[1]! - PRIME_CENTS[0]!
+const FOURTH = 2 * PRIME_CENTS[0]! - PRIME_CENTS[1]!
+const OCTAVE = PRIME_CENTS[0]!
 
 //
 // utils
@@ -59,6 +70,115 @@ const limit = (name: string, value: number, min: number, max: number): void => {
   if (!Number.isFinite(value) || value < min || value > max) {
     throw new Error(`${name} must be between ${min} and ${max}, got ${value}`)
   }
+}
+
+const circleDistance = (a: number, b: number): number => {
+  const diff = Math.abs(a - b)
+  const wrapped = diff % OCTAVE
+  return Math.min(wrapped, OCTAVE - wrapped)
+}
+
+const formalMaster = (primeCents: number, radius = RADIUS_OF_TOLERANCE): [number, number] => {
+  let pythagoras = 0
+  let k = 0
+  if (circleDistance(primeCents, pythagoras) < radius) return [k, -k]
+
+  while (true) {
+    pythagoras += FIFTH
+    k++
+    if (circleDistance(primeCents, pythagoras) < radius) return [k, -k]
+    if (circleDistance(primeCents, -pythagoras) < radius) return [-k, k]
+  }
+}
+
+const neutralMaster = (primeCents: number): [number, number] => {
+  let pythagoras = 0.5 * FIFTH
+  let k = 0.5
+  while (true) {
+    if (circleDistance(primeCents, pythagoras) < NEUTRAL_BRIDGING_RADIUS) return [k, -k]
+    if (circleDistance(primeCents, -pythagoras) < NEUTRAL_BRIDGING_RADIUS) return [-k, k]
+    pythagoras += FIFTH
+    k++
+  }
+}
+
+const semiquartalMaster = (primeCents: number): [number, number] => {
+  let pythagoras = 0.5 * FOURTH
+  let k = 0.5
+  while (true) {
+    if (circleDistance(primeCents, pythagoras) < SEMIQUARTAL_BRIDGING_RADIUS) return [-k - 0.5, k]
+    if (circleDistance(primeCents, -pythagoras) < SEMIQUARTAL_BRIDGING_RADIUS) return [k + 0.5, -k]
+    pythagoras += FOURTH
+    k++
+  }
+}
+
+const toneSplitterMaster = (primeCents: number): [number, number] => {
+  let pythagoras = 0.5 * OCTAVE
+  let k = 0.5
+  while (true) {
+    if (circleDistance(primeCents, pythagoras) < TONE_SPLITTER_BRIDGING_RADIUS) return [k, 0.5 - k]
+    if (circleDistance(primeCents, -pythagoras) < TONE_SPLITTER_BRIDGING_RADIUS) return [-k, k - 0.5]
+    pythagoras += FIFTH
+    k++
+  }
+}
+
+const getFjsCommaMonzo = (primeIndex: number, flavor: InflectionFlavorType): Monzo => {
+  if (primeIndex < 2) return []
+  if (PRIMES[primeIndex] === 5 && (flavor === '' || flavor === 'c')) return [-4, 4, -1]
+  const master =
+    flavor === 'n'
+      ? neutralMaster
+      : flavor === 'q'
+        ? semiquartalMaster
+        : flavor === 't'
+          ? toneSplitterMaster
+          : flavor === '' || flavor === 'c'
+            ? (primeCents: number) => formalMaster(primeCents)
+            : (primeCents: number) => formalMaster(primeCents, SEMIAPOTOME)
+  const [initialTwos, threes] = master(PRIME_CENTS[primeIndex]!)
+  let twos = initialTwos
+  let commaCents = PRIME_CENTS[primeIndex]! + twos * PRIME_CENTS[0]! + threes * PRIME_CENTS[1]!
+  while (commaCents > 600) {
+    commaCents -= PRIME_CENTS[0]!
+    twos--
+  }
+  while (commaCents < -600) {
+    commaCents += PRIME_CENTS[0]!
+    twos++
+  }
+  const result = Array(primeIndex + 1).fill(0) as Monzo
+  result[0] = twos
+  result[1] = threes
+  result[primeIndex] = 1
+  return result
+}
+
+const inflectionToMonzo = ({ value, flavor }: InflectionType): Monzo => {
+  const result: Monzo = []
+  const valueMonzo = toMonzo(value)
+  for (let index = 0; index < valueMonzo.length; index++) {
+    const exponent = valueMonzo[index] ?? 0
+    if (!exponent) continue
+    const comma = getFjsCommaMonzo(index, flavor)
+    for (let commaIndex = 0; commaIndex < comma.length; commaIndex++) {
+      result[commaIndex] = (result[commaIndex] ?? 0) + (comma[commaIndex] ?? 0) * exponent
+    }
+  }
+  return result
+}
+
+const applyInflections = (monzo: Monzo, inflections: InflectionType[]): Monzo => {
+  const result = monzo.slice()
+  for (const inflection of inflections) {
+    const comma = inflectionToMonzo(inflection)
+    // Xenpaper's ASCII "v5" token is intended to produce the common FJS
+    // 5-limit alteration on C, so subscript-looking inflections are applied
+    // upward and caret inflections downward.
+    accumulate(result, comma.map((component) => (inflection.type === 'subscript' ? component : -component)))
+  }
+  return result
 }
 
 //
@@ -100,8 +220,11 @@ export const pitchToRatio = (pitch: PitchType, context: Context): number => {
   }
 
   if (type === 'PitchAbsolute') {
-    const { ups, lifts, nominal, accidentals } = pitch.value
-    const monzo = nominalToMonzo(nominal, applyKeySignature(nominal, accidentals, context))
+    const { ups, lifts, nominal, accidentals, inflections } = pitch.value
+    const monzo = applyInflections(
+      nominalToMonzo(nominal, applyKeySignature(nominal, accidentals, context)).slice(),
+      inflections,
+    )
     const cents = dot(mapping, monzo) + ups * up + lifts * lift
     return centsToValue(cents) * octaveMulti
   }
@@ -214,13 +337,16 @@ export const pitchToLabel = (pitch: PitchType, context: Context): string => {
   }
 
   if (type === 'PitchAbsolute') {
-    const { ups, lifts, nominal, accidentals } = pitch.value
+    const { ups, lifts, nominal, accidentals, inflections } = pitch.value
     const effectiveAccidentals = applyKeySignature(nominal, accidentals, context)
     return (
       (ups > 0 ? '^' : 'v').repeat(Math.abs(ups)) +
       (lifts > 0 ? '/' : '\\').repeat(Math.abs(lifts)) +
       normalizeNominal(nominal) +
-      normalizeAccidentals(effectiveAccidentals).join('')
+      normalizeAccidentals(effectiveAccidentals).join('') +
+      inflections
+        .map(({ type, value, flavor }) => `${type === 'superscript' ? '^' : 'v'}${value}${flavor}`)
+        .join('')
     )
   }
 
