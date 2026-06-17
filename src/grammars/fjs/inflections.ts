@@ -68,7 +68,7 @@ const toneSplitterMaster = (primeCents: number): [number, number] => {
 const getCommaMonzo = (primeIndex: number, flavor: InflectionFlavorType): Monzo => {
   if (primeIndex < 2) return []
 
-  if (PRIMES[primeIndex] === 5 && (flavor === '' || flavor === 'c')) return [-4, 4, -1]
+  if (PRIMES[primeIndex] === 5 && (flavor === '' || flavor === 'c')) return [4, -4, 1]
 
   const master =
     flavor === 'n'
@@ -118,8 +118,9 @@ export const applyFjsInflections = (monzo: Monzo, inflections: InflectionType[])
   const result = monzo.slice()
   for (const inflection of inflections) {
     const comma = inflectionToMonzo(inflection)
+    const direction = inflection.type === 'superscript' ? 1 : -1
     for (let index = 0; index < comma.length; index++) {
-      result[index] = (result[index] ?? 0) + (comma[index] ?? 0)
+      result[index] = (result[index] ?? 0) + direction * (comma[index] ?? 0)
     }
   }
   return result
