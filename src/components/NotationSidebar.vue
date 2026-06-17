@@ -74,7 +74,9 @@ A A A#- A A  A♯-`,
           'Key signatures can be set with `(key:G Major)` or modal names like `(key:D Dorian)`. Plain nominals receive the signature accidentals, while an explicit natural sign ♮ or underscore _ restores the unaltered nominal.',
         tune: `# G major sharpens F
 (key:G Major)
-F F_ G A B c`,
+G- A B c d e f g-
+# Flat seventh to tonic
+f_- g--`,
       },
     ],
   },
@@ -125,6 +127,17 @@ C Ct D Ed F F𝄲 G G‡ A B𝄳 c
 # All 17 notes (and the octave)
 C Ct Dd D Dt Ed E F Ft Gd G Gt Ad A At Bd B c`,
       },
+      {
+        description: 'Key signatures support quartertones.',
+        tune: `(key: C Locrian)
+C F B e a 'd 'g
+(key: Cd Locrian)
+C F B e a 'd 'g
+(key: Cb Locrian)
+C F B e a 'd 'g
+(key: Cdb Locrian)
+C F B e a 'd 'g`,
+      },
     ],
   },
   {
@@ -148,6 +161,15 @@ C Eta D Alp E F Gam G Del A Eps Zet c`,
 C D E F Γ Δ Ε Ζ c
 ..
 C Η D Α E F Γ G Δ A Ε Ζ c`,
+      },
+      {
+        description: 'Key signatures translate across semioctaves.',
+        tune: `(key: F major)
+F Zet G eta A alp
+# Both B and Bet become flat
+B bet
+
+c gam d del e eps f Zet F-`,
       },
     ],
   },
