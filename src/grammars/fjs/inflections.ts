@@ -1,4 +1,5 @@
 import { valueToCents } from 'xen-dev-utils/conversion'
+import { circleDistance } from 'xen-dev-utils/core'
 import { toMonzo, type Monzo } from 'xen-dev-utils/monzo'
 import { PRIMES, PRIME_CENTS } from 'xen-dev-utils/primes'
 
@@ -18,12 +19,6 @@ const TONE_SPLITTER_BRIDGING_RADIUS = SEMIQUARTAL_BRIDGING_RADIUS
 const FIFTH = PRIME_CENTS[1]! - PRIME_CENTS[0]!
 const FOURTH = 2 * PRIME_CENTS[0]! - PRIME_CENTS[1]!
 const OCTAVE = PRIME_CENTS[0]!
-
-const circleDistance = (a: number, b: number): number => {
-  const diff = Math.abs(a - b)
-  const wrapped = diff % OCTAVE
-  return Math.min(wrapped, OCTAVE - wrapped)
-}
 
 const formalMaster = (primeCents: number, radius = RADIUS_OF_TOLERANCE): [number, number] => {
   let pythagoras = 0
@@ -74,7 +69,15 @@ const toneSplitterMaster = (primeCents: number): [number, number] => {
 const getCommaMonzo = (primeIndex: number, flavor: InflectionFlavorType): Monzo => {
   if (primeIndex < 2) return []
 
-  if (PRIMES[primeIndex] === 5 && (flavor === '' || flavor === 'c')) return [4, -4, 1]
+  if (PRIMES[primeIndex] === 5 && (flavor === '' || flavor === 'f' || flavor === 'c')) {
+    return [4, -4, 1]
+  }
+  if (PRIMES[primeIndex] === 31 && (flavor === '' || flavor === 'f')) {
+    return [-5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
+  }
+  if (PRIMES[primeIndex] === 31 && flavor === 'c') {
+    return [3, -5, 0, 0, 0, 0, 0, 0, 0, 0, 1]
+  }
   if (flavor === 'h') return getHelmholtzEllisComma(primeIndex)
   if (flavor === 'm') return getHewm53Comma(primeIndex)
 
@@ -85,7 +88,7 @@ const getCommaMonzo = (primeIndex: number, flavor: InflectionFlavorType): Monzo 
         ? semiquartalMaster
         : flavor === 't'
           ? toneSplitterMaster
-          : flavor === '' || flavor === 'c'
+          : flavor === 'c'
             ? (primeCents: number) => formalMaster(primeCents)
             : (primeCents: number) => formalMaster(primeCents, SEMIAPOTOME)
 

@@ -78,7 +78,10 @@ describe('grammar to mosc score', () => {
       helmholtzEllisDown,
       hewm53,
       flora,
-    ] = noteItems('Cv5 C#^5 Ct^11n A^0l A^5h C#v5h A^17m A^5f')
+      thirtyOneDefault,
+      thirtyOneFlora,
+      thirtyOneClassic,
+    ] = noteItems('Cv5 C#^5 Ct^11n A^0l A^5h C#v5h A^17m A^5f A^31 A^31f A^31c')
 
     expect(fifthLimitSubscript?.hz).toBeAround(264, 6)
     expect(fifthLimitSubscript?.label).toBe('C♮v5')
@@ -96,6 +99,12 @@ describe('grammar to mosc score', () => {
     expect(hewm53?.label).toBe('A♮^17m')
     expect(flora?.hz).toBeAround((440 * 80) / 81, 6)
     expect(flora?.label).toBe('A♮^5f')
+    expect(thirtyOneDefault?.hz).toBeAround((440 * 31) / 32, 6)
+    expect(thirtyOneDefault?.label).toBe('A♮^31')
+    expect(thirtyOneFlora?.hz).toBeAround((440 * 31) / 32, 6)
+    expect(thirtyOneFlora?.label).toBe('A♮^31f')
+    expect(thirtyOneClassic?.hz).toBeAround((440 * 248) / 243, 6)
+    expect(thirtyOneClassic?.label).toBe('A♮^31c')
   })
 
   it('expands simple repeats before translating to score items', () => {
