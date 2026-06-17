@@ -71,10 +71,10 @@ A A A#- A A  A♯-`,
     demos: [
       {
         description:
-          'Key signatures can be set with `(key:G Major)` or another major/minor key. Plain nominals receive the signature accidentals, while an explicit natural sign ♮ or underscore _ restores the unaltered nominal.',
-        tune: `# G major sharpens F and Zet
+          'Key signatures can be set with `(key:G Major)` or modal names like `(key:D Dorian)`. Plain nominals receive the signature accidentals, while an explicit natural sign ♮ or underscore _ restores the unaltered nominal.',
+        tune: `# G major sharpens F
 (key:G Major)
-F Zet F_ Zet_ G A B c`,
+F F_ G A B c`,
       },
     ],
   },

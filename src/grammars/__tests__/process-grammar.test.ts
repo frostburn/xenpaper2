@@ -214,6 +214,17 @@ describe('grammar to mosc score', () => {
     expect(noteLabels('(key:F Major) B B_ B#')).toEqual(['B♭', 'B♮', 'B♯'])
   })
 
+  it('supports modal key signatures and major/minor aliases', () => {
+    expect(noteLabels('(key:C Ionian) F (key:C Major) F')).toEqual(['F♮', 'F♮'])
+    expect(noteLabels('(key:A Aeolian) F (key:A minor) F')).toEqual(['F♮', 'F♮'])
+    expect(noteLabels('(key:D Dorian) B F (key:C Lydian) F')).toEqual(['B♮', 'F♮', 'F♯'])
+    expect(noteLabels('(key:G Mixolydian) F (key:C Phrygian) E (key:C Locrian) G')).toEqual([
+      'F♮',
+      'E♭',
+      'G♭',
+    ])
+  })
+
   it('should translate sample-rate notes', () => {
     const source = parseAndProcessSourceCode('!-')
 

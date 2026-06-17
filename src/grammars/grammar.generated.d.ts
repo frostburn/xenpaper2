@@ -225,9 +225,18 @@ export type KeyTonicType = {
   accidentals: AccidentalType[]
 }
 
+export type KeyModeType =
+  | 'ionian'
+  | 'dorian'
+  | 'phrygian'
+  | 'lydian'
+  | 'mixolydian'
+  | 'aeolian'
+  | 'locrian'
+
 export type SetKeyType = NodeType<'SetKey'> & {
   tonic: KeyTonicType
-  mode: 'major' | 'minor'
+  mode: KeyModeType
 }
 
 // ruler

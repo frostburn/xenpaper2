@@ -10,6 +10,15 @@ export type KeyTonic = {
   accidentals: AccidentalType[]
 }
 
+export type KeyMode =
+  | 'ionian'
+  | 'dorian'
+  | 'phrygian'
+  | 'lydian'
+  | 'mixolydian'
+  | 'aeolian'
+  | 'locrian'
+
 const NOMINAL_MONZOS = new Map<string, PtolMonzo>([
   // Up
   ['A', [1, 0, 0]], // 2/1
@@ -139,14 +148,14 @@ const MAJOR_KEY_FIFTHS = new Map<string, number>([
   ['F', -1],
 ])
 
-const MINOR_KEY_FIFTHS = new Map<string, number>([
-  ['A', 0],
-  ['E', 1],
-  ['B', 2],
-  ['F', 3],
-  ['C', -3],
-  ['G', -2],
-  ['D', -1],
+const KEY_MODE_FIFTH_OFFSETS = new Map<KeyMode, number>([
+  ['ionian', 0],
+  ['dorian', -2],
+  ['phrygian', -4],
+  ['lydian', 1],
+  ['mixolydian', -1],
+  ['aeolian', -3],
+  ['locrian', -5],
 ])
 
 const SHARP_KEY_ORDER = ['F', 'C', 'G', 'D', 'A', 'E', 'B']
@@ -195,12 +204,14 @@ export function nominalToMonzo(nominal: string, accidentals: AccidentalType[]) {
 
 export function keySignatureAccidentals(
   tonic: KeyTonic,
-  mode: 'major' | 'minor',
+  mode: KeyMode,
 ): Map<string, AccidentalType[]> {
   const key = tonic.nominal.toUpperCase()
   const keyLetter = NOMINAL_TO_KEY_LETTER.get(key) ?? key
-  const fifthsByMode = mode === 'major' ? MAJOR_KEY_FIFTHS : MINOR_KEY_FIFTHS
-  const fifths = (fifthsByMode.get(keyLetter) ?? 0) + accidentalFifths(tonic.accidentals)
+  const fifths =
+    (MAJOR_KEY_FIFTHS.get(keyLetter) ?? 0) +
+    (KEY_MODE_FIFTH_OFFSETS.get(mode) ?? 0) +
+    accidentalFifths(tonic.accidentals)
   const result = new Map<string, AccidentalType[]>()
   const order = fifths >= 0 ? SHARP_KEY_ORDER : FLAT_KEY_ORDER
   const accidental: AccidentalType = fifths >= 0 ? '♯' : '♭'

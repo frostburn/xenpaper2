@@ -82,6 +82,7 @@ const colorMap = new Map<string, HighlightColor>([
   ['RatioChordScale.Colon', 'scale'],
   ['ScaleOctaveMarker', 'scale'],
   ['SetScale', 'scaleGroup'],
+  ['SetKey', 'scale'],
   ['SetRoot', 'scaleGroup'],
   ['SetRoot.Pitch', 'scale'],
   ['SetBpm', 'setter'],

@@ -145,7 +145,16 @@ SetEnv = "env"i _ ":" _ vals:EnvValues {
 }
 SetKey = "key"i _ ":" _ tonic:KeyTonic _ mode:KeyMode { return node('SetKey', { tonic, mode }); }
 KeyTonic = nominal:(GreekNominal / LatinNominal) accidentals:Accidental* { return { ...nominal, accidentals }; }
-KeyMode = "major"i { return "major"; } / "minor"i { return "minor"; }
+KeyMode
+  = "major"i { return "ionian"; }
+  / "ionian"i { return "ionian"; }
+  / "dorian"i { return "dorian"; }
+  / "phrygian"i { return "phrygian"; }
+  / "lydian"i { return "lydian"; }
+  / "mixolydian"i { return "mixolydian"; }
+  / "minor"i { return "aeolian"; }
+  / "aeolian"i { return "aeolian"; }
+  / "locrian"i { return "locrian"; }
 EnvValues "four digits" = a:EnvDigit _ d:EnvDigit _ s:EnvDigit _ r:EnvDigit { return { a, d, s, r }; }
 EnvDigit = digit:[0-9] { return parseInt(digit, 10); }
 SetRulerRange = "rl"i _ ":" _ low:Pitch _ "," _ high:Pitch { return node('SetRulerRange', { low, high }); }
