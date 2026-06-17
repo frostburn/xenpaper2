@@ -1,6 +1,6 @@
 import { type Monzo, accumulate, decumulate } from 'xen-dev-utils/monzo'
 
-import type { AccidentalType } from './grammar.generated'
+import type { AccidentalType, KeyModeType, KeyTonicType } from './grammar.generated'
 
 export type PtolMonzo = readonly [number, number, number]
 
@@ -96,6 +96,58 @@ const GREEK_TO_SCRIPT = new Map<string, string>([
   ['ups', 'υ'],
 ])
 
+const NOMINAL_TO_KEY_LETTER = new Map<string, string>([
+  ['ALP', 'A'],
+  ['Α', 'A'],
+  ['BET', 'B'],
+  ['Β', 'B'],
+  ['GAM', 'C'],
+  ['Γ', 'C'],
+  ['DEL', 'D'],
+  ['Δ', 'D'],
+  ['EPS', 'E'],
+  ['Ε', 'E'],
+  ['ZET', 'F'],
+  ['Ζ', 'F'],
+  ['ETA', 'G'],
+  ['Η', 'G'],
+])
+
+const KEY_LETTER_TO_NOMINALS = new Map<string, string[]>([
+  ['A', ['A', 'ALP', 'Α']],
+  ['B', ['B', 'BET', 'Β']],
+  ['C', ['C', 'GAM', 'Γ']],
+  ['D', ['D', 'DEL', 'Δ']],
+  ['E', ['E', 'EPS', 'Ε']],
+  ['F', ['F', 'ZET', 'Ζ']],
+  ['G', ['G', 'ETA', 'Η']],
+])
+
+const MAJOR_KEY_FIFTHS = new Map<string, number>([
+  ['C', 0],
+  ['G', 1],
+  ['D', 2],
+  ['A', 3],
+  ['E', 4],
+  ['B', 5],
+  ['F', -1],
+])
+
+const KEY_MODE_FIFTH_OFFSETS = new Map<KeyModeType, number>([
+  ['ionian', 0],
+  ['dorian', -2],
+  ['phrygian', -4],
+  ['lydian', 1],
+  ['mixolydian', -1],
+  ['aeolian', -3],
+  ['locrian', -5],
+])
+
+const SHARP_KEY_ORDER = ['F', 'C', 'G', 'D', 'A', 'E', 'B']
+const FLAT_KEY_ORDER = ['B', 'E', 'A', 'D', 'G', 'C', 'F']
+const ALL_KEY_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G']
+const NATURAL_ACCIDENTALS = new Set<AccidentalType>(['♮', '_'])
+
 export function nominalToMonzo(nominal: string, accidentals: AccidentalType[]) {
   const key = nominal.toUpperCase()
   const result = NOMINAL_MONZOS.get(key)?.slice()
@@ -111,6 +163,41 @@ export function nominalToMonzo(nominal: string, accidentals: AccidentalType[]) {
     accumulate(result, ACCIDENTAL_MONZOS.get(accidental) as unknown as Monzo)
   }
   return result as unknown as PtolMonzo
+}
+
+export function keySignatureAccidentals(
+  tonic: KeyTonicType,
+  mode: KeyModeType,
+): Map<string, AccidentalType[]> {
+  const key = tonic.nominal.toUpperCase()
+  if (!NOMINAL_MONZOS.has(key)) {
+    throw new Error(`Undefined key signature tonic '${tonic.nominal}'.`)
+  }
+
+  const tonicAccidentals = tonic.accidentals.filter(
+    (accidental) => !NATURAL_ACCIDENTALS.has(accidental),
+  )
+  const keyLetter = NOMINAL_TO_KEY_LETTER.get(key) ?? key
+  const fifths = (MAJOR_KEY_FIFTHS.get(keyLetter) ?? 0) + (KEY_MODE_FIFTH_OFFSETS.get(mode) ?? 0)
+  const result = new Map<string, AccidentalType[]>()
+  for (const keyLetter of ALL_KEY_LETTERS) {
+    for (const nominal of KEY_LETTER_TO_NOMINALS.get(keyLetter) ?? [keyLetter]) {
+      result.set(nominal, tonicAccidentals)
+    }
+  }
+
+  const order = fifths >= 0 ? SHARP_KEY_ORDER : FLAT_KEY_ORDER
+  const accidental: AccidentalType = fifths >= 0 ? '♯' : '♭'
+
+  for (let index = 0; index < Math.abs(fifths); index++) {
+    const keyLetter = order[index % order.length]!
+    for (const nominal of KEY_LETTER_TO_NOMINALS.get(keyLetter) ?? [keyLetter]) {
+      const current = result.get(nominal) ?? []
+      result.set(nominal, [...current, accidental])
+    }
+  }
+
+  return result
 }
 
 export function normalizeNominal(nominal: string) {

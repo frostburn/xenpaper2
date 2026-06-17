@@ -206,6 +206,62 @@ describe('grammar to mosc score', () => {
     expect(source.error).toContain('Unpaired repeat start marker "|:"')
   })
 
+  it('applies major key signatures to Latin and matching Greek nominals', () => {
+    expect(noteLabels('(key:G Major) F Zet F_ Zet_')).toEqual(['F♯', 'Ζ♯', 'F♮', 'Ζ♮'])
+  })
+
+  it('applies flat key signatures and lets explicit accidentals override them', () => {
+    expect(noteLabels('(key:F Major) B B_ B#')).toEqual(['B♭', 'B♮', 'B♯'])
+  })
+
+  it('supports modal key signatures and major/minor aliases', () => {
+    expect(noteLabels('(key:C Ionian) F (key:C Major) F')).toEqual(['F♮', 'F♮'])
+    expect(noteLabels('(key:A Aeolian) F (key:A minor) F')).toEqual(['F♮', 'F♮'])
+    expect(noteLabels('(key:D Dorian) B F (key:C Lydian) F')).toEqual(['B♮', 'F♮', 'F♯'])
+    expect(noteLabels('(key:G Mixolydian) F (key:C Phrygian) E (key:C Locrian) G')).toEqual([
+      'F♮',
+      'E♭',
+      'G♭',
+    ])
+  })
+
+  it('applies tonic accidentals across extended Pythagorean key signatures', () => {
+    expect(noteLabels('(key:C# Major) C D E F G A B')).toEqual([
+      'C♯',
+      'D♯',
+      'E♯',
+      'F♯',
+      'G♯',
+      'A♯',
+      'B♯',
+    ])
+    expect(noteLabels('(key:Ct Major) C D E F G A B')).toEqual([
+      'C‡',
+      'D‡',
+      'E‡',
+      'F‡',
+      'G‡',
+      'A‡',
+      'B‡',
+    ])
+    expect(noteLabels('(key:F# Major) F G A B C D E')).toEqual([
+      'F♯',
+      'G♯',
+      'A♯',
+      'B♮',
+      'C♯',
+      'D♯',
+      'E♯',
+    ])
+  })
+
+  it('rejects undefined key signature tonics', () => {
+    const source = parseAndProcessSourceCode('(key:X Major) F')
+
+    expect(source.playable).toBe(false)
+    expect(source.error).toContain("Undefined key signature tonic 'X'.")
+  })
+
   it('should translate sample-rate notes', () => {
     const source = parseAndProcessSourceCode('!-')
 

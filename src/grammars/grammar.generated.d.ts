@@ -217,6 +217,28 @@ export type SetEnvType = NodeType<'SetEnv'> & {
   r: number
 }
 
+// key
+
+export type KeyTonicType = {
+  nominal: string
+  greek: boolean
+  accidentals: AccidentalType[]
+}
+
+export type KeyModeType =
+  | 'ionian'
+  | 'dorian'
+  | 'phrygian'
+  | 'lydian'
+  | 'mixolydian'
+  | 'aeolian'
+  | 'locrian'
+
+export type SetKeyType = NodeType<'SetKey'> & {
+  tonic: KeyTonicType
+  mode: KeyModeType
+}
+
 // ruler
 
 export type SetRulerRangeType = NodeType<'SetRulerRange'> & {
@@ -237,6 +259,7 @@ export type SetterType =
   | SetOscType
   | SetNoiseType
   | SetEnvType
+  | SetKeyType
   | SetRulerType
 
 export type SetterGroupType = NodeType<'SetterGroup'> & {

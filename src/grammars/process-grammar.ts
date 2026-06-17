@@ -13,13 +13,19 @@ import type {
   TailType,
   PitchType,
   PitchDegreeType,
+  AccidentalType,
   RatioChordPitchType,
   SetterType,
   DelimiterType,
   SequenceItemsType,
 } from './grammar.generated'
 
-import { nominalToMonzo, normalizeNominal, normalizeAccidentals } from './pythagorean'
+import {
+  nominalToMonzo,
+  normalizeNominal,
+  normalizeAccidentals,
+  keySignatureAccidentals,
+} from './pythagorean'
 
 import type {
   MoscBeatScore,
@@ -95,7 +101,7 @@ export const pitchToRatio = (pitch: PitchType, context: Context): number => {
 
   if (type === 'PitchAbsolute') {
     const { ups, lifts, nominal, accidentals } = pitch.value
-    const monzo = nominalToMonzo(nominal, accidentals)
+    const monzo = nominalToMonzo(nominal, applyKeySignature(nominal, accidentals, context))
     const cents = dot(mapping, monzo) + ups * up + lifts * lift
     return centsToValue(cents) * octaveMulti
   }
@@ -209,11 +215,12 @@ export const pitchToLabel = (pitch: PitchType, context: Context): string => {
 
   if (type === 'PitchAbsolute') {
     const { ups, lifts, nominal, accidentals } = pitch.value
+    const effectiveAccidentals = applyKeySignature(nominal, accidentals, context)
     return (
       (ups > 0 ? '^' : 'v').repeat(Math.abs(ups)) +
       (lifts > 0 ? '/' : '\\').repeat(Math.abs(lifts)) +
       normalizeNominal(nominal) +
-      normalizeAccidentals(accidentals).join('')
+      normalizeAccidentals(effectiveAccidentals).join('')
     )
   }
 
@@ -245,6 +252,19 @@ type Context = {
   up: number
   lift: number
   mapping: number[]
+  keySignature: Map<string, AccidentalType[]>
+}
+
+const applyKeySignature = (
+  nominal: string,
+  accidentals: AccidentalType[],
+  context: Context,
+): AccidentalType[] => {
+  if (accidentals.length) {
+    return accidentals
+  }
+
+  return context.keySignature.get(nominal.toUpperCase()) ?? accidentals
 }
 
 const times: [number, number][] = []
@@ -817,6 +837,12 @@ const setterToMosc = (setter: SetterType | DelimiterType, context: Context): Mos
     ]
   }
 
+  if (type === 'SetKey') {
+    const { tonic, mode } = setter
+    context.keySignature = keySignatureAccidentals(tonic, mode)
+    return []
+  }
+
   return []
 }
 
@@ -945,6 +971,7 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
     up: DEFAULT_UP,
     lift: DEFAULT_LIFT,
     mapping: DEFAULT_MAPPING,
+    keySignature: new Map(),
   }
 
   const moscItems: MoscBeatItem[] = []
