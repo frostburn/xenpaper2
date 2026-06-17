@@ -225,6 +225,36 @@ describe('grammar to mosc score', () => {
     ])
   })
 
+  it('applies tonic accidentals across extended Pythagorean key signatures', () => {
+    expect(noteLabels('(key:C# Major) C D E F G A B')).toEqual([
+      'C♯',
+      'D♯',
+      'E♯',
+      'F♯',
+      'G♯',
+      'A♯',
+      'B♯',
+    ])
+    expect(noteLabels('(key:Ct Major) C D E F G A B')).toEqual([
+      'C‡',
+      'D‡',
+      'E‡',
+      'F‡',
+      'G‡',
+      'A‡',
+      'B‡',
+    ])
+    expect(noteLabels('(key:F# Major) F G A B C D E')).toEqual([
+      'F♯',
+      'G♯',
+      'A♯',
+      'B♮',
+      'C♯',
+      'D♯',
+      'E♯',
+    ])
+  })
+
   it('rejects undefined key signature tonics', () => {
     const source = parseAndProcessSourceCode('(key:X Major) F')
 

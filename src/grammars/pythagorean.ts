@@ -145,30 +145,8 @@ const KEY_MODE_FIFTH_OFFSETS = new Map<KeyModeType, number>([
 
 const SHARP_KEY_ORDER = ['F', 'C', 'G', 'D', 'A', 'E', 'B']
 const FLAT_KEY_ORDER = ['B', 'E', 'A', 'D', 'G', 'C', 'F']
-
-const accidentalFifths = (accidentals: AccidentalType[]): number => {
-  let fifths = 0
-  for (const accidental of accidentals) {
-    switch (accidental) {
-      case '♯':
-      case '#':
-        fifths += 7
-        break
-      case '𝄪':
-      case 'x':
-        fifths += 14
-        break
-      case '♭':
-      case 'b':
-        fifths -= 7
-        break
-      case '𝄫':
-        fifths -= 14
-        break
-    }
-  }
-  return fifths
-}
+const ALL_KEY_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G']
+const NATURAL_ACCIDENTALS = new Set<AccidentalType>(['♮', '_'])
 
 export function nominalToMonzo(nominal: string, accidentals: AccidentalType[]) {
   const key = nominal.toUpperCase()
@@ -196,19 +174,26 @@ export function keySignatureAccidentals(
     throw new Error(`Undefined key signature tonic '${tonic.nominal}'.`)
   }
 
+  const tonicAccidentals = tonic.accidentals.filter(
+    (accidental) => !NATURAL_ACCIDENTALS.has(accidental),
+  )
   const keyLetter = NOMINAL_TO_KEY_LETTER.get(key) ?? key
-  const fifths =
-    (MAJOR_KEY_FIFTHS.get(keyLetter) ?? 0) +
-    (KEY_MODE_FIFTH_OFFSETS.get(mode) ?? 0) +
-    accidentalFifths(tonic.accidentals)
+  const fifths = (MAJOR_KEY_FIFTHS.get(keyLetter) ?? 0) + (KEY_MODE_FIFTH_OFFSETS.get(mode) ?? 0)
   const result = new Map<string, AccidentalType[]>()
+  for (const keyLetter of ALL_KEY_LETTERS) {
+    for (const nominal of KEY_LETTER_TO_NOMINALS.get(keyLetter) ?? [keyLetter]) {
+      result.set(nominal, tonicAccidentals)
+    }
+  }
+
   const order = fifths >= 0 ? SHARP_KEY_ORDER : FLAT_KEY_ORDER
   const accidental: AccidentalType = fifths >= 0 ? '♯' : '♭'
 
   for (let index = 0; index < Math.abs(fifths); index++) {
     const keyLetter = order[index % order.length]!
     for (const nominal of KEY_LETTER_TO_NOMINALS.get(keyLetter) ?? [keyLetter]) {
-      result.set(nominal, [...(result.get(nominal) ?? []), accidental])
+      const current = result.get(nominal) ?? []
+      result.set(nominal, [...current, accidental])
     }
   }
 
