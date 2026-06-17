@@ -69,8 +69,15 @@ const noteLabelDurations = (input: string): Array<[string, number]> =>
 
 describe('grammar to mosc score', () => {
   it('applies FJS inflections to absolute pitch ratios', () => {
-    const [fifthLimitSubscript, fifthLimitSuperscript, neutralEleven, lumisComma] =
-      noteItems('Cv5 C#^5 Ct^11n A^0l')
+    const [
+      fifthLimitSubscript,
+      fifthLimitSuperscript,
+      neutralEleven,
+      lumisComma,
+      helmholtzEllis,
+      hewm53,
+      flora,
+    ] = noteItems('Cv5 C#^5 Ct^11n A^0l A^5h A^17m A^5f')
 
     expect(fifthLimitSubscript?.hz).toBeAround(264, 6)
     expect(fifthLimitSubscript?.label).toBe('C♮v5')
@@ -80,6 +87,12 @@ describe('grammar to mosc score', () => {
     expect(neutralEleven?.label).toBe('C‡^11n')
     expect(lumisComma?.hz).toBeAround(440.20249573794024, 6)
     expect(lumisComma?.label).toBe('A♮^0l')
+    expect(helmholtzEllis?.hz).toBeAround(445.5, 6)
+    expect(helmholtzEllis?.label).toBe('A♮^5h')
+    expect(hewm53?.hz).toBeAround((440 * 18) / 17, 6)
+    expect(hewm53?.label).toBe('A♮^17m')
+    expect(flora?.hz).toBeAround((440 * 80) / 81, 6)
+    expect(flora?.label).toBe('A♮^5f')
   })
 
   it('expands simple repeats before translating to score items', () => {
