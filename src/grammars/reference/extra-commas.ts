@@ -1,4 +1,3 @@
-// @ts-nocheck
 import {Fraction} from 'xen-dev-utils/fraction';
 import {PRIMES} from 'xen-dev-utils/primes';
 import {TimeMonzo, getNumberOfComponents} from './monzo.js';

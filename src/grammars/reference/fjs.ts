@@ -1,4 +1,3 @@
-// @ts-nocheck
 import {valueToCents} from 'xen-dev-utils/conversion';
 import {circleDistance} from 'xen-dev-utils/core';
 import {Fraction} from 'xen-dev-utils/fraction';
