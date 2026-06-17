@@ -127,7 +127,7 @@ SetterGroup = "(" _ first:Setter rest:(Semicolon Setter)* _ ")" {
   for (const part of rest) setters.push(part[0], part[1]);
   return node('SetterGroup', { setters });
 }
-Setter = SetBpm / SetBms / SetSubdivision / SetOsc / SetNoise / SetEnv / SetRulerRange / SetRulerPlot
+Setter = SetBpm / SetBms / SetSubdivision / SetOsc / SetNoise / SetEnv / SetKey / SetRulerRange / SetRulerPlot
 SetBpm = "bpm"i _ ":" _ bpm:Number { return node('SetBpm', { bpm }); }
 SetBms = "bms"i _ ":" _ bms:Number { return node('SetBms', { bms }); }
 SetSubdivision = ("div"i _ ":" _)? fraction:Fraction {
@@ -143,6 +143,9 @@ NoiseName "noise generator name" = [a-zA-Z0-9\-]+ { return text().toLowerCase();
 SetEnv = "env"i _ ":" _ vals:EnvValues {
   return node('SetEnv', vals);
 }
+SetKey = "key"i _ ":" _ tonic:KeyTonic _ mode:KeyMode { return node('SetKey', { tonic, mode }); }
+KeyTonic = nominal:(GreekNominal / LatinNominal) accidentals:Accidental* { return { ...nominal, accidentals }; }
+KeyMode = "major"i { return "major"; } / "minor"i { return "minor"; }
 EnvValues "four digits" = a:EnvDigit _ d:EnvDigit _ s:EnvDigit _ r:EnvDigit { return { a, d, s, r }; }
 EnvDigit = digit:[0-9] { return parseInt(digit, 10); }
 SetRulerRange = "rl"i _ ":" _ low:Pitch _ "," _ high:Pitch { return node('SetRulerRange', { low, high }); }

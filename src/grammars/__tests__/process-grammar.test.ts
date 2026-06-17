@@ -206,6 +206,14 @@ describe('grammar to mosc score', () => {
     expect(source.error).toContain('Unpaired repeat start marker "|:"')
   })
 
+  it('applies major key signatures to Latin and matching Greek nominals', () => {
+    expect(noteLabels('(key:G Major) F Zet F_ Zet_')).toEqual(['F♯', 'Ζ♯', 'F♮', 'Ζ♮'])
+  })
+
+  it('applies flat key signatures and lets explicit accidentals override them', () => {
+    expect(noteLabels('(key:F Major) B B_ B#')).toEqual(['B♭', 'B♮', 'B♯'])
+  })
+
   it('should translate sample-rate notes', () => {
     const source = parseAndProcessSourceCode('!-')
 

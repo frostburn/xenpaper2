@@ -66,7 +66,18 @@ A A A#- A A  A♯-`,
       },
     ],
   },
-  { title: 'Key signatures (Upcoming...)', demos: [] },
+  {
+    title: 'Key signatures',
+    demos: [
+      {
+        description:
+          'Key signatures can be set with `(key:G Major)` or another major/minor key. Plain nominals receive the signature accidentals, while an explicit natural sign ♮ or underscore _ restores the unaltered nominal.',
+        tune: `# G major sharpens F and Zet
+(key:G Major)
+F Zet F_ Zet_ G A B c`,
+      },
+    ],
+  },
   { title: 'FJS inflections (upcoming...)', demos: [] },
   {
     title: 'Semi-intervals',
