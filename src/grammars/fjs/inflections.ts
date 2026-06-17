@@ -3,6 +3,7 @@ import { toMonzo, type Monzo } from 'xen-dev-utils/monzo'
 import { PRIMES, PRIME_CENTS } from 'xen-dev-utils/primes'
 
 import type { InflectionFlavorType, InflectionType } from '../grammar.generated'
+import { getLumisComma, getSyntonicRastmicComma } from './extra-commas'
 
 const RADIUS_OF_TOLERANCE = valueToCents(65 / 63)
 const SEMIAPOTOME = 0.5 * valueToCents(2187 / 2048) + 1e-6
@@ -101,6 +102,9 @@ const getCommaMonzo = (primeIndex: number, flavor: InflectionFlavorType): Monzo 
 }
 
 const inflectionToMonzo = ({ value, flavor }: InflectionType): Monzo => {
+  if (flavor === 'l') return getLumisComma(value)
+  if (flavor === 's') return getSyntonicRastmicComma(value)
+
   const result: Monzo = []
   const valueMonzo = toMonzo(value)
   for (let index = 0; index < valueMonzo.length; index++) {
