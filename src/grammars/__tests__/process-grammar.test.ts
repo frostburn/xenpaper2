@@ -68,6 +68,51 @@ const noteLabelDurations = (input: string): Array<[string, number]> =>
   noteItems(input).map((item) => [item.label, item.timeEnd - item.time])
 
 describe('grammar to mosc score', () => {
+  it('applies FJS inflections to absolute pitch ratios', () => {
+    const [
+      fifthLimitSubscript,
+      fifthLimitSuperscript,
+      neutralEleven,
+      lumisComma,
+      helmholtzEllis,
+      helmholtzEllisDown,
+      hewm53,
+      flora,
+      thirtyOneDefault,
+      thirtyOneFlora,
+      thirtyOneClassic,
+    ] = noteItems('Cv5 C#^5 Ct^11n A^0l A^5h C#v5h A^17m A^5f A^31 A^31f A^31c')
+
+    expect(fifthLimitSubscript?.hz).toBeAround(264, 6)
+    expect(fifthLimitSubscript?.label).toBe('C♮v5')
+    expect(fifthLimitSuperscript?.hz).toBeAround(275, 6)
+    expect(fifthLimitSuperscript?.label).toBe('C♯^5')
+    expect(neutralEleven?.hz).toBeAround((220 * 11) / 9, 6)
+    expect(neutralEleven?.label).toBe('C‡^11n')
+    expect(lumisComma?.hz).toBeAround(440.20249573794024, 6)
+    expect(lumisComma?.label).toBe('A♮^0l')
+    expect(helmholtzEllis?.hz).toBeAround(445.5, 6)
+    expect(helmholtzEllis?.label).toBe('A♮^5h')
+    expect(helmholtzEllisDown?.hz).toBeAround(275, 6)
+    expect(helmholtzEllisDown?.label).toBe('C♯v5h')
+    expect(hewm53?.hz).toBeAround((440 * 18) / 17, 6)
+    expect(hewm53?.label).toBe('A♮^17m')
+    expect(flora?.hz).toBeAround((440 * 80) / 81, 6)
+    expect(flora?.label).toBe('A♮^5f')
+    expect(thirtyOneDefault?.hz).toBeAround((440 * 31) / 32, 6)
+    expect(thirtyOneDefault?.label).toBe('A♮^31')
+    expect(thirtyOneFlora?.hz).toBeAround((440 * 31) / 32, 6)
+    expect(thirtyOneFlora?.label).toBe('A♮^31f')
+    expect(thirtyOneClassic?.hz).toBeAround((440 * 248) / 243, 6)
+    expect(thirtyOneClassic?.label).toBe('A♮^31c')
+  })
+
+  it('tempers FJS inflections', () => {
+    const [third, powerOctave] = noteItems('{19edo}C#^5 A^109')
+    expect(third?.hz).toBeAround(220 * Math.pow(2, 6 / 19), 6)
+    expect(powerOctave?.hz).toBeAround(220 * Math.pow(2, 20 / 19), 6)
+  })
+
   it('expands simple repeats before translating to score items', () => {
     expect(noteLabels('0 |: 1 2 :| 3')).toEqual([
       '0\\12  0.0c',

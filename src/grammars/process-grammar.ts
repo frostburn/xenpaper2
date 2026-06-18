@@ -26,6 +26,7 @@ import {
   normalizeAccidentals,
   keySignatureAccidentals,
 } from './pythagorean'
+import { applyFjsInflections } from './fjs/inflections'
 
 import type {
   MoscBeatScore,
@@ -41,7 +42,6 @@ import type {
 import { beatToTime } from '../mosc'
 
 const NUM_COMPONENTS = 24
-const DEFAULT_MAPPING = PRIME_CENTS.slice(0, NUM_COMPONENTS)
 const DEFAULT_UP = valueToCents(243 / 242) / 2
 const DEFAULT_LIFT = valueToCents(50 / 49) / 2
 
@@ -100,9 +100,17 @@ export const pitchToRatio = (pitch: PitchType, context: Context): number => {
   }
 
   if (type === 'PitchAbsolute') {
-    const { ups, lifts, nominal, accidentals } = pitch.value
-    const monzo = nominalToMonzo(nominal, applyKeySignature(nominal, accidentals, context))
-    const cents = dot(mapping, monzo) + ups * up + lifts * lift
+    const { ups, lifts, nominal, accidentals, inflections } = pitch.value
+    const monzo = applyFjsInflections(
+      nominalToMonzo(nominal, applyKeySignature(nominal, accidentals, context)).slice(),
+      inflections,
+    )
+    // Compute power-user mapping on the fly
+    let tail = 0
+    for (let i = mapping.length; i < monzo.length; ++i) {
+      tail += Math.round(PRIME_CENTS[i]! / up) * up * monzo[i]!
+    }
+    const cents = dot(mapping, monzo) + ups * up + lifts * lift + tail
     return centsToValue(cents) * octaveMulti
   }
 
@@ -214,13 +222,16 @@ export const pitchToLabel = (pitch: PitchType, context: Context): string => {
   }
 
   if (type === 'PitchAbsolute') {
-    const { ups, lifts, nominal, accidentals } = pitch.value
+    const { ups, lifts, nominal, accidentals, inflections } = pitch.value
     const effectiveAccidentals = applyKeySignature(nominal, accidentals, context)
     return (
       (ups > 0 ? '^' : 'v').repeat(Math.abs(ups)) +
       (lifts > 0 ? '/' : '\\').repeat(Math.abs(lifts)) +
       normalizeNominal(nominal) +
-      normalizeAccidentals(effectiveAccidentals).join('')
+      normalizeAccidentals(effectiveAccidentals).join('') +
+      inflections
+        .map(({ type, value, flavor }) => `${type === 'superscript' ? '^' : 'v'}${value}${flavor}`)
+        .join('')
     )
   }
 
@@ -693,7 +704,7 @@ const setScale = (setScale: SetScaleType, context: Context): void => {
   if (type === 'PythagoreanScale') {
     context.up = DEFAULT_UP
     context.lift = DEFAULT_LIFT
-    context.mapping = DEFAULT_MAPPING
+    context.mapping = PRIME_CENTS
     return
   }
 
@@ -970,7 +981,7 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
     octaveSize: 2,
     up: DEFAULT_UP,
     lift: DEFAULT_LIFT,
-    mapping: DEFAULT_MAPPING,
+    mapping: PRIME_CENTS,
     keySignature: new Map(),
   }
 

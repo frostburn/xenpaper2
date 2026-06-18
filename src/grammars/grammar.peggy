@@ -29,7 +29,7 @@ LatinNominal = nominal:[a-z]i { return { nominal, greek: false } }
 GreekNominal "Greek nominal" = ([α-ω]i / "alp"i / "bet"i / "gam"i / "del"i / "eps"i / "zet"i / "eta"i / "the"i / "iot"i / "kap"i / "muu"i / "nuu"i / "xii"i / "omi"i / "pii"i / "rho"i / "fsi"i / "sig"i / "tau"i / "ups"i / "phi"i / "chi"i / "psi"i / "ome"i) {
   return { nominal: text(), greek: true };
 }
-Accidental = '𝄪' / '𝄫' / '𝄲' / '𝄳' / '𝄬' / '𝄭' / '𝄮' / '𝄯' / '𝄰' / '𝄱' / [x♯#‡t♮_d♭b]
+Accidental "accidental" = '𝄪' / '𝄫' / '𝄲' / '𝄳' / '𝄬' / '𝄭' / '𝄮' / '𝄯' / '𝄰' / '𝄱' / [x♯#‡t♮_d♭b]
 UpsAndDowns "Ups and Downs" = ('^' / 'v' / '/' / '\\')* {
   let ups = 0;
   let lifts = 0;
@@ -43,8 +43,16 @@ UpsAndDowns "Ups and Downs" = ('^' / 'v' / '/' / '\\')* {
   }
   return { ups, lifts }
 }
+InflectionFlavor = 'n' / 'l' / 'h' / 'm' / 's' / 'f' / 'c' / 'q' / 't' / ''
+Inflection "inflection" = type: ('^' / 'v') value: Int flavor: InflectionFlavor {
+  return {
+    type: type === '^' ? 'superscript' : 'subscript',
+    value,
+    flavor
+  };
+}
 PitchAbsolute
- = updowns: UpsAndDowns nominal: (GreekNominal / LatinNominal) accidentals: Accidental* { return node('PitchAbsolute', {...updowns, ...nominal, accidentals}) }
+ = updowns: UpsAndDowns nominal: (GreekNominal / LatinNominal) accidentals: Accidental* inflections: Inflection* { return node('PitchAbsolute', {...updowns, ...nominal, accidentals, inflections}) }
 PitchCents = cents:Number "c"i { return node('PitchCents',{cents}); }
 PitchHz = hz:Number _ "hz"i { return node('PitchHz',{hz}); }
 PitchOctaveDivision = numerator:Int _ [\\/] _ denominator:Int octaveSize:PitchOctaveDivisionSuffix {

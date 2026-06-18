@@ -80,7 +80,48 @@ f_- g--`,
       },
     ],
   },
-  { title: 'FJS inflections (upcoming...)', demos: [] },
+  {
+    title: 'FJS inflections',
+    demos: [
+      {
+        description:
+          'The Functional Just System lets you spell just intonation by tweaking the Pythagorean spine with small inflections. E.g. A Pythagorean minor third 32/27 can be turned into 6/5 by multiplying it by the syntonic inflection 81/80. The "five" is in the denominator so in FJS the "arrow" v points down.',
+        tune: `1/1 6/5 4/3 3/2 9/5 2/1 . .
+\`A  Cv5 D   E   Gv5 A   . .`,
+      },
+      {
+        description:
+          'On the other hand that 81/80 goes up in pitch so in HEJI the arrow ^ points up.',
+        tune: `# Sharpen C and G a bit
+\`A  C^5h D E G^5h A`,
+      },
+      {
+        description:
+          "There's a plethora of different inflection commas used for different purposes. Xenpaper inherits from SonicWeave but syntax-wise only ^ and v are allowed. E.g. 48/35 against root A has to be spelled Dv5v7.",
+        tune: `{8::16}
+0  1  2     3      4  5      6     7     8 . .
+# FJS
+\`A \`B C#^5  D^11   E  F^13   G^7   G#^5  A . .
+# HEJI
+\`A \`B C#v5h D^11h  E  F^13h  Gv7h  G#v5h A ..
+# Neutral FJS
+\`A \`B C‡^5n D‡^11n E  F‡^13n G‡^7n G‡^5n A . .`,
+        link: 'List of comma flavors',
+        href: 'https://github.com/xenharmonic-devs/sonic-weave/blob/main/documentation/commas.md',
+      },
+      {
+        description: 'Inflections respond to tempering.',
+        tune: `# Harmonic seventh in JI
+[G B^5 d f^7]-- .
+
+# Harmonic seventh in 19-TET
+{19edo}
+[G B^5 d f^7]-- .
+# i.e.
+[16 22 27 31]-- .`,
+      },
+    ],
+  },
   {
     title: 'Semi-intervals',
     demos: [
@@ -251,6 +292,7 @@ C D F G A c`,
             <pre>{{ formatDemoTune(demo.tune) }}</pre>
             <button type="button" @click="emit('setTune', demo.tune)">Demo</button>
           </div>
+          <a v-if="demo.href" :href="demo.href">{{ demo.link }}</a>
         </article>
       </section>
     </div>

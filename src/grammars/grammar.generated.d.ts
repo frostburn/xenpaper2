@@ -43,12 +43,21 @@ export type AccidentalType =
   | '𝄰'
   | '𝄱'
 
+export type InflectionFlavorType = '' | 'n' | 'l' | 'h' | 'm' | 's' | 'c' | 'f' | 'q' | 't'
+
+export type InflectionType = {
+  type: 'superscript' | 'subscript'
+  value: number
+  flavor: InflectionFlavorType
+}
+
 export type PitchAbsoluteType = NodeType<'PitchAbsolute'> & {
   ups: number
   lifts: number
   nominal: string
   greek: boolean
   accidentals: AccidentalType[]
+  inflections: InflectionType[]
 }
 
 export type PitchCentsType = NodeType<'PitchCents'> & {
