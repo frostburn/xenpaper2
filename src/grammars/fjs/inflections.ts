@@ -1,7 +1,7 @@
 import { valueToCents } from 'xen-dev-utils/conversion'
 import { circleDistance } from 'xen-dev-utils/core'
 import { toMonzo, type Monzo } from 'xen-dev-utils/monzo'
-import { PRIMES, PRIME_CENTS } from 'xen-dev-utils/primes'
+import { PRIME_CENTS } from 'xen-dev-utils/primes'
 
 import type { InflectionFlavorType, InflectionType } from '../grammar.generated'
 import {
@@ -20,7 +20,6 @@ const FIFTH = PRIME_CENTS[1]! - PRIME_CENTS[0]!
 const FOURTH = 2 * PRIME_CENTS[0]! - PRIME_CENTS[1]!
 const OCTAVE = PRIME_CENTS[0]!
 const commaCache = new Map<string, Monzo>()
-const inflectionCache = new Map<string, Monzo>()
 
 const formalMaster = (primeCents: number, radius = RADIUS_OF_TOLERANCE): [number, number] => {
   let pythagoras = 0
@@ -62,7 +61,8 @@ const toneSplitterMaster = (primeCents: number): [number, number] => {
   let k = 0.5
   while (true) {
     if (circleDistance(primeCents, pythagoras) < TONE_SPLITTER_BRIDGING_RADIUS) return [k, 0.5 - k]
-    if (circleDistance(primeCents, -pythagoras) < TONE_SPLITTER_BRIDGING_RADIUS) return [-k, k - 0.5]
+    if (circleDistance(primeCents, -pythagoras) < TONE_SPLITTER_BRIDGING_RADIUS)
+      return [-k, k - 0.5]
     pythagoras += FIFTH
     k++
   }
@@ -118,19 +118,11 @@ const getCommaMonzo = (primeIndex: number, flavor: InflectionFlavorType): Monzo 
 }
 
 const inflectionToMonzo = ({ value, flavor }: InflectionType): Monzo => {
-  const cacheKey = `${value}:${flavor}`
-  const cached = inflectionCache.get(cacheKey)
-  if (cached) return cached
-
   if (flavor === 'l') {
-    const comma = getLumisComma(value)
-    inflectionCache.set(cacheKey, comma)
-    return comma
+    return getLumisComma(value)
   }
   if (flavor === 's') {
-    const comma = getSyntonicRastmicComma(value)
-    inflectionCache.set(cacheKey, comma)
-    return comma
+    return getSyntonicRastmicComma(value)
   }
 
   const result: Monzo = []
@@ -143,7 +135,6 @@ const inflectionToMonzo = ({ value, flavor }: InflectionType): Monzo => {
       result[commaIndex] = (result[commaIndex] ?? 0) + (comma[commaIndex] ?? 0) * exponent
     }
   }
-  inflectionCache.set(cacheKey, result)
   return result
 }
 

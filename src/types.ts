@@ -40,6 +40,8 @@ export type DemoTune = string | string[]
 export type SidebarDemo = {
   description?: string
   tune?: DemoTune
+  link?: string
+  href?: string
 }
 
 export type SidebarSection = {

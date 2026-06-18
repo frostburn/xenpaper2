@@ -82,8 +82,7 @@ const stackDigitCommas = (id: number, commas: Map<string, Monzo>): Monzo => {
 
 export const getLumisComma = (id: number): Monzo => stackDigitCommas(id, LUMIS_COMMAS)
 
-export const getSyntonicRastmicComma = (id: number): Monzo =>
-  stackDigitCommas(id, SYNTONIC_RASTMIC)
+export const getSyntonicRastmicComma = (id: number): Monzo => stackDigitCommas(id, SYNTONIC_RASTMIC)
 
 const getPrimeComma = (primeIndex: number, commas: Map<number, string>): Monzo => {
   const prime = PRIMES[primeIndex]
