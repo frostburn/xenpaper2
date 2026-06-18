@@ -1,6 +1,6 @@
 import { type Monzo, accumulate, decumulate } from 'xen-dev-utils/monzo'
 
-import type { AccidentalType, KeyModeType, KeyTonicType } from './grammar.generated'
+import type { AccidentalType, InflectionType, KeyModeType, KeyTonicType } from './grammar.generated'
 
 export type PtolMonzo = readonly [number, number, number]
 
@@ -165,10 +165,17 @@ export function nominalToMonzo(nominal: string, accidentals: AccidentalType[]) {
   return result as unknown as PtolMonzo
 }
 
+export type KeySignatureAdjustment = {
+  ups: number
+  lifts: number
+  accidentals: AccidentalType[]
+  inflections: InflectionType[]
+}
+
 export function keySignatureAccidentals(
   tonic: KeyTonicType,
   mode: KeyModeType,
-): Map<string, AccidentalType[]> {
+): Map<string, KeySignatureAdjustment> {
   const key = tonic.nominal.toUpperCase()
   if (!NOMINAL_MONZOS.has(key)) {
     throw new Error(`Undefined key signature tonic '${tonic.nominal}'.`)
@@ -177,12 +184,18 @@ export function keySignatureAccidentals(
   const tonicAccidentals = tonic.accidentals.filter(
     (accidental) => !NATURAL_ACCIDENTALS.has(accidental),
   )
+  const tonicAdjustment = {
+    ups: tonic.ups,
+    lifts: tonic.lifts,
+    accidentals: tonicAccidentals,
+    inflections: tonic.inflections,
+  }
   const keyLetter = NOMINAL_TO_KEY_LETTER.get(key) ?? key
   const fifths = (MAJOR_KEY_FIFTHS.get(keyLetter) ?? 0) + (KEY_MODE_FIFTH_OFFSETS.get(mode) ?? 0)
-  const result = new Map<string, AccidentalType[]>()
+  const result = new Map<string, KeySignatureAdjustment>()
   for (const keyLetter of ALL_KEY_LETTERS) {
     for (const nominal of KEY_LETTER_TO_NOMINALS.get(keyLetter) ?? [keyLetter]) {
-      result.set(nominal, tonicAccidentals)
+      result.set(nominal, { ...tonicAdjustment, accidentals: [...tonicAccidentals] })
     }
   }
 
@@ -192,8 +205,8 @@ export function keySignatureAccidentals(
   for (let index = 0; index < Math.abs(fifths); index++) {
     const keyLetter = order[index % order.length]!
     for (const nominal of KEY_LETTER_TO_NOMINALS.get(keyLetter) ?? [keyLetter]) {
-      const current = result.get(nominal) ?? []
-      result.set(nominal, [...current, accidental])
+      const current = result.get(nominal) ?? tonicAdjustment
+      result.set(nominal, { ...current, accidentals: [...current.accidentals, accidental] })
     }
   }
 
