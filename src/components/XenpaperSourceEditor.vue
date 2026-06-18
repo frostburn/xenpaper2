@@ -145,12 +145,12 @@ const isCharacterActive = (charData?: CharData): boolean =>
         <div v-for="tab in liveSourceTabs" :key="tab.id" class="source-tab">
           <button
             class="source-tab-button"
-            :class="{ active: tab.active, muted: tab.muted, soloed: tab.soloed }"
+            :class="{ active: tab.active, muted: tab.muted, soloed: tab.soloed, sounding: tab.sounding }"
             type="button"
             role="tab"
             :aria-selected="tab.active"
-            :title="`${tab.title}${tab.soloed ? ' (solo)' : ''}${tab.muted ? ' (muted)' : ''}`"
-            :aria-label="`${tab.title}${tab.soloed ? ', soloed' : ''}${tab.muted ? ', muted' : ''}`"
+            :title="`${tab.title}${tab.sounding ? ' (playing)' : ''}${tab.soloed ? ' (solo)' : ''}${tab.muted ? ' (muted)' : ''}`"
+            :aria-label="`${tab.title}${tab.sounding ? ', playing' : ''}${tab.soloed ? ', soloed' : ''}${tab.muted ? ', muted' : ''}`"
             :aria-controls="`source-code-panel-${tab.id}`"
             @click="handleSourceTabClick($event, tab.id)"
           >
@@ -285,6 +285,17 @@ const isCharacterActive = (charData?: CharData): boolean =>
 
 .source-tab-button.soloed {
   box-shadow: inset 0 -0.2rem 0 var(--xenpaper-solo);
+}
+
+.source-tab-button.sounding {
+  color: var(--xenpaper-bg);
+  background: var(--xenpaper-sound);
+}
+
+.source-tab-button.active.sounding {
+  color: var(--xenpaper-bg);
+  background: var(--xenpaper-sound);
+  box-shadow: inset 0 -0.2rem 0 var(--xenpaper-cyan);
 }
 
 .source-tab-button.active.muted {

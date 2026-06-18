@@ -58,6 +58,7 @@ function useScoreEngine(id: number, transport: Transport, bank: Bank) {
   const engineError = ref('')
   const alive = ref(true)
   const deadOrder = ref(0)
+  const activeNoteCount = ref(0)
   let parseVersion = 0
 
   const parsedSource = computed(() => parseAndProcessSourceCode(sourceCode.value))
@@ -148,6 +149,7 @@ function useScoreEngine(id: number, transport: Transport, bank: Bank) {
     selectedLine,
     alive,
     deadOrder,
+    activeNoteCount,
     parsedSource,
     chars,
     lastError,
@@ -219,6 +221,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
       alive: true,
       muted: engine.muted.value,
       soloed: engine.soloed.value,
+      sounding: engine.activeNoteCount.value > 0 && getScoreEngineGain(engine) > 0,
     })),
     ...deadScoreEngines.value.map((engine, index) => ({
       id: engine.id,
@@ -227,6 +230,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
       alive: false,
       muted: engine.muted.value,
       soloed: engine.soloed.value,
+      sounding: false,
     })),
   ])
 
@@ -606,7 +610,14 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     liveScoreEngines.value.forEach((engine) => {
       if (scoreEnginesWithNoteListeners.has(engine)) return
 
+      const activeNotes = new Set<MoscNote>()
       engine.soundEngine.onNote((note: MoscNote, on: boolean) => {
+        if (on) {
+          activeNotes.add(note)
+        } else {
+          activeNotes.delete(note)
+        }
+        engine.activeNoteCount.value = activeNotes.size
         activeNoteHandler?.(note, on)
       })
       scoreEnginesWithNoteListeners.add(engine)
