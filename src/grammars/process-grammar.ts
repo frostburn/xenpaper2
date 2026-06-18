@@ -789,7 +789,6 @@ const setScale = (setScale: SetScaleType, context: Context): void => {
   throw new Error(`Unknown scale type "${type}"`)
 }
 
-
 const upLiftStepToCents = (name: string, value: UpLiftStepType): number => {
   if (value.type === 'PitchRatio') {
     const { numerator, denominator } = value

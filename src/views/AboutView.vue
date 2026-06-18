@@ -22,6 +22,14 @@
     <a target="_blank" href="https://github.com/dxinteractive/xenpaper"
       >DX Interactive / Xenpaper 1</a
     >
+    <h2>Additional credits</h2>
+    <ul>
+      <li>FJS - "misotanni"</li>
+      <li>NFJS - Matthew Yacavone</li>
+      <li>Ups and downs notation - Kite Giedraitis</li>
+      <li>Xenharmonic Wiki - community project</li>
+      <li>Xenharmonic Alliance - community Discord / Facebook</li>
+    </ul>
     <h2>AI assistance disclosure</h2>
     <p>
       GPT-5.3-Codex, an AI model created by OpenAI, assisted in translating the original Xenpaper
