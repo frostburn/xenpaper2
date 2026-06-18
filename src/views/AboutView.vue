@@ -7,7 +7,7 @@
     </p>
     <h2>Project GitHub repository</h2>
     <a target="_blank" href="https://github.com/frostburn/xenpaper2">Frostburn / Xenpaper 2</a>
-    (reports bugs or request features here)
+    (report bugs or request features here)
     <h2>Software libraries used</h2>
     <ul>
       <li><a target="_blank" href="https://vuejs.org/">Vue 3</a> (progressive framework)</li>

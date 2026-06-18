@@ -8,5 +8,5 @@ onMounted(() => {
 })
 </script>
 <template>
-  <p>Clearing local storage...</p>
+  <p>Clearing local storage…</p>
 </template>

@@ -375,7 +375,7 @@ watch(
       <button class="ruler-button" type="button" @click="clearCollectedNotes">clear</button>
 
       <label class="ruler-control">
-        <span>colour</span>
+        <span>color</span>
         <select v-model="rulerState.colourMode">
           <option v-for="option in colourModeOptions" :key="option.value" :value="option.value">
             {{ option.label }}

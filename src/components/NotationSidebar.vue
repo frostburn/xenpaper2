@@ -157,7 +157,7 @@ f_- g--`,
     demos: [
       {
         description:
-          'When the closest approximation to 3/2 spans an even number of edosteps it often makes sense to use half-sharps (𝄲, ‡ or t) and half-flats (𝄳 or d) to reach the neutral third.',
+          'When the closest approximation to 3/2 spans an even number of EDO steps it often makes sense to use half-sharps (𝄲, ‡ or t) and half-flats (𝄳 or d) to reach the neutral third.',
         tune: `{10edo}
 # All 10 notes (and the octave)
 C Ct D Ed F F𝄲 G G‡ A B𝄳 c
@@ -185,7 +185,7 @@ C F B e a 'd 'g`,
     title: 'Even tunings',
     demos: [
       {
-        description: '12edo hides scales that repeats twice every octave.',
+        description: '12edo hides scales that repeat twice every octave.',
         tune: `{12edo}
 C D E F Gam Del Eps Zet c
 ..
@@ -220,7 +220,7 @@ c gam d del e eps f Zet F-`,
     demos: [
       {
         description:
-          'When the closest approximation to 4/3 spans an even number of edosteps you may combine half-accidentals with interordinals to reach the semifourth.',
+          'When the closest approximation to 4/3 spans an even number of EDO steps you may combine half-accidentals with interordinals to reach the semifourth.',
         tune: `{19edo}
 C D Alpd Betd F G Deld Epsd Bb c`,
       },
