@@ -185,7 +185,7 @@ C F B e a 'd 'g`,
     title: 'Even tunings',
     demos: [
       {
-        description: '12edo hides scales that repeats twice every octave.',
+        description: '12edo hides scales that repeat twice every octave.',
         tune: `{12edo}
 C D E F Gam Del Eps Zet c
 ..

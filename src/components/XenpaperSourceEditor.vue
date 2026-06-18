@@ -228,7 +228,7 @@ const isCharacterActive = (charData?: CharData): boolean =>
         ref="sourceInput"
         :value="sourceCode"
         class="source-input"
-        placeholder="Type your tune here..."
+        placeholder="Type your tune here…"
         autocapitalize="off"
         autocomplete="off"
         autocorrect="off"
@@ -241,7 +241,7 @@ const isCharacterActive = (charData?: CharData): boolean =>
         v-if="sourceCode === ''"
         class="placeholder-text"
         aria-hidden="true"
-      >Type your tune here...</span><template v-else><template v-for="token in sourceDisplayTokens" :key="token.key"><button
+      >Type your tune here…</span><template v-else><template v-for="token in sourceDisplayTokens" :key="token.key"><button
         v-if="token.type === 'playStart'"
         class="play-start-marker"
         :class="{ selected: selectedLine === token.line }"
