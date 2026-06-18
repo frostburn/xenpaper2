@@ -1727,6 +1727,64 @@ describe('grammar', () => {
         ])
       })
 
+      it('should parse sequence with up and lift setters', () => {
+        expect(strip(parser('(^:81/80; /: 64/63)')).sequence.items).toEqual([
+          {
+            type: 'SetterGroup',
+            setters: [
+              {
+                type: 'SetUp',
+                value: {
+                  type: 'PitchRatio',
+                  numerator: 81,
+                  denominator: 80,
+                },
+              },
+              {
+                type: 'Semicolon',
+              },
+              {
+                type: 'SetLift',
+                value: {
+                  type: 'PitchRatio',
+                  numerator: 64,
+                  denominator: 63,
+                },
+              },
+            ],
+          },
+        ])
+      })
+
+      it('should parse up and lift setters with cents and octave divisions', () => {
+        expect(strip(parser('(^:25c; /: 1/12ed)')).sequence.items).toEqual([
+          {
+            type: 'SetterGroup',
+            setters: [
+              {
+                type: 'SetUp',
+                value: {
+                  type: 'PitchCents',
+                  cents: 25,
+                },
+              },
+              {
+                type: 'Semicolon',
+              },
+              {
+                type: 'SetLift',
+                value: {
+                  type: 'PitchOctaveDivision',
+                  numerator: 1,
+                  denominator: 12,
+                  octaveSize: 2,
+                },
+              },
+            ],
+          },
+        ])
+      })
+
       it('should parse sequence with bms setter', () => {
         expect(strip(parser('(bms:100; bms: 999.2)')).sequence.items).toEqual([
           {
@@ -2051,7 +2109,7 @@ describe('grammar', () => {
       it('should error if setter is empty or not delimited properly', () => {
         expectParserErrorMessage(
           '()',
-          'Expected "al", "bms", "bpm", "coda", "d", "da", "dal", "div", "env", "fine", "key", "noise", "osc", "plot", "rl", "segno", "to", or integer but ")" found.',
+          'Expected "/", "^", "al", "bms", "bpm", "coda", "d", "da", "dal", "div", "env", "fine", "key", "noise", "osc", "plot", "rl", "segno", "to", or integer but ")" found.',
         )
         expectParserErrorMessage('(div:16;)', 'but ")" found.')
         expectParserErrorMessage('(div:16;;div:16)', 'but ";" found.')

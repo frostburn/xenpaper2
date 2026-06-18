@@ -25,7 +25,7 @@ const notationSections: SidebarSection[] = [
       {
         description: 'Upper-case nominals are followed by notes in lower-case an octave higher.',
         tune: `# Major pentatonic
-C D F G A c d f g a 'c-`,
+C D F G A c d f g a 'c`,
       },
       {
         description:
@@ -229,6 +229,29 @@ C D Alpd Betd F G Deld Epsd Bb c`,
 # Barbados[9]
 c d αd βd f g δd εd bb 'c
 `,
+      },
+    ],
+  },
+
+  {
+    title: 'Custom Ups or Lifts',
+    demos: [
+      {
+        description: 'The Ups-and-Downs inflection is customizable.',
+        tune: `# Make ups septimal
+(^: 64/63)
+# Down-minor is 6:7:9
+[\`A vC E]-- .
+# Up-major is 14:18:21
+[\`A ^C# E]-- .`,
+      },
+      {
+        description: 'By default a tempered lift is worth 5 ups, but can be configured separately.',
+        tune: `{311edo}
+# Make lifts septendecimal
+(/: 4\\311)
+# ~9:12:16:17
+[\`A D G /Ab]---`,
       },
     ],
   },

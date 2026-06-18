@@ -135,7 +135,7 @@ SetterGroup = "(" _ first:Setter rest:(Semicolon Setter)* _ ")" {
   for (const part of rest) setters.push(part[0], part[1]);
   return node('SetterGroup', { setters });
 }
-Setter = SetBpm / SetBms / SetSubdivision / SetOsc / SetNoise / SetEnv / SetKey / SetRulerRange / SetRulerPlot
+Setter = SetBpm / SetBms / SetSubdivision / SetUp / SetLift / SetOsc / SetNoise / SetEnv / SetKey / SetRulerRange / SetRulerPlot
 SetBpm = "bpm"i _ ":" _ bpm:Number { return node('SetBpm', { bpm }); }
 SetBms = "bms"i _ ":" _ bms:Number { return node('SetBms', { bms }); }
 SetSubdivision = ("div"i _ ":" _)? fraction:Fraction {
@@ -144,6 +144,9 @@ SetSubdivision = ("div"i _ ":" _)? fraction:Fraction {
     denominator: fraction.denominator,
   });
 }
+SetUp = "^" _ ":" _ value:SetterStep { return node('SetUp', { value }); }
+SetLift = "/" _ ":" _ value:SetterStep { return node('SetLift', { value }); }
+SetterStep = PitchCents / PitchOctaveDivision / PitchRatio
 SetOsc = "osc"i _ ":" _ osc:OscName { return node('SetOsc', { osc }); }
 OscName "oscillator name" = [a-zA-Z0-9\-]+ { return text().toLowerCase(); }
 SetNoise = "noise"i _ ":" _ noise:NoiseName { return node('SetNoise', { noise }); }

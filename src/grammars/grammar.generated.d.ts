@@ -205,6 +205,20 @@ export type SetSubdivisionType = NodeType<'SetSubdivision'> & {
   denominator: number
 }
 
+// up/down step
+
+export type UpLiftStepType = PitchRatioType | PitchCentsType | PitchOctaveDivisionType
+
+export type SetUpType = NodeType<'SetUp'> & {
+  value: UpLiftStepType
+}
+
+// lift/drop step
+
+export type SetLiftType = NodeType<'SetLift'> & {
+  value: UpLiftStepType
+}
+
 // osc
 
 export type SetOscType = NodeType<'SetOsc'> & {
@@ -268,6 +282,8 @@ export type SetterType =
   | SetBpmType
   | SetBmsType
   | SetSubdivisionType
+  | SetUpType
+  | SetLiftType
   | SetOscType
   | SetNoiseType
   | SetEnvType

@@ -18,6 +18,7 @@ import type {
   RatioChordPitchType,
   SetterType,
   DelimiterType,
+  UpLiftStepType,
   SequenceItemsType,
 } from './grammar.generated'
 
@@ -788,6 +789,27 @@ const setScale = (setScale: SetScaleType, context: Context): void => {
   throw new Error(`Unknown scale type "${type}"`)
 }
 
+const upLiftStepToCents = (name: string, value: UpLiftStepType): number => {
+  if (value.type === 'PitchRatio') {
+    const { numerator, denominator } = value
+    assertFinitePositive(`${name}.denominator`, denominator)
+    const ratio = numerator / denominator
+    limit(name, ratio, 0, 100)
+    return valueToCents(ratio)
+  }
+
+  if (value.type === 'PitchCents') {
+    const { cents } = value
+    limit(name, cents, -12000, 12000)
+    return cents
+  }
+
+  const { numerator, denominator, octaveSize } = value
+  assertFinitePositive(`${name}.denominator`, denominator)
+  assertFinitePositive(`${name}.octaveSize`, octaveSize)
+  return valueToCents(equaveDivisionToValue(numerator, denominator, octaveSize))
+}
+
 const setterToMosc = (setter: SetterType | DelimiterType, context: Context): MoscBeatItem[] => {
   const { type, delimiter } = setter
 
@@ -826,6 +848,16 @@ const setterToMosc = (setter: SetterType | DelimiterType, context: Context): Mos
     assertFinitePositive('SetSubdivision.denominator', normalizedDenominator)
     context.subdivision = normalizedDenominator / subdivision
     assertFinitePositive('context.subdivision', context.subdivision)
+    return []
+  }
+
+  if (type === 'SetUp') {
+    context.up = upLiftStepToCents('SetUp', setter.value)
+    return []
+  }
+
+  if (type === 'SetLift') {
+    context.lift = upLiftStepToCents('SetLift', setter.value)
     return []
   }
 
