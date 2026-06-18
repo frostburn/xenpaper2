@@ -144,8 +144,9 @@ SetSubdivision = ("div"i _ ":" _)? fraction:Fraction {
     denominator: fraction.denominator,
   });
 }
-SetUp = "^" _ ":" _ fraction:SlashFraction { return node('SetUp', fraction); }
-SetLift = "/" _ ":" _ fraction:SlashFraction { return node('SetLift', fraction); }
+SetUp = "^" _ ":" _ value:SetterStep { return node('SetUp', { value }); }
+SetLift = "/" _ ":" _ value:SetterStep { return node('SetLift', { value }); }
+SetterStep = PitchCents / PitchOctaveDivision / PitchRatio
 SetOsc = "osc"i _ ":" _ osc:OscName { return node('SetOsc', { osc }); }
 OscName "oscillator name" = [a-zA-Z0-9\-]+ { return text().toLowerCase(); }
 SetNoise = "noise"i _ ":" _ noise:NoiseName { return node('SetNoise', { noise }); }

@@ -108,12 +108,18 @@ describe('grammar to mosc score', () => {
   })
 
   it('applies up and lift setters to absolute pitches', () => {
-    const [customUp, customLift] = noteItems('(^:81/80) ^A (/:64/63) /A')
+    const [ratioUp, ratioLift, centsUp, divisionLift] = noteItems(
+      '(^:81/80) ^A (/:64/63) /A (^:25c) ^A (/:1/12ed) /A',
+    )
 
-    expect(customUp?.hz).toBeAround((440 * 81) / 80, 6)
-    expect(customUp?.label).toBe('^A♮')
-    expect(customLift?.hz).toBeAround((440 * 64) / 63, 6)
-    expect(customLift?.label).toBe('/A♮')
+    expect(ratioUp?.hz).toBeAround((440 * 81) / 80, 6)
+    expect(ratioUp?.label).toBe('^A♮')
+    expect(ratioLift?.hz).toBeAround((440 * 64) / 63, 6)
+    expect(ratioLift?.label).toBe('/A♮')
+    expect(centsUp?.hz).toBeAround(440 * Math.pow(2, 25 / 1200), 6)
+    expect(centsUp?.label).toBe('^A♮')
+    expect(divisionLift?.hz).toBeAround(440 * Math.pow(2, 1 / 12), 6)
+    expect(divisionLift?.label).toBe('/A♮')
   })
 
   it('tempers FJS inflections', () => {
@@ -1131,6 +1137,7 @@ describe('grammar numeric validation', () => {
     ['(bms:0) 0', 'SetBms.bms must be a finite positive number, got 0'],
     ['(^:1/0) ^A', 'SetUp.denominator must be a finite positive number, got 0'],
     ['(/:1/0) /A', 'SetLift.denominator must be a finite positive number, got 0'],
+    ['(^:12001c) ^A', 'SetUp must be between -12000 and 12000, got 12001'],
     ['{0edo} 0', 'EdoScale.divisions must be between 1 and 10000, got 0'],
     ['1/0', 'PitchRatio.denominator must be a finite positive number, got 0'],
     [String.raw`1\0`, 'PitchOctaveDivision.denominator must be a finite positive number, got 0'],
