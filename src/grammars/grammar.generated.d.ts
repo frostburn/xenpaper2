@@ -207,16 +207,16 @@ export type SetSubdivisionType = NodeType<'SetSubdivision'> & {
 
 // up/down step
 
+export type UpLiftStepType = PitchRatioType | PitchCentsType | PitchOctaveDivisionType
+
 export type SetUpType = NodeType<'SetUp'> & {
-  numerator: number
-  denominator: number
+  value: UpLiftStepType
 }
 
 // lift/drop step
 
 export type SetLiftType = NodeType<'SetLift'> & {
-  numerator: number
-  denominator: number
+  value: UpLiftStepType
 }
 
 // osc
