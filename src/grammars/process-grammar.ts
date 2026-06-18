@@ -803,6 +803,20 @@ const setterToMosc = (setter: SetterType | DelimiterType, context: Context): Mos
     return []
   }
 
+  if (type === 'SetUp') {
+    const { numerator, denominator } = setter
+    assertFinitePositive('SetUp.denominator', denominator)
+    context.up = valueToCents(numerator / denominator)
+    return []
+  }
+
+  if (type === 'SetLift') {
+    const { numerator, denominator } = setter
+    assertFinitePositive('SetLift.denominator', denominator)
+    context.lift = valueToCents(numerator / denominator)
+    return []
+  }
+
   if (type === 'SetOsc') {
     const { osc } = setter
     return [
