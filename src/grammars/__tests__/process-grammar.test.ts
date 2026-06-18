@@ -107,6 +107,15 @@ describe('grammar to mosc score', () => {
     expect(thirtyOneClassic?.label).toBe('A♮^31c')
   })
 
+  it('applies up and lift setters to absolute pitches', () => {
+    const [customUp, customLift] = noteItems('(^:81/80) ^A (/:64/63) /A')
+
+    expect(customUp?.hz).toBeAround((440 * 81) / 80, 6)
+    expect(customUp?.label).toBe('^A♮')
+    expect(customLift?.hz).toBeAround((440 * 64) / 63, 6)
+    expect(customLift?.label).toBe('/A♮')
+  })
+
   it('tempers FJS inflections', () => {
     const [third, powerOctave] = noteItems('{19edo}C#^5 A^109')
     expect(third?.hz).toBeAround(220 * Math.pow(2, 6 / 19), 6)
@@ -1120,6 +1129,8 @@ describe('grammar numeric validation', () => {
   it.each([
     ['(div:0) 0', 'SetSubdivision.subdivision must be a finite positive number, got 0'],
     ['(bms:0) 0', 'SetBms.bms must be a finite positive number, got 0'],
+    ['(^:1/0) ^A', 'SetUp.denominator must be a finite positive number, got 0'],
+    ['(/:1/0) /A', 'SetLift.denominator must be a finite positive number, got 0'],
     ['{0edo} 0', 'EdoScale.divisions must be between 1 and 10000, got 0'],
     ['1/0', 'PitchRatio.denominator must be a finite positive number, got 0'],
     [String.raw`1\0`, 'PitchOctaveDivision.denominator must be a finite positive number, got 0'],
