@@ -263,7 +263,7 @@ a {
   border-left: 3px solid transparent;
   display: block;
   width: 6rem;
-  padding: 0.5rem 0.75rem;
+  padding: 0.5rem 0;
   cursor: pointer;
   background: var(--xenpaper-bg);
   color: #ffffff;
