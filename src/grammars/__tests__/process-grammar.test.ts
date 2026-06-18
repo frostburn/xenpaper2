@@ -107,6 +107,12 @@ describe('grammar to mosc score', () => {
     expect(thirtyOneClassic?.label).toBe('A♮^31c')
   })
 
+  it('tempers FJS inflections', () => {
+    const [third, powerOctave] = noteItems('{19edo}C#^5 A^109')
+    expect(third?.hz).toBeAround(220 * Math.pow(2, 6 / 19), 6)
+    expect(powerOctave?.hz).toBeAround(220 * Math.pow(2, 20 / 19), 6)
+  })
+
   it('expands simple repeats before translating to score items', () => {
     expect(noteLabels('0 |: 1 2 :| 3')).toEqual([
       '0\\12  0.0c',
