@@ -145,10 +145,10 @@ const emit = defineEmits<{
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 4.25rem;
-    min-width: 4.25rem;
+    width: auto;
+    min-width: max-content;
     height: 3rem;
-    padding: 0.5rem;
+    padding: 0.5rem 0.75rem;
     font-size: 0.95rem;
     line-height: 1.1;
     white-space: nowrap;
