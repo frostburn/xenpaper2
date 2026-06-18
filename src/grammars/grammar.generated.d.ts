@@ -229,9 +229,12 @@ export type SetEnvType = NodeType<'SetEnv'> & {
 // key
 
 export type KeyTonicType = {
+  ups: number
+  lifts: number
   nominal: string
   greek: boolean
   accidentals: AccidentalType[]
+  inflections: InflectionType[]
 }
 
 export type KeyModeType =

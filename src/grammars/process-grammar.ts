@@ -14,6 +14,7 @@ import type {
   PitchType,
   PitchDegreeType,
   AccidentalType,
+  InflectionType,
   RatioChordPitchType,
   SetterType,
   DelimiterType,
@@ -101,16 +102,22 @@ export const pitchToRatio = (pitch: PitchType, context: Context): number => {
 
   if (type === 'PitchAbsolute') {
     const { ups, lifts, nominal, accidentals, inflections } = pitch.value
+    const keySignature = applyKeySignature(nominal, accidentals, context)
+    const effectiveInflections = [...keySignature.inflections, ...inflections]
     const monzo = applyFjsInflections(
-      nominalToMonzo(nominal, applyKeySignature(nominal, accidentals, context)).slice(),
-      inflections,
+      nominalToMonzo(nominal, keySignature.accidentals).slice(),
+      effectiveInflections,
     )
     // Compute power-user mapping on the fly
     let tail = 0
     for (let i = mapping.length; i < monzo.length; ++i) {
       tail += Math.round(PRIME_CENTS[i]! / up) * up * monzo[i]!
     }
-    const cents = dot(mapping, monzo) + ups * up + lifts * lift + tail
+    const cents =
+      dot(mapping, monzo) +
+      (ups + keySignature.ups) * up +
+      (lifts + keySignature.lifts) * lift +
+      tail
     return centsToValue(cents) * octaveMulti
   }
 
@@ -223,13 +230,16 @@ export const pitchToLabel = (pitch: PitchType, context: Context): string => {
 
   if (type === 'PitchAbsolute') {
     const { ups, lifts, nominal, accidentals, inflections } = pitch.value
-    const effectiveAccidentals = applyKeySignature(nominal, accidentals, context)
+    const keySignature = applyKeySignature(nominal, accidentals, context)
+    const effectiveUps = ups + keySignature.ups
+    const effectiveLifts = lifts + keySignature.lifts
+    const effectiveInflections = [...keySignature.inflections, ...inflections]
     return (
-      (ups > 0 ? '^' : 'v').repeat(Math.abs(ups)) +
-      (lifts > 0 ? '/' : '\\').repeat(Math.abs(lifts)) +
+      (effectiveUps > 0 ? '^' : 'v').repeat(Math.abs(effectiveUps)) +
+      (effectiveLifts > 0 ? '/' : '\\').repeat(Math.abs(effectiveLifts)) +
       normalizeNominal(nominal) +
-      normalizeAccidentals(effectiveAccidentals).join('') +
-      inflections
+      normalizeAccidentals(keySignature.accidentals).join('') +
+      effectiveInflections
         .map(({ type, value, flavor }) => `${type === 'superscript' ? '^' : 'v'}${value}${flavor}`)
         .join('')
     )
@@ -263,19 +273,35 @@ type Context = {
   up: number
   lift: number
   mapping: number[]
-  keySignature: Map<string, AccidentalType[]>
+  keySignature: Map<string, KeySignatureAdjustment>
+}
+
+type KeySignatureAdjustment = {
+  ups: number
+  lifts: number
+  accidentals: AccidentalType[]
+  inflections: InflectionType[]
+}
+
+const EMPTY_KEY_SIGNATURE_ADJUSTMENT: KeySignatureAdjustment = {
+  ups: 0,
+  lifts: 0,
+  accidentals: [],
+  inflections: [],
 }
 
 const applyKeySignature = (
   nominal: string,
   accidentals: AccidentalType[],
   context: Context,
-): AccidentalType[] => {
+): KeySignatureAdjustment => {
+  const signature =
+    context.keySignature.get(nominal.toUpperCase()) ?? EMPTY_KEY_SIGNATURE_ADJUSTMENT
   if (accidentals.length) {
-    return accidentals
+    return { ...signature, accidentals }
   }
 
-  return context.keySignature.get(nominal.toUpperCase()) ?? accidentals
+  return signature
 }
 
 const times: [number, number][] = []

@@ -152,7 +152,7 @@ SetEnv = "env"i _ ":" _ vals:EnvValues {
   return node('SetEnv', vals);
 }
 SetKey = "key"i _ ":" _ tonic:KeyTonic _ mode:KeyMode { return node('SetKey', { tonic, mode }); }
-KeyTonic = nominal:(GreekNominal / LatinNominal) accidentals:Accidental* { return { ...nominal, accidentals }; }
+KeyTonic = updowns:UpsAndDowns nominal:(GreekNominal / LatinNominal) accidentals:Accidental* inflections:Inflection* { return { ...updowns, ...nominal, accidentals, inflections }; }
 KeyMode
   = "major"i { return "ionian"; }
   / "ionian"i { return "ionian"; }
