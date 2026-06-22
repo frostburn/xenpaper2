@@ -67,6 +67,28 @@ const noteLabels = (input: string): string[] => noteItems(input).map((item) => i
 const noteLabelDurations = (input: string): Array<[string, number]> =>
   noteItems(input).map((item) => [item.label, item.timeEnd - item.time])
 
+describe('drone syntax', () => {
+  it('holds a drone note until a new drone starts', () => {
+    expect(noteItems('(drone: 0) 1 2 (drone: 3) 4')).toMatchObject([
+      { label: '0\\12  0.0c', time: 0, timeEnd: 1 },
+      { label: '1\\12  100.0c', time: 0, timeEnd: 0.5 },
+      { label: '2\\12  200.0c', time: 0.5, timeEnd: 1 },
+      { label: '3\\12  300.0c', time: 1, timeEnd: 1.5 },
+      { label: '4\\12  400.0c', time: 1, timeEnd: 1.5 },
+    ])
+  })
+
+  it('holds drone chords until off or end of input', () => {
+    expect(noteItems('(drone: [0,4]) 1 (drone: off) 2 (drone: 3)')).toMatchObject([
+      { label: '0\\12  0.0c', time: 0, timeEnd: 0.5 },
+      { label: '4\\12  400.0c', time: 0, timeEnd: 0.5 },
+      { label: '1\\12  100.0c', time: 0, timeEnd: 0.5 },
+      { label: '2\\12  200.0c', time: 0.5, timeEnd: 1 },
+      { label: '3\\12  300.0c', time: 1, timeEnd: 1 },
+    ])
+  })
+})
+
 describe('grammar to mosc score', () => {
   it('applies FJS inflections to absolute pitch ratios', () => {
     const [

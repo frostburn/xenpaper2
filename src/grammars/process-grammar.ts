@@ -12,6 +12,7 @@ import type {
   SampleRateNoteType,
   ChordType,
   RatioChordType,
+  DroneType,
   TailType,
   PitchType,
   PitchAbsoluteType,
@@ -701,6 +702,47 @@ const chordToMosc = (
   return pitchTypes.concat(ratioPitchTypes)
 }
 
+const pointTime = (
+  item: NoteType | SampleRateNoteType | ChordType | RatioChordType,
+  context: Context,
+): [number, number] => {
+  const arr: [number, number] = [context.time, context.time]
+  times.push(arr)
+  item.time = arr
+  return arr
+}
+
+const playableToMoscAtCurrentTime = (
+  item: NoteType | SampleRateNoteType | ChordType | RatioChordType,
+  context: Context,
+): MoscBeatPlayableNote[] => {
+  const startTime = context.time
+  const originalTail = item.tail
+  item.tail = null
+  const moscItems =
+    item.type === 'Note'
+      ? noteToMosc(item, context)
+      : item.type === 'SampleRateNote'
+        ? sampleRateNoteToMosc(item, context)
+        : chordToMosc(item, context)
+  item.tail = originalTail
+  context.time = startTime
+  return moscItems.map((moscItem) => ({
+    ...moscItem,
+    time: startTime,
+    timeEnd: startTime,
+  }))
+}
+
+const droneToMosc = (drone: DroneType, context: Context): MoscBeatPlayableNote[] => {
+  if (!drone.value) {
+    return []
+  }
+
+  pointTime(drone.value, context)
+  return playableToMoscAtCurrentTime(drone.value, context)
+}
+
 const setScale = (setScale: SetScaleType, context: Context): void => {
   const { scale } = setScale
   const { type } = scale
@@ -1091,6 +1133,18 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
   }
 
   const moscItems: MoscBeatItem[] = []
+  let activeDroneItems: MoscBeatPlayableNote[] = []
+  let activeDroneTimes: [number, number][] = []
+  const stopActiveDrone = (): void => {
+    activeDroneItems.forEach((droneItem) => {
+      droneItem.timeEnd = context.time
+    })
+    activeDroneTimes.forEach((time) => {
+      time[1] = context.time
+    })
+    activeDroneItems = []
+    activeDroneTimes = []
+  }
   let initialRulerState: BuildingInitialRulerState = {
     plots: [],
   }
@@ -1113,6 +1167,17 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
       type === 'AlCoda'
     ) {
       // do nothing
+      return
+    }
+
+    if (type === 'Drone') {
+      stopActiveDrone()
+      activeDroneItems = droneToMosc(item, context)
+      activeDroneTimes = item.value?.time ? [item.value.time] : []
+      moscItems.push(...activeDroneItems)
+      if (item.value?.type === 'Note' || item.value?.type === 'RatioChord') {
+        initialRulerState = rulerStateCaptureRootHz(initialRulerState, context)
+      }
       return
     }
 
@@ -1170,6 +1235,8 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
 
     throw new Error(`Unknown sequence item "${type}"`)
   })
+
+  stopActiveDrone()
 
   const completeInitialRulerState = rulerStateCaptureRootHz(initialRulerState, context)
 

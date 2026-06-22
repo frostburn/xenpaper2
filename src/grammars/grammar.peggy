@@ -7,7 +7,7 @@ Start = seq:Sequence _ {
 }
 Sequence = items:ItemList { return node('Sequence', { items }); }
 ItemList = head:Item tail:(_ Item)* { return [head, ...tail.map(([,i]) => i)]; } / '' { return []; }
-Item = Comment / MusicalControlFlow / SetterGroup / SetRoot / SetScale / RatioChordItem / SampleRateNote / Note / Rest / Chord / RepeatEndStart / RepeatStart / RepeatEnd / RepeatEndingStart / BarLine / Whitespace
+Item = Comment / MusicalControlFlow / Drone / SetterGroup / SetRoot / SetScale / RatioChordItem / SampleRateNote / Note / Rest / Chord / RepeatEndStart / RepeatStart / RepeatEnd / RepeatEndingStart / BarLine / Whitespace
 Note = pitch:Pitch tail:Hold? {
   return node('Note', { pitch, tail });
 }
@@ -130,6 +130,9 @@ MusicalControlFlow =
 DaCapoToken = "d"i "."? _ "c"i "."? / "da"i _ "capo"i
 DalSegnoToken = "d"i "."? _ "s"i "."? / "dal"i _ "segno"i
 Semicolon = _ ";" _ { return node('Semicolon', { delimiter: true }); }
+Drone = "(" _ "drone"i _ ":" _ value:("off"i { return null; } / RatioChordItem / SampleRateNote / Note / Chord) _ ")" {
+  return node('Drone', { value });
+}
 SetterGroup = "(" _ first:Setter rest:(Semicolon Setter)* _ ")" {
   const setters = [first];
   for (const part of rest) setters.push(part[0], part[1]);

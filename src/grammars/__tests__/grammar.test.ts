@@ -1984,6 +1984,47 @@ describe('grammar', () => {
         ])
       })
 
+      it('should parse sequence with drone notes, chords, and off', () => {
+        expect(
+          strip(parser('(drone: 0)(drone: [0, 4])(drone: 4:5)(drone: off)')).sequence.items,
+        ).toEqual([
+          {
+            type: 'Drone',
+            value: {
+              type: 'Note',
+              pitch: {
+                type: 'Pitch',
+                value: {
+                  type: 'PitchDegree',
+                  degree: 0,
+                },
+              },
+              tail: null,
+            },
+          },
+          {
+            type: 'Drone',
+            value: {
+              type: 'Chord',
+              pitches: expect.any(Array),
+              tail: null,
+            },
+          },
+          {
+            type: 'Drone',
+            value: {
+              type: 'RatioChord',
+              pitches: expect.any(Array),
+              tail: null,
+            },
+          },
+          {
+            type: 'Drone',
+            value: null,
+          },
+        ])
+      })
+
       it('should parse sequence with osc setter', () => {
         expect(strip(parser('(osc:sine; osc: saw4)')).sequence.items).toEqual([
           {
@@ -2171,7 +2212,7 @@ describe('grammar', () => {
       it('should error if setter is empty or not delimited properly', () => {
         expectParserErrorMessage(
           '()',
-          'Expected "/", "^", "al", "bms", "bpm", "coda", "d", "da", "dal", "div", "env", "fine", "key", "noise", "osc", "plot", "rl", "segno", "to", or integer but ")" found.',
+          'Expected "/", "^", "al", "bms", "bpm", "coda", "d", "da", "dal", "div", "drone", "env", "fine", "key", "noise", "osc", "plot", "rl", "segno", "to", or integer but ")" found.',
         )
         expectParserErrorMessage('(div:16;)', 'but ")" found.')
         expectParserErrorMessage('(div:16;;div:16)', 'but ";" found.')

@@ -142,6 +142,10 @@ export type RatioChordType = NodeType<'RatioChord'> & {
   tail: TailType | null
 }
 
+export type DroneType = NodeType<'Drone'> & {
+  value: NoteType | SampleRateNoteType | ChordType | RatioChordType | null
+}
+
 //
 // scales
 //
@@ -385,6 +389,7 @@ export type SequenceItemsType =
   | ChordType
   | RestType
   | SetterGroupType
+  | DroneType
   | SetScaleType
   | SetRootType
   | CommentType
