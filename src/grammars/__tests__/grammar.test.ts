@@ -1879,9 +1879,8 @@ describe('grammar', () => {
 
       it('should parse sequence with root setter', () => {
         expect(
-          strip(
-            parser('{r6}{r7/5}{r300hz}{r400HZ}{r261.6256Hz as C}{r216Hz as `A}{r as `A}'),
-          ).sequence.items,
+          strip(parser('{r6}{r7/5}{r300hz}{r400HZ}{r261.6256Hz as C}{r216Hz as `A}{r as `A}'))
+            .sequence.items,
         ).toEqual([
           {
             type: 'SetRoot',
