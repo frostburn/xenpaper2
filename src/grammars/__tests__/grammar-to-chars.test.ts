@@ -41,6 +41,28 @@ describe('grammarToChars', () => {
     ])
   })
 
+  it('highlights the inversion prefix on standalone ratio chords', () => {
+    expect(colors(grammarToChars(parse('/6:5:4')))).toEqual([
+      'delimiter',
+      'pitch',
+      'delimiter',
+      'pitch',
+      'delimiter',
+      'pitch',
+    ])
+  })
+
+  it('highlights the inversion prefix inside square bracket chords', () => {
+    expect(colors(grammarToChars(parse('[/6:5]')))).toEqual([
+      'chord',
+      'delimiter',
+      'pitch',
+      'delimiter',
+      'pitch',
+      'chord',
+    ])
+  })
+
   it('keeps all repeated play times for characters inside repeats', () => {
     const ast = parse('|: 0 :|')
     processGrammar(ast)

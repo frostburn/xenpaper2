@@ -685,6 +685,9 @@ const chordToMosc = (
     preserveFirstRatioLabel = false,
   ): void => {
     const firstDenominator = ratioChordPitches.find(isRatioChordPitchType)?.pitch
+    const inverted = ratioChordPitches.some(
+      (pitch) => isRatioChordPitchType(pitch) && pitch.inverted,
+    )
 
     if (firstDenominator === undefined) {
       return
@@ -708,8 +711,9 @@ const chordToMosc = (
     ): { numerator: number; denominator: number } | null => {
       if (!basePitchFraction) return null
 
-      const nextNumerator = basePitchFraction.numerator * numerator
-      const nextDenominator = basePitchFraction.denominator * firstDenominator
+      const nextNumerator = basePitchFraction.numerator * (inverted ? firstDenominator : numerator)
+      const nextDenominator =
+        basePitchFraction.denominator * (inverted ? numerator : firstDenominator)
       if (preserveLabel) {
         return {
           numerator: nextNumerator,
@@ -729,10 +733,12 @@ const chordToMosc = (
         assertFinitePositive('Ratio numerator', numerator)
 
         if (colons === 2) {
-          while (lastNumerator < numerator - 1) {
-            lastNumerator++
+          const step = Math.sign(numerator - lastNumerator)
+          while (step !== 0 && lastNumerator + step !== numerator) {
+            lastNumerator += step
             addRatioPitchType(
-              (basePitchRatio * lastNumerator) / firstDenominator,
+              basePitchRatio *
+                (inverted ? firstDenominator / lastNumerator : lastNumerator / firstDenominator),
               createFraction(lastNumerator, preserveFirstRatioLabel),
             )
           }
@@ -740,7 +746,8 @@ const chordToMosc = (
 
         if (!isFirstPitch || !hasExplicitPreviousPitch) {
           addRatioPitchType(
-            (basePitchRatio * numerator) / firstDenominator,
+            basePitchRatio *
+              (inverted ? firstDenominator / numerator : numerator / firstDenominator),
             createFraction(numerator, preserveFirstRatioLabel),
           )
         }
@@ -938,14 +945,19 @@ const setScale = (setScale: SetScaleType, context: Context): void => {
     context.scaleLabels = []
 
     let firstDenominator = -1
+    const inverted = pitches.some((pitch) => pitch.type === 'RatioChordPitch' && pitch.inverted)
     let colons = 0
     let lastNumerator = 0
 
     const addRatio = (numerator: number): void => {
-      const ratio = numerator / firstDenominator
+      const ratio = inverted ? firstDenominator / numerator : numerator / firstDenominator
       context.scale.push(ratio)
       const centsLabel = ratioToCentsLabel(ratio, 2)
-      context.scaleLabels.push(`${numerator}/${firstDenominator}  ${centsLabel}`)
+      context.scaleLabels.push(
+        inverted
+          ? `${firstDenominator}/${numerator}  ${centsLabel}`
+          : `${numerator}/${firstDenominator}  ${centsLabel}`,
+      )
     }
 
     pitches.forEach((pitch) => {
@@ -963,8 +975,9 @@ const setScale = (setScale: SetScaleType, context: Context): void => {
       assertFinitePositive('Ratio numerator', numerator)
 
       if (colons === 2) {
-        while (lastNumerator < numerator - 1) {
-          lastNumerator++
+        const step = Math.sign(numerator - lastNumerator)
+        while (step !== 0 && lastNumerator + step !== numerator) {
+          lastNumerator += step
           addRatio(lastNumerator)
         }
       }

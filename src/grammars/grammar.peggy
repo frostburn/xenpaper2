@@ -79,7 +79,12 @@ PitchGroup = first:Pitch rest:(Whitespace Pitch)* {
   return result;
 }
 ChordPitch = Pitch / SampleRatePitch
-ChordRatioChordPitches = &(Int _ ":" !"|") pitches:RatioChordPitches { return pitches; }
+ChordRatioChordPitches = &("/"? Int _ ":" !"|") inversionPrefix:InversionPrefix? pitches:RatioChordPitches {
+  return [
+    ...(inversionPrefix ? [inversionPrefix] : []),
+    ...pitches.map((pitch) => pitch.type === 'RatioChordPitch' && inversionPrefix ? { ...pitch, inverted: true } : pitch),
+  ];
+}
 ChordPitchElement = ChordRatioChordPitches / ChordPitch
 ChordPitchSeparator = Whitespace / &ChordPitchElement { return node('Whitespace', { delimiter: true }); }
 ChordPitchGroup = first:ChordPitchElement rest:(ChordPitchSeparator ChordPitchElement)* {
@@ -89,6 +94,7 @@ ChordPitchGroup = first:ChordPitchElement rest:(ChordPitchSeparator ChordPitchEl
   }
   return result;
 }
+InversionPrefix = "/" { return node('InversionPrefix', { delimiter: true }); }
 RatioChordPitch = n:Int { return node('RatioChordPitch', { pitch: n }); }
 Colon = ":" { return node('Colon', { delimiter: true }); }
 RatioChordPitches = first:RatioChordPitch rest:((_ Colon _)+ RatioChordPitch)* {
@@ -100,10 +106,14 @@ RatioChordPitches = first:RatioChordPitch rest:((_ Colon _)+ RatioChordPitch)* {
   }
   return result;
 }
-RatioChord = pitches:RatioChordPitches tail:Hold? {
-  return node('RatioChord', { pitches, tail });
+RatioChord = inversionPrefix:InversionPrefix? pitches:RatioChordPitches tail:Hold? {
+  return node('RatioChord', {
+    ...(inversionPrefix ? { inverted: true, inversionPrefix } : {}),
+    pitches: pitches.map((pitch) => pitch.type === 'RatioChordPitch' && inversionPrefix ? { ...pitch, inverted: true } : pitch),
+    tail,
+  });
 }
-RatioChordItem = &(Int _ ":" !"|") rc:RatioChord { return rc; }
+RatioChordItem = &("/"? Int _ ":" !"|") rc:RatioChord { return rc; }
 Chord = "[" _ pitches:ChordPitchGroup _ "]" tail:Hold? {
   return node('Chord', { pitches, tail });
 }
@@ -191,8 +201,12 @@ EdoScale = divisions:Int _ "ed"i "o"i? _ octaveSize:OctaveSize? {
 }
 PythagoreanScale = "pythagorean"i { return node('PythagoreanScale') };
 ScaleOctaveMarker = "'" { return node('ScaleOctaveMarker'); }
-RatioChordScale = &(Int _ ":") pitches:RatioChordPitches _ scaleOctaveMarker:ScaleOctaveMarker? {
-  return node('RatioChordScale', { pitches, scaleOctaveMarker });
+RatioChordScale = &("/"? Int _ ":") inversionPrefix:InversionPrefix? pitches:RatioChordPitches _ scaleOctaveMarker:ScaleOctaveMarker? {
+  return node('RatioChordScale', {
+    ...(inversionPrefix ? { inverted: true, inversionPrefix } : {}),
+    pitches: pitches.map((pitch) => pitch.type === 'RatioChordPitch' && inversionPrefix ? { ...pitch, inverted: true } : pitch),
+    scaleOctaveMarker,
+  });
 }
 PitchGroupScalePrefix = p:"m"i _ {
   return node('PitchGroupScalePrefix', { prefix: p.toLowerCase() });
