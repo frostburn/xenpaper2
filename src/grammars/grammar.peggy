@@ -193,7 +193,7 @@ RootNominalPrefix = _ "as"i _
 RootNominalValue = octave:OctaveModifier? nominal:PitchAbsolute {
   return { ...nominal, octave: octave?.octave ?? 0, location: location() };
 }
-SetScale = "{" _ scale:(EdoScale / PythagoreanScale / RatioChordScale / PitchGroupScale) _ "}" {
+SetScale = "{" _ scale:(EdoScale / PythagoreanScale / PitchGroupScale) _ "}" {
   return node('SetScale', { scale });
 }
 EdoScale = divisions:Int _ "ed"i "o"i? _ octaveSize:OctaveSize? {
@@ -201,17 +201,10 @@ EdoScale = divisions:Int _ "ed"i "o"i? _ octaveSize:OctaveSize? {
 }
 PythagoreanScale = "pythagorean"i { return node('PythagoreanScale') };
 ScaleOctaveMarker = "'" { return node('ScaleOctaveMarker'); }
-RatioChordScale = &("/"? Int _ ":") inversionPrefix:InversionPrefix? pitches:RatioChordPitches _ scaleOctaveMarker:ScaleOctaveMarker? {
-  return node('RatioChordScale', {
-    ...(inversionPrefix ? { inverted: true, inversionPrefix } : {}),
-    pitches: pitches.map((pitch) => pitch.type === 'RatioChordPitch' && inversionPrefix ? { ...pitch, inverted: true } : pitch),
-    scaleOctaveMarker,
-  });
-}
 PitchGroupScalePrefix = p:"m"i _ {
   return node('PitchGroupScalePrefix', { prefix: p.toLowerCase() });
 }
-PitchGroupScale = pitchGroupScalePrefix:PitchGroupScalePrefix? pitches:PitchGroup _ scaleOctaveMarker:ScaleOctaveMarker? {
+PitchGroupScale = pitchGroupScalePrefix:PitchGroupScalePrefix? pitches:ChordPitchGroup _ scaleOctaveMarker:ScaleOctaveMarker? {
   return node('PitchGroupScale', {
     pitchGroupScalePrefix,
     pitches,

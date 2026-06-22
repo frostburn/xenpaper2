@@ -9,6 +9,7 @@ export type NodeType<Type extends string = string, Delimiter extends boolean = f
 
 export type DelimiterType =
   | NodeType<'Colon', true>
+  | NodeType<'InversionPrefix', true>
   | NodeType<'Semicolon', true>
   | NodeType<'BarLine', true>
   | NodeType<'Whitespace', true>
@@ -168,14 +169,7 @@ export type PitchGroupScalePrefixType = NodeType<'PitchGroupScalePrefix'> & {
 
 export type PitchGroupScaleType = NodeType<'PitchGroupScale'> & {
   pitchGroupScalePrefix: PitchGroupScalePrefixType | null
-  pitches: PitchGroupType
-  scaleOctaveMarker: ScaleOctaveMarkerType | null
-}
-
-export type RatioChordScaleType = NodeType<'RatioChordScale'> & {
-  inverted?: boolean
-  inversionPrefix?: DelimiterType
-  pitches: Array<RatioChordPitchType | DelimiterType>
+  pitches: Array<RatioChordPitchType | PitchType | SampleRateNoteType | DelimiterType>
   scaleOctaveMarker: ScaleOctaveMarkerType | null
 }
 
@@ -184,7 +178,7 @@ export type RatioChordScaleType = NodeType<'RatioChordScale'> & {
 //
 
 export type SetScaleType = NodeType<'SetScale'> & {
-  scale: EdoScaleType | PythagoreanScaleType | RatioChordScaleType | PitchGroupScaleType
+  scale: EdoScaleType | PythagoreanScaleType | PitchGroupScaleType
 }
 
 export type RootNominalType = PitchAbsoluteType & {
