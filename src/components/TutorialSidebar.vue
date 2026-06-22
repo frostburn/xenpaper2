@@ -116,11 +116,6 @@ const tutorialSections: SidebarSection[] = [
         description: 'Root changes can also switch octaves for a time.',
         tune: "4 0-{r'0}4 0-{r`0}4 0-",
       },
-      {
-        description: 'Root changes can associate a frequency with a nominal using “as”.',
-        tune: `{r261.6256Hz as C} C E G C-
-{r as C} C E G C-`,
-      },
     ],
   },
   {
