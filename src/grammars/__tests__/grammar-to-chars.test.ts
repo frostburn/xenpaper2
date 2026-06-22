@@ -151,6 +151,27 @@ describe('grammarToChars', () => {
     ])
   })
 
+  it('syntax-highlights octave modifiers on root nominations as scale characters', () => {
+    const chars = grammarToChars(parse('{r216Hz as `A}'))
+
+    expect(colors(chars)).toEqual([
+      'scaleGroup',
+      'scaleGroup',
+      'scale',
+      'scale',
+      'scale',
+      'scale',
+      'scale',
+      'scaleGroup',
+      'scaleGroup',
+      'scaleGroup',
+      'scaleGroup',
+      'scale',
+      'scale',
+      'scaleGroup',
+    ])
+  })
+
   it('highlights noise setters like osc setters', () => {
     expect(colors(grammarToChars(parse('(noise:white)')))).toEqual(
       colors(grammarToChars(parse('(osc:slender)'))),
