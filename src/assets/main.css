@@ -170,7 +170,7 @@ a {
 }
 
 .source-character.active {
-  color: #ffffff;
+  color: var(--xenpaper-text);
   transition: color 0s linear;
 }
 
@@ -188,31 +188,31 @@ a {
 }
 
 .highlight-invalidPitch {
-  color: #e57373;
+  color: var(--xenpaper-light-red);
 }
 
 .highlight-invalidAlternatePitch {
-  color: #c52373;
+  color: var(--xenpaper-pink);
 }
 
 .highlight-scaleGroup {
-  color: #94472f;
+  color: var(--xenpaper-brown);
 }
 
 .highlight-scale {
-  color: #ff541e;
+  color: var(--xenpaper-orange);
 }
 
 .highlight-setterGroup {
-  color: #821361;
+  color: var(--xenpaper-purple);
 }
 
 .highlight-setter {
-  color: #d61ba4;
+  color: var(--xenpaper-magenta);
 }
 
 .highlight-comment {
-  color: #ffffff;
+  color: var(--xenpaper-text);
 }
 
 .highlight-commentStart {
@@ -221,20 +221,20 @@ a {
 
 .highlight-error,
 .highlight-errorMessage {
-  color: #cc0000;
+  color: var(--xenpaper-red);
 }
 
 .highlight-unknown {
-  color: #a490b3;
+  color: var(--xenpaper-lavender);
 }
 
 .playback-error {
   flex: 0 0 auto;
   margin: 0.75rem 1rem 1rem 2rem;
   padding: 0.75rem 1rem;
-  border-left: 3px solid #cc0000;
+  border-left: 3px solid var(--xenpaper-red);
   background: var(--xenpaper-bg-light);
-  color: #ff541e;
+  color: var(--xenpaper-orange);
   font-family: var(--xenpaper-font-mono);
   overflow-wrap: anywhere;
 }
@@ -274,7 +274,7 @@ a {
   padding: 0.5rem 0;
   cursor: pointer;
   background: var(--xenpaper-bg);
-  color: #ffffff;
+  color: var(--xenpaper-text);
   outline: none;
   font-family: var(--xenpaper-font-mono);
   font-size: 1.1rem;
