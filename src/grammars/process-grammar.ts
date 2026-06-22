@@ -568,24 +568,6 @@ const isRatioChordPitchType = (pitch: ChordPitchType): pitch is RatioChordPitchT
   return pitch.type === 'RatioChordPitch'
 }
 
-const lcm = (a: number, b: number): number => (a * b) / gcd(a, b)
-
-const normalizeRatioChordPitches = (
-  ratioChordPitches: Array<RatioChordPitchType | DelimiterType>,
-): Array<RatioChordPitchType | DelimiterType> => {
-  if (!ratioChordPitches.some((pitch) => isRatioChordPitchType(pitch) && pitch.inverted)) {
-    return ratioChordPitches
-  }
-
-  const commonNumerator = ratioChordPitches
-    .filter(isRatioChordPitchType)
-    .reduce((acc, pitch) => lcm(acc, pitch.pitch), 1)
-
-  return ratioChordPitches.map((pitch) =>
-    isRatioChordPitchType(pitch) ? { ...pitch, pitch: commonNumerator / pitch.pitch } : pitch,
-  )
-}
-
 const isSampleRateNoteType = (pitch: ChordPitchType): pitch is SampleRateNoteType => {
   return pitch.type === 'SampleRateNote'
 }
@@ -702,8 +684,10 @@ const chordToMosc = (
     hasExplicitPreviousPitch: boolean,
     preserveFirstRatioLabel = false,
   ): void => {
-    ratioChordPitches = normalizeRatioChordPitches(ratioChordPitches)
     const firstDenominator = ratioChordPitches.find(isRatioChordPitchType)?.pitch
+    const inverted = ratioChordPitches.some(
+      (pitch) => isRatioChordPitchType(pitch) && pitch.inverted,
+    )
 
     if (firstDenominator === undefined) {
       return
@@ -727,8 +711,8 @@ const chordToMosc = (
     ): { numerator: number; denominator: number } | null => {
       if (!basePitchFraction) return null
 
-      const nextNumerator = basePitchFraction.numerator * numerator
-      const nextDenominator = basePitchFraction.denominator * firstDenominator
+      const nextNumerator = basePitchFraction.numerator * (inverted ? firstDenominator : numerator)
+      const nextDenominator = basePitchFraction.denominator * (inverted ? numerator : firstDenominator)
       if (preserveLabel) {
         return {
           numerator: nextNumerator,
@@ -748,10 +732,12 @@ const chordToMosc = (
         assertFinitePositive('Ratio numerator', numerator)
 
         if (colons === 2) {
-          while (lastNumerator < numerator - 1) {
-            lastNumerator++
+          const step = Math.sign(numerator - lastNumerator)
+          while (step !== 0 && lastNumerator + step !== numerator) {
+            lastNumerator += step
             addRatioPitchType(
-              (basePitchRatio * lastNumerator) / firstDenominator,
+              basePitchRatio *
+                (inverted ? firstDenominator / lastNumerator : lastNumerator / firstDenominator),
               createFraction(lastNumerator, preserveFirstRatioLabel),
             )
           }
@@ -759,7 +745,8 @@ const chordToMosc = (
 
         if (!isFirstPitch || !hasExplicitPreviousPitch) {
           addRatioPitchType(
-            (basePitchRatio * numerator) / firstDenominator,
+            basePitchRatio *
+              (inverted ? firstDenominator / numerator : numerator / firstDenominator),
             createFraction(numerator, preserveFirstRatioLabel),
           )
         }
