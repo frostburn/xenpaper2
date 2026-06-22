@@ -133,7 +133,6 @@ export const pitchToRatio = (pitch: PitchType, context: Context): number => {
   }
 
   if (type === 'PitchAbsolute') {
-    annotatePitchStepHighlight(pitch, context)
     const absolutePitch = absolutePitchToMonzo(pitch.value, pitch.octave?.octave ?? 0, context)
     const monzo = sub(absolutePitch.monzo, rootNominal.monzo)
     // Compute power-user mapping on the fly
@@ -141,8 +140,14 @@ export const pitchToRatio = (pitch: PitchType, context: Context): number => {
     for (let i = mapping.length; i < monzo.length; ++i) {
       tail += Math.round(PRIME_CENTS[i]! / stepSize) * monzo[i]!
     }
+
+    const steps = dot(mapping, monzo) + tail
+    const annotatedPitch = pitch as PitchType & { outOfIntegerSteps?: boolean }
+    annotatedPitch.outOfIntegerSteps =
+      context.mappingIsIntegerSteps && Math.abs(steps - Math.round(steps)) > INTEGER_STEP_EPSILON
+
     const cents =
-      (dot(mapping, monzo) + tail) * stepSize +
+      steps * stepSize +
       (absolutePitch.ups - rootNominal.ups) * up +
       (absolutePitch.lifts - rootNominal.lifts) * lift
     return centsToValue(cents)
@@ -288,31 +293,6 @@ export const pitchToLabel = (pitch: PitchType, context: Context): string => {
 }
 
 const INTEGER_STEP_EPSILON = 1e-8
-
-const absolutePitchToIntegerSteps = (pitch: PitchType, context: Context): number | undefined => {
-  if (!context.mappingIsIntegerSteps || pitch.value.type !== 'PitchAbsolute') return undefined
-
-  const absolutePitch = absolutePitchToMonzo(pitch.value, pitch.octave?.octave ?? 0, context)
-  const monzo = sub(absolutePitch.monzo, context.rootNominal.monzo)
-  let tail = 0
-  for (let i = context.mapping.length; i < monzo.length; ++i) {
-    tail += Math.round(PRIME_CENTS[i]! / context.stepSize) * monzo[i]!
-  }
-
-  return (
-    dot(context.mapping, monzo) +
-    tail +
-    (absolutePitch.ups - context.rootNominal.ups) * (context.up / context.stepSize) +
-    (absolutePitch.lifts - context.rootNominal.lifts) * (context.lift / context.stepSize)
-  )
-}
-
-const annotatePitchStepHighlight = (pitch: PitchType, context: Context): void => {
-  const steps = absolutePitchToIntegerSteps(pitch, context)
-  const annotatedPitch = pitch as PitchType & { outOfIntegerSteps?: boolean }
-  annotatedPitch.outOfIntegerSteps =
-    steps !== undefined && Math.abs(steps - Math.round(steps)) > INTEGER_STEP_EPSILON
-}
 
 const edoToLabels = (edoSize: number, ratios: number[], octaveSize: number): string[] => {
   const labels: string[] = []
