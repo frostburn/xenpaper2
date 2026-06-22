@@ -63,6 +63,26 @@ describe('grammarToChars', () => {
     ])
   })
 
+  it('syntax-highlights edo absolute pitches that land between integer steps', () => {
+    const ast = parse('{12edo} Ct E')
+    processGrammar(ast)
+
+    expect(colors(grammarToChars(ast))).toEqual([
+      'scaleGroup',
+      'scale',
+      'scale',
+      'scale',
+      'scale',
+      'scale',
+      'scaleGroup',
+      undefined,
+      'invalidPitch',
+      'invalidPitch',
+      undefined,
+      'pitch',
+    ])
+  })
+
   it('keeps all repeated play times for characters inside repeats', () => {
     const ast = parse('|: 0 :|')
     processGrammar(ast)

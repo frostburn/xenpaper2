@@ -5,6 +5,7 @@ export type HighlightColor =
   | 'delimiter'
   | 'pitch'
   | 'alternatePitch'
+  | 'invalidPitch'
   | 'chord'
   | 'scaleGroup'
   | 'scale'
@@ -27,6 +28,7 @@ type GrammarNode = {
   type: string
   time?: PlayTime
   value?: { greek?: boolean }
+  outOfIntegerSteps?: boolean
   location: LocationRange
   [key: string]: unknown
 }
@@ -114,7 +116,9 @@ const extract = (chars: CharData[], data: unknown, parent: string, withinTime?: 
     const grammarNode = isGrammarNode(node) ? node : undefined
     const type = grammarNode?.type
     let color = type ? colorMap.get(`${parent}.${type}`) || colorMap.get(type) : undefined
-    if (type === 'Pitch' && grammarNode?.value?.greek) {
+    if (type === 'Pitch' && grammarNode?.outOfIntegerSteps) {
+      color = 'invalidPitch'
+    } else if (type === 'Pitch' && grammarNode?.value?.greek) {
       color = 'alternatePitch'
     }
     const time = withinTime ?? grammarNode?.time

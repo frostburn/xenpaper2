@@ -187,6 +187,10 @@ a {
   color: var(--xenpaper-blue);
 }
 
+.highlight-invalidPitch {
+  color: #e57373;
+}
+
 .highlight-scaleGroup {
   color: #94472f;
 }
