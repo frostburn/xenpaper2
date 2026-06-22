@@ -1100,6 +1100,15 @@ describe('grammar to mosc score', () => {
     expect(notes[3]?.hz).toBeAround(220, 6)
   })
 
+  it('commutes root nomination with edo scale setters', () => {
+    const beforeScale = noteItems('{r as C}{31edo} C 0')
+    const afterScale = noteItems('{31edo}{r as C} C 0')
+
+    expect(beforeScale.map((note) => note.hz)).toEqual(afterScale.map((note) => note.hz))
+    expect(beforeScale[0]?.hz).toBeAround(220, 6)
+    expect(beforeScale[1]?.hz).toBeAround(220, 6)
+  })
+
   it('tempers spiral-of-fifths nominals and accidentals to the active edo mapping', () => {
     const notes = noteItems('{31edo} `A E B F# Cb')
 

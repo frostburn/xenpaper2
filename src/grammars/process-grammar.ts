@@ -13,6 +13,7 @@ import type {
   RatioChordType,
   TailType,
   PitchType,
+  PitchAbsoluteType,
   PitchDegreeType,
   AccidentalType,
   InflectionType,
@@ -68,7 +69,45 @@ const limit = (name: string, value: number, min: number, max: number): void => {
 // pitch math
 //
 
-export const pitchToRatio = (pitch: PitchType, context: Context, useRootNominal = true): number => {
+type AbsolutePitchMonzo = {
+  monzo: number[]
+  ups: number
+  lifts: number
+}
+
+const addMonzos = (left: readonly number[], right: readonly number[]): number[] => {
+  const length = Math.max(left.length, right.length)
+  const result: number[] = []
+  for (let index = 0; index < length; index++) {
+    result.push((left[index] ?? 0) + (right[index] ?? 0))
+  }
+  return result
+}
+
+const negateMonzo = (monzo: readonly number[]): number[] => monzo.map((component) => -component)
+
+const absolutePitchToMonzo = (
+  pitch: PitchAbsoluteType,
+  octave: number,
+  context: Context,
+): AbsolutePitchMonzo => {
+  const { nominal, accidentals, inflections, ups, lifts } = pitch
+  const keySignature = applyKeySignature(nominal, accidentals, context)
+  const effectiveInflections = [...keySignature.inflections, ...inflections]
+  const monzo = applyFjsInflections(
+    nominalToMonzo(nominal, keySignature.accidentals).slice(),
+    effectiveInflections,
+  ).slice() as number[]
+  monzo[0] = (monzo[0] ?? 0) + octave
+
+  return {
+    monzo,
+    ups: ups + keySignature.ups,
+    lifts: lifts + keySignature.lifts,
+  }
+}
+
+export const pitchToRatio = (pitch: PitchType, context: Context): number => {
   const { scale, octaveSize, mapping, up, lift } = context
   assertFinitePositive('context.octaveSize', octaveSize)
   limit('Equave size', octaveSize, -20, 20)
@@ -103,13 +142,8 @@ export const pitchToRatio = (pitch: PitchType, context: Context, useRootNominal 
   }
 
   if (type === 'PitchAbsolute') {
-    const { ups, lifts, nominal, accidentals, inflections } = pitch.value
-    const keySignature = applyKeySignature(nominal, accidentals, context)
-    const effectiveInflections = [...keySignature.inflections, ...inflections]
-    const monzo = applyFjsInflections(
-      nominalToMonzo(nominal, keySignature.accidentals).slice(),
-      effectiveInflections,
-    )
+    const absolutePitch = absolutePitchToMonzo(pitch.value, pitch.octave?.octave ?? 0, context)
+    const monzo = addMonzos(absolutePitch.monzo, context.rootNominalOffset)
     // Compute power-user mapping on the fly
     let tail = 0
     for (let i = mapping.length; i < monzo.length; ++i) {
@@ -117,12 +151,10 @@ export const pitchToRatio = (pitch: PitchType, context: Context, useRootNominal 
     }
     const cents =
       dot(mapping, monzo) +
-      (ups + keySignature.ups) * up +
-      (lifts + keySignature.lifts) * lift +
+      (absolutePitch.ups + context.rootNominalUps) * up +
+      (absolutePitch.lifts + context.rootNominalLifts) * lift +
       tail
-    const rootNominalRatio = useRootNominal ? context.rootNominalRatio : 1
-    assertFinitePositive('context.rootNominalRatio', rootNominalRatio)
-    return (centsToValue(cents) * octaveMulti) / rootNominalRatio
+    return centsToValue(cents)
   }
 
   throw new Error(`Unknown pitch type "${type}"`)
@@ -176,20 +208,11 @@ const setRoot = (item: SetRootType, context: Context): void => {
     return
   }
 
-  const rootNominalRatio = pitchToRatio(
-    {
-      type: 'Pitch',
-      delimiter: false,
-      location: item.rootNominal.location,
-      octave: null,
-      value: item.rootNominal,
-    },
-    context,
-    false,
-  )
-  assertFinitePositive('SetRoot.rootNominalRatio', rootNominalRatio)
+  const rootNominal = absolutePitchToMonzo(item.rootNominal, 0, context)
   context.rootHz = nextRootHz
-  context.rootNominalRatio = rootNominalRatio
+  context.rootNominalOffset = negateMonzo(rootNominal.monzo)
+  context.rootNominalUps = -rootNominal.ups
+  context.rootNominalLifts = -rootNominal.lifts
 }
 
 const tailToTime = (tail: TailType | null, context: Context): { time: number; timeEnd: number } => {
@@ -292,7 +315,9 @@ const ENV_VALUES = [0, 0.003, 0.006, 0.01, 0.033, 0.1, 0.33, 1, 3.3, 10]
 
 type Context = {
   rootHz: number
-  rootNominalRatio: number
+  rootNominalOffset: number[]
+  rootNominalUps: number
+  rootNominalLifts: number
   time: number
   subdivision: number
   scale: number[]
@@ -1059,7 +1084,9 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
 
   const context: Context = {
     rootHz: 220,
-    rootNominalRatio: 1,
+    rootNominalOffset: [],
+    rootNominalUps: 0,
+    rootNominalLifts: 0,
     time: 0,
     subdivision: 0.5,
     scale,
