@@ -214,6 +214,26 @@ describe('grammarToChars', () => {
     ])
   })
 
+  it('highlights grace setters', () => {
+    expect(colors(grammarToChars(parse('(8?) (grace:16)')))).toEqual([
+      'setterGroup',
+      'setter',
+      'setter',
+      'setterGroup',
+      undefined,
+      'setterGroup',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setterGroup',
+    ])
+  })
+
   it('highlights noise setters like osc setters', () => {
     expect(colors(grammarToChars(parse('(noise:white)')))).toEqual(
       colors(grammarToChars(parse('(osc:slender)'))),

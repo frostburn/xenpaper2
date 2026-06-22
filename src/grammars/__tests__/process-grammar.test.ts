@@ -67,6 +67,30 @@ const noteLabels = (input: string): string[] => noteItems(input).map((item) => i
 const noteLabelDurations = (input: string): Array<[string, number]> =>
   noteItems(input).map((item) => [item.label, item.timeEnd - item.time])
 
+describe('grace note syntax', () => {
+  it('plays a short-form grace note and steals its duration from the following note', () => {
+    expect(noteItems('(8?) D C')).toMatchObject([
+      { label: 'D♮', time: 0, timeEnd: 0.125 },
+      { label: 'C♮', time: 0.125, timeEnd: 0.5 },
+    ])
+  })
+
+  it('plays long-form grace notes with fractional subdivisions', () => {
+    expect(noteItems('(grace:16) D C')).toMatchObject([
+      { label: 'D♮', time: 0, timeEnd: 0.0625 },
+      { label: 'C♮', time: 0.0625, timeEnd: 0.5 },
+    ])
+  })
+
+  it('skips drones when applying grace notes and stolen time', () => {
+    expect(noteItems('(8?) (drone: 0) D C')).toMatchObject([
+      { label: '0\\12  0.0c', time: 0, timeEnd: 0.5 },
+      { label: 'D♮', time: 0, timeEnd: 0.125 },
+      { label: 'C♮', time: 0.125, timeEnd: 0.5 },
+    ])
+  })
+})
+
 describe('drone syntax', () => {
   it('holds a drone note until a new drone starts', () => {
     expect(noteItems('(drone: 0) 1 2 (drone: 3) 4')).toMatchObject([

@@ -224,6 +224,11 @@ export type SetSubdivisionType = NodeType<'SetSubdivision'> & {
   denominator: number
 }
 
+export type SetGraceType = NodeType<'SetGrace'> & {
+  subdivision: number
+  denominator: number
+}
+
 // up/down step
 
 export type UpLiftStepType = PitchRatioType | PitchCentsType | PitchOctaveDivisionType
@@ -301,6 +306,7 @@ export type SetterType =
   | SetBpmType
   | SetBmsType
   | SetSubdivisionType
+  | SetGraceType
   | SetUpType
   | SetLiftType
   | SetOscType
