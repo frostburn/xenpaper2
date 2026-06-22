@@ -224,7 +224,7 @@ export type SetSubdivisionType = NodeType<'SetSubdivision'> & {
   denominator: number
 }
 
-export type GraceType = NodeType<'Grace'> & {
+export type SetGraceType = NodeType<'SetGrace'> & {
   subdivision: number
   denominator: number
 }
@@ -306,6 +306,7 @@ export type SetterType =
   | SetBpmType
   | SetBmsType
   | SetSubdivisionType
+  | SetGraceType
   | SetUpType
   | SetLiftType
   | SetOscType
@@ -396,7 +397,6 @@ export type SequenceItemsType =
   | DroneType
   | SetScaleType
   | SetRootType
-  | GraceType
   | CommentType
   | RepeatType
   | MusicalControlFlowType

@@ -216,11 +216,12 @@ describe('grammarToChars', () => {
 
   it('highlights grace setters', () => {
     expect(colors(grammarToChars(parse('(8?) (grace:16)')))).toEqual([
+      'setterGroup',
       'setter',
       'setter',
-      'setter',
-      'setter',
+      'setterGroup',
       undefined,
+      'setterGroup',
       'setter',
       'setter',
       'setter',
@@ -229,8 +230,7 @@ describe('grammarToChars', () => {
       'setter',
       'setter',
       'setter',
-      'setter',
-      'setter',
+      'setterGroup',
     ])
   })
 

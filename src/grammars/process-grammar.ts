@@ -1076,6 +1076,15 @@ const setterToMosc = (setter: SetterType | DelimiterType, context: Context): Mos
     return []
   }
 
+  if (type === 'SetGrace') {
+    const { subdivision, denominator } = setter
+    assertFinitePositive('SetGrace.subdivision', subdivision)
+    const normalizedDenominator = denominator ?? 1
+    assertFinitePositive('SetGrace.denominator', normalizedDenominator)
+    context.graceSubdivision = normalizedDenominator / subdivision
+    return []
+  }
+
   if (type === 'SetUp') {
     context.up = upLiftStepToCents('SetUp', setter.value)
     return []
@@ -1333,14 +1342,6 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
 
     if (type === 'SetRoot') {
       setRoot(item, context)
-      return
-    }
-
-    if (type === 'Grace') {
-      const normalizedDenominator = item.denominator ?? 1
-      assertFinitePositive('Grace.subdivision', item.subdivision)
-      assertFinitePositive('Grace.denominator', normalizedDenominator)
-      context.graceSubdivision = normalizedDenominator / item.subdivision
       return
     }
 

@@ -2270,12 +2270,18 @@ describe('grammar', () => {
         ])
       })
 
-      it('should parse grace note markers', () => {
+      it('should parse grace note setters', () => {
         expect(strip(parser('(8?) D C (grace:16) E').sequence.items)).toMatchObject([
-          { type: 'Grace', subdivision: 8, denominator: 1 },
+          {
+            type: 'SetterGroup',
+            setters: [{ type: 'SetGrace', subdivision: 8, denominator: 1 }],
+          },
           { type: 'Note' },
           { type: 'Note' },
-          { type: 'Grace', subdivision: 16, denominator: 1 },
+          {
+            type: 'SetterGroup',
+            setters: [{ type: 'SetGrace', subdivision: 16, denominator: 1 }],
+          },
           { type: 'Note' },
         ])
       })

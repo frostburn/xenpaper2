@@ -7,7 +7,7 @@ Start = seq:Sequence _ {
 }
 Sequence = items:ItemList { return node('Sequence', { items }); }
 ItemList = head:Item tail:(_ Item)* { return [head, ...tail.map(([,i]) => i)]; } / '' { return []; }
-Item = Comment / MusicalControlFlow / Drone / SetterGroup / SetRoot / SetScale / Grace / RatioChordItem / SampleRateNote / Note / Rest / Chord / RepeatEndStart / RepeatStart / RepeatEnd / RepeatEndingStart / BarLine / Whitespace
+Item = Comment / MusicalControlFlow / Drone / SetterGroup / SetRoot / SetScale / RatioChordItem / SampleRateNote / Note / Rest / Chord / RepeatEndStart / RepeatStart / RepeatEnd / RepeatEndingStart / BarLine / Whitespace
 Note = pitch:Pitch tail:Hold? {
   return node('Note', { pitch, tail });
 }
@@ -150,7 +150,7 @@ SetterGroup = "(" _ first:Setter rest:(Semicolon Setter)* _ ")" {
   for (const part of rest) setters.push(part[0], part[1]);
   return node('SetterGroup', { setters });
 }
-Setter = SetBpm / SetBms / SetSubdivision / SetUp / SetLift / SetOsc / SetNoise / SetEnv / SetKey / SetRulerRange / SetRulerPlot
+Setter = SetBpm / SetBms / SetGrace / SetSubdivision / SetUp / SetLift / SetOsc / SetNoise / SetEnv / SetKey / SetRulerRange / SetRulerPlot
 SetBpm = "bpm"i _ ":" _ bpm:Number { return node('SetBpm', { bpm }); }
 SetBms = "bms"i _ ":" _ bms:Number { return node('SetBms', { bms }); }
 SetSubdivision = ("div"i _ ":" _)? fraction:Fraction {
@@ -159,8 +159,8 @@ SetSubdivision = ("div"i _ ":" _)? fraction:Fraction {
     denominator: fraction.denominator,
   });
 }
-Grace = "(" _ fraction:(("grace"i _ ":" _ fraction:Fraction { return fraction; }) / (fraction:Fraction _ "?" { return fraction; })) _ ")" {
-  return node('Grace', {
+SetGrace = fraction:(("grace"i _ ":" _ fraction:Fraction { return fraction; }) / (fraction:Fraction _ "?" { return fraction; })) {
+  return node('SetGrace', {
     subdivision: fraction.numerator,
     denominator: fraction.denominator,
   });
