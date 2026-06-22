@@ -16,6 +16,8 @@ const OSC_VOLUME = 0.125
 type SoundEngineOscParam = { type: 'osc'; osc: SWOscillatorType }
 type SoundEngineNoiseParam = { type: 'noise'; noise: string }
 type SoundEngineEnvParam = { type: 'env'; a: number; d: number; s: number; r: number }
+type SoundEngineVolumeParam = { type: 'volume'; db: number }
+type SoundEngineVelocityParam = { type: 'velocity'; velocity: number }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null
@@ -38,6 +40,14 @@ const isEnvParam = (value: unknown): value is SoundEngineEnvParam =>
   typeof value.d === 'number' &&
   typeof value.s === 'number' &&
   typeof value.r === 'number'
+
+const isVolumeParam = (value: unknown): value is SoundEngineVolumeParam =>
+  isRecord(value) && value.type === 'volume' && typeof value.db === 'number'
+
+const isVelocityParam = (value: unknown): value is SoundEngineVelocityParam =>
+  isRecord(value) && value.type === 'velocity' && typeof value.velocity === 'number'
+
+const dbToGain = (db: number): number => Math.pow(10, db / 20)
 
 export class SoundEngineSwSeq extends SoundEngine {
   private endTime = 0
@@ -115,6 +125,12 @@ export class SoundEngineSwSeq extends SoundEngine {
       },
     }
 
+    let volume = OSC_VOLUME
+    let velocity = 1
+    const updatePatchVelocity = () => {
+      patch.velocity = volume * velocity
+    }
+
     score.sequence.forEach((item) => {
       if (item.type === 'NOTE_TIME' || item.type === 'SAMPLE_RATE_NOTE_TIME') {
         const note: MoscNote =
@@ -158,6 +174,14 @@ export class SoundEngineSwSeq extends SoundEngine {
             sustain: item.value.s,
             release: item.value.r,
           }
+        }
+        if (isVolumeParam(item.value)) {
+          volume = dbToGain(item.value.db)
+          updatePatchVelocity()
+        }
+        if (isVelocityParam(item.value)) {
+          velocity = item.value.velocity
+          updatePatchVelocity()
         }
       } else if (item.type === 'END_TIME') {
         this.endTime = item.time

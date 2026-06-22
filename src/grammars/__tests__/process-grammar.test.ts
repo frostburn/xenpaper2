@@ -55,7 +55,25 @@ const INITIAL_ENV = {
   },
 }
 
-const INITIAL = [INITIAL_TEMPO, INITIAL_OSC, INITIAL_ENV]
+const INITIAL_VOLUME = {
+  type: 'PARAM_BEAT_TIME',
+  time: 0,
+  value: {
+    type: 'volume',
+    db: -18,
+  },
+}
+
+const INITIAL_VELOCITY = {
+  type: 'PARAM_BEAT_TIME',
+  time: 0,
+  value: {
+    type: 'velocity',
+    velocity: 1,
+  },
+}
+
+const INITIAL = [INITIAL_TEMPO, INITIAL_OSC, INITIAL_ENV, INITIAL_VOLUME, INITIAL_VELOCITY]
 
 const parseSource = (input: string) => parse(input, { grammarSource: 'test-input' })
 
@@ -180,6 +198,21 @@ describe('ratio chord syntax inside chords', () => {
 })
 
 describe('grammar to mosc score', () => {
+
+  it('emits volume and velocity parameters from setters', () => {
+    expect(processGrammar(parseSource('(vol:-2dB; vel:50%; ff)')).score.sequence).toMatchObject([
+      ...INITIAL,
+      {
+        type: 'PARAM_BEAT_TIME',
+        time: 0,
+        value: { type: 'volume', db: -2 },
+      },
+      { type: 'PARAM_BEAT_TIME', time: 0, value: { type: 'velocity', velocity: 0.5 } },
+      { type: 'PARAM_BEAT_TIME', time: 0, value: { type: 'velocity', velocity: 0.875 } },
+      { type: 'END_BEAT_TIME', time: 0 },
+    ])
+  })
+
   it('applies FJS inflections to absolute pitch ratios', () => {
     const [
       fifthLimitSubscript,

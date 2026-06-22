@@ -50,6 +50,7 @@ import { beatToTime } from '../mosc'
 const NUM_COMPONENTS = 24
 const DEFAULT_UP = valueToCents(243 / 242) / 2
 const DEFAULT_LIFT = valueToCents(50 / 49) / 2
+const DEFAULT_VOLUME_DB = -18
 
 //
 // utils
@@ -1140,6 +1141,36 @@ const setterToMosc = (setter: SetterType | DelimiterType, context: Context): Mos
     ]
   }
 
+  if (type === 'SetVolume') {
+    const { db } = setter
+    limit('SetVolume.db', db, -100, 20)
+    return [
+      {
+        type: 'PARAM_BEAT_TIME',
+        time: context.time,
+        value: {
+          type: 'volume',
+          db,
+        },
+      },
+    ]
+  }
+
+  if (type === 'SetVelocity') {
+    const { velocity } = setter
+    limit('SetVelocity.velocity', velocity, 0, 1)
+    return [
+      {
+        type: 'PARAM_BEAT_TIME',
+        time: context.time,
+        value: {
+          type: 'velocity',
+          velocity,
+        },
+      },
+    ]
+  }
+
   if (type === 'SetKey') {
     const { tonic, mode } = setter
     context.keySignature = keySignatureAccidentals(tonic, mode)
@@ -1259,6 +1290,24 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
       d: ENV_VALUES[8],
       s: 0.5,
       r: ENV_VALUES[6],
+    },
+  }
+
+  const INITIAL_VOLUME: MoscBeatParam = {
+    type: 'PARAM_BEAT_TIME',
+    time: 0,
+    value: {
+      type: 'volume',
+      db: DEFAULT_VOLUME_DB,
+    },
+  }
+
+  const INITIAL_VELOCITY: MoscBeatParam = {
+    type: 'PARAM_BEAT_TIME',
+    time: 0,
+    value: {
+      type: 'velocity',
+      velocity: 1,
     },
   }
 
@@ -1396,6 +1445,8 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
     INITIAL_TEMPO,
     INITIAL_OSC,
     INITIAL_ENV,
+    INITIAL_VOLUME,
+    INITIAL_VELOCITY,
     ...moscItems,
     {
       type: 'END_BEAT_TIME',

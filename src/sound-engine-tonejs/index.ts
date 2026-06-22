@@ -39,6 +39,16 @@ type SoundEngineEnvParam = {
   r: number
 }
 
+type SoundEngineVolumeParam = {
+  type: 'volume'
+  db: number
+}
+
+type SoundEngineVelocityParam = {
+  type: 'velocity'
+  velocity: number
+}
+
 const isRecord = (value: unknown): value is Record<string, unknown> => {
   return typeof value === 'object' && value !== null
 }
@@ -65,6 +75,14 @@ const isEnvParam = (value: unknown): value is SoundEngineEnvParam => {
     typeof value.s === 'number' &&
     typeof value.r === 'number'
   )
+}
+
+const isVolumeParam = (value: unknown): value is SoundEngineVolumeParam => {
+  return isRecord(value) && value.type === 'volume' && typeof value.db === 'number'
+}
+
+const isVelocityParam = (value: unknown): value is SoundEngineVelocityParam => {
+  return isRecord(value) && value.type === 'velocity' && typeof value.velocity === 'number'
 }
 
 export const OSC_BASE_TYPES = ['sine', 'sawtooth', 'square', 'triangle'] as const
@@ -170,6 +188,8 @@ export class SoundEngineTonejs extends SoundEngine {
     this._endTime = score.lengthTime
     this._releaseActiveNotesIfSynthExists()
 
+    let velocity = 1
+
     // add all new notes to tone transport
     this.score.sequence.forEach((item): void => {
       if (item.type === 'NOTE_TIME' || item.type === 'SAMPLE_RATE_NOTE_TIME') {
@@ -178,7 +198,12 @@ export class SoundEngineTonejs extends SoundEngine {
             ? { ...item, type: 'NOTE_TIME', hz: Tone.context.sampleRate }
             : item
         const noteStartEventId = Tone.Transport.schedule((time: number) => {
-          this.getSynth().triggerAttackRelease(noteTime.hz, noteTime.timeEnd - noteTime.time, time)
+          this.getSynth().triggerAttackRelease(
+            noteTime.hz,
+            noteTime.timeEnd - noteTime.time,
+            time,
+            velocity,
+          )
           this._activeNoteEvents.add(noteTime)
           this._triggerEvent('note', noteTime, true)
         }, noteTime.time + 0.1) // schedule in the future slightly to avoid double note playing at end
@@ -218,6 +243,16 @@ export class SoundEngineTonejs extends SoundEngine {
                 release: paramTime.value.r,
               },
             })
+          }
+          if (isVolumeParam(paramTime.value)) {
+            this.getSynth().set({
+              oscillator: {
+                volume: paramTime.value.db,
+              } as Partial<SynthOptions['oscillator']>,
+            })
+          }
+          if (isVelocityParam(paramTime.value)) {
+            velocity = paramTime.value.velocity
           }
         }, paramTime.time)
 
