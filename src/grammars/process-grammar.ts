@@ -568,6 +568,24 @@ const isRatioChordPitchType = (pitch: ChordPitchType): pitch is RatioChordPitchT
   return pitch.type === 'RatioChordPitch'
 }
 
+const lcm = (a: number, b: number): number => (a * b) / gcd(a, b)
+
+const normalizeRatioChordPitches = (
+  ratioChordPitches: Array<RatioChordPitchType | DelimiterType>,
+): Array<RatioChordPitchType | DelimiterType> => {
+  if (!ratioChordPitches.some((pitch) => isRatioChordPitchType(pitch) && pitch.inverted)) {
+    return ratioChordPitches
+  }
+
+  const commonNumerator = ratioChordPitches
+    .filter(isRatioChordPitchType)
+    .reduce((acc, pitch) => lcm(acc, pitch.pitch), 1)
+
+  return ratioChordPitches.map((pitch) =>
+    isRatioChordPitchType(pitch) ? { ...pitch, pitch: commonNumerator / pitch.pitch } : pitch,
+  )
+}
+
 const isSampleRateNoteType = (pitch: ChordPitchType): pitch is SampleRateNoteType => {
   return pitch.type === 'SampleRateNote'
 }
@@ -684,6 +702,7 @@ const chordToMosc = (
     hasExplicitPreviousPitch: boolean,
     preserveFirstRatioLabel = false,
   ): void => {
+    ratioChordPitches = normalizeRatioChordPitches(ratioChordPitches)
     const firstDenominator = ratioChordPitches.find(isRatioChordPitchType)?.pitch
 
     if (firstDenominator === undefined) {

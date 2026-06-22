@@ -130,6 +130,7 @@ export type SampleRateNoteType = NodeType<'SampleRateNote'> & {
 
 export type RatioChordPitchType = NodeType<'RatioChordPitch'> & {
   pitch: number
+  inverted?: boolean
 }
 
 export type ChordType = NodeType<'Chord'> & {
@@ -138,6 +139,7 @@ export type ChordType = NodeType<'Chord'> & {
 }
 
 export type RatioChordType = NodeType<'RatioChord'> & {
+  inverted?: boolean
   pitches: Array<RatioChordPitchType | DelimiterType>
   tail: TailType | null
 }

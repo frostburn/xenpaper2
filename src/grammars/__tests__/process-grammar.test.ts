@@ -104,6 +104,10 @@ describe('ratio chord syntax inside chords', () => {
     ])
   })
 
+  it('expands inverted ratio chords from reciprocal ratios', () => {
+    expect(noteLabels('/6:5:4')).toEqual(['10/10  0.0c', '12/10  315.6c', '15/10  702.0c'])
+  })
+
   it('shows cents-only labels for ratio chords expanded from non-ratio pitches', () => {
     expect(noteLabels("[7 3:4:5 9/7 'c]")).toEqual([
       '7\\12  700.0c',

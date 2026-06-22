@@ -79,7 +79,9 @@ PitchGroup = first:Pitch rest:(Whitespace Pitch)* {
   return result;
 }
 ChordPitch = Pitch / SampleRatePitch
-ChordRatioChordPitches = &(Int _ ":" !"|") pitches:RatioChordPitches { return pitches; }
+ChordRatioChordPitches = &("/"? Int _ ":" !"|") inverted:"/"? pitches:RatioChordPitches {
+  return pitches.map((pitch) => pitch.type === 'RatioChordPitch' && inverted ? { ...pitch, inverted: true } : pitch);
+}
 ChordPitchElement = ChordRatioChordPitches / ChordPitch
 ChordPitchSeparator = Whitespace / &ChordPitchElement { return node('Whitespace', { delimiter: true }); }
 ChordPitchGroup = first:ChordPitchElement rest:(ChordPitchSeparator ChordPitchElement)* {
@@ -100,10 +102,14 @@ RatioChordPitches = first:RatioChordPitch rest:((_ Colon _)+ RatioChordPitch)* {
   }
   return result;
 }
-RatioChord = pitches:RatioChordPitches tail:Hold? {
-  return node('RatioChord', { pitches, tail });
+RatioChord = inverted:"/"? pitches:RatioChordPitches tail:Hold? {
+  return node('RatioChord', {
+    ...(inverted ? { inverted: true } : {}),
+    pitches: pitches.map((pitch) => pitch.type === 'RatioChordPitch' && inverted ? { ...pitch, inverted: true } : pitch),
+    tail,
+  });
 }
-RatioChordItem = &(Int _ ":" !"|") rc:RatioChord { return rc; }
+RatioChordItem = &("/"? Int _ ":" !"|") rc:RatioChord { return rc; }
 Chord = "[" _ pitches:ChordPitchGroup _ "]" tail:Hold? {
   return node('Chord', { pitches, tail });
 }

@@ -1128,6 +1128,23 @@ describe('grammar', () => {
         ])
       })
 
+      it('should parse sequence with an inverted ratio chord', () => {
+        expect(strip(parser('/6:5:4--')).sequence.items).toEqual([
+          {
+            type: 'RatioChord',
+            inverted: true,
+            pitches: [
+              { type: 'RatioChordPitch', pitch: 6, inverted: true },
+              { type: 'Colon' },
+              { type: 'RatioChordPitch', pitch: 5, inverted: true },
+              { type: 'Colon' },
+              { type: 'RatioChordPitch', pitch: 4, inverted: true },
+            ],
+            tail: { type: 'Hold', length: 2 },
+          },
+        ])
+      })
+
       it('should parse sequence with ratio chord holds across bar lines', () => {
         expect(strip(parser('4:5:6:7--|---|')).sequence.items).toEqual([
           {
