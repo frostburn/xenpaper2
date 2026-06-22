@@ -1878,7 +1878,9 @@ describe('grammar', () => {
       })
 
       it('should parse sequence with root setter', () => {
-        expect(strip(parser('{r6}{r7/5}{r300hz}{r400HZ}')).sequence.items).toEqual([
+        expect(
+          strip(parser('{r6}{r7/5}{r300hz}{r400HZ}{r261.6256Hz as C}')).sequence.items,
+        ).toEqual([
           {
             type: 'SetRoot',
             pitch: {
@@ -1918,6 +1920,25 @@ describe('grammar', () => {
                 hz: 400,
                 type: 'PitchHz',
               },
+            },
+          },
+          {
+            type: 'SetRoot',
+            pitch: {
+              type: 'Pitch',
+              value: {
+                hz: 261.6256,
+                type: 'PitchHz',
+              },
+            },
+            rootNominal: {
+              type: 'PitchAbsolute',
+              ups: 0,
+              lifts: 0,
+              nominal: 'C',
+              greek: false,
+              accidentals: [],
+              inflections: [],
             },
           },
         ])

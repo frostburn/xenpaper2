@@ -1081,6 +1081,16 @@ describe('grammar to mosc score', () => {
     notes.forEach((note, index) => expect(note.hz / 220).toBeAround(expectedRatios[index]!, 10))
   })
 
+  it('can associate a root setter frequency with an absolute nominal', () => {
+    const notes = noteItems('{r261.6256Hz as C} C E G 0')
+
+    expect(notes.map((note) => note.label)).toEqual(['C♮', 'E♮', 'G♮', String.raw`0\12  0.0c`])
+    expect(notes[0]?.hz).toBeAround(261.6256, 6)
+    expect(notes[1]?.hz).toBeAround(261.6256 * (81 / 64), 6)
+    expect(notes[2]?.hz).toBeAround(261.6256 * (3 / 2), 6)
+    expect(notes[3]?.hz).toBeAround(261.6256 / (32 / 27), 6)
+  })
+
   it('tempers spiral-of-fifths nominals and accidentals to the active edo mapping', () => {
     const notes = noteItems('{31edo} `A E B F# Cb')
 

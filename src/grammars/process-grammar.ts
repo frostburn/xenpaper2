@@ -6,6 +6,7 @@ import { centsToValue, equaveDivisionToValue, valueToCents } from 'xen-dev-utils
 import type {
   XenpaperAST,
   SetScaleType,
+  SetRootType,
   NoteType,
   SampleRateNoteType,
   ChordType,
@@ -164,6 +165,27 @@ const pitchToHz = (pitch: PitchType, context: Context): number => {
     return hz
   }
   return pitchToRatio(pitch, context) * context.rootHz
+}
+
+const setRoot = (item: SetRootType, context: Context): void => {
+  const nextRootHz = pitchToHz(item.pitch, context)
+  if (item.rootNominal === undefined) {
+    context.rootHz = nextRootHz
+    return
+  }
+
+  const rootNominalRatio = pitchToRatio(
+    {
+      type: 'Pitch',
+      delimiter: false,
+      location: item.rootNominal.location,
+      octave: null,
+      value: item.rootNominal,
+    },
+    context,
+  )
+  assertFinitePositive('SetRoot.rootNominalRatio', rootNominalRatio)
+  context.rootHz = nextRootHz / rootNominalRatio
 }
 
 const tailToTime = (tail: TailType | null, context: Context): { time: number; timeEnd: number } => {
@@ -1075,8 +1097,7 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
     }
 
     if (type === 'SetRoot') {
-      const { pitch } = item
-      context.rootHz = pitchToHz(pitch, context)
+      setRoot(item, context)
       return
     }
 
