@@ -99,7 +99,7 @@ const absolutePitchToMonzo = (
 }
 
 export const pitchToRatio = (pitch: PitchType, context: Context): number => {
-  const { scale, octaveSize, mapping, up, lift, rootNominal } = context
+  const { scale, octaveSize, mapping, stepSize, up, lift, rootNominal } = context
   assertFinitePositive('context.octaveSize', octaveSize)
   limit('Equave size', octaveSize, -20, 20)
 
@@ -138,13 +138,18 @@ export const pitchToRatio = (pitch: PitchType, context: Context): number => {
     // Compute power-user mapping on the fly
     let tail = 0
     for (let i = mapping.length; i < monzo.length; ++i) {
-      tail += Math.round(PRIME_CENTS[i]! / up) * up * monzo[i]!
+      tail += Math.round(PRIME_CENTS[i]! / stepSize) * monzo[i]!
     }
+
+    const steps = dot(mapping, monzo) + tail
+    const annotatedPitch = pitch as PitchType & { outOfIntegerSteps?: boolean }
+    annotatedPitch.outOfIntegerSteps =
+      context.mappingIsIntegerSteps && Math.abs(steps - Math.round(steps)) > INTEGER_STEP_EPSILON
+
     const cents =
-      dot(mapping, monzo) +
+      steps * stepSize +
       (absolutePitch.ups - rootNominal.ups) * up +
-      (absolutePitch.lifts - rootNominal.lifts) * lift +
-      tail
+      (absolutePitch.lifts - rootNominal.lifts) * lift
     return centsToValue(cents)
   }
 
@@ -287,6 +292,8 @@ export const pitchToLabel = (pitch: PitchType, context: Context): string => {
   throw new Error(`Unknown pitch type "${type}"`)
 }
 
+const INTEGER_STEP_EPSILON = 1e-8
+
 const edoToLabels = (edoSize: number, ratios: number[], octaveSize: number): string[] => {
   const labels: string[] = []
   for (let i = 0; i < edoSize; i++) {
@@ -317,6 +324,8 @@ type Context = {
   up: number
   lift: number
   mapping: number[]
+  stepSize: number
+  mappingIsIntegerSteps: boolean
   keySignature: Map<string, KeySignatureAdjustment>
 }
 
@@ -964,11 +973,13 @@ const setScale = (setScale: SetScaleType, context: Context): void => {
     context.scale = edoToRatios(divisions, octaveSize)
     context.scaleLabels = edoToLabels(divisions, context.scale, octaveSize)
     context.octaveSize = octaveSize
-    context.up = valueToCents(octaveSize) / divisions
-    context.lift = 5 * context.up
-    context.mapping = PRIME_CENTS.slice(0, NUM_COMPONENTS).map(
-      (c) => Math.round(c / context.up) * context.up,
+    context.stepSize = valueToCents(octaveSize) / divisions
+    context.up = context.stepSize
+    context.lift = 5 * context.stepSize
+    context.mapping = PRIME_CENTS.slice(0, NUM_COMPONENTS).map((c) =>
+      Math.round(c / context.stepSize),
     )
+    context.mappingIsIntegerSteps = true
     return
   }
 
@@ -976,6 +987,8 @@ const setScale = (setScale: SetScaleType, context: Context): void => {
     context.up = DEFAULT_UP
     context.lift = DEFAULT_LIFT
     context.mapping = PRIME_CENTS
+    context.stepSize = 1
+    context.mappingIsIntegerSteps = false
     return
   }
 
@@ -1238,6 +1251,8 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
     up: DEFAULT_UP,
     lift: DEFAULT_LIFT,
     mapping: PRIME_CENTS,
+    stepSize: 1,
+    mappingIsIntegerSteps: false,
     keySignature: new Map(),
   }
 
