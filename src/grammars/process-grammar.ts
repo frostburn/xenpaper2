@@ -168,7 +168,7 @@ const pitchToHz = (pitch: PitchType, context: Context): number => {
 }
 
 const setRoot = (item: SetRootType, context: Context): void => {
-  const nextRootHz = pitchToHz(item.pitch, context)
+  const nextRootHz = item.pitch === undefined ? context.rootHz : pitchToHz(item.pitch, context)
   if (item.rootNominal === undefined) {
     context.rootHz = nextRootHz
     return

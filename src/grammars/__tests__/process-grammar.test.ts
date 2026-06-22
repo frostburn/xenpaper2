@@ -1091,6 +1091,15 @@ describe('grammar to mosc score', () => {
     expect(notes[3]?.hz).toBeAround(261.6256 / (32 / 27), 6)
   })
 
+  it('can associate the current root with an absolute nominal', () => {
+    const notes = noteItems('{r as C} C E G 0')
+
+    expect(notes[0]?.hz).toBeAround(220, 6)
+    expect(notes[1]?.hz).toBeAround(220 * (81 / 64), 6)
+    expect(notes[2]?.hz).toBeAround(220 * (3 / 2), 6)
+    expect(notes[3]?.hz).toBeAround(220 / (32 / 27), 6)
+  })
+
   it('tempers spiral-of-fifths nominals and accidentals to the active edo mapping', () => {
     const notes = noteItems('{31edo} `A E B F# Cb')
 

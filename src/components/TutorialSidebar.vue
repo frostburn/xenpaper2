@@ -118,7 +118,8 @@ const tutorialSections: SidebarSection[] = [
       },
       {
         description: 'Root changes can associate a frequency with a nominal using “as”.',
-        tune: '{r261.6256Hz as C} C E G C-',
+        tune: `{r261.6256Hz as C} C E G C-
+{r as C} C E G C-`,
       },
     ],
   },
