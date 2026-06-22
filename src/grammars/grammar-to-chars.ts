@@ -62,7 +62,7 @@ const colorMap = new Map<string, HighlightColor>([
   ['RatioChordPitch', 'pitch'],
   ['Chord', 'chord'],
   ['Chord.Whitespace', 'pitch'],
-  // ['RatioChord'],
+  ['RatioChord', 'pitch'],
   ['Hold', 'pitch'],
   ['Rest', 'delimiter'],
   ['BarLine', 'delimiter'],

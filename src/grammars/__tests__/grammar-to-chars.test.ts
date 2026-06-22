@@ -41,6 +41,17 @@ describe('grammarToChars', () => {
     ])
   })
 
+  it('highlights the inversion prefix on standalone ratio chords', () => {
+    expect(colors(grammarToChars(parse('/6:5:4')))).toEqual([
+      'pitch',
+      'pitch',
+      'delimiter',
+      'pitch',
+      'delimiter',
+      'pitch',
+    ])
+  })
+
   it('keeps all repeated play times for characters inside repeats', () => {
     const ast = parse('|: 0 :|')
     processGrammar(ast)
