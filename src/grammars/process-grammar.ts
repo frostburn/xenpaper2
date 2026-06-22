@@ -572,6 +572,10 @@ const isSampleRateNoteType = (pitch: ChordPitchType): pitch is SampleRateNoteTyp
   return pitch.type === 'SampleRateNote'
 }
 
+const startsRatioChordSegment = (pitches: ChordPitchType[], index: number): boolean =>
+  isRatioChordPitchType(pitches[index]!) ||
+  (pitches[index]?.type === 'InversionPrefix' && isRatioChordPitchType(pitches[index + 1]!))
+
 type RatioFraction = { numerator: number; denominator: number }
 
 type ExpandedChordPitch =
@@ -709,12 +713,10 @@ const expandChordPitchGroup = (
     }
     if (pitch.type === 'Whitespace') {
       const previousPitch = chordPitches[index - 1]
-      const nextPitch = chordPitches[index + 1]
       if (
         previousPitch &&
-        nextPitch &&
         isRatioChordPitchType(previousPitch) &&
-        isRatioChordPitchType(nextPitch)
+        startsRatioChordSegment(chordPitches, index + 1)
       ) {
         addRatioChord(ratioChordPitches, result.length > 0)
         ratioChordPitches = []

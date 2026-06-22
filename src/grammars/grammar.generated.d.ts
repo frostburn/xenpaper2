@@ -9,6 +9,7 @@ export type NodeType<Type extends string = string, Delimiter extends boolean = f
 
 export type DelimiterType =
   | NodeType<'Colon', true>
+  | NodeType<'InversionPrefix', true>
   | NodeType<'Semicolon', true>
   | NodeType<'BarLine', true>
   | NodeType<'Whitespace', true>
