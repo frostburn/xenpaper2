@@ -668,12 +668,15 @@ const chordToMosc = (
     numerator: 1,
     denominator: 1,
   }
+  let canStackRatioChord = true
 
   const addRatioPitchType = (
     ratio: number,
     fraction: { numerator: number; denominator: number } | null,
   ): void => {
-    const labelPrefix = fraction ? `${fraction.numerator}/${fraction.denominator}` : ratio.toString()
+    const labelPrefix = fraction
+      ? `${fraction.numerator}/${fraction.denominator}`
+      : ratio.toString()
     result.push({
       type: 'NOTE_BEAT_TIME',
       hz: ratio * context.rootHz,
@@ -693,6 +696,10 @@ const chordToMosc = (
 
     if (firstDenominator === undefined) {
       return
+    }
+
+    if (hasExplicitPreviousPitch && !canStackRatioChord) {
+      throw new Error('Cannot expand a ratio chord from a sample-rate pitch')
     }
 
     assertFinitePositive('Ratio denominator', firstDenominator)
@@ -773,6 +780,9 @@ const chordToMosc = (
           pitch.value.type === 'PitchRatio'
             ? { numerator: pitch.value.numerator, denominator: pitch.value.denominator }
             : null
+        canStackRatioChord = true
+      } else {
+        canStackRatioChord = false
       }
       return
     }

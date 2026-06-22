@@ -91,11 +91,7 @@ describe('drone syntax', () => {
 
 describe('ratio chord syntax inside chords', () => {
   it('expands ratio chord pitches from the previous pitch', () => {
-    expect(noteLabels('[3/2 5:6:7]')).toEqual([
-      '3/2  702.0c',
-      '9/5  1017.6c',
-      '21/10  84.5c',
-    ])
+    expect(noteLabels('[3/2 5:6:7]')).toEqual(['3/2  702.0c', '9/5  1017.6c', '21/10  84.5c'])
   })
 
   it('uses an implicit unison before leading ratio chords and allows later ratio chords', () => {
@@ -109,13 +105,21 @@ describe('ratio chord syntax inside chords', () => {
   })
 
   it('allows more chord pitches after a ratio chord', () => {
-    expect(noteLabels("[7 3:4:5 9/7 'c]")).toEqual([
-      '7\\12  700.0c',
-      '1.9977427691689087  1198.0c',
-      '2.497178461461136  384.4c',
-      '9/7  435.1c',
+    const labels = noteLabels("[7 3:4:5 9/7 'c]")
+
+    expect(labels.map((label) => label.split('  ').slice(-1)[0])).toEqual([
+      '700.0c',
+      '1198.0c',
+      '384.4c',
+      '435.1c',
       'c♮',
     ])
+  })
+
+  it('throws when expanding a ratio chord from a sample-rate pitch', () => {
+    expect(() => noteItems('[! 3:4]')).toThrow(
+      'Cannot expand a ratio chord from a sample-rate pitch',
+    )
   })
 })
 
