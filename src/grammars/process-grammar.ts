@@ -863,6 +863,8 @@ const playableToMoscAtCurrentTime = (
 ): MoscBeatPlayableNote[] => {
   const startTime = context.time
   const originalTail = item.tail
+  const graceSubdivision = context.graceSubdivision
+  const stolenTime = context.stolenTime
   item.tail = null
   const moscItems =
     item.type === 'Note'
@@ -872,6 +874,8 @@ const playableToMoscAtCurrentTime = (
         : chordToMosc(item, context)
   item.tail = originalTail
   context.time = startTime
+  context.graceSubdivision = graceSubdivision
+  context.stolenTime = stolenTime
   return moscItems.map((moscItem) => ({
     ...moscItem,
     time: startTime,

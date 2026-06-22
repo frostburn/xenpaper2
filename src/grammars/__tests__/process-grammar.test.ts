@@ -81,6 +81,14 @@ describe('grace note syntax', () => {
       { label: 'C♮', time: 0.0625, timeEnd: 0.5 },
     ])
   })
+
+  it('skips drones when applying grace notes and stolen time', () => {
+    expect(noteItems('(8?) (drone: 0) D C')).toMatchObject([
+      { label: '0\\12  0.0c', time: 0, timeEnd: 0.5 },
+      { label: 'D♮', time: 0, timeEnd: 0.125 },
+      { label: 'C♮', time: 0.125, timeEnd: 0.5 },
+    ])
+  })
 })
 
 describe('drone syntax', () => {
