@@ -179,8 +179,8 @@ export type SetScaleType = NodeType<'SetScale'> & {
 }
 
 export type SetRootType = NodeType<'SetRoot'> & {
-  pitch?: PitchType
-  rootNominal?: PitchAbsoluteType
+  pitch: PitchType | null
+  rootNominal: PitchAbsoluteType | null
 }
 
 //

@@ -171,8 +171,8 @@ EnvDigit = digit:[0-9] { return parseInt(digit, 10); }
 SetRulerRange = "rl"i _ ":" _ low:Pitch _ "," _ high:Pitch { return node('SetRulerRange', { low, high }); }
 SetRulerPlot = "plot"i { return node('SetRulerPlot'); }
 SetRoot = "{" _ "r"i body:(RootNominalOnly / RootPitch) _ "}" { return node('SetRoot', body); }
-RootPitch = _ pitch:Pitch rootNominal:RootNominal? { return rootNominal === null ? { pitch } : { pitch, rootNominal }; }
-RootNominalOnly = rootNominal:RootNominal { return { rootNominal }; }
+RootPitch = _ pitch:Pitch rootNominal:RootNominal? { return { pitch, rootNominal }; }
+RootNominalOnly = rootNominal:RootNominal { return { pitch: null, rootNominal }; }
 RootNominal = _ "as"i _ pitch:PitchAbsolute { return pitch; }
 SetScale = "{" _ scale:(EdoScale / PythagoreanScale / RatioChordScale / PitchGroupScale) _ "}" {
   return node('SetScale', { scale });

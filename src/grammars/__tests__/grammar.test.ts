@@ -1890,6 +1890,7 @@ describe('grammar', () => {
                 type: 'PitchDegree',
               },
             },
+            rootNominal: null,
           },
           {
             type: 'SetRoot',
@@ -1901,6 +1902,7 @@ describe('grammar', () => {
                 type: 'PitchRatio',
               },
             },
+            rootNominal: null,
           },
           {
             type: 'SetRoot',
@@ -1911,6 +1913,7 @@ describe('grammar', () => {
                 type: 'PitchHz',
               },
             },
+            rootNominal: null,
           },
           {
             type: 'SetRoot',
@@ -1921,6 +1924,7 @@ describe('grammar', () => {
                 type: 'PitchHz',
               },
             },
+            rootNominal: null,
           },
           {
             type: 'SetRoot',
@@ -1943,6 +1947,7 @@ describe('grammar', () => {
           },
           {
             type: 'SetRoot',
+            pitch: null,
             rootNominal: {
               type: 'PitchAbsolute',
               ups: 0,
@@ -2135,6 +2140,7 @@ describe('grammar', () => {
                 denominator: 5,
               },
             },
+            rootNominal: null,
           },
         ])
       })

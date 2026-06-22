@@ -68,7 +68,7 @@ const limit = (name: string, value: number, min: number, max: number): void => {
 // pitch math
 //
 
-export const pitchToRatio = (pitch: PitchType, context: Context): number => {
+export const pitchToRatio = (pitch: PitchType, context: Context, useRootNominal = true): number => {
   const { scale, octaveSize, mapping, up, lift } = context
   assertFinitePositive('context.octaveSize', octaveSize)
   limit('Equave size', octaveSize, -20, 20)
@@ -120,7 +120,9 @@ export const pitchToRatio = (pitch: PitchType, context: Context): number => {
       (ups + keySignature.ups) * up +
       (lifts + keySignature.lifts) * lift +
       tail
-    return centsToValue(cents) * octaveMulti
+    const rootNominalRatio = useRootNominal ? context.rootNominalRatio : 1
+    assertFinitePositive('context.rootNominalRatio', rootNominalRatio)
+    return (centsToValue(cents) * octaveMulti) / rootNominalRatio
   }
 
   throw new Error(`Unknown pitch type "${type}"`)
@@ -168,8 +170,8 @@ const pitchToHz = (pitch: PitchType, context: Context): number => {
 }
 
 const setRoot = (item: SetRootType, context: Context): void => {
-  const nextRootHz = item.pitch === undefined ? context.rootHz : pitchToHz(item.pitch, context)
-  if (item.rootNominal === undefined) {
+  const nextRootHz = item.pitch === null ? context.rootHz : pitchToHz(item.pitch, context)
+  if (item.rootNominal === null) {
     context.rootHz = nextRootHz
     return
   }
@@ -183,9 +185,11 @@ const setRoot = (item: SetRootType, context: Context): void => {
       value: item.rootNominal,
     },
     context,
+    false,
   )
   assertFinitePositive('SetRoot.rootNominalRatio', rootNominalRatio)
-  context.rootHz = nextRootHz / rootNominalRatio
+  context.rootHz = nextRootHz
+  context.rootNominalRatio = rootNominalRatio
 }
 
 const tailToTime = (tail: TailType | null, context: Context): { time: number; timeEnd: number } => {
@@ -288,6 +292,7 @@ const ENV_VALUES = [0, 0.003, 0.006, 0.01, 0.033, 0.1, 0.33, 1, 3.3, 10]
 
 type Context = {
   rootHz: number
+  rootNominalRatio: number
   time: number
   subdivision: number
   scale: number[]
@@ -1054,6 +1059,7 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
 
   const context: Context = {
     rootHz: 220,
+    rootNominalRatio: 1,
     time: 0,
     subdivision: 0.5,
     scale,
