@@ -60,7 +60,7 @@ const INITIAL_VOLUME = {
   time: 0,
   value: {
     type: 'volume',
-    db: -18,
+    db: 0,
   },
 }
 
@@ -208,7 +208,7 @@ describe('grammar to mosc score', () => {
         value: { type: 'volume', db: -2 },
       },
       { type: 'PARAM_BEAT_TIME', time: 0, value: { type: 'velocity', velocity: 0.5 } },
-      { type: 'PARAM_BEAT_TIME', time: 0, value: { type: 'velocity', velocity: 0.875 } },
+      { type: 'PARAM_BEAT_TIME', time: 0, value: { type: 'velocity', velocity: 1.5 } },
       { type: 'END_BEAT_TIME', time: 0 },
     ])
   })

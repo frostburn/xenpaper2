@@ -2164,7 +2164,10 @@ describe('grammar', () => {
 
 
       it('should parse volume, velocity, and dynamic shorthand setters', () => {
-        expect(strip(parser('(vol:-2dB; vol: +3.5 db; vel:50%; ppp; pp; p; mp; mf; f; ff; fff)')).sequence.items).toEqual([
+        expect(
+          strip(parser('(vol:-2dB; vol: +3.5 db; vel:50%; ppp; pp; p; mp; mf; f; ff; fff)'))
+            .sequence.items,
+        ).toEqual([
           {
             type: 'SetterGroup',
             setters: [
@@ -2178,17 +2181,17 @@ describe('grammar', () => {
               { type: 'Semicolon' },
               { type: 'SetVelocity', velocity: 0.25 },
               { type: 'Semicolon' },
-              { type: 'SetVelocity', velocity: 0.375 },
-              { type: 'Semicolon' },
               { type: 'SetVelocity', velocity: 0.5 },
-              { type: 'Semicolon' },
-              { type: 'SetVelocity', velocity: 0.625 },
               { type: 'Semicolon' },
               { type: 'SetVelocity', velocity: 0.75 },
               { type: 'Semicolon' },
-              { type: 'SetVelocity', velocity: 0.875 },
-              { type: 'Semicolon' },
               { type: 'SetVelocity', velocity: 1 },
+              { type: 'Semicolon' },
+              { type: 'SetVelocity', velocity: 1.25 },
+              { type: 'Semicolon' },
+              { type: 'SetVelocity', velocity: 1.5 },
+              { type: 'Semicolon' },
+              { type: 'SetVelocity', velocity: 2 },
             ],
           },
         ])

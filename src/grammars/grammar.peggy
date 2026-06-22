@@ -181,12 +181,12 @@ SetVelocityShorthand = shorthand:VelocityShorthand { return node('SetVelocity', 
 VelocityShorthand
   = "ppp"i { return 0.125; }
   / "pp"i { return 0.25; }
-  / "p"i { return 0.375; }
-  / "mp"i { return 0.5; }
-  / "mf"i { return 0.625; }
-  / "fff"i { return 1; }
-  / "ff"i { return 0.875; }
-  / "f"i { return 0.75; }
+  / "p"i { return 0.5; }
+  / "mp"i { return 0.75; }
+  / "mf"i { return 1; }
+  / "fff"i { return 2; }
+  / "ff"i { return 1.5; }
+  / "f"i { return 1.25; }
 SetKey = "key"i _ ":" _ tonic:KeyTonic _ mode:KeyMode { return node('SetKey', { tonic, mode }); }
 KeyTonic = updowns:UpsAndDowns nominal:(GreekNominal / LatinNominal) accidentals:Accidental* inflections:Inflection* { return { ...updowns, ...nominal, accidentals, inflections }; }
 KeyMode

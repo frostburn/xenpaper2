@@ -109,6 +109,8 @@ export class SoundEngineTonejs extends SoundEngine {
   _endTime = 0
   _activeNoteEvents = new Set<MoscNote>()
   _transportEventIds: number[] = []
+  _outputGain = 1
+  _scoreVolumeDb = 0
 
   _synth: PolySynth<Synth> | undefined
 
@@ -175,8 +177,14 @@ export class SoundEngineTonejs extends SoundEngine {
     this._releaseActiveNotesIfSynthExists(time)
   }
 
+  private _applyOutputGain(): void {
+    this.getSynth().volume.value =
+      this._outputGain <= 0 ? -Infinity : 20 * Math.log10(this._outputGain) + this._scoreVolumeDb
+  }
+
   setOutputGain(gain: number): void {
-    this.getSynth().volume.value = gain <= 0 ? -Infinity : 20 * Math.log10(gain)
+    this._outputGain = gain
+    this._applyOutputGain()
   }
 
   setScore(score: MoscScore): void {
@@ -189,6 +197,8 @@ export class SoundEngineTonejs extends SoundEngine {
     this._releaseActiveNotesIfSynthExists()
 
     let velocity = 1
+    this._scoreVolumeDb = 0
+    this._applyOutputGain()
 
     // add all new notes to tone transport
     this.score.sequence.forEach((item): void => {
@@ -245,11 +255,8 @@ export class SoundEngineTonejs extends SoundEngine {
             })
           }
           if (isVolumeParam(paramTime.value)) {
-            this.getSynth().set({
-              oscillator: {
-                volume: paramTime.value.db,
-              } as Partial<SynthOptions['oscillator']>,
-            })
+            this._scoreVolumeDb = paramTime.value.db
+            this._applyOutputGain()
           }
           if (isVelocityParam(paramTime.value)) {
             velocity = paramTime.value.velocity

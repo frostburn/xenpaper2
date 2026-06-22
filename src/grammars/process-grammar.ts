@@ -50,7 +50,7 @@ import { beatToTime } from '../mosc'
 const NUM_COMPONENTS = 24
 const DEFAULT_UP = valueToCents(243 / 242) / 2
 const DEFAULT_LIFT = valueToCents(50 / 49) / 2
-const DEFAULT_VOLUME_DB = -18
+const DEFAULT_VOLUME_DB = 0
 
 //
 // utils
@@ -1158,7 +1158,7 @@ const setterToMosc = (setter: SetterType | DelimiterType, context: Context): Mos
 
   if (type === 'SetVelocity') {
     const { velocity } = setter
-    limit('SetVelocity.velocity', velocity, 0, 1)
+    limit('SetVelocity.velocity', velocity, 0, 4)
     return [
       {
         type: 'PARAM_BEAT_TIME',

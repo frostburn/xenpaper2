@@ -54,6 +54,8 @@ export class SoundEngineSwSeq extends SoundEngine {
   private activeNoteEvents = new Set<MoscNote>()
   private noteOffs: Array<(time: number) => void> = []
   private destination: GainNode
+  private outputGain = 1
+  private scoreVolume = 1
   private synth: PolySynth
   private transport: Transport
   private transportEventIds = new Map<number, true>()
@@ -99,8 +101,16 @@ export class SoundEngineSwSeq extends SoundEngine {
     }
   }
 
+  private applyOutputGain(): void {
+    this.destination.gain.setValueAtTime(
+      this.outputGain * this.scoreVolume,
+      this.context.currentTime,
+    )
+  }
+
   setOutputGain(gain: number): void {
-    this.destination.gain.setValueAtTime(gain, this.context.currentTime)
+    this.outputGain = gain
+    this.applyOutputGain()
   }
 
   setScore(score: MoscScore): void {
@@ -125,10 +135,11 @@ export class SoundEngineSwSeq extends SoundEngine {
       },
     }
 
-    let volume = OSC_VOLUME
     let velocity = 1
+    this.scoreVolume = 1
+    this.applyOutputGain()
     const updatePatchVelocity = () => {
-      patch.velocity = volume * velocity
+      patch.velocity = OSC_VOLUME * velocity
     }
 
     score.sequence.forEach((item) => {
@@ -176,8 +187,8 @@ export class SoundEngineSwSeq extends SoundEngine {
           }
         }
         if (isVolumeParam(item.value)) {
-          volume = dbToGain(item.value.db)
-          updatePatchVelocity()
+          this.scoreVolume = dbToGain(item.value.db)
+          this.applyOutputGain()
         }
         if (isVelocityParam(item.value)) {
           velocity = item.value.velocity
