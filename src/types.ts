@@ -23,6 +23,7 @@ export type SourceTab = {
   alive: boolean
   muted: boolean
   soloed: boolean
+  sounding: boolean
 }
 
 export type SourceHistory = {

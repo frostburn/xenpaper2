@@ -48,12 +48,12 @@ const isCharacterActive = (charData?: CharData): boolean =>
         <div v-for="tab in liveSourceTabs" :key="tab.id" class="source-tab">
           <button
             class="source-tab-button"
-            :class="{ active: tab.active }"
+            :class="{ active: tab.active, sounding: tab.sounding }"
             type="button"
             role="tab"
             :aria-selected="tab.active"
-            :title="tab.title"
-            :aria-label="tab.title"
+            :title="`${tab.title}${tab.sounding ? ' (playing)' : ''}`"
+            :aria-label="`${tab.title}${tab.sounding ? ', playing' : ''}`"
             :aria-controls="`source-code-panel-${tab.id}`"
             @click="emit('selectSourceCodeTab', tab.id)"
           >
