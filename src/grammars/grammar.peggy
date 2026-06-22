@@ -173,7 +173,7 @@ SetRulerPlot = "plot"i { return node('SetRulerPlot'); }
 SetRoot = "{" _ "r"i body:(RootNominalOnly / RootPitch) _ "}" { return node('SetRoot', body); }
 RootPitch = _ pitch:Pitch rootNominal:RootNominal? { return { pitch, rootNominal }; }
 RootNominalOnly = rootNominal:RootNominal { return { pitch: null, rootNominal }; }
-RootNominal = _ "as"i _ @PitchAbsolute
+RootNominal = _ "as"i _ octave:OctaveModifier? nominal:PitchAbsolute { return { ...nominal, octave: octave?.octave ?? 0 }; }
 SetScale = "{" _ scale:(EdoScale / PythagoreanScale / RatioChordScale / PitchGroupScale) _ "}" {
   return node('SetScale', { scale });
 }

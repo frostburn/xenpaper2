@@ -1100,6 +1100,15 @@ describe('grammar to mosc score', () => {
     expect(notes[3]?.hz).toBeAround(220, 6)
   })
 
+  it('can associate a root setter frequency with an octave-shifted absolute nominal', () => {
+    const notes = noteItems('{r216Hz as `A} `A A 0')
+
+    expect(notes.map((note) => note.label)).toEqual(['A♮', 'A♮', String.raw`0\12  0.0c`])
+    expect(notes[0]?.hz).toBeAround(216, 6)
+    expect(notes[1]?.hz).toBeAround(432, 6)
+    expect(notes[2]?.hz).toBeAround(216, 6)
+  })
+
   it('commutes root nomination with edo scale setters', () => {
     const beforeScale = noteItems('{r as C}{31edo} C 0')
     const afterScale = noteItems('{31edo}{r as C} C 0')

@@ -198,7 +198,7 @@ const setRoot = (item: SetRootType, context: Context): void => {
     return
   }
 
-  const rootNominal = absolutePitchToMonzo(item.rootNominal, 0, context)
+  const rootNominal = absolutePitchToMonzo(item.rootNominal, item.rootNominal.octave, context)
   context.rootHz = nextRootHz
   context.rootNominal = rootNominal
 }
