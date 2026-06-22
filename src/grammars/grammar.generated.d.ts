@@ -178,9 +178,21 @@ export type SetScaleType = NodeType<'SetScale'> & {
   scale: EdoScaleType | PythagoreanScaleType | RatioChordScaleType | PitchGroupScaleType
 }
 
-export type SetRootType = NodeType<'SetRoot'> & {
-  pitch: PitchType
-}
+export type SetRootType = NodeType<'SetRoot'> &
+  (
+    | {
+        pitch: PitchType
+        rootNominal: PitchAbsoluteType
+      }
+    | {
+        pitch: PitchType
+        rootNominal: null
+      }
+    | {
+        pitch: null
+        rootNominal: PitchAbsoluteType
+      }
+  )
 
 //
 // setters

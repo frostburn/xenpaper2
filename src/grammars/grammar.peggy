@@ -170,7 +170,10 @@ EnvValues "four digits" = a:EnvDigit _ d:EnvDigit _ s:EnvDigit _ r:EnvDigit { re
 EnvDigit = digit:[0-9] { return parseInt(digit, 10); }
 SetRulerRange = "rl"i _ ":" _ low:Pitch _ "," _ high:Pitch { return node('SetRulerRange', { low, high }); }
 SetRulerPlot = "plot"i { return node('SetRulerPlot'); }
-SetRoot = "{" _ "r"i _ pitch:Pitch _ "}" { return node('SetRoot', { pitch }); }
+SetRoot = "{" _ "r"i body:(RootNominalOnly / RootPitch) _ "}" { return node('SetRoot', body); }
+RootPitch = _ pitch:Pitch rootNominal:RootNominal? { return { pitch, rootNominal }; }
+RootNominalOnly = rootNominal:RootNominal { return { pitch: null, rootNominal }; }
+RootNominal = _ "as"i _ @PitchAbsolute
 SetScale = "{" _ scale:(EdoScale / PythagoreanScale / RatioChordScale / PitchGroupScale) _ "}" {
   return node('SetScale', { scale });
 }

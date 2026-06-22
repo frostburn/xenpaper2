@@ -136,6 +136,21 @@ describe('grammarToChars', () => {
     expect(colors(chars)).toEqual(['pitch', undefined, 'pitch', 'pitch'])
   })
 
+  it('syntax-highlights absolute pitches in root setters', () => {
+    const chars = grammarToChars(parse('{r as C}'))
+
+    expect(colors(chars)).toEqual([
+      'scaleGroup',
+      'scaleGroup',
+      'scaleGroup',
+      'scaleGroup',
+      'scaleGroup',
+      'scaleGroup',
+      'scale',
+      'scaleGroup',
+    ])
+  })
+
   it('highlights noise setters like osc setters', () => {
     expect(colors(grammarToChars(parse('(noise:white)')))).toEqual(
       colors(grammarToChars(parse('(osc:slender)'))),

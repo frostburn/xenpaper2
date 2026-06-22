@@ -85,6 +85,7 @@ const colorMap = new Map<string, HighlightColor>([
   ['SetKey', 'scale'],
   ['SetRoot', 'scaleGroup'],
   ['SetRoot.Pitch', 'scale'],
+  ['SetRoot.PitchAbsolute', 'scale'],
   ['SetBpm', 'setter'],
   ['SetBms', 'setter'],
   ['SetSubdivision', 'setter'],
