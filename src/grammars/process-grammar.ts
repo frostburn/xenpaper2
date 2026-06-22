@@ -1,7 +1,7 @@
 import { dot } from 'xen-dev-utils/number-array'
 import { type Monzo, sub } from 'xen-dev-utils/monzo'
 import { PRIME_CENTS } from 'xen-dev-utils/primes'
-import { mmod, geoMod } from 'xen-dev-utils/fraction'
+import { gcd, mmod, geoMod } from 'xen-dev-utils/fraction'
 import { centsToValue, equaveDivisionToValue, valueToCents } from 'xen-dev-utils/conversion'
 
 import type {
@@ -234,15 +234,6 @@ const ratioWrap = (ratio: number, octaveSize: number): number => {
 
 const ratioToCentsLabel = (ratio: number, octaveSize: number): string => {
   return `${valueToCents(ratioWrap(ratio, octaveSize)).toFixed(1)}c`
-}
-
-const gcd = (a: number, b: number): number => {
-  while (b !== 0) {
-    const next = a % b
-    a = b
-    b = next
-  }
-  return Math.abs(a)
 }
 
 export const pitchToLabel = (pitch: PitchType, context: Context): string => {
@@ -767,7 +758,7 @@ const chordToMosc = (
   let ratioChordPitches: Array<RatioChordPitchType | DelimiterType> = []
   chordPitches.forEach((pitch, index) => {
     if (isPitchType(pitch) || isSampleRateNoteType(pitch)) {
-      addRatioChord(ratioChordPitches, result.length > 0)
+      addRatioChord(ratioChordPitches, result.length > 0, result.length === 0)
       ratioChordPitches = []
 
       const playablePitch = pitchTypes.shift()
@@ -800,7 +791,11 @@ const chordToMosc = (
         isRatioChordPitchType(previousPitch) &&
         isRatioChordPitchType(nextPitch)
       ) {
-        addRatioChord(ratioChordPitches, result.length > 0, chord.type === 'RatioChord')
+        addRatioChord(
+          ratioChordPitches,
+          result.length > 0,
+          chord.type === 'RatioChord' || result.length === 0,
+        )
         ratioChordPitches = []
       }
       return
@@ -809,7 +804,11 @@ const chordToMosc = (
       ratioChordPitches.push(pitch)
     }
   })
-  addRatioChord(ratioChordPitches, result.length > 0, chord.type === 'RatioChord')
+  addRatioChord(
+    ratioChordPitches,
+    result.length > 0,
+    chord.type === 'RatioChord' || result.length === 0,
+  )
 
   return result
 }

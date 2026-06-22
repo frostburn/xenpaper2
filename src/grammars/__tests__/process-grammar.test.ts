@@ -96,7 +96,7 @@ describe('ratio chord syntax inside chords', () => {
 
   it('uses an implicit unison before leading ratio chords and allows later ratio chords', () => {
     expect(noteLabels('[4:5:6 5:6:7]')).toEqual([
-      '1/1  0.0c',
+      '4/4  0.0c',
       '5/4  386.3c',
       '3/2  702.0c',
       '9/5  1017.6c',
@@ -1110,7 +1110,7 @@ describe('grammar to mosc score', () => {
           time: 1,
           timeEnd: 2,
           hz: 220,
-          label: '1/1  0.0c',
+          label: '4/4  0.0c',
         },
         {
           type: 'NOTE_BEAT_TIME',
