@@ -944,14 +944,19 @@ const setScale = (setScale: SetScaleType, context: Context): void => {
     context.scaleLabels = []
 
     let firstDenominator = -1
+    const inverted = pitches.some((pitch) => pitch.type === 'RatioChordPitch' && pitch.inverted)
     let colons = 0
     let lastNumerator = 0
 
     const addRatio = (numerator: number): void => {
-      const ratio = numerator / firstDenominator
+      const ratio = inverted ? firstDenominator / numerator : numerator / firstDenominator
       context.scale.push(ratio)
       const centsLabel = ratioToCentsLabel(ratio, 2)
-      context.scaleLabels.push(`${numerator}/${firstDenominator}  ${centsLabel}`)
+      context.scaleLabels.push(
+        inverted
+          ? `${firstDenominator}/${numerator}  ${centsLabel}`
+          : `${numerator}/${firstDenominator}  ${centsLabel}`,
+      )
     }
 
     pitches.forEach((pitch) => {
@@ -969,8 +974,9 @@ const setScale = (setScale: SetScaleType, context: Context): void => {
       assertFinitePositive('Ratio numerator', numerator)
 
       if (colons === 2) {
-        while (lastNumerator < numerator - 1) {
-          lastNumerator++
+        const step = Math.sign(numerator - lastNumerator)
+        while (step !== 0 && lastNumerator + step !== numerator) {
+          lastNumerator += step
           addRatio(lastNumerator)
         }
       }

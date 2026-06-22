@@ -172,6 +172,7 @@ export type PitchGroupScaleType = NodeType<'PitchGroupScale'> & {
 }
 
 export type RatioChordScaleType = NodeType<'RatioChordScale'> & {
+  inverted?: boolean
   pitches: Array<RatioChordPitchType | DelimiterType>
   scaleOctaveMarker: ScaleOctaveMarkerType | null
 }

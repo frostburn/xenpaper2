@@ -197,8 +197,12 @@ EdoScale = divisions:Int _ "ed"i "o"i? _ octaveSize:OctaveSize? {
 }
 PythagoreanScale = "pythagorean"i { return node('PythagoreanScale') };
 ScaleOctaveMarker = "'" { return node('ScaleOctaveMarker'); }
-RatioChordScale = &(Int _ ":") pitches:RatioChordPitches _ scaleOctaveMarker:ScaleOctaveMarker? {
-  return node('RatioChordScale', { pitches, scaleOctaveMarker });
+RatioChordScale = &("/"? Int _ ":") inverted:"/"? pitches:RatioChordPitches _ scaleOctaveMarker:ScaleOctaveMarker? {
+  return node('RatioChordScale', {
+    ...(inverted ? { inverted: true } : {}),
+    pitches: pitches.map((pitch) => pitch.type === 'RatioChordPitch' && inverted ? { ...pitch, inverted: true } : pitch),
+    scaleOctaveMarker,
+  });
 }
 PitchGroupScalePrefix = p:"m"i _ {
   return node('PitchGroupScalePrefix', { prefix: p.toLowerCase() });

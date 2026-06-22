@@ -1497,6 +1497,40 @@ describe('grammar', () => {
             },
           },
         ])
+
+        expect(strip(parser('{/6:5:4}')).sequence.items).toEqual([
+          {
+            type: 'SetScale',
+            scale: {
+              type: 'RatioChordScale',
+              inverted: true,
+              pitches: [
+                {
+                  type: 'RatioChordPitch',
+                  pitch: 6,
+                  inverted: true,
+                },
+                {
+                  type: 'Colon',
+                },
+                {
+                  type: 'RatioChordPitch',
+                  pitch: 5,
+                  inverted: true,
+                },
+                {
+                  type: 'Colon',
+                },
+                {
+                  type: 'RatioChordPitch',
+                  pitch: 4,
+                  inverted: true,
+                },
+              ],
+              scaleOctaveMarker: null,
+            },
+          },
+        ])
       })
 
       it('should parse sequence with pitch set scale setter', () => {
