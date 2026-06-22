@@ -7,7 +7,7 @@ Start = seq:Sequence _ {
 }
 Sequence = items:ItemList { return node('Sequence', { items }); }
 ItemList = head:Item tail:(_ Item)* { return [head, ...tail.map(([,i]) => i)]; } / '' { return []; }
-Item = Comment / MusicalControlFlow / Drone / SetterGroup / SetRoot / SetScale / RatioChordItem / SampleRateNote / Note / Rest / Chord / RepeatEndStart / RepeatStart / RepeatEnd / RepeatEndingStart / BarLine / Whitespace
+Item = Comment / MusicalControlFlow / Drone / SetterGroup / SetRoot / SetScale / Grace / RatioChordItem / SampleRateNote / Note / Rest / Chord / RepeatEndStart / RepeatStart / RepeatEnd / RepeatEndingStart / BarLine / Whitespace
 Note = pitch:Pitch tail:Hold? {
   return node('Note', { pitch, tail });
 }
@@ -155,6 +155,12 @@ SetBpm = "bpm"i _ ":" _ bpm:Number { return node('SetBpm', { bpm }); }
 SetBms = "bms"i _ ":" _ bms:Number { return node('SetBms', { bms }); }
 SetSubdivision = ("div"i _ ":" _)? fraction:Fraction {
   return node('SetSubdivision', {
+    subdivision: fraction.numerator,
+    denominator: fraction.denominator,
+  });
+}
+Grace = "(" _ fraction:(("grace"i _ ":" _ fraction:Fraction { return fraction; }) / (fraction:Fraction _ "?" { return fraction; })) _ ")" {
+  return node('Grace', {
     subdivision: fraction.numerator,
     denominator: fraction.denominator,
   });

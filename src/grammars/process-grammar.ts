@@ -209,19 +209,32 @@ const setRoot = (item: SetRootType, context: Context): void => {
   context.rootNominal = rootNominal
 }
 
-const tailToTime = (tail: TailType | null, context: Context): { time: number; timeEnd: number } => {
+const consumeDuration = (units: number, context: Context): { time: number; timeEnd: number } => {
   const time = context.time
-
-  const duration = tail?.type === 'Hold' ? tail.length + 1 : 1
-
   assertFinitePositive('context.subdivision', context.subdivision)
-  context.time += duration * context.subdivision
-  const timeEnd = context.time
 
-  return {
-    time,
-    timeEnd,
+  if (context.graceSubdivision !== null) {
+    assertFinitePositive('context.graceSubdivision', context.graceSubdivision)
+    const graceDuration = units * context.graceSubdivision
+    context.time += graceDuration
+    context.stolenTime += graceDuration
+    context.graceSubdivision = null
+    return { time, timeEnd: context.time }
   }
+
+  const duration = units * context.subdivision - context.stolenTime
+  if (duration < 0) {
+    throw new Error('Grace notes stole more time than the following item has')
+  }
+
+  context.time += duration
+  context.stolenTime = 0
+  return { time, timeEnd: context.time }
+}
+
+const tailToTime = (tail: TailType | null, context: Context): { time: number; timeEnd: number } => {
+  const duration = tail?.type === 'Hold' ? tail.length + 1 : 1
+  return consumeDuration(duration, context)
 }
 
 //
@@ -327,6 +340,8 @@ type Context = {
   stepSize: number
   mappingIsIntegerSteps: boolean
   keySignature: Map<string, KeySignatureAdjustment>
+  graceSubdivision: number | null
+  stolenTime: number
 }
 
 type KeySignatureAdjustment = {
@@ -1254,6 +1269,8 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
     stepSize: 1,
     mappingIsIntegerSteps: false,
     keySignature: new Map(),
+    graceSubdivision: null,
+    stolenTime: 0,
   }
 
   const moscItems: MoscBeatItem[] = []
@@ -1315,6 +1332,14 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
       return
     }
 
+    if (type === 'Grace') {
+      const normalizedDenominator = item.denominator ?? 1
+      assertFinitePositive('Grace.subdivision', item.subdivision)
+      assertFinitePositive('Grace.denominator', normalizedDenominator)
+      context.graceSubdivision = normalizedDenominator / item.subdivision
+      return
+    }
+
     if (type === 'Note') {
       moscItems.push(...noteToMosc(item, context))
       initialRulerState = rulerStateCaptureRootHz(initialRulerState, context)
@@ -1327,12 +1352,10 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
     }
 
     if (type === 'Rest') {
-      const { time } = context
       const rest = item
-      assertFinitePositive('context.subdivision', context.subdivision)
-      context.time += rest.length * context.subdivision
+      const timeProps = consumeDuration(rest.length, context)
       // mutate ast node to add time
-      const arr: [number, number] = [time, context.time]
+      const arr: [number, number] = [timeProps.time, timeProps.timeEnd]
       times.push(arr)
       rest.time = arr
       return
