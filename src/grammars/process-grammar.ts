@@ -665,13 +665,14 @@ const chordToMosc = (
     ratio: number,
     fraction: { numerator: number; denominator: number } | null,
   ): void => {
-    const labelPrefix = fraction
-      ? `${fraction.numerator}/${fraction.denominator}`
-      : ratio.toString()
+    const centsLabel = ratioToCentsLabel(ratio, context.octaveSize)
+    const label = fraction
+      ? `${fraction.numerator}/${fraction.denominator}  ${centsLabel}`
+      : centsLabel
     result.push({
       type: 'NOTE_BEAT_TIME',
       hz: ratio * context.rootHz,
-      label: `${labelPrefix}  ${ratioToCentsLabel(ratio, context.octaveSize)}`,
+      label,
       ...timeProps,
     })
     previousPitchRatio = ratio

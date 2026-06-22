@@ -104,14 +104,12 @@ describe('ratio chord syntax inside chords', () => {
     ])
   })
 
-  it('allows more chord pitches after a ratio chord', () => {
-    const labels = noteLabels("[7 3:4:5 9/7 'c]")
-
-    expect(labels.map((label) => label.split('  ').slice(-1)[0])).toEqual([
-      '700.0c',
+  it('shows cents-only labels for ratio chords expanded from non-ratio pitches', () => {
+    expect(noteLabels("[7 3:4:5 9/7 'c]")).toEqual([
+      '7\\12  700.0c',
       '1198.0c',
       '384.4c',
-      '435.1c',
+      '9/7  435.1c',
       'c♮',
     ])
   })
