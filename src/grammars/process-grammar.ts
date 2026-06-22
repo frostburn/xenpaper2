@@ -733,7 +733,7 @@ const chordToMosc = (
             lastNumerator++
             addRatioPitchType(
               (basePitchRatio * lastNumerator) / firstDenominator,
-              createFraction(lastNumerator),
+              createFraction(lastNumerator, preserveFirstRatioLabel),
             )
           }
         }
@@ -741,7 +741,7 @@ const chordToMosc = (
         if (!isFirstPitch || !hasExplicitPreviousPitch) {
           addRatioPitchType(
             (basePitchRatio * numerator) / firstDenominator,
-            createFraction(numerator, preserveFirstRatioLabel && isFirstPitch),
+            createFraction(numerator, preserveFirstRatioLabel),
           )
         }
 
