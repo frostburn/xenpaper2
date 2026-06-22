@@ -101,11 +101,8 @@ export class SoundEngineSwSeq extends SoundEngine {
     }
   }
 
-  private applyOutputGain(): void {
-    this.destination.gain.setValueAtTime(
-      this.outputGain * this.scoreVolume,
-      this.context.currentTime,
-    )
+  private applyOutputGain(time = this.context.currentTime): void {
+    this.destination.gain.setValueAtTime(this.outputGain * this.scoreVolume, time)
   }
 
   setOutputGain(gain: number): void {
@@ -187,8 +184,12 @@ export class SoundEngineSwSeq extends SoundEngine {
           }
         }
         if (isVolumeParam(item.value)) {
-          this.scoreVolume = dbToGain(item.value.db)
-          this.applyOutputGain()
+          const { db } = item.value
+          const volumeEventId = this.transport.scheduleParametric((time) => {
+            this.scoreVolume = dbToGain(db)
+            this.applyOutputGain(time)
+          }, item.time)
+          this.transportEventIds.set(volumeEventId, true)
         }
         if (isVelocityParam(item.value)) {
           velocity = item.value.velocity
