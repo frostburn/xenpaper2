@@ -1,4 +1,5 @@
 import { dot } from 'xen-dev-utils/number-array'
+import { type Monzo, sub } from 'xen-dev-utils/monzo'
 import { PRIME_CENTS } from 'xen-dev-utils/primes'
 import { mmod, geoMod } from 'xen-dev-utils/fraction'
 import { centsToValue, equaveDivisionToValue, valueToCents } from 'xen-dev-utils/conversion'
@@ -70,21 +71,10 @@ const limit = (name: string, value: number, min: number, max: number): void => {
 //
 
 type AbsolutePitchMonzo = {
-  monzo: number[]
+  monzo: Monzo
   ups: number
   lifts: number
 }
-
-const addMonzos = (left: readonly number[], right: readonly number[]): number[] => {
-  const length = Math.max(left.length, right.length)
-  const result: number[] = []
-  for (let index = 0; index < length; index++) {
-    result.push((left[index] ?? 0) + (right[index] ?? 0))
-  }
-  return result
-}
-
-const negateMonzo = (monzo: readonly number[]): number[] => monzo.map((component) => -component)
 
 const absolutePitchToMonzo = (
   pitch: PitchAbsoluteType,
@@ -97,7 +87,7 @@ const absolutePitchToMonzo = (
   const monzo = applyFjsInflections(
     nominalToMonzo(nominal, keySignature.accidentals).slice(),
     effectiveInflections,
-  ).slice() as number[]
+  ).slice() as Monzo
   monzo[0] = (monzo[0] ?? 0) + octave
 
   return {
@@ -108,7 +98,7 @@ const absolutePitchToMonzo = (
 }
 
 export const pitchToRatio = (pitch: PitchType, context: Context): number => {
-  const { scale, octaveSize, mapping, up, lift } = context
+  const { scale, octaveSize, mapping, up, lift, rootNominal } = context
   assertFinitePositive('context.octaveSize', octaveSize)
   limit('Equave size', octaveSize, -20, 20)
 
@@ -143,7 +133,7 @@ export const pitchToRatio = (pitch: PitchType, context: Context): number => {
 
   if (type === 'PitchAbsolute') {
     const absolutePitch = absolutePitchToMonzo(pitch.value, pitch.octave?.octave ?? 0, context)
-    const monzo = addMonzos(absolutePitch.monzo, context.rootNominalOffset)
+    const monzo = sub(absolutePitch.monzo, rootNominal.monzo)
     // Compute power-user mapping on the fly
     let tail = 0
     for (let i = mapping.length; i < monzo.length; ++i) {
@@ -151,8 +141,8 @@ export const pitchToRatio = (pitch: PitchType, context: Context): number => {
     }
     const cents =
       dot(mapping, monzo) +
-      (absolutePitch.ups + context.rootNominalUps) * up +
-      (absolutePitch.lifts + context.rootNominalLifts) * lift +
+      (absolutePitch.ups - rootNominal.ups) * up +
+      (absolutePitch.lifts - rootNominal.lifts) * lift +
       tail
     return centsToValue(cents)
   }
@@ -210,9 +200,7 @@ const setRoot = (item: SetRootType, context: Context): void => {
 
   const rootNominal = absolutePitchToMonzo(item.rootNominal, 0, context)
   context.rootHz = nextRootHz
-  context.rootNominalOffset = negateMonzo(rootNominal.monzo)
-  context.rootNominalUps = -rootNominal.ups
-  context.rootNominalLifts = -rootNominal.lifts
+  context.rootNominal = rootNominal
 }
 
 const tailToTime = (tail: TailType | null, context: Context): { time: number; timeEnd: number } => {
@@ -315,9 +303,11 @@ const ENV_VALUES = [0, 0.003, 0.006, 0.01, 0.033, 0.1, 0.33, 1, 3.3, 10]
 
 type Context = {
   rootHz: number
-  rootNominalOffset: number[]
-  rootNominalUps: number
-  rootNominalLifts: number
+  rootNominal: {
+    monzo: Monzo
+    ups: number
+    lifts: number
+  }
   time: number
   subdivision: number
   scale: number[]
@@ -1084,9 +1074,11 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
 
   const context: Context = {
     rootHz: 220,
-    rootNominalOffset: [],
-    rootNominalUps: 0,
-    rootNominalLifts: 0,
+    rootNominal: {
+      monzo: [],
+      ups: 0,
+      lifts: 0,
+    },
     time: 0,
     subdivision: 0.5,
     scale,
