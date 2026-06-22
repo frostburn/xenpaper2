@@ -178,11 +178,15 @@ export type SetScaleType = NodeType<'SetScale'> & {
   scale: EdoScaleType | PythagoreanScaleType | RatioChordScaleType | PitchGroupScaleType
 }
 
+export type RootNominalType = PitchAbsoluteType & {
+  octave: number
+}
+
 export type SetRootType = NodeType<'SetRoot'> &
   (
     | {
         pitch: PitchType
-        rootNominal: PitchAbsoluteType
+        rootNominal: RootNominalType
       }
     | {
         pitch: PitchType
@@ -190,7 +194,7 @@ export type SetRootType = NodeType<'SetRoot'> &
       }
     | {
         pitch: null
-        rootNominal: PitchAbsoluteType
+        rootNominal: RootNominalType
       }
   )
 
