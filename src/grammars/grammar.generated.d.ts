@@ -168,14 +168,7 @@ export type PitchGroupScalePrefixType = NodeType<'PitchGroupScalePrefix'> & {
 
 export type PitchGroupScaleType = NodeType<'PitchGroupScale'> & {
   pitchGroupScalePrefix: PitchGroupScalePrefixType | null
-  pitches: PitchGroupType
-  scaleOctaveMarker: ScaleOctaveMarkerType | null
-}
-
-export type RatioChordScaleType = NodeType<'RatioChordScale'> & {
-  inverted?: boolean
-  inversionPrefix?: DelimiterType
-  pitches: Array<RatioChordPitchType | DelimiterType>
+  pitches: Array<RatioChordPitchType | PitchType | SampleRateNoteType | DelimiterType>
   scaleOctaveMarker: ScaleOctaveMarkerType | null
 }
 
@@ -184,7 +177,7 @@ export type RatioChordScaleType = NodeType<'RatioChordScale'> & {
 //
 
 export type SetScaleType = NodeType<'SetScale'> & {
-  scale: EdoScaleType | PythagoreanScaleType | RatioChordScaleType | PitchGroupScaleType
+  scale: EdoScaleType | PythagoreanScaleType | PitchGroupScaleType
 }
 
 export type RootNominalType = PitchAbsoluteType & {

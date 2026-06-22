@@ -867,8 +867,7 @@ const setScale = (setScale: SetScaleType, context: Context): void => {
   const { type } = scale
   if (type === 'PitchGroupScale') {
     const { pitches, scaleOctaveMarker, pitchGroupScalePrefix } = scale
-
-    let filteredPitches = pitches.filter((pitch): pitch is PitchType => pitch.type === 'Pitch')
+    const scalePitches: ChordPitchType[] = pitches
 
     if (pitchGroupScalePrefix && pitchGroupScalePrefix.prefix === 'm') {
       const degreePitches: PitchDegreeType[] = [
@@ -881,8 +880,9 @@ const setScale = (setScale: SetScaleType, context: Context): void => {
       ]
 
       let degree = 0
-      filteredPitches.forEach((pitch) => {
-        if (pitch.value.type !== 'PitchDegree') {
+      scalePitches.forEach((pitch) => {
+        if (pitch.type === 'Whitespace') return
+        if (!isPitchType(pitch) || pitch.value.type !== 'PitchDegree') {
           throw new Error(
             'Mode scales {m} should only contain pitch degrees (0, 1, etc), not ratios, hz or any other kind of pitch',
           )
@@ -896,17 +896,166 @@ const setScale = (setScale: SetScaleType, context: Context): void => {
       })
 
       degreePitches.pop() // ignore last degree which is assumed to complete the octave
-      filteredPitches = degreePitches.map((value) => ({
-        type: 'Pitch',
-        delimiter: false,
-        location: value.location,
-        value,
-        octave: null,
-      }))
-    }
+      context.scale = degreePitches.map((value) =>
+        pitchToRatio(
+          {
+            type: 'Pitch',
+            delimiter: false,
+            location: value.location,
+            value,
+            octave: null,
+          },
+          context,
+        ),
+      )
+      context.scaleLabels = degreePitches.map((value) =>
+        pitchToLabel(
+          {
+            type: 'Pitch',
+            delimiter: false,
+            location: value.location,
+            value,
+            octave: null,
+          },
+          context,
+        ),
+      )
+    } else {
+      context.scale = []
+      context.scaleLabels = []
 
-    context.scale = filteredPitches.map((pitch) => pitchToRatio(pitch, context))
-    context.scaleLabels = filteredPitches.map((pitch) => pitchToLabel(pitch, context))
+      let previousPitchRatio = 1
+      let previousPitchFraction: { numerator: number; denominator: number } | null = {
+        numerator: 1,
+        denominator: 1,
+      }
+      let canStackRatioChord = true
+
+      const addScaleRatio = (
+        ratio: number,
+        fraction: { numerator: number; denominator: number } | null,
+      ): void => {
+        context.scale.push(ratio)
+        const centsLabel = ratioToCentsLabel(ratio, context.octaveSize)
+        context.scaleLabels.push(
+          fraction ? `${fraction.numerator}/${fraction.denominator}  ${centsLabel}` : centsLabel,
+        )
+        previousPitchRatio = ratio
+        previousPitchFraction = fraction
+      }
+
+      const addRatioChord = (
+        ratioChordPitches: Array<RatioChordPitchType | DelimiterType>,
+        hasExplicitPreviousPitch: boolean,
+        preserveFirstRatioLabel = false,
+      ): void => {
+        const firstDenominator = ratioChordPitches.find(isRatioChordPitchType)?.pitch
+        const inverted = ratioChordPitches.some(
+          (pitch) => isRatioChordPitchType(pitch) && pitch.inverted,
+        )
+
+        if (firstDenominator === undefined) return
+        if (hasExplicitPreviousPitch && !canStackRatioChord) {
+          throw new Error('Cannot expand a ratio chord from a sample-rate pitch')
+        }
+        assertFinitePositive('Ratio denominator', firstDenominator)
+
+        const basePitchRatio = previousPitchRatio
+        const basePitchFraction = previousPitchFraction
+        let colons = 0
+        let lastNumerator = 1
+        let isFirstPitch = true
+
+        const createFraction = (
+          numerator: number,
+          preserveLabel = false,
+        ): { numerator: number; denominator: number } | null => {
+          if (!basePitchFraction) return null
+          const nextNumerator =
+            basePitchFraction.numerator * (inverted ? firstDenominator : numerator)
+          const nextDenominator =
+            basePitchFraction.denominator * (inverted ? numerator : firstDenominator)
+          if (preserveLabel) return { numerator: nextNumerator, denominator: nextDenominator }
+          const divisor = gcd(nextNumerator, nextDenominator)
+          return { numerator: nextNumerator / divisor, denominator: nextDenominator / divisor }
+        }
+
+        ratioChordPitches.forEach((pitch) => {
+          if (isRatioChordPitchType(pitch)) {
+            const numerator = pitch.pitch
+            assertFinitePositive('Ratio numerator', numerator)
+            if (colons === 2) {
+              const step = Math.sign(numerator - lastNumerator)
+              while (step !== 0 && lastNumerator + step !== numerator) {
+                lastNumerator += step
+                addScaleRatio(
+                  basePitchRatio *
+                    (inverted
+                      ? firstDenominator / lastNumerator
+                      : lastNumerator / firstDenominator),
+                  createFraction(lastNumerator, preserveFirstRatioLabel),
+                )
+              }
+            }
+            if (!isFirstPitch || !hasExplicitPreviousPitch) {
+              addScaleRatio(
+                basePitchRatio *
+                  (inverted ? firstDenominator / numerator : numerator / firstDenominator),
+                createFraction(numerator, preserveFirstRatioLabel),
+              )
+            }
+            lastNumerator = numerator
+            colons = 0
+            isFirstPitch = false
+            return
+          }
+          if (pitch.type === 'Colon') colons++
+        })
+      }
+
+      let ratioChordPitches: Array<RatioChordPitchType | DelimiterType> = []
+      scalePitches.forEach((pitch, index) => {
+        if (isPitchType(pitch) || isSampleRateNoteType(pitch)) {
+          addRatioChord(ratioChordPitches, context.scale.length > 0, context.scale.length === 0)
+          ratioChordPitches = []
+
+          if (isPitchType(pitch)) {
+            const ratio = pitchToRatio(pitch, context)
+            context.scale.push(ratio)
+            context.scaleLabels.push(pitchToLabel(pitch, context))
+            previousPitchRatio = ratio
+            previousPitchFraction =
+              pitch.value.type === 'PitchRatio'
+                ? { numerator: pitch.value.numerator, denominator: pitch.value.denominator }
+                : null
+            canStackRatioChord = true
+          } else {
+            canStackRatioChord = false
+          }
+          return
+        }
+        if (pitch.type === 'Colon') {
+          ratioChordPitches.push(pitch)
+          return
+        }
+        if (pitch.type === 'Whitespace') {
+          const previousPitch = scalePitches[index - 1]
+          const nextPitch = scalePitches[index + 1]
+          if (
+            previousPitch &&
+            nextPitch &&
+            isRatioChordPitchType(previousPitch) &&
+            isRatioChordPitchType(nextPitch)
+          ) {
+            addRatioChord(ratioChordPitches, context.scale.length > 0, context.scale.length === 0)
+            ratioChordPitches = []
+          }
+          return
+        }
+        if (isRatioChordPitchType(pitch)) ratioChordPitches.push(pitch)
+      })
+      addRatioChord(ratioChordPitches, context.scale.length > 0, context.scale.length === 0)
+    }
 
     if (scaleOctaveMarker) {
       context.octaveSize = context.scale.pop() || 2
@@ -935,63 +1084,6 @@ const setScale = (setScale: SetScaleType, context: Context): void => {
     context.up = DEFAULT_UP
     context.lift = DEFAULT_LIFT
     context.mapping = PRIME_CENTS
-    return
-  }
-
-  if (type === 'RatioChordScale') {
-    const { pitches, scaleOctaveMarker } = scale
-
-    context.scale = []
-    context.scaleLabels = []
-
-    let firstDenominator = -1
-    const inverted = pitches.some((pitch) => pitch.type === 'RatioChordPitch' && pitch.inverted)
-    let colons = 0
-    let lastNumerator = 0
-
-    const addRatio = (numerator: number): void => {
-      const ratio = inverted ? firstDenominator / numerator : numerator / firstDenominator
-      context.scale.push(ratio)
-      const centsLabel = ratioToCentsLabel(ratio, 2)
-      context.scaleLabels.push(
-        inverted
-          ? `${firstDenominator}/${numerator}  ${centsLabel}`
-          : `${numerator}/${firstDenominator}  ${centsLabel}`,
-      )
-    }
-
-    pitches.forEach((pitch) => {
-      if (pitch.type !== 'RatioChordPitch') {
-        colons++
-        return
-      }
-
-      const numerator = pitch.pitch
-      if (firstDenominator === -1) {
-        assertFinitePositive('Ratio denominator', numerator)
-        firstDenominator = numerator
-      }
-
-      assertFinitePositive('Ratio numerator', numerator)
-
-      if (colons === 2) {
-        const step = Math.sign(numerator - lastNumerator)
-        while (step !== 0 && lastNumerator + step !== numerator) {
-          lastNumerator += step
-          addRatio(lastNumerator)
-        }
-      }
-
-      addRatio(numerator)
-      lastNumerator = numerator
-      colons = 0
-    })
-
-    if (scaleOctaveMarker) {
-      context.octaveSize = context.scale.pop() || 2
-      context.scaleLabels.pop()
-    }
-
     return
   }
 

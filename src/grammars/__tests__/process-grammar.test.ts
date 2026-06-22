@@ -125,6 +125,15 @@ describe('ratio chord syntax inside chords', () => {
     ])
   })
 
+  it('expands ratio chords in scales from the previous scale pitch', () => {
+    expect(noteLabels('{1/1 3/2 5:6:7} 0 1 2 3')).toEqual([
+      '1/1  0.0c',
+      '3/2  702.0c',
+      '9/5  1017.6c',
+      '21/10  84.5c',
+    ])
+  })
+
   it('shows cents-only labels for ratio chords expanded from non-ratio pitches', () => {
     expect(noteLabels("[7 3:4:5 9/7 'c]")).toEqual([
       '7\\12  700.0c',
@@ -613,9 +622,14 @@ describe('grammar to mosc score', () => {
   // 0,1,2,4
   //
 
-  const SCALE_TEST = JSON.parse(
-    `{"type":"XenpaperGrammar","sequence":{"type":"Sequence","items":[{"type":"Comment","comment":" scale degrees","pos":0},{"type":"Note","pitch":{"type":"Pitch","value":{"type":"PitchDegree","degree":0,"pos":16},"pos":16},"tail":{"type":"Comma","delimiter":true,"pos":17},"pos":16},{"type":"Note","pitch":{"type":"Pitch","value":{"type":"PitchDegree","degree":4,"pos":18},"pos":18},"tail":{"type":"Comma","delimiter":true,"pos":19},"pos":18},{"type":"Note","pitch":{"type":"Pitch","value":{"type":"PitchDegree","degree":7,"pos":20},"pos":20},"tail":{"type":"Comma","delimiter":true,"pos":21},"pos":20},{"type":"Note","pitch":{"type":"Pitch","value":{"type":"PitchDegree","degree":12,"pos":22},"pos":22},"pos":22},{"type":"SetScale","scale":{"type":"PitchGroupScale","pitches":[{"type":"Pitch","value":{"type":"PitchRatio","numerator":1,"denominator":1,"pos":27},"pos":27},{"type":"Comma","delimiter":true,"pos":30},{"type":"Pitch","value":{"type":"PitchRatio","numerator":5,"denominator":4,"pos":31},"pos":31},{"type":"Comma","delimiter":true,"pos":34},{"type":"Pitch","value":{"type":"PitchRatio","numerator":3,"denominator":2,"pos":35},"pos":35},{"type":"Comma","delimiter":true,"pos":38},{"type":"Pitch","value":{"type":"PitchRatio","numerator":2,"denominator":1,"pos":39},"pos":39}],"pos":27},"pos":26},{"type":"Note","pitch":{"type":"Pitch","value":{"type":"PitchDegree","degree":0,"pos":44},"pos":44},"tail":{"type":"Comma","delimiter":true,"pos":45},"pos":44},{"type":"Note","pitch":{"type":"Pitch","value":{"type":"PitchDegree","degree":1,"pos":46},"pos":46},"tail":{"type":"Comma","delimiter":true,"pos":47},"pos":46},{"type":"Note","pitch":{"type":"Pitch","value":{"type":"PitchDegree","degree":2,"pos":48},"pos":48},"tail":{"type":"Comma","delimiter":true,"pos":49},"pos":48},{"type":"Note","pitch":{"type":"Pitch","value":{"type":"PitchDegree","degree":3,"pos":50},"pos":50},"pos":50},{"type":"SetScale","scale":{"type":"EdoScale","divisions":19,"octaveSize":2,"pos":54},"pos":53},{"type":"Note","pitch":{"type":"Pitch","value":{"type":"PitchDegree","degree":0,"pos":61},"pos":61},"tail":{"type":"Comma","delimiter":true,"pos":62},"pos":61},{"type":"Note","pitch":{"type":"Pitch","value":{"type":"PitchDegree","degree":6,"pos":63},"pos":63},"tail":{"type":"Comma","delimiter":true,"pos":64},"pos":63},{"type":"Note","pitch":{"type":"Pitch","value":{"type":"PitchDegree","degree":11,"pos":65},"pos":65},"tail":{"type":"Comma","delimiter":true,"pos":67},"pos":65},{"type":"Note","pitch":{"type":"Pitch","value":{"type":"PitchDegree","degree":19,"pos":68},"pos":68},"pos":68},{"type":"SetScale","scale":{"type":"RatioChordScale","pitches":[{"type":"RatioChordPitch","pitch":4,"pos":73},{"type":"Colon","delimiter":true,"pos":74},{"type":"RatioChordPitch","pitch":5,"pos":75},{"type":"Colon","delimiter":true,"pos":76},{"type":"RatioChordPitch","pitch":6,"pos":77},{"type":"Colon","delimiter":true,"pos":78},{"type":"RatioChordPitch","pitch":7,"pos":79},{"type":"Colon","delimiter":true,"pos":80},{"type":"RatioChordPitch","pitch":8,"pos":81}],"pos":73},"pos":72},{"type":"Note","pitch":{"type":"Pitch","value":{"type":"PitchDegree","degree":0,"pos":84},"pos":84},"tail":{"type":"Comma","delimiter":true,"pos":85},"pos":84},{"type":"Note","pitch":{"type":"Pitch","value":{"type":"PitchDegree","degree":1,"pos":86},"pos":86},"tail":{"type":"Comma","delimiter":true,"pos":87},"pos":86},{"type":"Note","pitch":{"type":"Pitch","value":{"type":"PitchDegree","degree":2,"pos":88},"pos":88},"tail":{"type":"Comma","delimiter":true,"pos":89},"pos":88},{"type":"Note","pitch":{"type":"Pitch","value":{"type":"PitchDegree","degree":4,"pos":90},"pos":90},"pos":90}],"pos":0},"pos":0}`,
-  )
+  const SCALE_TEST = parseSource(`# scale degrees
+0,4,7,12
+{1/1,5/4,3/2,2/1}
+0,1,2,3
+{19edo}
+0,6,11,19
+{4:5:6:7:8}
+0,1,2,4`)
 
   it('should translate scale degrees', () => {
     expect(processGrammar(SCALE_TEST).score).toEqual({

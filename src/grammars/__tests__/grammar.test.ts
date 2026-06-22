@@ -1410,7 +1410,8 @@ describe('grammar', () => {
           {
             type: 'SetScale',
             scale: {
-              type: 'RatioChordScale',
+              type: 'PitchGroupScale',
+              pitchGroupScalePrefix: null,
               pitches: [
                 {
                   type: 'RatioChordPitch',
@@ -1440,7 +1441,8 @@ describe('grammar', () => {
           {
             type: 'SetScale',
             scale: {
-              type: 'RatioChordScale',
+              type: 'PitchGroupScale',
+              pitchGroupScalePrefix: null,
               pitches: [
                 {
                   type: 'RatioChordPitch',
@@ -1472,7 +1474,8 @@ describe('grammar', () => {
           {
             type: 'SetScale',
             scale: {
-              type: 'RatioChordScale',
+              type: 'PitchGroupScale',
+              pitchGroupScalePrefix: null,
               pitches: [
                 {
                   type: 'RatioChordPitch',
@@ -1505,12 +1508,12 @@ describe('grammar', () => {
           {
             type: 'SetScale',
             scale: {
-              type: 'RatioChordScale',
-              inverted: true,
-              inversionPrefix: {
-                type: 'InversionPrefix',
-              },
+              type: 'PitchGroupScale',
+              pitchGroupScalePrefix: null,
               pitches: [
+                {
+                  type: 'InversionPrefix',
+                },
                 {
                   type: 'RatioChordPitch',
                   pitch: 6,
@@ -1710,7 +1713,8 @@ describe('grammar', () => {
           {
             type: 'SetScale',
             scale: {
-              type: 'RatioChordScale',
+              type: 'PitchGroupScale',
+              pitchGroupScalePrefix: null,
               pitches: [
                 { type: 'RatioChordPitch', pitch: 4 },
                 { type: 'Colon' },
