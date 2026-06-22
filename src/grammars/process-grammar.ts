@@ -236,6 +236,15 @@ const ratioToCentsLabel = (ratio: number, octaveSize: number): string => {
   return `${valueToCents(ratioWrap(ratio, octaveSize)).toFixed(1)}c`
 }
 
+const gcd = (a: number, b: number): number => {
+  while (b !== 0) {
+    const next = a % b
+    a = b
+    b = next
+  }
+  return Math.abs(a)
+}
+
 export const pitchToLabel = (pitch: PitchType, context: Context): string => {
   const { type } = pitch.value
 
@@ -653,53 +662,146 @@ const chordToMosc = (
       }
     })
 
-  const firstRatioPitch = chordPitches.find(isRatioChordPitchType)
-  const firstDenominator = firstRatioPitch?.pitch
-
-  if (firstDenominator === undefined) {
-    return pitchTypes
+  const result: MoscBeatPlayableNote[] = []
+  let previousPitchRatio = 1
+  let previousPitchFraction: { numerator: number; denominator: number } | null = {
+    numerator: 1,
+    denominator: 1,
   }
 
-  assertFinitePositive('Ratio denominator', firstDenominator)
-
-  const ratioPitchTypes: MoscBeatNote[] = []
-  const addRatioPitchType = (numerator: number): void => {
-    ratioPitchTypes.push({
+  const addRatioPitchType = (
+    ratio: number,
+    fraction: { numerator: number; denominator: number } | null,
+  ): void => {
+    const labelPrefix = fraction ? `${fraction.numerator}/${fraction.denominator}` : ratio.toString()
+    result.push({
       type: 'NOTE_BEAT_TIME',
-      hz: (numerator / firstDenominator) * context.rootHz,
-      label: `${numerator}/${firstDenominator}  ${ratioToCentsLabel(
-        numerator / firstDenominator,
-        context.octaveSize,
-      )}`,
+      hz: ratio * context.rootHz,
+      label: `${labelPrefix}  ${ratioToCentsLabel(ratio, context.octaveSize)}`,
       ...timeProps,
+    })
+    previousPitchRatio = ratio
+    previousPitchFraction = fraction
+  }
+
+  const addRatioChord = (
+    ratioChordPitches: Array<RatioChordPitchType | DelimiterType>,
+    hasExplicitPreviousPitch: boolean,
+    preserveFirstRatioLabel = false,
+  ): void => {
+    const firstDenominator = ratioChordPitches.find(isRatioChordPitchType)?.pitch
+
+    if (firstDenominator === undefined) {
+      return
+    }
+
+    assertFinitePositive('Ratio denominator', firstDenominator)
+
+    const basePitchRatio = previousPitchRatio
+    const basePitchFraction = previousPitchFraction
+    let colons = 0
+    let lastNumerator = 1
+    let isFirstPitch = true
+
+    const createFraction = (
+      numerator: number,
+      preserveLabel = false,
+    ): { numerator: number; denominator: number } | null => {
+      if (!basePitchFraction) return null
+
+      const nextNumerator = basePitchFraction.numerator * numerator
+      const nextDenominator = basePitchFraction.denominator * firstDenominator
+      if (preserveLabel) {
+        return {
+          numerator: nextNumerator,
+          denominator: nextDenominator,
+        }
+      }
+      const divisor = gcd(nextNumerator, nextDenominator)
+      return {
+        numerator: nextNumerator / divisor,
+        denominator: nextDenominator / divisor,
+      }
+    }
+
+    ratioChordPitches.forEach((pitch) => {
+      if (isRatioChordPitchType(pitch)) {
+        const numerator = pitch.pitch
+        assertFinitePositive('Ratio numerator', numerator)
+
+        if (colons === 2) {
+          while (lastNumerator < numerator - 1) {
+            lastNumerator++
+            addRatioPitchType(
+              (basePitchRatio * lastNumerator) / firstDenominator,
+              createFraction(lastNumerator),
+            )
+          }
+        }
+
+        if (!isFirstPitch || !hasExplicitPreviousPitch) {
+          addRatioPitchType(
+            (basePitchRatio * numerator) / firstDenominator,
+            createFraction(numerator, preserveFirstRatioLabel && isFirstPitch),
+          )
+        }
+
+        lastNumerator = numerator
+        colons = 0
+        isFirstPitch = false
+        return
+      }
+      if (pitch.type === 'Colon') {
+        colons++
+      }
     })
   }
 
-  let colons = 0
-  let lastNumerator = 1
-  chordPitches.forEach((pitch) => {
-    if (isRatioChordPitchType(pitch)) {
-      const numerator = pitch.pitch
-      assertFinitePositive('Ratio numerator', numerator)
+  let ratioChordPitches: Array<RatioChordPitchType | DelimiterType> = []
+  chordPitches.forEach((pitch, index) => {
+    if (isPitchType(pitch) || isSampleRateNoteType(pitch)) {
+      addRatioChord(ratioChordPitches, result.length > 0)
+      ratioChordPitches = []
 
-      if (colons == 2) {
-        while (lastNumerator < numerator - 1) {
-          lastNumerator++
-          addRatioPitchType(lastNumerator)
-        }
+      const playablePitch = pitchTypes.shift()
+      if (playablePitch) {
+        result.push(playablePitch)
       }
-
-      addRatioPitchType(numerator)
-      lastNumerator = numerator
-      colons = 0
+      if (isPitchType(pitch)) {
+        previousPitchRatio = pitchToHz(pitch, context) / context.rootHz
+        previousPitchFraction =
+          pitch.value.type === 'PitchRatio'
+            ? { numerator: pitch.value.numerator, denominator: pitch.value.denominator }
+            : null
+      }
       return
     }
+
     if (pitch.type === 'Colon') {
-      colons++
+      ratioChordPitches.push(pitch)
+      return
+    }
+    if (pitch.type === 'Whitespace') {
+      const previousPitch = chordPitches[index - 1]
+      const nextPitch = chordPitches[index + 1]
+      if (
+        previousPitch &&
+        nextPitch &&
+        isRatioChordPitchType(previousPitch) &&
+        isRatioChordPitchType(nextPitch)
+      ) {
+        addRatioChord(ratioChordPitches, result.length > 0, chord.type === 'RatioChord')
+        ratioChordPitches = []
+      }
+      return
+    }
+    if (isRatioChordPitchType(pitch)) {
+      ratioChordPitches.push(pitch)
     }
   })
+  addRatioChord(ratioChordPitches, result.length > 0, chord.type === 'RatioChord')
 
-  return pitchTypes.concat(ratioPitchTypes)
+  return result
 }
 
 const pointTime = (

@@ -89,6 +89,36 @@ describe('drone syntax', () => {
   })
 })
 
+describe('ratio chord syntax inside chords', () => {
+  it('expands ratio chord pitches from the previous pitch', () => {
+    expect(noteLabels('[3/2 5:6:7]')).toEqual([
+      '3/2  702.0c',
+      '9/5  1017.6c',
+      '21/10  84.5c',
+    ])
+  })
+
+  it('uses an implicit unison before leading ratio chords and allows later ratio chords', () => {
+    expect(noteLabels('[4:5:6 5:6:7]')).toEqual([
+      '1/1  0.0c',
+      '5/4  386.3c',
+      '3/2  702.0c',
+      '9/5  1017.6c',
+      '21/10  84.5c',
+    ])
+  })
+
+  it('allows more chord pitches after a ratio chord', () => {
+    expect(noteLabels("[7 3:4:5 9/7 'c]")).toEqual([
+      '7\\12  700.0c',
+      '1.9977427691689087  1198.0c',
+      '2.497178461461136  384.4c',
+      '9/7  435.1c',
+      'c♮',
+    ])
+  })
+})
+
 describe('grammar to mosc score', () => {
   it('applies FJS inflections to absolute pitch ratios', () => {
     const [
@@ -1076,7 +1106,7 @@ describe('grammar to mosc score', () => {
           time: 1,
           timeEnd: 2,
           hz: 220,
-          label: '4/4  0.0c',
+          label: '1/1  0.0c',
         },
         {
           type: 'NOTE_BEAT_TIME',

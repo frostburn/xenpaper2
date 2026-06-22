@@ -79,11 +79,13 @@ PitchGroup = first:Pitch rest:(Whitespace Pitch)* {
   return result;
 }
 ChordPitch = Pitch / SampleRatePitch
-ChordPitchSeparator = Whitespace / &ChordPitch { return node('Whitespace', { delimiter: true }); }
-ChordPitchGroup = first:ChordPitch rest:(ChordPitchSeparator ChordPitch)* {
-  const result = [first];
+ChordRatioChordPitches = &(Int _ ":" !"|") pitches:RatioChordPitches { return pitches; }
+ChordPitchElement = ChordRatioChordPitches / ChordPitch
+ChordPitchSeparator = Whitespace / &ChordPitchElement { return node('Whitespace', { delimiter: true }); }
+ChordPitchGroup = first:ChordPitchElement rest:(ChordPitchSeparator ChordPitchElement)* {
+  const result = Array.isArray(first) ? [...first] : [first];
   for (const pair of rest) {
-    result.push(pair[0], pair[1]);
+    result.push(pair[0], ...(Array.isArray(pair[1]) ? pair[1] : [pair[1]]));
   }
   return result;
 }
@@ -102,7 +104,7 @@ RatioChord = pitches:RatioChordPitches tail:Hold? {
   return node('RatioChord', { pitches, tail });
 }
 RatioChordItem = &(Int _ ":" !"|") rc:RatioChord { return rc; }
-Chord = "[" _ pitches:((&(Int _ ":" !"|") rp:RatioChordPitches { return rp; }) / ChordPitchGroup) _ "]" tail:Hold? {
+Chord = "[" _ pitches:ChordPitchGroup _ "]" tail:Hold? {
   return node('Chord', { pitches, tail });
 }
 RepeatEndStart = ":|:" count:RepeatCount? {
