@@ -6,6 +6,7 @@ export type HighlightColor =
   | 'pitch'
   | 'alternatePitch'
   | 'invalidPitch'
+  | 'invalidAlternatePitch'
   | 'chord'
   | 'scaleGroup'
   | 'scale'
@@ -117,7 +118,7 @@ const extract = (chars: CharData[], data: unknown, parent: string, withinTime?: 
     const type = grammarNode?.type
     let color = type ? colorMap.get(`${parent}.${type}`) || colorMap.get(type) : undefined
     if (type === 'Pitch' && grammarNode?.outOfIntegerSteps) {
-      color = 'invalidPitch'
+      color = grammarNode?.value?.greek ? 'invalidAlternatePitch' : 'invalidPitch'
     } else if (type === 'Pitch' && grammarNode?.value?.greek) {
       color = 'alternatePitch'
     }

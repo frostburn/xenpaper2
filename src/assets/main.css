@@ -191,6 +191,10 @@ a {
   color: #e57373;
 }
 
+.highlight-invalidAlternatePitch {
+  color: #c52373;
+}
+
 .highlight-scaleGroup {
   color: #94472f;
 }
