@@ -712,7 +712,8 @@ const chordToMosc = (
       if (!basePitchFraction) return null
 
       const nextNumerator = basePitchFraction.numerator * (inverted ? firstDenominator : numerator)
-      const nextDenominator = basePitchFraction.denominator * (inverted ? numerator : firstDenominator)
+      const nextDenominator =
+        basePitchFraction.denominator * (inverted ? numerator : firstDenominator)
       if (preserveLabel) {
         return {
           numerator: nextNumerator,

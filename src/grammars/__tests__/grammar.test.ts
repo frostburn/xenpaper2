@@ -1133,6 +1133,9 @@ describe('grammar', () => {
           {
             type: 'RatioChord',
             inverted: true,
+            inversionPrefix: {
+              type: 'InversionPrefix',
+            },
             pitches: [
               { type: 'RatioChordPitch', pitch: 6, inverted: true },
               { type: 'Colon' },
@@ -1504,6 +1507,9 @@ describe('grammar', () => {
             scale: {
               type: 'RatioChordScale',
               inverted: true,
+              inversionPrefix: {
+                type: 'InversionPrefix',
+              },
               pitches: [
                 {
                   type: 'RatioChordPitch',

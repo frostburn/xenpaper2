@@ -109,20 +109,11 @@ describe('ratio chord syntax inside chords', () => {
   })
 
   it('interpolates inverted ratio chords in the written direction', () => {
-    expect(noteLabels('/7::4')).toEqual([
-      '7/7  0.0c',
-      '7/6  266.9c',
-      '7/5  582.5c',
-      '7/4  968.8c',
-    ])
+    expect(noteLabels('/7::4')).toEqual(['7/7  0.0c', '7/6  266.9c', '7/5  582.5c', '7/4  968.8c'])
   })
 
   it('uses inverted ratio chords as scales', () => {
-    expect(noteLabels('{/6:5:4} 0 1 2')).toEqual([
-      '6/6  0.0c',
-      '6/5  315.6c',
-      '6/4  702.0c',
-    ])
+    expect(noteLabels('{/6:5:4} 0 1 2')).toEqual(['6/6  0.0c', '6/5  315.6c', '6/4  702.0c'])
   })
 
   it('interpolates inverted ratio chord scales in the written direction', () => {

@@ -140,6 +140,7 @@ export type ChordType = NodeType<'Chord'> & {
 
 export type RatioChordType = NodeType<'RatioChord'> & {
   inverted?: boolean
+  inversionPrefix?: DelimiterType
   pitches: Array<RatioChordPitchType | DelimiterType>
   tail: TailType | null
 }
@@ -173,6 +174,7 @@ export type PitchGroupScaleType = NodeType<'PitchGroupScale'> & {
 
 export type RatioChordScaleType = NodeType<'RatioChordScale'> & {
   inverted?: boolean
+  inversionPrefix?: DelimiterType
   pitches: Array<RatioChordPitchType | DelimiterType>
   scaleOctaveMarker: ScaleOctaveMarkerType | null
 }
