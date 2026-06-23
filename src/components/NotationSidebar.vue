@@ -37,6 +37,31 @@ A A A#- A A  A♯-`,
     ],
   },
   {
+    title: 'Root nominal association',
+    demos: [
+      {
+        description:
+          'Root setters normally change only the frequency used by ratio and edo-degree pitches. Add `as` with an absolute nominal to make staff-style notes treat that same frequency as a named pitch.',
+        tune: `# Make middle C the root frequency
+{r261.6256Hz as C}
+C E G 0`,
+      },
+      {
+        description: 'You can also associate the current root with a nominal.',
+        tune: `# Keep the current 220 Hz root, but call it F
+{r as F}
+F A C 0`,
+      },
+      {
+        description: 'Include octave marks when the named pitch is above or below the root octave.',
+        tune: `# Set a new root and nominal together
+{r216Hz as \`A}
+\`A A 0`,
+      },
+    ],
+  },
+
+  {
     title: 'Tempering',
     demos: [
       {
