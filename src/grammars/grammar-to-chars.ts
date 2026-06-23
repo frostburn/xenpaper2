@@ -104,6 +104,7 @@ const colorMap = new Map<string, HighlightColor>([
   ['SetRulerPlot', 'setter'],
   ['SetRulerRange', 'setter'],
   ['SetRulerRange.Pitch', 'setter'],
+  ['Drone', 'setter'],
   ['SetterGroup', 'setterGroup'],
   ['SetterGroup.Semicolon', 'setterGroup'],
   ['Comment', 'comment'],

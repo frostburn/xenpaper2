@@ -2045,43 +2045,63 @@ describe('grammar', () => {
         ])
       })
 
-      it('should parse sequence with drone notes, chords, and off', () => {
+      it('should parse sequence with drone notes, chords, and off as setters', () => {
         expect(
           strip(parser('(drone: 0)(drone: [0, 4])(drone: 4:5)(drone: off)')).sequence.items,
         ).toEqual([
           {
-            type: 'Drone',
-            value: {
-              type: 'Note',
-              pitch: {
-                type: 'Pitch',
+            type: 'SetterGroup',
+            setters: [
+              {
+                type: 'Drone',
                 value: {
-                  type: 'PitchDegree',
-                  degree: 0,
+                  type: 'Note',
+                  pitch: {
+                    type: 'Pitch',
+                    value: {
+                      type: 'PitchDegree',
+                      degree: 0,
+                    },
+                  },
+                  tail: null,
                 },
               },
-              tail: null,
-            },
+            ],
           },
           {
-            type: 'Drone',
-            value: {
-              type: 'Chord',
-              pitches: expect.any(Array),
-              tail: null,
-            },
+            type: 'SetterGroup',
+            setters: [
+              {
+                type: 'Drone',
+                value: {
+                  type: 'Chord',
+                  pitches: expect.any(Array),
+                  tail: null,
+                },
+              },
+            ],
           },
           {
-            type: 'Drone',
-            value: {
-              type: 'RatioChord',
-              pitches: expect.any(Array),
-              tail: null,
-            },
+            type: 'SetterGroup',
+            setters: [
+              {
+                type: 'Drone',
+                value: {
+                  type: 'RatioChord',
+                  pitches: expect.any(Array),
+                  tail: null,
+                },
+              },
+            ],
           },
           {
-            type: 'Drone',
-            value: null,
+            type: 'SetterGroup',
+            setters: [
+              {
+                type: 'Drone',
+                value: null,
+              },
+            ],
           },
         ])
       })
