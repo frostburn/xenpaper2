@@ -234,6 +234,39 @@ describe('grammarToChars', () => {
     ])
   })
 
+
+  it('highlights volume, velocity, and dynamic shorthand setters', () => {
+    expect(colors(grammarToChars(parse('(vol:-2dB)')))).toEqual([
+      'setterGroup',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setterGroup',
+    ])
+    expect(colors(grammarToChars(parse('(vel:50%)')))).toEqual([
+      'setterGroup',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setterGroup',
+    ])
+    expect(colors(grammarToChars(parse('(mf)')))).toEqual([
+      'setterGroup',
+      'setter',
+      'setter',
+      'setterGroup',
+    ])
+  })
+
   it('highlights noise setters like osc setters', () => {
     expect(colors(grammarToChars(parse('(noise:white)')))).toEqual(
       colors(grammarToChars(parse('(osc:slender)'))),

@@ -99,6 +99,8 @@ const colorMap = new Map<string, HighlightColor>([
   ['SetOsc', 'setter'],
   ['SetNoise', 'setter'],
   ['SetEnv', 'setter'],
+  ['SetVolume', 'setter'],
+  ['SetVelocity', 'setter'],
   ['SetRulerPlot', 'setter'],
   ['SetRulerRange', 'setter'],
   ['SetRulerRange.Pitch', 'setter'],
