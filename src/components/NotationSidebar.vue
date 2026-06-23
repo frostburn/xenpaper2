@@ -92,6 +92,27 @@ F A C 0`,
     ],
   },
   {
+    title: 'Non-integer EDO pitches',
+    demos: [
+      {
+        description:
+          'When an EDO tuning makes a written pitch land exactly on a scale step, the note plays normally. If a nominal or accidental lands between EDO steps, Xenpaper marks it as an invalid pitch so you can respell it with an available degree or switch to a finer EDO.',
+        tune: `{12edo}
+C D E F G A B c
+# Ct falls halfway between 12edo steps
+Ct`,
+      },
+      {
+        description:
+          'Use integer EDO degrees for exact steps in the active temperament, or use a larger division when you need half-sharps, half-flats, and other intermediate accidentals to become playable.',
+        tune: `{24edo}
+C Ct D Ed E F Ft G Gt A Bd B c
+..
+0 1 2 3 4 5 6 7 8 9 10 11 12`,
+      },
+    ],
+  },
+  {
     title: 'Key signatures',
     demos: [
       {
