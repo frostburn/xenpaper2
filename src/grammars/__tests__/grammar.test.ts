@@ -2328,14 +2328,25 @@ describe('grammar', () => {
         expect(strip(parser('(8?) D C (grace:16) E').sequence.items)).toMatchObject([
           {
             type: 'SetterGroup',
-            setters: [{ type: 'SetGrace', subdivision: 8, denominator: 1 }],
+            setters: [{ type: 'SetGrace', subdivision: 8, denominator: 1, count: 1 }],
           },
           { type: 'Note' },
           { type: 'Note' },
           {
             type: 'SetterGroup',
-            setters: [{ type: 'SetGrace', subdivision: 16, denominator: 1 }],
+            setters: [{ type: 'SetGrace', subdivision: 16, denominator: 1, count: 1 }],
           },
+          { type: 'Note' },
+        ])
+      })
+
+      it('should parse repeated short-form grace note markers', () => {
+        expect(strip(parser('(8??) D C').sequence.items)).toMatchObject([
+          {
+            type: 'SetterGroup',
+            setters: [{ type: 'SetGrace', subdivision: 8, denominator: 1, count: 2 }],
+          },
+          { type: 'Note' },
           { type: 'Note' },
         ])
       })

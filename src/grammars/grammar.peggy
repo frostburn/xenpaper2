@@ -159,10 +159,11 @@ SetSubdivision = ("div"i _ ":" _)? fraction:Fraction {
     denominator: fraction.denominator,
   });
 }
-SetGrace = fraction:(("grace"i _ ":" _ fraction:Fraction { return fraction; }) / (fraction:Fraction _ "?" { return fraction; })) {
+SetGrace = data:(("grace"i _ ":" _ fraction:Fraction { return { fraction, count: 1 }; }) / (fraction:Fraction _ questionMarks:$("?"+) { return { fraction, count: questionMarks.length }; })) {
   return node('SetGrace', {
-    subdivision: fraction.numerator,
-    denominator: fraction.denominator,
+    subdivision: data.fraction.numerator,
+    denominator: data.fraction.denominator,
+    count: data.count,
   });
 }
 SetUp = "^" _ ":" _ value:SetterStep { return node('SetUp', { value }); }

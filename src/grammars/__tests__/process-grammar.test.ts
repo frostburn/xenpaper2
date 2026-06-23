@@ -100,6 +100,14 @@ describe('grace note syntax', () => {
     ])
   })
 
+  it('uses repeated short-form grace note markers for multiple grace notes', () => {
+    expect(noteItems('(8??) D C B-')).toMatchObject([
+      { label: 'D♮', time: 0, timeEnd: 0.125 },
+      { label: 'C♮', time: 0.125, timeEnd: 0.25 },
+      { label: 'B♮', time: 0.25, timeEnd: 1 },
+    ])
+  })
+
   it('skips drones when applying grace notes and stolen time', () => {
     expect(noteItems('(8?) (drone: 0) D C')).toMatchObject([
       { label: '0\\12  0.0c', time: 0, timeEnd: 0.5 },

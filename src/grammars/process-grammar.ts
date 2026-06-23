@@ -219,7 +219,11 @@ const consumeDuration = (units: number, context: Context): { time: number; timeE
     const graceDuration = units * context.graceSubdivision
     context.time += graceDuration
     context.stolenTime += graceDuration
-    context.graceSubdivision = null
+    context.graceNotesRemaining -= 1
+    if (context.graceNotesRemaining <= 0) {
+      context.graceSubdivision = null
+      context.graceNotesRemaining = 0
+    }
     return { time, timeEnd: context.time }
   }
 
@@ -342,6 +346,7 @@ type Context = {
   mappingIsIntegerSteps: boolean
   keySignature: Map<string, KeySignatureAdjustment>
   graceSubdivision: number | null
+  graceNotesRemaining: number
   stolenTime: number
 }
 
@@ -865,6 +870,7 @@ const playableToMoscAtCurrentTime = (
   const startTime = context.time
   const originalTail = item.tail
   const graceSubdivision = context.graceSubdivision
+  const graceNotesRemaining = context.graceNotesRemaining
   const stolenTime = context.stolenTime
   item.tail = null
   const moscItems =
@@ -876,6 +882,7 @@ const playableToMoscAtCurrentTime = (
   item.tail = originalTail
   context.time = startTime
   context.graceSubdivision = graceSubdivision
+  context.graceNotesRemaining = graceNotesRemaining
   context.stolenTime = stolenTime
   return moscItems.map((moscItem) => ({
     ...moscItem,
@@ -1078,11 +1085,13 @@ const setterToMosc = (setter: SetterType | DelimiterType, context: Context): Mos
   }
 
   if (type === 'SetGrace') {
-    const { subdivision, denominator } = setter
+    const { subdivision, denominator, count } = setter
     assertFinitePositive('SetGrace.subdivision', subdivision)
+    assertFinitePositive('SetGrace.count', count)
     const normalizedDenominator = denominator ?? 1
     assertFinitePositive('SetGrace.denominator', normalizedDenominator)
     context.graceSubdivision = normalizedDenominator / subdivision
+    context.graceNotesRemaining = count
     return []
   }
 
@@ -1332,6 +1341,7 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
     mappingIsIntegerSteps: false,
     keySignature: new Map(),
     graceSubdivision: null,
+    graceNotesRemaining: 0,
     stolenTime: 0,
   }
 
