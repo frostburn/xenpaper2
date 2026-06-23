@@ -1,4 +1,4 @@
-import { type Monzo, accumulate, decumulate } from 'xen-dev-utils/monzo'
+import { type Monzo, accumulate, decumulate, add, scale } from 'xen-dev-utils/monzo'
 
 import type { AccidentalType, InflectionType, KeyModeType, KeyTonicType } from './grammar.generated'
 
@@ -38,54 +38,18 @@ const NOMINAL_MONZOS = new Map<string, PtolMonzo>([
   ['Ζ', [7.5, -4, 0]],
 ])
 
-const ACCIDENTAL_MONZOS = new Map<AccidentalType, PtolMonzo>([
-  ['♮', [0, 0, 0]],
-  ['_', [0, 0, 0]],
+const SHARP_MONZO: PtolMonzo = [-11, 7, 0]
+const SYNTONIC_COMMA_DOWN_MONZO: PtolMonzo = [-4, 4, -1]
 
-  ['♯', [-11, 7, 0]],
-  ['#', [-11, 7, 0]],
-
-  ['♭', [11, -7, 0]],
-  ['b', [11, -7, 0]],
-
-  ['𝄪', [-22, 14, 0]],
-  ['x', [-22, 14, 0]],
-
-  ['𝄫', [22, -14, 0]],
-
-  ['𝄲', [-5.5, 3.5, 0]],
-  ['‡', [-5.5, 3.5, 0]],
-  ['t', [-5.5, 3.5, 0]],
-
-  ['𝄳', [5.5, -3.5, 0]],
-  ['d', [5.5, -3.5, 0]],
-
-  ['𝄬', [7, -3, -1]],
-  ['𝄭', [15, -11, 1]],
-  ['𝄮', [-4, 4, -1]],
-  ['𝄯', [4, -4, 1]],
-  ['𝄰', [-15, 11, -1]],
-  ['𝄱', [-7, 3, 1]],
-])
-
-const negate = (monzo: PtolMonzo): PtolMonzo =>
-  monzo.map((component) => -component) as unknown as PtolMonzo
-
-const scale = (monzo: PtolMonzo, scalar: number): PtolMonzo =>
-  monzo.map((component) => component * scalar) as unknown as PtolMonzo
-
-const add = (left: PtolMonzo, right: PtolMonzo): PtolMonzo =>
-  left.map((component, index) => component + right[index]!) as unknown as PtolMonzo
-
-const DEFAULT_SHARP_MONZO = ACCIDENTAL_MONZOS.get('♯')!
-const DEFAULT_SYNTONIC_COMMA_DOWN_MONZO = ACCIDENTAL_MONZOS.get('𝄮')!
+const asMonzo = (monzo: PtolMonzo): Monzo => monzo as unknown as Monzo
+const asPtolMonzo = (monzo: Monzo): PtolMonzo => monzo as unknown as PtolMonzo
 
 const accidentalToMonzo = (
   accidental: AccidentalType,
   customizations?: PythagoreanCustomizations,
 ): PtolMonzo | undefined => {
-  const sharp = customizations?.sharp ?? DEFAULT_SHARP_MONZO
-  const syntonicCommaDown = customizations?.syntonicCommaDown ?? DEFAULT_SYNTONIC_COMMA_DOWN_MONZO
+  const sharp = customizations?.sharp ?? SHARP_MONZO
+  const syntonicCommaDown = customizations?.syntonicCommaDown ?? SYNTONIC_COMMA_DOWN_MONZO
 
   switch (accidental) {
     case '♮':
@@ -96,31 +60,31 @@ const accidentalToMonzo = (
       return sharp
     case '♭':
     case 'b':
-      return negate(sharp)
+      return asPtolMonzo(scale(asMonzo(sharp), -1))
     case '𝄪':
     case 'x':
-      return scale(sharp, 2)
+      return asPtolMonzo(scale(asMonzo(sharp), 2))
     case '𝄫':
-      return scale(sharp, -2)
+      return asPtolMonzo(scale(asMonzo(sharp), -2))
     case '𝄲':
     case '‡':
     case 't':
-      return scale(sharp, 0.5)
+      return asPtolMonzo(scale(asMonzo(sharp), 0.5))
     case '𝄳':
     case 'd':
-      return scale(sharp, -0.5)
+      return asPtolMonzo(scale(asMonzo(sharp), -0.5))
     case '𝄬':
-      return add(syntonicCommaDown, negate(sharp))
+      return asPtolMonzo(add(asMonzo(syntonicCommaDown), scale(asMonzo(sharp), -1)))
     case '𝄭':
-      return add(negate(syntonicCommaDown), sharp)
+      return asPtolMonzo(add(scale(asMonzo(syntonicCommaDown), -1), asMonzo(sharp)))
     case '𝄮':
       return syntonicCommaDown
     case '𝄯':
-      return negate(syntonicCommaDown)
+      return asPtolMonzo(scale(asMonzo(syntonicCommaDown), -1))
     case '𝄰':
-      return add(syntonicCommaDown, sharp)
+      return asPtolMonzo(add(asMonzo(syntonicCommaDown), asMonzo(sharp)))
     case '𝄱':
-      return add(negate(syntonicCommaDown), negate(sharp))
+      return asPtolMonzo(add(scale(asMonzo(syntonicCommaDown), -1), scale(asMonzo(sharp), -1)))
   }
 }
 
@@ -307,7 +271,7 @@ export function normalizeAccidentals(accidentals: AccidentalType[]) {
     } else {
       result.push('𝄯')
     }
-    decumulate(monzo, ACCIDENTAL_MONZOS.get(result.slice(-1)[0]!) as unknown as Monzo)
+    decumulate(monzo, accidentalToMonzo(result.slice(-1)[0]!) as unknown as Monzo)
   }
   while (monzo[2]! < 0) {
     if (monzo[1]! < 0) {
@@ -317,7 +281,7 @@ export function normalizeAccidentals(accidentals: AccidentalType[]) {
     } else {
       result.push('𝄮')
     }
-    decumulate(monzo, ACCIDENTAL_MONZOS.get(result.slice(-1)[0]!) as unknown as Monzo)
+    decumulate(monzo, accidentalToMonzo(result.slice(-1)[0]!) as unknown as Monzo)
   }
   while (monzo[1]! >= 14) {
     result.push('𝄪')

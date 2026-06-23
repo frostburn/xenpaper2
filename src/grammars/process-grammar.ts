@@ -1,5 +1,5 @@
 import { dot } from 'xen-dev-utils/number-array'
-import { type Monzo, sub } from 'xen-dev-utils/monzo'
+import { type Monzo, sub, toMonzo } from 'xen-dev-utils/monzo'
 import { PRIME_CENTS } from 'xen-dev-utils/primes'
 import { gcd, mmod, geoMod } from 'xen-dev-utils/fraction'
 import { centsToValue, equaveDivisionToValue, valueToCents } from 'xen-dev-utils/conversion'
@@ -1024,33 +1024,15 @@ const setScale = (setScale: SetScaleType, context: Context): void => {
   throw new Error(`Unknown scale type "${type}"`)
 }
 
-const primeExponent = (value: number, prime: number): [number, number] => {
-  let exponent = 0
-  while (value % prime === 0) {
-    value /= prime
-    exponent++
-  }
-  return [value, exponent]
-}
-
 const upLiftStepToMonzo = (name: string, value: UpLiftStepType): PtolMonzo => {
   if (value.type === 'PitchRatio') {
     const { numerator, denominator } = value
     assertFinitePositive(`${name}.denominator`, denominator)
-    let remainingNumerator = numerator
-    let remainingDenominator = denominator
-    const result: [number, number, number] = [0, 0, 0]
-    ;([2, 3, 5] as const).forEach((prime, index) => {
-      let exponent = 0
-      ;[remainingNumerator, exponent] = primeExponent(remainingNumerator, prime)
-      result[index] = exponent
-      ;[remainingDenominator, exponent] = primeExponent(remainingDenominator, prime)
-      result[index] -= exponent
-    })
-    if (remainingNumerator !== 1 || remainingDenominator !== 1) {
+    const monzo = toMonzo({ n: numerator, d: denominator })
+    if (monzo.slice(3).some((component) => component !== 0)) {
       throw new Error(`${name} ratio overrides only support prime factors 2, 3, and 5`)
     }
-    return result
+    return [monzo[0] ?? 0, monzo[1] ?? 0, monzo[2] ?? 0]
   }
 
   if (value.type === 'PitchCents') {
