@@ -264,6 +264,16 @@ export type SetEnvType = NodeType<'SetEnv'> & {
   r: number
 }
 
+// volume and velocity
+
+export type SetVolumeType = NodeType<'SetVolume'> & {
+  db: number
+}
+
+export type SetVelocityType = NodeType<'SetVelocity'> & {
+  velocity: number
+}
+
 // key
 
 export type KeyTonicType = {
@@ -312,6 +322,8 @@ export type SetterType =
   | SetOscType
   | SetNoiseType
   | SetEnvType
+  | SetVolumeType
+  | SetVelocityType
   | SetKeyType
   | SetRulerType
 

@@ -16,6 +16,8 @@ const OSC_VOLUME = 0.125
 type SoundEngineOscParam = { type: 'osc'; osc: SWOscillatorType }
 type SoundEngineNoiseParam = { type: 'noise'; noise: string }
 type SoundEngineEnvParam = { type: 'env'; a: number; d: number; s: number; r: number }
+type SoundEngineVolumeParam = { type: 'volume'; db: number }
+type SoundEngineVelocityParam = { type: 'velocity'; velocity: number }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null
@@ -39,11 +41,21 @@ const isEnvParam = (value: unknown): value is SoundEngineEnvParam =>
   typeof value.s === 'number' &&
   typeof value.r === 'number'
 
+const isVolumeParam = (value: unknown): value is SoundEngineVolumeParam =>
+  isRecord(value) && value.type === 'volume' && typeof value.db === 'number'
+
+const isVelocityParam = (value: unknown): value is SoundEngineVelocityParam =>
+  isRecord(value) && value.type === 'velocity' && typeof value.velocity === 'number'
+
+const dbToGain = (db: number): number => Math.pow(10, db / 20)
+
 export class SoundEngineSwSeq extends SoundEngine {
   private endTime = 0
   private activeNoteEvents = new Set<MoscNote>()
   private noteOffs: Array<(time: number) => void> = []
   private destination: GainNode
+  private outputGain = 1
+  private scoreVolume = 1
   private synth: PolySynth
   private transport: Transport
   private transportEventIds = new Map<number, true>()
@@ -89,8 +101,13 @@ export class SoundEngineSwSeq extends SoundEngine {
     }
   }
 
+  private applyOutputGain(time = this.context.currentTime): void {
+    this.destination.gain.setValueAtTime(this.outputGain * this.scoreVolume, time)
+  }
+
   setOutputGain(gain: number): void {
-    this.destination.gain.setValueAtTime(gain, this.context.currentTime)
+    this.outputGain = gain
+    this.applyOutputGain()
   }
 
   setScore(score: MoscScore): void {
@@ -114,6 +131,9 @@ export class SoundEngineSwSeq extends SoundEngine {
         release: 0.5,
       },
     }
+
+    this.scoreVolume = 1
+    this.applyOutputGain()
 
     score.sequence.forEach((item) => {
       if (item.type === 'NOTE_TIME' || item.type === 'SAMPLE_RATE_NOTE_TIME') {
@@ -158,6 +178,17 @@ export class SoundEngineSwSeq extends SoundEngine {
             sustain: item.value.s,
             release: item.value.r,
           }
+        }
+        if (isVolumeParam(item.value)) {
+          const { db } = item.value
+          const volumeEventId = this.transport.scheduleParametric((time) => {
+            this.scoreVolume = dbToGain(db)
+            this.applyOutputGain(time)
+          }, item.time)
+          this.transportEventIds.set(volumeEventId, true)
+        }
+        if (isVelocityParam(item.value)) {
+          patch.velocity = OSC_VOLUME * item.value.velocity
         }
       } else if (item.type === 'END_TIME') {
         this.endTime = item.time

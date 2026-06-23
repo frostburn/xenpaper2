@@ -150,7 +150,7 @@ SetterGroup = "(" _ first:Setter rest:(Semicolon Setter)* _ ")" {
   for (const part of rest) setters.push(part[0], part[1]);
   return node('SetterGroup', { setters });
 }
-Setter = SetBpm / SetBms / SetGrace / SetSubdivision / SetUp / SetLift / SetOsc / SetNoise / SetEnv / SetKey / SetRulerRange / SetRulerPlot
+Setter = SetBpm / SetBms / SetGrace / SetSubdivision / SetUp / SetLift / SetOsc / SetNoise / SetEnv / SetVolume / SetVelocity / SetKey / SetRulerRange / SetRulerPlot / SetVelocityShorthand
 SetBpm = "bpm"i _ ":" _ bpm:Number { return node('SetBpm', { bpm }); }
 SetBms = "bms"i _ ":" _ bms:Number { return node('SetBms', { bms }); }
 SetSubdivision = ("div"i _ ":" _)? fraction:Fraction {
@@ -175,6 +175,18 @@ NoiseName "noise generator name" = [a-zA-Z0-9\-]+ { return text().toLowerCase();
 SetEnv = "env"i _ ":" _ vals:EnvValues {
   return node('SetEnv', vals);
 }
+SetVolume = "vol"i _ ":" _ db:SignedNumber _ "db"i { return node('SetVolume', { db }); }
+SetVelocity = "vel"i _ ":" _ percent:Number _ "%" { return node('SetVelocity', { velocity: percent / 100 }); }
+SetVelocityShorthand = shorthand:VelocityShorthand { return node('SetVelocity', { velocity: shorthand }); }
+VelocityShorthand
+  = "ppp"i { return 0.15; }
+  / "pp"i { return 0.3; }
+  / "p"i { return 0.6; }
+  / "mp"i { return 0.8; }
+  / "mf"i { return 1; }
+  / "fff"i { return 2.2; }
+  / "ff"i { return 1.7; }
+  / "f"i { return 1.3; }
 SetKey = "key"i _ ":" _ tonic:KeyTonic _ mode:KeyMode { return node('SetKey', { tonic, mode }); }
 KeyTonic = updowns:UpsAndDowns nominal:(GreekNominal / LatinNominal) accidentals:Accidental* inflections:Inflection* { return { ...updowns, ...nominal, accidentals, inflections }; }
 KeyMode
@@ -221,6 +233,7 @@ Comment = "#" comment:$([^\n\r]*) {
   return node('Comment', { comment });
 }
 Whitespace "whitespace" = [,\n\r\t ]+ { return node('Whitespace',{delimiter:true}); }
+SignedNumber "number" = sign:("+" / "-")? n:Number { return sign === "-" ? -n : n; }
 Number "number" = n:$([0-9]+ ("." [0-9]*)?) { return Number(n); }
 Fraction = numerator:Int denominator:(_ "/" _ @Int)? { return { numerator, denominator: denominator ?? 1 }; }
 SlashFraction = numerator:Int _ "/" _ denominator:Int { return { numerator, denominator }; }

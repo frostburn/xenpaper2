@@ -2162,6 +2162,40 @@ describe('grammar', () => {
         ])
       })
 
+      it('should parse volume, velocity, and dynamic shorthand setters', () => {
+        expect(
+          strip(parser('(vol:-2dB; vol: +3.5 db; vel:50%; ppp; pp; p; mp; mf; f; ff; fff)'))
+            .sequence.items,
+        ).toEqual([
+          {
+            type: 'SetterGroup',
+            setters: [
+              { type: 'SetVolume', db: -2 },
+              { type: 'Semicolon' },
+              { type: 'SetVolume', db: 3.5 },
+              { type: 'Semicolon' },
+              { type: 'SetVelocity', velocity: 0.5 },
+              { type: 'Semicolon' },
+              { type: 'SetVelocity', velocity: 0.15 },
+              { type: 'Semicolon' },
+              { type: 'SetVelocity', velocity: 0.3 },
+              { type: 'Semicolon' },
+              { type: 'SetVelocity', velocity: 0.6 },
+              { type: 'Semicolon' },
+              { type: 'SetVelocity', velocity: 0.8 },
+              { type: 'Semicolon' },
+              { type: 'SetVelocity', velocity: 1 },
+              { type: 'Semicolon' },
+              { type: 'SetVelocity', velocity: 1.3 },
+              { type: 'Semicolon' },
+              { type: 'SetVelocity', velocity: 1.7 },
+              { type: 'Semicolon' },
+              { type: 'SetVelocity', velocity: 2.2 },
+            ],
+          },
+        ])
+      })
+
       it('should parse sequence with ruler setter', () => {
         expect(strip(parser('(rl:200c,400c)')).sequence.items).toEqual([
           {
@@ -2289,7 +2323,7 @@ describe('grammar', () => {
       it('should error if setter is empty or not delimited properly', () => {
         expectParserErrorMessage(
           '()',
-          'Expected "/", "^", "al", "bms", "bpm", "coda", "d", "da", "dal", "div", "drone", "env", "fine", "grace", "key", "noise", "osc", "plot", "rl", "segno", "to", or integer but ")" found.',
+          'Expected "/", "^", "al", "bms", "bpm", "coda", "d", "da", "dal", "div", "drone", "env", "f", "ff", "fff", "fine", "grace", "key", "mf", "mp", "noise", "osc", "p", "plot", "pp", "ppp", "rl", "segno", "to", "vel", "vol", or integer but ")" found.',
         )
         expectParserErrorMessage('(div:16;)', 'but ")" found.')
         expectParserErrorMessage('(div:16;;div:16)', 'but ";" found.')
