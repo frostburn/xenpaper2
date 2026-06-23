@@ -227,6 +227,7 @@ export type SetSubdivisionType = NodeType<'SetSubdivision'> & {
 export type SetGraceType = NodeType<'SetGrace'> & {
   subdivision: number
   denominator: number
+  count: number
 }
 
 // up/down step
