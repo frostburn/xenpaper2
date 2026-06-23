@@ -234,7 +234,6 @@ describe('grammarToChars', () => {
     ])
   })
 
-
   it('highlights volume, velocity, and dynamic shorthand setters', () => {
     expect(colors(grammarToChars(parse('(vol:-2dB)')))).toEqual([
       'setterGroup',

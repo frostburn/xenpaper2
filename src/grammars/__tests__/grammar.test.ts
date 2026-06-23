@@ -2162,7 +2162,6 @@ describe('grammar', () => {
         ])
       })
 
-
       it('should parse volume, velocity, and dynamic shorthand setters', () => {
         expect(
           strip(parser('(vol:-2dB; vol: +3.5 db; vel:50%; ppp; pp; p; mp; mf; f; ff; fff)'))
@@ -2177,21 +2176,21 @@ describe('grammar', () => {
               { type: 'Semicolon' },
               { type: 'SetVelocity', velocity: 0.5 },
               { type: 'Semicolon' },
-              { type: 'SetVelocity', velocity: 0.125 },
+              { type: 'SetVelocity', velocity: 0.15 },
               { type: 'Semicolon' },
-              { type: 'SetVelocity', velocity: 0.25 },
+              { type: 'SetVelocity', velocity: 0.3 },
               { type: 'Semicolon' },
-              { type: 'SetVelocity', velocity: 0.5 },
+              { type: 'SetVelocity', velocity: 0.6 },
               { type: 'Semicolon' },
-              { type: 'SetVelocity', velocity: 0.75 },
+              { type: 'SetVelocity', velocity: 0.8 },
               { type: 'Semicolon' },
               { type: 'SetVelocity', velocity: 1 },
               { type: 'Semicolon' },
-              { type: 'SetVelocity', velocity: 1.25 },
+              { type: 'SetVelocity', velocity: 1.3 },
               { type: 'Semicolon' },
-              { type: 'SetVelocity', velocity: 1.5 },
+              { type: 'SetVelocity', velocity: 1.7 },
               { type: 'Semicolon' },
-              { type: 'SetVelocity', velocity: 2 },
+              { type: 'SetVelocity', velocity: 2.2 },
             ],
           },
         ])

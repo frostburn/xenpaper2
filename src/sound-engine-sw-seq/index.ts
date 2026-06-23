@@ -132,12 +132,8 @@ export class SoundEngineSwSeq extends SoundEngine {
       },
     }
 
-    let velocity = 1
     this.scoreVolume = 1
     this.applyOutputGain()
-    const updatePatchVelocity = () => {
-      patch.velocity = OSC_VOLUME * velocity
-    }
 
     score.sequence.forEach((item) => {
       if (item.type === 'NOTE_TIME' || item.type === 'SAMPLE_RATE_NOTE_TIME') {
@@ -192,8 +188,7 @@ export class SoundEngineSwSeq extends SoundEngine {
           this.transportEventIds.set(volumeEventId, true)
         }
         if (isVelocityParam(item.value)) {
-          velocity = item.value.velocity
-          updatePatchVelocity()
+          patch.velocity = OSC_VOLUME * item.value.velocity
         }
       } else if (item.type === 'END_TIME') {
         this.endTime = item.time
