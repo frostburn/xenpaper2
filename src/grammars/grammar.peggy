@@ -159,7 +159,7 @@ SetSubdivision = ("div"i _ ":" _)? fraction:Fraction {
     denominator: fraction.denominator,
   });
 }
-SetGrace = data:(("grace"i _ ":" _ fraction:Fraction { return { fraction, count: 1 }; }) / (fraction:Fraction _ questionMarks:$("?"+) { return { fraction, count: questionMarks.length }; })) {
+SetGrace = data:(("grace"i _ ":" _ fraction:Fraction count:(_ @Int)? { return { fraction, count: count ?? 1 }; }) / (fraction:Fraction _ questionMarks:$("?"+) { return { fraction, count: questionMarks.length }; })) {
   return node('SetGrace', {
     subdivision: data.fraction.numerator,
     denominator: data.fraction.denominator,
