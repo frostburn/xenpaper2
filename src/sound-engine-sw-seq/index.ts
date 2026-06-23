@@ -11,7 +11,8 @@ import {
 import { isSWOscillatorType, parseSWOscillatorType, type SWOscillatorType } from '../sw-seq/timbre'
 import type { Transport } from '../sw-seq/transport'
 
-const OSC_VOLUME = 0.125
+const OSC_VOLUME = 0.275
+const VOLUME_TIME_CONSTANT = 0.001
 
 type SoundEngineOscParam = { type: 'osc'; osc: SWOscillatorType }
 type SoundEngineNoiseParam = { type: 'noise'; noise: string }
@@ -102,7 +103,11 @@ export class SoundEngineSwSeq extends SoundEngine {
   }
 
   private applyOutputGain(time = this.context.currentTime): void {
-    this.destination.gain.setValueAtTime(this.outputGain * this.scoreVolume, time)
+    this.destination.gain.setTargetAtTime(
+      this.outputGain * this.scoreVolume,
+      time,
+      VOLUME_TIME_CONSTANT,
+    )
   }
 
   setOutputGain(gain: number): void {

@@ -69,7 +69,7 @@ const INITIAL_VELOCITY = {
   time: 0,
   value: {
     type: 'velocity',
-    velocity: 1,
+    velocity: 0.5,
   },
 }
 
@@ -207,7 +207,7 @@ describe('grammar to mosc score', () => {
         value: { type: 'volume', db: -2 },
       },
       { type: 'PARAM_BEAT_TIME', time: 0, value: { type: 'velocity', velocity: 0.5 } },
-      { type: 'PARAM_BEAT_TIME', time: 0, value: { type: 'velocity', velocity: 1.7 } },
+      { type: 'PARAM_BEAT_TIME', time: 0, value: { type: 'velocity', velocity: 0.8 } },
       { type: 'END_BEAT_TIME', time: 0 },
     ])
   })

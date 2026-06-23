@@ -96,6 +96,37 @@ const newInV2Sections: SidebarSection[] = [
     ],
   },
   {
+    title: 'Dynamics and volume',
+    demos: [
+      {
+        description:
+          'Synth velocity can be controlled using dynamic markers like (f) and (pp) or by directly specifying the velocity.',
+        tune: `(mf) 0--  # 50% (default)
+(f) 1--  # 60%
+(ff) 2--  # 80%
+(fff) 3--  # 100%
+
+(vel:70%) 1--  # Fine-grained control
+
+(mp) 0--  # 40%
+(p) \`11--  # 30%
+(pp) \`10--  # 20%
+(ppp) \`9--  # 10%`,
+      },
+      {
+        description: 'Tab volume can be adjusted in decibels.',
+        tune: `(env:1198)
+0 . 5
+(vol:-10db).(vol:0db).
+(vol:-10db).(vol:+5db).
+(vol:-10db).(vol:+5db).
+(vol:-10db).(vol:+5db).
+(vol:-10db).(vol:+5db).
+...`,
+      },
+    ],
+  },
+  {
     title: 'New harmonic oscillators',
     demos: [
       {

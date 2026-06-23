@@ -179,14 +179,14 @@ SetVolume = "vol"i _ ":" _ db:SignedNumber _ "db"i { return node('SetVolume', { 
 SetVelocity = "vel"i _ ":" _ percent:Number _ "%" { return node('SetVelocity', { velocity: percent / 100 }); }
 SetVelocityShorthand = shorthand:VelocityShorthand { return node('SetVelocity', { velocity: shorthand }); }
 VelocityShorthand
-  = "ppp"i { return 0.15; }
-  / "pp"i { return 0.3; }
-  / "p"i { return 0.6; }
-  / "mp"i { return 0.8; }
-  / "mf"i { return 1; }
-  / "fff"i { return 2.2; }
-  / "ff"i { return 1.7; }
-  / "f"i { return 1.3; }
+  = "ppp"i { return 0.1; }
+  / "pp"i { return 0.2; }
+  / "p"i { return 0.3; }
+  / "mp"i { return 0.4; }
+  / "mf"i { return 0.5; }
+  / "fff"i { return 1; }
+  / "ff"i { return 0.8; }
+  / "f"i { return 0.6; }
 SetKey = "key"i _ ":" _ tonic:KeyTonic _ mode:KeyMode { return node('SetKey', { tonic, mode }); }
 KeyTonic = updowns:UpsAndDowns nominal:(GreekNominal / LatinNominal) accidentals:Accidental* inflections:Inflection* { return { ...updowns, ...nominal, accidentals, inflections }; }
 KeyMode

@@ -1307,7 +1307,7 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
     time: 0,
     value: {
       type: 'velocity',
-      velocity: 1,
+      velocity: 0.5,
     },
   }
 
