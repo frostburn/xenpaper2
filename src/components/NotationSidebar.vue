@@ -47,13 +47,14 @@ A A A#- A A  A♯-`,
 C E G 0`,
       },
       {
-        description:
-          'You can also associate the current root with a nominal, or include octave marks when the named pitch is above or below the root octave.',
+        description: 'You can also associate the current root with a nominal.',
         tune: `# Keep the current 220 Hz root, but call it F
 {r as F}
-F A C 0
-
-# Set a new root and nominal together
+F A C 0`,
+      },
+      {
+        description: 'Include octave marks when the named pitch is above or below the root octave.',
+        tune: `# Set a new root and nominal together
 {r216Hz as \`A}
 \`A A 0`,
       },
