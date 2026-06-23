@@ -100,9 +100,10 @@ const newInV2Sections: SidebarSection[] = [
     demos: [
       {
         description:
-          'Use a grace setter before a note to make that note borrow a short duration from the following note.',
+          'Use a grace setter before a note to make that note borrow a short duration from the following note. Repeat the ? marker to apply the same grace duration to multiple notes.',
         tune: `(bpm:90)(env:1624)
 (8?) D C- (16?) E D-
+(8??) B A G--
 (grace:4) G A--`,
       },
     ],
