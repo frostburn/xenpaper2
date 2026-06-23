@@ -1,6 +1,6 @@
 {
   "name": "xenpaper2",
-  "version": "2.0.0-beta.8",
+  "version": "2.0.0-beta.9",
   "description": "Xenpaper 2 is a text-based microtonal sequencer for writing musical ideas, playing them in the browser, and sharing them by URL or embed code.",
   "license": "MIT",
   "private": true,
