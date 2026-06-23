@@ -244,6 +244,21 @@ export type SetLiftType = NodeType<'SetLift'> & {
   value: UpLiftStepType
 }
 
+export type NominalOverrideTargetType = {
+  nominal: string
+  greek: boolean
+}
+
+export type SetNominalOverrideType = NodeType<'SetNominalOverride'> & {
+  target: NominalOverrideTargetType
+  value: UpLiftStepType
+}
+
+export type SetAccidentalOverrideType = NodeType<'SetAccidentalOverride'> & {
+  accidental: Extract<AccidentalType, '♯' | '#' | '𝄮'>
+  value: UpLiftStepType
+}
+
 // osc
 
 export type SetOscType = NodeType<'SetOsc'> & {
@@ -321,6 +336,8 @@ export type SetterType =
   | DroneType
   | SetUpType
   | SetLiftType
+  | SetNominalOverrideType
+  | SetAccidentalOverrideType
   | SetOscType
   | SetNoiseType
   | SetEnvType
