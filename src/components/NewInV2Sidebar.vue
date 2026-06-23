@@ -205,6 +205,22 @@ const newInV2Sections: SidebarSection[] = [
       },
     ],
   },
+  {
+    title: 'Drones',
+    demos: [
+      {
+        description:
+          'You can start a long-running note or chord in the background that runs until the next drone, when you turn the drone off or when the score ends.',
+        tune: `(drone:[1/4 2/4])
+4/4- 6/4   5/4  | 7/4-      8/4  10/4   |
+9/4  13/4- 11/4 | 14/4 15/4 16/4 .      |
+(drone:3/8)
+17/4 16/4 15/4 14/4 | 11/4 10/4- 9/4 |
+(drone:off)
+[2/4 8/4]---        ||`,
+      },
+    ],
+  },
 ]
 </script>
 
