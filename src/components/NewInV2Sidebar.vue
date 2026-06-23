@@ -96,6 +96,67 @@ const newInV2Sections: SidebarSection[] = [
     ],
   },
   {
+    title: 'Grace notes',
+    demos: [
+      {
+        description:
+          'Use a grace setter before a note to make that note borrow a short duration from the following note.',
+        tune: `(bpm:90)(env:1624)
+(8?) D C- (16?) E D-
+(grace:4) G A--`,
+      },
+    ],
+  },
+  {
+    title: 'Inverted chords',
+    demos: [
+      {
+        description:
+          'Prefix a ratio chord with / to invert the written ratios. For example /6:5:4 expands as 6/6, 6/5, 6/4 as opposed to 4/4, 5/4, 6/4.',
+        tune: `(bpm:72;env:1734)
+4:5:6-- /6:5:4--
+4::7--  /7::4--`,
+      },
+      {
+        description:
+          'The same inversion prefix can be used in scale braces, so numbered scale degrees walk through the inverted chord.',
+        tune: `{/6:5:4}
+0 1 2 1 0--`,
+      },
+    ],
+  },
+  {
+    title: 'Enumerated chord expansion',
+    demos: [
+      {
+        description:
+          'Inside square brackets, an enumerated ratio segment expands from the previous pitch. This lets you shift the root first and then write compact ratio chords, such as a 4:5:6 triad rooted on 4/3.',
+        tune: `(bpm:70;env:1734)
+[4/3 4:5:6]--
+[3/2 4:5:6]--
+[5/4 /6:5:4]--`,
+      },
+      {
+        description:
+          'You can stack multiple enumerated segments in the same chord. Each later segment continues from the last expanded pitch, so compact segments can build larger chained sonorities.',
+        tune: `(bpm:70)(env:1734)
+[4:5:6 5:6:7]--
+[3/2 5:6:7 /11::8]--`,
+      },
+    ],
+  },
+  {
+    title: 'Enumerated scale expansion',
+    demos: [
+      {
+        description:
+          'Scale braces also expand enumerated ratio segments from the previous scale pitch. After defining the expanded scale, ordinary numbered degrees select the generated pitches.',
+        tune: `{1/1 4/3 5:6:7}
+0 1 2 3 4 2 1 0--`,
+      },
+    ],
+  },
+  {
     title: 'Dynamics and volume',
     demos: [
       {

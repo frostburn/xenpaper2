@@ -257,7 +257,19 @@ c d αd βd f g δd εd bb 'c
       },
     ],
   },
-
+  {
+    title: 'Notes outside the edo',
+    demos: [
+      {
+        description:
+          'When equal tempering causes a written pitch to land between edosteps, Xenpaper marks it as an invalid pitch so you can respell it with an available degree or switch to a finer edo.',
+        tune: `{12edo}
+C D E F G A B c
+# Ct falls halfway between 12edo steps
+Ct-`,
+      },
+    ],
+  },
   {
     title: 'Custom Ups or Lifts',
     demos: [
