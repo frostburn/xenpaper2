@@ -1373,17 +1373,6 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
       return
     }
 
-    if (type === 'Drone') {
-      stopActiveDrone()
-      activeDroneItems = droneToMosc(item, context)
-      activeDroneTimes = item.value?.time ? [item.value.time] : []
-      moscItems.push(...activeDroneItems)
-      if (item.value?.type === 'Note' || item.value?.type === 'RatioChord') {
-        initialRulerState = rulerStateCaptureRootHz(initialRulerState, context)
-      }
-      return
-    }
-
     if (type === 'SetScale') {
       setScale(item, context)
       return
@@ -1428,6 +1417,17 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
 
     if (type === 'SetterGroup') {
       item.setters.forEach((setter) => {
+        if (setter.type === 'Drone') {
+          stopActiveDrone()
+          activeDroneItems = droneToMosc(setter, context)
+          activeDroneTimes = setter.value?.time ? [setter.value.time] : []
+          moscItems.push(...activeDroneItems)
+          if (setter.value?.type === 'Note' || setter.value?.type === 'RatioChord') {
+            initialRulerState = rulerStateCaptureRootHz(initialRulerState, context)
+          }
+          return
+        }
+
         moscItems.push(...setterToMosc(setter, context))
         initialRulerState = setterToRulerState(initialRulerState, setter, context)
       })

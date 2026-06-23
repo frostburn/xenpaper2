@@ -272,6 +272,56 @@ describe('grammarToChars', () => {
     )
   })
 
+  it('highlights drone setters while preserving nested drone value highlights', () => {
+    expect(colors(grammarToChars(parse('(drone: off)')))).toEqual([
+      'setterGroup',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setterGroup',
+    ])
+
+    expect(colors(grammarToChars(parse('(drone: [Aα,4])')))).toEqual([
+      'setterGroup',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'chord',
+      'pitch',
+      'alternatePitch',
+      'pitch',
+      'pitch',
+      'chord',
+      'setterGroup',
+    ])
+
+    expect(colors(grammarToChars(parse('(drone: 4:5)')))).toEqual([
+      'setterGroup',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'pitch',
+      'delimiter',
+      'pitch',
+      'setterGroup',
+    ])
+  })
+
   it('lets nested scale, pitch, and setter nodes override group colors', () => {
     const chars = grammarToChars(parse('{12edo}(bpm: 120;4)[0,4]-'))
 

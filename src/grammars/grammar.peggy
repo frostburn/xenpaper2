@@ -7,7 +7,7 @@ Start = seq:Sequence _ {
 }
 Sequence = items:ItemList { return node('Sequence', { items }); }
 ItemList = head:Item tail:(_ Item)* { return [head, ...tail.map(([,i]) => i)]; } / '' { return []; }
-Item = Comment / MusicalControlFlow / Drone / SetterGroup / SetRoot / SetScale / RatioChordItem / SampleRateNote / Note / Rest / Chord / RepeatEndStart / RepeatStart / RepeatEnd / RepeatEndingStart / BarLine / Whitespace
+Item = Comment / MusicalControlFlow / SetterGroup / SetRoot / SetScale / RatioChordItem / SampleRateNote / Note / Rest / Chord / RepeatEndStart / RepeatStart / RepeatEnd / RepeatEndingStart / BarLine / Whitespace
 Note = pitch:Pitch tail:Hold? {
   return node('Note', { pitch, tail });
 }
@@ -142,7 +142,7 @@ MusicalControlFlow =
 DaCapoToken = "d"i "."? _ "c"i "."? / "da"i _ "capo"i
 DalSegnoToken = "d"i "."? _ "s"i "."? / "dal"i _ "segno"i
 Semicolon = _ ";" _ { return node('Semicolon', { delimiter: true }); }
-Drone = "(" _ "drone"i _ ":" _ value:("off"i { return null; } / RatioChordItem / SampleRateNote / Note / Chord) _ ")" {
+Drone = "drone"i _ ":" _ value:("off"i { return null; } / RatioChordItem / SampleRateNote / Note / Chord) {
   return node('Drone', { value });
 }
 SetterGroup = "(" _ first:Setter rest:(Semicolon Setter)* _ ")" {
@@ -150,7 +150,7 @@ SetterGroup = "(" _ first:Setter rest:(Semicolon Setter)* _ ")" {
   for (const part of rest) setters.push(part[0], part[1]);
   return node('SetterGroup', { setters });
 }
-Setter = SetBpm / SetBms / SetGrace / SetSubdivision / SetUp / SetLift / SetOsc / SetNoise / SetEnv / SetVolume / SetVelocity / SetKey / SetRulerRange / SetRulerPlot / SetVelocityShorthand
+Setter = SetBpm / SetBms / SetGrace / SetSubdivision / Drone / SetUp / SetLift / SetOsc / SetNoise / SetEnv / SetVolume / SetVelocity / SetKey / SetRulerRange / SetRulerPlot / SetVelocityShorthand
 SetBpm = "bpm"i _ ":" _ bpm:Number { return node('SetBpm', { bpm }); }
 SetBms = "bms"i _ ":" _ bms:Number { return node('SetBms', { bms }); }
 SetSubdivision = ("div"i _ ":" _)? fraction:Fraction {

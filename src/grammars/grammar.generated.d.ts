@@ -317,6 +317,7 @@ export type SetterType =
   | SetBmsType
   | SetSubdivisionType
   | SetGraceType
+  | DroneType
   | SetUpType
   | SetLiftType
   | SetOscType
@@ -406,7 +407,6 @@ export type SequenceItemsType =
   | ChordType
   | RestType
   | SetterGroupType
-  | DroneType
   | SetScaleType
   | SetRootType
   | CommentType
