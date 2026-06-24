@@ -25,10 +25,10 @@ OctaveModifier = shifts:(Apostrophe / Quote / Grave)+ {
 Apostrophe "apostrophe" = "'" { return 1; }
 Quote "quote" = '"' { return 2; }
 Grave "grave" = "`" { return -1; }
-LatinNominal = nominal:[a-g]i { return { nominal, greek: false } }
-MosNominal = nominal:$([j-z]i+) { return { nominal, greek: false, mos: true } }
+LatinNominal = nominal:[a-g]i { return { nominal, nominalType: 'latin' } }
+MosNominal = nominal:$([j-z]i+) { return { nominal, nominalType: 'mos' } }
 GreekNominal "Greek nominal" = ([α-ω]i / "alp"i / "bet"i / "gam"i / "del"i / "eps"i / "zet"i / "eta"i / "the"i / "iot"i / "kap"i / "muu"i / "nuu"i / "xii"i / "omi"i / "pii"i / "rho"i / "fsi"i / "sig"i / "tau"i / "ups"i / "phi"i / "chi"i / "psi"i / "ome"i) {
-  return { nominal: text(), greek: true };
+  return { nominal: text(), nominalType: 'greek' };
 }
 Accidental "accidental" = '𝄪' / '𝄫' / '𝄲' / '𝄳' / '𝄬' / '𝄭' / '𝄮' / '𝄯' / '𝄰' / '𝄱' / [x♯#‡t♮_d♭b]
 UpsAndDowns "Ups and Downs" = ('^' / 'v' / '/' / '\\')* {

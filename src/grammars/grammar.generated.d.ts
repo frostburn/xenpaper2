@@ -60,10 +60,9 @@ export type PitchAbsoluteType = NodeType<'PitchAbsolute'> & {
   ups: number
   lifts: number
   nominal: string
-  greek: boolean
+  nominalType: 'latin' | 'greek' | 'mos'
   accidentals: AccidentalType[]
   inflections: InflectionType[]
-  mos?: boolean
 }
 
 export type PitchCentsType = NodeType<'PitchCents'> & {
@@ -304,10 +303,9 @@ export type KeyTonicType = {
   ups: number
   lifts: number
   nominal: string
-  greek: boolean
+  nominalType: 'latin' | 'greek'
   accidentals: AccidentalType[]
   inflections: InflectionType[]
-  mos?: boolean
 }
 
 export type KeyModeType =

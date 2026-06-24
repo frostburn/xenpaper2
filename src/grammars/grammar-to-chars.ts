@@ -28,7 +28,7 @@ export type CharData = {
 type GrammarNode = {
   type: string
   time?: PlayTime
-  value?: { greek?: boolean }
+  value?: { nominalType?: 'latin' | 'greek' | 'mos' }
   outOfIntegerSteps?: boolean
   location: LocationRange
   [key: string]: unknown
@@ -122,8 +122,8 @@ const extract = (chars: CharData[], data: unknown, parent: string, withinTime?: 
     const type = grammarNode?.type
     let color = type ? colorMap.get(`${parent}.${type}`) || colorMap.get(type) : undefined
     if (type === 'Pitch' && grammarNode?.outOfIntegerSteps) {
-      color = grammarNode?.value?.greek ? 'invalidAlternatePitch' : 'invalidPitch'
-    } else if (type === 'Pitch' && grammarNode?.value?.greek) {
+      color = grammarNode?.value?.nominalType === 'greek' ? 'invalidAlternatePitch' : 'invalidPitch'
+    } else if (type === 'Pitch' && grammarNode?.value?.nominalType === 'greek') {
       color = 'alternatePitch'
     }
     const time = withinTime ?? grammarNode?.time
