@@ -7,7 +7,7 @@ Start = seq:Sequence _ {
 }
 Sequence = items:ItemList { return node('Sequence', { items }); }
 ItemList = head:Item tail:(_ Item)* { return [head, ...tail.map(([,i]) => i)]; } / '' { return []; }
-Item = Comment / MusicalControlFlow / SetterGroup / SetRoot / SetScale / RatioChordItem / SampleRateNote / Note / Rest / Chord / RepeatEndStart / RepeatStart / RepeatEnd / RepeatEndingStart / BarLine / Whitespace
+Item = Comment / MusicalControlFlow / SetterGroup / SetRoot / SetScale / SetMos / RatioChordItem / SampleRateNote / Note / Rest / Chord / RepeatEndStart / RepeatStart / RepeatEnd / RepeatEndingStart / BarLine / Whitespace
 Note = pitch:Pitch tail:Hold? {
   return node('Note', { pitch, tail });
 }
@@ -25,7 +25,8 @@ OctaveModifier = shifts:(Apostrophe / Quote / Grave)+ {
 Apostrophe "apostrophe" = "'" { return 1; }
 Quote "quote" = '"' { return 2; }
 Grave "grave" = "`" { return -1; }
-LatinNominal = nominal:[a-z]i { return { nominal, greek: false } }
+LatinNominal = nominal:[a-g]i { return { nominal, greek: false } }
+MosNominal = nominal:$([j-z]i+) { return { nominal, greek: false, mos: true } }
 GreekNominal "Greek nominal" = ([α-ω]i / "alp"i / "bet"i / "gam"i / "del"i / "eps"i / "zet"i / "eta"i / "the"i / "iot"i / "kap"i / "muu"i / "nuu"i / "xii"i / "omi"i / "pii"i / "rho"i / "fsi"i / "sig"i / "tau"i / "ups"i / "phi"i / "chi"i / "psi"i / "ome"i) {
   return { nominal: text(), greek: true };
 }
@@ -53,6 +54,10 @@ Inflection "inflection" = type: ('^' / 'v') value: Int flavor: InflectionFlavor 
 }
 PitchAbsolute
  = updowns: UpsAndDowns nominal: (GreekNominal / LatinNominal) accidentals: Accidental* inflections: Inflection* { return node('PitchAbsolute', {...updowns, ...nominal, accidentals, inflections}) }
+ / PitchAbsoluteMos
+PitchAbsoluteMos
+ = updowns: UpsAndDowns nominal:MosNominal accidentals:MosAccidental* { return node('PitchAbsolute', {...updowns, ...nominal, accidentals, inflections: []}) }
+MosAccidental = [\&@ea]
 PitchCents = cents:Number "c"i { return node('PitchCents',{cents}); }
 PitchHz = hz:Number _ "hz"i { return node('PitchHz',{hz}); }
 PitchOctaveDivision = numerator:Int _ [\\/] _ denominator:Int octaveSize:PitchOctaveDivisionSuffix {
@@ -212,6 +217,29 @@ RootNominalPrefix = _ "as"i _
 RootNominalValue = octave:OctaveModifier? nominal:PitchAbsolute {
   return { ...nominal, octave: octave?.octave ?? 0, location: location() };
 }
+
+SetMos = "MOS"i _ "{" _ expressions:(_ @MosExpression)* _ "}" {
+  return node('SetMos', { expressions });
+}
+MosExpression
+  = MosLargeDeclaration
+  / MosSmallDeclaration
+  / MosRationalEquave
+  / MosPatternUpDownPeriod
+  / MosHardnessDeclaration
+  / MosLongIntegerPattern
+  / MosSmallIntegerPattern
+  / MosAbstractStepPattern
+MosLargeDeclaration = "L"i _ ":" _ value:PitchOctaveDivision { return { type: 'MosLargeDeclaration', value }; }
+MosSmallDeclaration = "s"i _ ":" _ value:PitchOctaveDivision { return { type: 'MosSmallDeclaration', value }; }
+MosRationalEquave = "<" _ numerator:Int _ "/" _ denominator:Int _ ">" { return { type: 'MosRationalEquave', numerator, denominator }; }
+MosAbstractStepPattern = pattern:$([Ls]+) { return { type: 'MosAbstractStepPattern', pattern }; }
+MosSmallIntegerPattern = pattern:$([0-9]+) { return { type: 'MosIntegerPattern', pattern: pattern.split('').map(d => parseInt(d, 10)) }; }
+MosLongIntegerPattern = pattern:Int _ "," _ rest:(_ @Int _ ","? _)* { return { type: 'MosIntegerPattern', pattern: [pattern, ...rest] }; }
+MosHardnessDeclaration = numerator:Int _ "/" _ denominator:Int { return { type: 'MosHardnessDeclaration', numerator, denominator }; }
+MosPatternUpDownPeriod = countLarge:Int _ "L"i _ countSmall:Int _ "s"i _ mode:MosModeBrightness? { return { type: 'MosPatternUpDownPeriod', countLarge, countSmall, mode }; }
+MosModeBrightness = up:Int _ "|" _ down:Int _ period:("(" _ @Int _ ")")? { return { up, down, period }; }
+
 SetScale = "{" _ scale:(EdoScale / PythagoreanScale / PitchGroupScale) _ "}" {
   return node('SetScale', { scale });
 }

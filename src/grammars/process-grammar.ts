@@ -3,10 +3,14 @@ import { type Monzo, sub } from 'xen-dev-utils/monzo'
 import { PRIME_CENTS } from 'xen-dev-utils/primes'
 import { gcd, mmod, geoMod } from 'xen-dev-utils/fraction'
 import { centsToValue, equaveDivisionToValue, valueToCents } from 'xen-dev-utils/conversion'
+import { generateNotation } from 'moment-of-symmetry/notation'
+import { stepString } from 'moment-of-symmetry/core'
 
 import type {
   XenpaperAST,
   SetScaleType,
+  SetMosType,
+  MosExpressionType,
   SetRootType,
   NoteType,
   SampleRateNoteType,
@@ -72,10 +76,82 @@ const limit = (name: string, value: number, min: number, max: number): void => {
 // pitch math
 //
 
+type MosConfig = {
+  pattern: string
+  equaveSize: number
+  largeSteps: number
+  smallSteps: number
+  stepSize: number
+  chromaSteps: number
+  nominalSteps: Map<string, number>
+  equaveSteps: number
+}
+
 type AbsolutePitchMonzo = {
   monzo: Monzo
   ups: number
   lifts: number
+}
+
+const MOS_ALPHABET = 'JKLMNOPQRSTUVWXYZ'
+
+const mosNominalIndex = (nominal: string): number => {
+  const key = nominal.toUpperCase()
+  let result = 0
+  for (let i = 0; i < key.length; i++) {
+    const index = MOS_ALPHABET.indexOf(key[i]!)
+    if (index === -1) throw new Error(`Undefined MOS nominal '${nominal}'.`)
+    result = result * MOS_ALPHABET.length + index
+  }
+  for (let length = 1; length < key.length; length++) {
+    result += MOS_ALPHABET.length ** length
+  }
+  return result
+}
+
+const normalizeMosNominal = (
+  nominal: string,
+  context: Context,
+): { key: string; equaves: number } => {
+  const key = nominal.toUpperCase()
+  const index = mosNominalIndex(nominal)
+  const baseIndex = mmod(index, context.mos!.nominalSteps.size)
+  return {
+    key: Array.from(context.mos!.nominalSteps.keys())[baseIndex]!,
+    equaves: Math.floor(index / context.mos!.nominalSteps.size) + (nominal[0] === key[0] ? 0 : 1),
+  }
+}
+
+const absoluteMosPitchToCents = (
+  pitch: PitchAbsoluteType,
+  octave: number,
+  context: Context,
+): number => {
+  if (!context.mos) throw new Error('MOS pitch used before a MOS declaration.')
+  const { key, equaves } = normalizeMosNominal(pitch.nominal, context)
+  const nominalSteps = context.mos.nominalSteps.get(key)
+  if (nominalSteps === undefined) throw new Error(`Undefined MOS nominal '${pitch.nominal}'.`)
+  let steps = nominalSteps + (octave + equaves) * context.mos.equaveSteps
+  for (const accidental of pitch.accidentals) {
+    switch (accidental) {
+      case '&':
+        steps += context.mos.chromaSteps
+        break
+      case '@':
+        steps -= context.mos.chromaSteps
+        break
+      case 'e':
+        steps += context.mos.chromaSteps / 2
+        break
+      case 'a':
+        steps -= context.mos.chromaSteps / 2
+        break
+      default:
+        throw new Error(`Accidental ${accidental} is not a MOS accidental.`)
+    }
+  }
+  steps += pitch.ups + 5 * pitch.lifts
+  return steps * context.mos.stepSize
 }
 
 const absolutePitchToMonzo = (
@@ -134,6 +210,9 @@ export const pitchToRatio = (pitch: PitchType, context: Context): number => {
   }
 
   if (type === 'PitchAbsolute') {
+    if (pitch.value.mos) {
+      return centsToValue(absoluteMosPitchToCents(pitch.value, pitch.octave?.octave ?? 0, context))
+    }
     const absolutePitch = absolutePitchToMonzo(pitch.value, pitch.octave?.octave ?? 0, context)
     const monzo = sub(absolutePitch.monzo, rootNominal.monzo)
     // Compute power-user mapping on the fly
@@ -291,6 +370,10 @@ export const pitchToLabel = (pitch: PitchType, context: Context): string => {
   }
 
   if (type === 'PitchAbsolute') {
+    if (pitch.value.mos) {
+      const { ups, lifts, nominal, accidentals } = pitch.value
+      return `${'^'.repeat(Math.max(ups, 0))}${'v'.repeat(Math.max(-ups, 0))}${'/'.repeat(Math.max(lifts, 0))}${'\\'.repeat(Math.max(-lifts, 0))}${nominal}${accidentals.join('')}`
+    }
     const { ups, lifts, nominal, accidentals, inflections } = pitch.value
     const keySignature = applyKeySignature(nominal, accidentals, context)
     const effectiveUps = ups + keySignature.ups
@@ -344,6 +427,7 @@ type Context = {
   mapping: number[]
   stepSize: number
   mappingIsIntegerSteps: boolean
+  mos: MosConfig | null
   keySignature: Map<string, KeySignatureAdjustment>
   graceSubdivision: number | null
   graceNotesRemaining: number
@@ -900,6 +984,114 @@ const droneToMosc = (drone: DroneType, context: Context): MoscBeatPlayableNote[]
   return playableToMoscAtCurrentTime(drone.value, context)
 }
 
+const mosExpressionPrecedence = (expression: MosExpressionType): number => {
+  switch (expression.type) {
+    case 'MosLargeDeclaration':
+    case 'MosSmallDeclaration':
+    case 'MosRationalEquave':
+    case 'MosHardnessDeclaration':
+      return 1
+    default:
+      return 0
+  }
+}
+
+const setMos = (setMos: SetMosType, context: Context): void => {
+  let pattern: string | null = null
+  let integerPattern: number[] | null = null
+  let equaveSize = 2
+  let largeSteps: number | null = null
+  let smallSteps: number | null = null
+  let hardness: { numerator: number; denominator: number } | null = null
+
+  const expressions = [...setMos.expressions].sort(
+    (a, b) => mosExpressionPrecedence(a) - mosExpressionPrecedence(b),
+  )
+
+  for (const expression of expressions) {
+    switch (expression.type) {
+      case 'MosAbstractStepPattern':
+        pattern = expression.pattern
+        break
+      case 'MosIntegerPattern':
+        integerPattern = expression.pattern
+        pattern = expression.pattern
+          .map((step) => (step === Math.max(...expression.pattern) ? 'L' : 's'))
+          .join('')
+        smallSteps = Math.min(...expression.pattern)
+        largeSteps = Math.max(...expression.pattern)
+        break
+      case 'MosPatternUpDownPeriod':
+        pattern = stepString(
+          expression.countLarge,
+          expression.countSmall,
+          expression.mode ?? undefined,
+        )
+        break
+      case 'MosRationalEquave':
+        assertFinitePositive('MOS equave denominator', expression.denominator)
+        equaveSize = expression.numerator / expression.denominator
+        break
+      case 'MosHardnessDeclaration':
+        assertFinitePositive('MOS hardness denominator', expression.denominator)
+        hardness = { numerator: expression.numerator, denominator: expression.denominator }
+        break
+      case 'MosLargeDeclaration':
+        largeSteps = expression.value.numerator / expression.value.denominator
+        break
+      case 'MosSmallDeclaration':
+        smallSteps = expression.value.numerator / expression.value.denominator
+        break
+    }
+  }
+
+  if (!pattern) throw new Error('MOS declaration requires a pattern.')
+  const countL = (pattern.match(/L/g) ?? []).length
+  const countS = pattern.length - countL
+  if (largeSteps === null || smallSteps === null) {
+    if (hardness === null) {
+      hardness = integerPattern
+        ? { numerator: Math.max(...integerPattern), denominator: Math.min(...integerPattern) }
+        : { numerator: 2, denominator: 1 }
+    }
+    if (largeSteps !== null) {
+      smallSteps = (largeSteps * hardness.denominator) / hardness.numerator
+    } else if (smallSteps !== null) {
+      largeSteps = (smallSteps * hardness.numerator) / hardness.denominator
+    } else {
+      largeSteps = hardness.numerator
+      smallSteps = hardness.denominator
+    }
+  }
+  const equaveSteps = countL * largeSteps + countS * smallSteps
+  assertFinitePositive('MOS equave steps', equaveSteps)
+  const stepSize = valueToCents(equaveSize) / equaveSteps
+  const notation = generateNotation(pattern)
+  const nominalSteps = new Map<string, number>()
+  for (const [nominal, mosMonzo] of notation.scale) {
+    nominalSteps.set(nominal, mosMonzo[0] * largeSteps + mosMonzo[1] * smallSteps)
+  }
+
+  context.mos = {
+    pattern,
+    equaveSize,
+    largeSteps,
+    smallSteps,
+    stepSize,
+    chromaSteps: largeSteps - smallSteps,
+    nominalSteps,
+    equaveSteps,
+  }
+  context.octaveSize = equaveSize
+  context.scale = Array.from(nominalSteps.values()).map((steps) => centsToValue(steps * stepSize))
+  context.scaleLabels = Array.from(nominalSteps.keys())
+  context.up = stepSize
+  context.lift = 5 * stepSize
+  context.stepSize = stepSize
+  context.mapping = PRIME_CENTS.slice(0, NUM_COMPONENTS).map((c) => Math.round(c / stepSize))
+  context.mappingIsIntegerSteps = true
+}
+
 const setScale = (setScale: SetScaleType, context: Context): void => {
   const { scale } = setScale
   const { type } = scale
@@ -1339,6 +1531,7 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
     mapping: PRIME_CENTS,
     stepSize: 1,
     mappingIsIntegerSteps: false,
+    mos: null,
     keySignature: new Map(),
     graceSubdivision: null,
     graceNotesRemaining: 0,
@@ -1385,6 +1578,11 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
 
     if (type === 'SetScale') {
       setScale(item, context)
+      return
+    }
+
+    if (type === 'SetMos') {
+      setMos(item, context)
       return
     }
 

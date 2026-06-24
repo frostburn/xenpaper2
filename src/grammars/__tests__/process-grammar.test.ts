@@ -418,6 +418,24 @@ describe('grammar to mosc score', () => {
     expect(source.error).toContain('Unpaired repeat start marker "|:"')
   })
 
+  it('processes absolute Diamond-MOS pitches in equal steps', () => {
+    const [j, k, jUp, jLift, jAmp, jLowered, lowerJ] = noteItems('MOS{5L 2s} J K ^J /J J& J@ j')
+
+    expect(j?.label).toBe('J')
+    expect(k?.hz).toBeAround(220 * Math.pow(2, 2 / 12), 6)
+    expect(jUp?.label).toBe('^J')
+    expect(jLift?.label).toBe('/J')
+    expect(jAmp?.label).toBe('J&')
+    expect(jLowered?.label).toBe('J@')
+    expect(lowerJ?.hz).toBeAround(440, 6)
+  })
+
+  it('supports long integer MOS declarations and multi-letter nominal equaves', () => {
+    const [jj, capitalJj] = noteItems('MOS{43,43,10,43,43,43,43,43} jj Jj')
+
+    expect(jj!.hz / capitalJj!.hz).toBeAround(2, 6)
+  })
+
   it('applies major key signatures to Latin and matching Greek nominals', () => {
     expect(noteLabels('(key:G Major) F Zet F_ Zet_')).toEqual(['F♯', 'Ζ♯', 'F♮', 'Ζ♮'])
   })
@@ -481,7 +499,7 @@ describe('grammar to mosc score', () => {
     const source = parseAndProcessSourceCode('(key:X Major) F')
 
     expect(source.playable).toBe(false)
-    expect(source.error).toContain("Undefined key signature tonic 'X'.")
+    expect(source.error).toContain('Expected Greek nominal or [a-g] but "X" found.')
   })
 
   it('should translate sample-rate notes', () => {

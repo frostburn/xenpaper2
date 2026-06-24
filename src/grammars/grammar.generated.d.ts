@@ -23,6 +23,10 @@ type OctaveModifierType = NodeType<'OctaveModifier'> & {
 }
 
 export type AccidentalType =
+  | '&'
+  | '@'
+  | 'e'
+  | 'a'
   | '𝄪'
   | '𝄫'
   | '𝄲'
@@ -59,6 +63,7 @@ export type PitchAbsoluteType = NodeType<'PitchAbsolute'> & {
   greek: boolean
   accidentals: AccidentalType[]
   inflections: InflectionType[]
+  mos?: boolean
 }
 
 export type PitchCentsType = NodeType<'PitchCents'> & {
@@ -165,6 +170,24 @@ export type ScaleOctaveMarkerType = NodeType<'ScaleOctaveMarker'>
 
 export type PitchGroupScalePrefixType = NodeType<'PitchGroupScalePrefix'> & {
   prefix: string
+}
+
+export type MosExpressionType =
+  | { type: 'MosLargeDeclaration'; value: PitchOctaveDivisionType }
+  | { type: 'MosSmallDeclaration'; value: PitchOctaveDivisionType }
+  | { type: 'MosRationalEquave'; numerator: number; denominator: number }
+  | { type: 'MosAbstractStepPattern'; pattern: string }
+  | { type: 'MosIntegerPattern'; pattern: number[] }
+  | {
+      type: 'MosPatternUpDownPeriod'
+      countLarge: number
+      countSmall: number
+      mode: { up: number; down: number; period: number | null } | null
+    }
+  | { type: 'MosHardnessDeclaration'; numerator: number; denominator: number }
+
+export type SetMosType = NodeType<'SetMos'> & {
+  expressions: MosExpressionType[]
 }
 
 export type PitchGroupScaleType = NodeType<'PitchGroupScale'> & {
@@ -284,6 +307,7 @@ export type KeyTonicType = {
   greek: boolean
   accidentals: AccidentalType[]
   inflections: InflectionType[]
+  mos?: boolean
 }
 
 export type KeyModeType =
@@ -409,6 +433,7 @@ export type SequenceItemsType =
   | RestType
   | SetterGroupType
   | SetScaleType
+  | SetMosType
   | SetRootType
   | CommentType
   | RepeatType
