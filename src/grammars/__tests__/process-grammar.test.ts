@@ -443,7 +443,7 @@ describe('grammar to mosc score', () => {
     expect(jj!.hz / capitalJj!.hz).toBeAround(2, 6)
   })
 
-  it('accepts MOS mode and equave declarations in any order', () => {
+  it('accepts MOS mode and hardness declarations in any order', () => {
     expect(noteLabels('MOS{4L3s 4|2 5/3} J MOS{5/3 4|2 4L 3s} J')).toEqual(['J', 'J'])
   })
 

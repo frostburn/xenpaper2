@@ -949,7 +949,7 @@ const droneToMosc = (drone: DroneType, context: Context): MoscBeatPlayableNote[]
 }
 
 const setMos = (setMos: SetMosType, context: Context): void => {
-  const mos = createMosConfig(setMos.expressions)
+  const mos = createMosConfig(setMos.expressions.map((expression) => expression.value))
   context.mos = mos
   context.scale = mosScaleRatios(mos)
   context.scaleLabels = mosScaleLabels(mos)

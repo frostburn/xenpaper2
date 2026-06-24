@@ -171,24 +171,21 @@ export type PitchGroupScalePrefixType = NodeType<'PitchGroupScalePrefix'> & {
   prefix: string
 }
 
-export type MosExpressionType =
-  | (NodeType<'MosRationalEquave'> & { numerator: number; denominator: number })
-  | (NodeType<'MosAbstractStepPattern'> & { pattern: string })
-  | (NodeType<'MosIntegerPattern'> & { pattern: number[] })
-  | (NodeType<'MosCountLarge'> & { count: number })
-  | (NodeType<'MosCountSmall'> & { count: number })
-  | (NodeType<'MosMode'> & { up: number; down: number; period: number | null })
-  | (NodeType<'MosHardnessDeclaration'> & { numerator: number; denominator: number })
+export type MosExpressionValueType =
+  | { type: 'MosRationalEquave'; numerator: number; denominator: number }
+  | { type: 'MosAbstractStepPattern'; pattern: string }
+  | { type: 'MosIntegerPattern'; pattern: number[] }
+  | { type: 'MosCountLarge'; count: number }
+  | { type: 'MosCountSmall'; count: number }
+  | { type: 'MosMode'; up: number; down: number; period: number | null }
+  | { type: 'MosHardnessDeclaration'; numerator: number; denominator: number }
 
-export type MosTokenType = NodeType<'MosToken'>
-export type MosOpenType = NodeType<'MosOpen'>
-export type MosCloseType = NodeType<'MosClose'>
+export type MosExpressionType = NodeType<'MosExpression'> & {
+  value: MosExpressionValueType
+}
 
 export type SetMosType = NodeType<'SetMos'> & {
-  token: MosTokenType
-  open: MosOpenType
   expressions: MosExpressionType[]
-  close: MosCloseType
 }
 
 export type PitchGroupScaleType = NodeType<'PitchGroupScale'> & {

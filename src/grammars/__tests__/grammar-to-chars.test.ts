@@ -43,15 +43,15 @@ describe('grammarToChars', () => {
 
   it('syntax-highlights MOS declarations with nuanced MOS colors', () => {
     expect(colors(grammarToChars(parse('MOS{4L3s 4|2 5/3} J')))).toEqual([
-      'mos',
-      'mos',
-      'mos',
+      'mosGroup',
+      'mosGroup',
+      'mosGroup',
       'mosGroup',
       'mos',
       'mos',
       'mos',
       'mos',
-      undefined,
+      'mos',
       'mos',
       'mos',
       'mos',

@@ -1,7 +1,7 @@
 import { generateNotation, stepString, type MosMonzo } from 'moment-of-symmetry'
 import { centsToValue, valueToCents } from 'xen-dev-utils/conversion'
 
-import type { MosExpressionType } from '../grammar.generated'
+import type { MosExpressionValueType } from '../grammar.generated'
 
 type MosMode = { up: number; down: number; period: number | null }
 
@@ -20,7 +20,7 @@ export type MosConfig = {
 
 const MOS_ALPHABET = 'JKLMNOPQRSTUVWXYZ'
 
-export const mosExpressionPrecedence = (expression: MosExpressionType): number => {
+export const mosExpressionPrecedence = (expression: MosExpressionValueType): number => {
   switch (expression.type) {
     case 'MosRationalEquave':
     case 'MosHardnessDeclaration':
@@ -44,7 +44,7 @@ export const mosStepPattern = (
   )
 }
 
-export const createMosConfig = (expressions: MosExpressionType[]): MosConfig => {
+export const createMosConfig = (expressions: MosExpressionValueType[]): MosConfig => {
   let pattern: string | null = null
   let countLarge: number | null = null
   let countSmall: number | null = null
