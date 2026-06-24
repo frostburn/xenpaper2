@@ -10,6 +10,8 @@ export type HighlightColor =
   | 'chord'
   | 'scaleGroup'
   | 'scale'
+  | 'mosGroup'
+  | 'mos'
   | 'setterGroup'
   | 'setter'
   | 'comment'
@@ -86,6 +88,7 @@ const colorMap = new Map<string, HighlightColor>([
   ['PitchGroupScalePrefix', 'scale'],
   ['ScaleOctaveMarker', 'scale'],
   ['SetScale', 'scaleGroup'],
+  ['SetMos', 'mosGroup'],
   ['SetKey', 'scale'],
   ['SetRoot', 'scaleGroup'],
   ['SetRoot.Pitch', 'scale'],

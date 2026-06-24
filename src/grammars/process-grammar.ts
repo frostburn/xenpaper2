@@ -8,7 +8,6 @@ import type {
   XenpaperAST,
   SetScaleType,
   SetMosType,
-  MosExpressionType,
   SetRootType,
   NoteType,
   SampleRateNoteType,
@@ -35,6 +34,13 @@ import {
   keySignatureAccidentals,
 } from './pythagorean'
 import { applyFjsInflections } from './fjs/inflections'
+import {
+  createMosConfig,
+  mosScaleLabels,
+  mosScaleRatios,
+  normalizeMosNominal,
+  type MosConfig,
+} from './mos'
 
 import type {
   MoscBeatScore,
@@ -74,106 +80,10 @@ const limit = (name: string, value: number, min: number, max: number): void => {
 // pitch math
 //
 
-type MosConfig = {
-  pattern: string
-  equaveSize: number
-  largeSteps: number
-  smallSteps: number
-  stepSize: number
-  chromaSteps: number
-  nominalSteps: Map<string, number>
-  equaveSteps: number
-}
-
 type AbsolutePitchMonzo = {
   monzo: Monzo
   ups: number
   lifts: number
-}
-
-const MOS_ALPHABET = 'JKLMNOPQRSTUVWXYZ'
-
-const mosStepString = (
-  countLarge: number,
-  countSmall: number,
-  mode: { up: number; down: number; period: number | null } | null,
-): string => {
-  const total = countLarge + countSmall
-  limit('MOS size', total, 1, 10000)
-  if (!mode) {
-    return Array.from({ length: total }, (_, i) =>
-      Math.floor(((i + 1) * countSmall) / total) > Math.floor((i * countSmall) / total) ? 's' : 'L',
-    ).join('')
-  }
-
-  const generator = mode.up + mode.down
-  if (generator <= 0 || gcd(generator, total) !== (mode.period ?? gcd(countLarge, countSmall))) {
-    throw new Error('Incompatible MOS mode brightness.')
-  }
-
-  const bright = new Set<number>()
-  let degree = 0
-  for (let i = 0; i < countLarge; i++) {
-    bright.add(degree)
-    degree = mmod(degree + generator, total)
-  }
-  return Array.from({ length: total }, (_, i) => (bright.has(i) ? 'L' : 's')).join('')
-}
-
-const mosPatternScale = (pattern: string): Map<string, [number, number]> => {
-  const result = new Map<string, [number, number]>()
-  let large = 0
-  let small = 0
-  for (let i = 0; i < pattern.length; i++) {
-    result.set(mosNominalFromIndex(i), [large, small])
-    if (pattern[i] === 'L') large++
-    else small++
-  }
-  return result
-}
-
-const mosNominalFromIndex = (index: number): string => {
-  let remaining = index
-  let length = 1
-  while (remaining >= MOS_ALPHABET.length ** length) {
-    remaining -= MOS_ALPHABET.length ** length
-    length++
-  }
-  let result = ''
-  for (let i = length - 1; i >= 0; i--) {
-    const place = MOS_ALPHABET.length ** i
-    const digit = Math.floor(remaining / place)
-    result += MOS_ALPHABET[digit]
-    remaining %= place
-  }
-  return result
-}
-
-const mosNominalIndex = (nominal: string): number => {
-  const key = nominal.toUpperCase()
-  let result = 0
-  for (let i = 0; i < key.length; i++) {
-    const index = MOS_ALPHABET.indexOf(key[i]!)
-    if (index === -1) throw new Error(`Undefined MOS nominal '${nominal}'.`)
-    result = result * MOS_ALPHABET.length + index
-  }
-  for (let length = 1; length < key.length; length++) {
-    result += MOS_ALPHABET.length ** length
-  }
-  return result
-}
-
-const normalizeMosNominal = (
-  nominal: string,
-  context: Context,
-): { key: string; equaves: number } => {
-  const key = nominal.toUpperCase()
-  const index = mosNominalIndex(nominal)
-  const baseIndex = mmod(index, context.mos!.nominalSteps.size)
-  return {
-    key: Array.from(context.mos!.nominalSteps.keys())[baseIndex]!,
-    equaves: Math.floor(index / context.mos!.nominalSteps.size) + (nominal[0] === key[0] ? 0 : 1),
-  }
 }
 
 const absoluteMosPitchToCents = (
@@ -182,7 +92,7 @@ const absoluteMosPitchToCents = (
   context: Context,
 ): number => {
   if (!context.mos) throw new Error('MOS pitch used before a MOS declaration.')
-  const { key, equaves } = normalizeMosNominal(pitch.nominal, context)
+  const { key, equaves } = normalizeMosNominal(pitch.nominal, context.mos)
   const nominalSteps = context.mos.nominalSteps.get(key)
   if (nominalSteps === undefined) throw new Error(`Undefined MOS nominal '${pitch.nominal}'.`)
   let steps = nominalSteps + (octave + equaves) * context.mos.equaveSteps
@@ -204,7 +114,7 @@ const absoluteMosPitchToCents = (
         throw new Error(`Accidental ${accidental} is not a MOS accidental.`)
     }
   }
-  steps += pitch.ups + 5 * pitch.lifts
+  steps += pitch.ups + (pitch.lifts * context.mos.lift) / context.mos.stepSize
   return steps * context.mos.stepSize
 }
 
@@ -1038,107 +948,11 @@ const droneToMosc = (drone: DroneType, context: Context): MoscBeatPlayableNote[]
   return playableToMoscAtCurrentTime(drone.value, context)
 }
 
-const mosExpressionPrecedence = (expression: MosExpressionType): number => {
-  switch (expression.type) {
-    case 'MosLargeDeclaration':
-    case 'MosSmallDeclaration':
-    case 'MosRationalEquave':
-    case 'MosHardnessDeclaration':
-      return 1
-    default:
-      return 0
-  }
-}
-
 const setMos = (setMos: SetMosType, context: Context): void => {
-  let pattern: string | null = null
-  let integerPattern: number[] | null = null
-  let equaveSize = 2
-  let largeSteps: number | null = null
-  let smallSteps: number | null = null
-  let hardness: { numerator: number; denominator: number } | null = null
-
-  const expressions = [...setMos.expressions].sort(
-    (a, b) => mosExpressionPrecedence(a) - mosExpressionPrecedence(b),
-  )
-
-  for (const expression of expressions) {
-    switch (expression.type) {
-      case 'MosAbstractStepPattern':
-        pattern = expression.pattern
-        break
-      case 'MosIntegerPattern':
-        integerPattern = expression.pattern
-        pattern = expression.pattern
-          .map((step) => (step === Math.max(...expression.pattern) ? 'L' : 's'))
-          .join('')
-        smallSteps = Math.min(...expression.pattern)
-        largeSteps = Math.max(...expression.pattern)
-        break
-      case 'MosPatternUpDownPeriod':
-        pattern = mosStepString(expression.countLarge, expression.countSmall, expression.mode)
-        break
-      case 'MosRationalEquave':
-        assertFinitePositive('MOS equave denominator', expression.denominator)
-        equaveSize = expression.numerator / expression.denominator
-        break
-      case 'MosHardnessDeclaration':
-        assertFinitePositive('MOS hardness denominator', expression.denominator)
-        hardness = { numerator: expression.numerator, denominator: expression.denominator }
-        break
-      case 'MosLargeDeclaration':
-        largeSteps = expression.value.numerator / expression.value.denominator
-        break
-      case 'MosSmallDeclaration':
-        smallSteps = expression.value.numerator / expression.value.denominator
-        break
-    }
-  }
-
-  if (!pattern) throw new Error('MOS declaration requires a pattern.')
-  const countL = (pattern.match(/L/g) ?? []).length
-  const countS = pattern.length - countL
-  if (largeSteps === null || smallSteps === null) {
-    if (hardness === null) {
-      hardness = integerPattern
-        ? { numerator: Math.max(...integerPattern), denominator: Math.min(...integerPattern) }
-        : { numerator: 2, denominator: 1 }
-    }
-    if (largeSteps !== null) {
-      smallSteps = (largeSteps * hardness.denominator) / hardness.numerator
-    } else if (smallSteps !== null) {
-      largeSteps = (smallSteps * hardness.numerator) / hardness.denominator
-    } else {
-      largeSteps = hardness.numerator
-      smallSteps = hardness.denominator
-    }
-  }
-  const equaveSteps = countL * largeSteps + countS * smallSteps
-  assertFinitePositive('MOS equave steps', equaveSteps)
-  const stepSize = valueToCents(equaveSize) / equaveSteps
-  const nominalSteps = new Map<string, number>()
-  for (const [nominal, mosMonzo] of mosPatternScale(pattern)) {
-    nominalSteps.set(nominal, mosMonzo[0] * largeSteps + mosMonzo[1] * smallSteps)
-  }
-
-  context.mos = {
-    pattern,
-    equaveSize,
-    largeSteps,
-    smallSteps,
-    stepSize,
-    chromaSteps: largeSteps - smallSteps,
-    nominalSteps,
-    equaveSteps,
-  }
-  context.octaveSize = equaveSize
-  context.scale = Array.from(nominalSteps.values()).map((steps) => centsToValue(steps * stepSize))
-  context.scaleLabels = Array.from(nominalSteps.keys())
-  context.up = stepSize
-  context.lift = 5 * stepSize
-  context.stepSize = stepSize
-  context.mapping = PRIME_CENTS.slice(0, NUM_COMPONENTS).map((c) => Math.round(c / stepSize))
-  context.mappingIsIntegerSteps = true
+  const mos = createMosConfig(setMos.expressions)
+  context.mos = mos
+  context.scale = mosScaleRatios(mos)
+  context.scaleLabels = mosScaleLabels(mos)
 }
 
 const setScale = (setScale: SetScaleType, context: Context): void => {

@@ -177,12 +177,9 @@ export type MosExpressionType =
   | { type: 'MosRationalEquave'; numerator: number; denominator: number }
   | { type: 'MosAbstractStepPattern'; pattern: string }
   | { type: 'MosIntegerPattern'; pattern: number[] }
-  | {
-      type: 'MosPatternUpDownPeriod'
-      countLarge: number
-      countSmall: number
-      mode: { up: number; down: number; period: number | null } | null
-    }
+  | { type: 'MosCountLarge'; count: number }
+  | { type: 'MosCountSmall'; count: number }
+  | { type: 'MosMode'; up: number; down: number; period: number | null }
   | { type: 'MosHardnessDeclaration'; numerator: number; denominator: number }
 
 export type SetMosType = NodeType<'SetMos'> & {

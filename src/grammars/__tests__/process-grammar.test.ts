@@ -430,10 +430,33 @@ describe('grammar to mosc score', () => {
     expect(lowerJ?.hz).toBeAround(440, 6)
   })
 
-  it('supports long integer MOS declarations and multi-letter nominal equaves', () => {
-    const [jj, capitalJj] = noteItems('MOS{43,43,10,43,43,43,43,43} jj Jj')
+  it('rejects unassigned multi-letter MOS nominals', () => {
+    const source = parseAndProcessSourceCode('MOS{43,43,10,43,43,43,43,43} jj')
+
+    expect(source.playable).toBe(false)
+    expect(source.error).toContain("Undefined MOS nominal 'jj'.")
+  })
+
+  it('supports multi-letter nominal equaves when the MOS assigns them', () => {
+    const [capitalJj, jj] = noteItems('MOS{18L 1s} Jj jj')
 
     expect(jj!.hz / capitalJj!.hz).toBeAround(2, 6)
+  })
+
+  it('accepts MOS mode and equave declarations in any order', () => {
+    expect(noteLabels('MOS{4L3s 4|2 5/3} J MOS{5/3 4|2 4L 3s} J')).toEqual(['J', 'J'])
+  })
+
+  it('accepts short rational MOS equaves', () => {
+    const [j] = noteItems('MOS{4L3s <3>} J')
+
+    expect(j?.label).toBe('J')
+  })
+
+  it('keeps MOS up and lift steps separate from Latin and Greek absolute pitch config', () => {
+    const [before, after] = noteItems('^C MOS{5L2s} ^C')
+
+    expect(after?.hz).toBeAround(before!.hz, 6)
   })
 
   it('applies major key signatures to Latin and matching Greek nominals', () => {

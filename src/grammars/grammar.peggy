@@ -225,20 +225,23 @@ MosExpression
   = MosLargeDeclaration
   / MosSmallDeclaration
   / MosRationalEquave
-  / MosPatternUpDownPeriod
+  / MosMode
   / MosHardnessDeclaration
+  / MosCountLarge
+  / MosCountSmall
   / MosLongIntegerPattern
   / MosSmallIntegerPattern
   / MosAbstractStepPattern
 MosLargeDeclaration = "L"i _ ":" _ value:PitchOctaveDivision { return { type: 'MosLargeDeclaration', value }; }
 MosSmallDeclaration = "s"i _ ":" _ value:PitchOctaveDivision { return { type: 'MosSmallDeclaration', value }; }
-MosRationalEquave = "<" _ numerator:Int _ "/" _ denominator:Int _ ">" { return { type: 'MosRationalEquave', numerator, denominator }; }
+MosRationalEquave = "<" _ numerator:Int denominator:(_ "/" _ @Int)? _ ">" { return { type: 'MosRationalEquave', numerator, denominator: denominator ?? 1 }; }
 MosAbstractStepPattern = pattern:$([Ls]+) { return { type: 'MosAbstractStepPattern', pattern }; }
 MosSmallIntegerPattern = pattern:$([0-9]+) { return { type: 'MosIntegerPattern', pattern: pattern.split('').map(d => parseInt(d, 10)) }; }
 MosLongIntegerPattern = pattern:Int _ "," _ rest:(_ @Int _ ","? _)* { return { type: 'MosIntegerPattern', pattern: [pattern, ...rest] }; }
 MosHardnessDeclaration = numerator:Int _ "/" _ denominator:Int { return { type: 'MosHardnessDeclaration', numerator, denominator }; }
-MosPatternUpDownPeriod = countLarge:Int _ "L"i _ countSmall:Int _ "s"i _ mode:MosModeBrightness? { return { type: 'MosPatternUpDownPeriod', countLarge, countSmall, mode }; }
-MosModeBrightness = up:Int _ "|" _ down:Int _ period:("(" _ @Int _ ")")? { return { up, down, period }; }
+MosCountLarge = count:Int _ "L"i { return { type: 'MosCountLarge', count }; }
+MosCountSmall = count:Int _ "s"i { return { type: 'MosCountSmall', count }; }
+MosMode = up:Int _ "|" _ down:Int _ period:("(" _ @Int _ ")")? { return { type: 'MosMode', up, down, period }; }
 
 SetScale = "{" _ scale:(EdoScale / PythagoreanScale / PitchGroupScale) _ "}" {
   return node('SetScale', { scale });
