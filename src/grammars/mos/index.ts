@@ -8,8 +8,8 @@ type MosMode = { up: number; down: number; period: number | null }
 export type MosConfig = {
   pattern: string
   equaveSize: number
-  largeSteps: number
-  smallSteps: number
+  sizeOfLargeStep: number
+  sizeOfSmallStep: number
   stepSize: number
   up: number
   lift: number
@@ -17,8 +17,6 @@ export type MosConfig = {
   nominalSteps: Map<string, number>
   equaveSteps: number
 }
-
-const MOS_ALPHABET = 'JKLMNOPQRSTUVWXYZ'
 
 export const mosExpressionPrecedence = (expression: MosExpressionValueType): number => {
   switch (expression.type) {
@@ -37,11 +35,7 @@ export const mosStepPattern = (
   mode: MosMode | null,
 ): string => {
   if (countLarge + countSmall <= 0) throw new Error('MOS size must be positive.')
-  return stepString(
-    countLarge,
-    countSmall,
-    mode ? { up: mode.up, down: mode.down, period: mode.period } : undefined,
-  )
+  return stepString(countLarge, countSmall, mode ? { up: mode.up, down: mode.down } : undefined)
 }
 
 export const createMosConfig = (expressions: MosExpressionValueType[]): MosConfig => {
@@ -50,8 +44,8 @@ export const createMosConfig = (expressions: MosExpressionValueType[]): MosConfi
   let countSmall: number | null = null
   let integerPattern: number[] | null = null
   let equaveSize = 2
-  let largeSteps: number | null = null
-  let smallSteps: number | null = null
+  let sizeOfLargeStep: number | null = null
+  let sizeOfSmallStep: number | null = null
   let hardness: { numerator: number; denominator: number } | null = null
   let mode: MosMode | null = null
 
@@ -67,8 +61,8 @@ export const createMosConfig = (expressions: MosExpressionValueType[]): MosConfi
         pattern = expression.pattern
           .map((step) => (step === Math.max(...expression.pattern) ? 'L' : 's'))
           .join('')
-        smallSteps = Math.min(...expression.pattern)
-        largeSteps = Math.max(...expression.pattern)
+        sizeOfSmallStep = Math.min(...expression.pattern)
+        sizeOfLargeStep = Math.max(...expression.pattern)
         break
       case 'MosCountLarge':
         countLarge = expression.count
@@ -98,40 +92,40 @@ export const createMosConfig = (expressions: MosExpressionValueType[]): MosConfi
 
   const actualCountLarge = (pattern.match(/L/g) ?? []).length
   const actualCountSmall = pattern.length - actualCountLarge
-  if (largeSteps === null || smallSteps === null) {
+  if (sizeOfLargeStep === null || sizeOfSmallStep === null) {
     if (hardness === null) {
       hardness = integerPattern
         ? { numerator: Math.max(...integerPattern), denominator: Math.min(...integerPattern) }
         : { numerator: 2, denominator: 1 }
     }
-    if (largeSteps !== null) {
-      smallSteps = (largeSteps * hardness.denominator) / hardness.numerator
-    } else if (smallSteps !== null) {
-      largeSteps = (smallSteps * hardness.numerator) / hardness.denominator
+    if (sizeOfLargeStep !== null) {
+      sizeOfSmallStep = (sizeOfLargeStep * hardness.denominator) / hardness.numerator
+    } else if (sizeOfSmallStep !== null) {
+      sizeOfLargeStep = (sizeOfSmallStep * hardness.numerator) / hardness.denominator
     } else {
-      largeSteps = hardness.numerator
-      smallSteps = hardness.denominator
+      sizeOfLargeStep = hardness.numerator
+      sizeOfSmallStep = hardness.denominator
     }
   }
 
-  const equaveSteps = actualCountLarge * largeSteps + actualCountSmall * smallSteps
+  const equaveSteps = actualCountLarge * sizeOfLargeStep + actualCountSmall * sizeOfSmallStep
   if (equaveSteps <= 0) throw new Error('MOS equave steps must be positive.')
   const stepSize = valueToCents(equaveSize) / equaveSteps
   const notation = generateNotation(pattern) as { scale: Map<string, MosMonzo> }
   const nominalSteps = new Map<string, number>()
   for (const [nominal, mosMonzo] of notation.scale) {
-    nominalSteps.set(nominal, mosMonzo[0] * largeSteps + mosMonzo[1] * smallSteps)
+    nominalSteps.set(nominal, mosMonzo[0] * sizeOfLargeStep + mosMonzo[1] * sizeOfSmallStep)
   }
 
   return {
     pattern,
     equaveSize,
-    largeSteps,
-    smallSteps,
+    sizeOfLargeStep,
+    sizeOfSmallStep,
     stepSize,
     up: stepSize,
     lift: 5 * stepSize,
-    chromaSteps: largeSteps - smallSteps,
+    chromaSteps: sizeOfLargeStep - sizeOfSmallStep,
     nominalSteps,
     equaveSteps,
   }

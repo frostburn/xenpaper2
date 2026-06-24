@@ -444,7 +444,7 @@ describe('grammar to mosc score', () => {
   })
 
   it('accepts MOS mode and hardness declarations in any order', () => {
-    expect(noteLabels('MOS{4L3s 4|2 5/3} J MOS{5/3 4|2 4L 3s} J')).toEqual(['J', 'J'])
+    expect(noteLabels('MOS{4L3s 4|2 5:3} J MOS{5:3 4|2 4L 3s} J')).toEqual(['J', 'J'])
   })
 
   it('accepts short rational MOS equaves', () => {
