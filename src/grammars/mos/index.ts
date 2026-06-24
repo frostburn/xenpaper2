@@ -1,10 +1,7 @@
-import { generateNotation, stepString } from 'moment-of-symmetry'
-import { gcd, mmod } from 'xen-dev-utils/fraction'
+import { generateNotation, stepString, type MosMonzo } from 'moment-of-symmetry'
 import { centsToValue, valueToCents } from 'xen-dev-utils/conversion'
 
 import type { MosExpressionType } from '../grammar.generated'
-
-type MosMonzo = readonly [number, number]
 
 type MosMode = { up: number; down: number; period: number | null }
 
@@ -25,8 +22,6 @@ const MOS_ALPHABET = 'JKLMNOPQRSTUVWXYZ'
 
 export const mosExpressionPrecedence = (expression: MosExpressionType): number => {
   switch (expression.type) {
-    case 'MosLargeDeclaration':
-    case 'MosSmallDeclaration':
     case 'MosRationalEquave':
     case 'MosHardnessDeclaration':
     case 'MosMode':
@@ -36,56 +31,17 @@ export const mosExpressionPrecedence = (expression: MosExpressionType): number =
   }
 }
 
-export const mosNominalFromIndex = (index: number): string => {
-  let remaining = index
-  let length = 1
-  while (remaining >= MOS_ALPHABET.length ** length) {
-    remaining -= MOS_ALPHABET.length ** length
-    length++
-  }
-  let result = ''
-  for (let i = length - 1; i >= 0; i--) {
-    const place = MOS_ALPHABET.length ** i
-    const digit = Math.floor(remaining / place)
-    result += MOS_ALPHABET[digit]
-    remaining %= place
-  }
-  return result
-}
-
-const defaultModePattern = (countLarge: number, countSmall: number): string =>
-  Array.from({ length: countLarge + countSmall }, (_, i) =>
-    Math.floor(((i + 1) * countSmall) / (countLarge + countSmall)) >
-    Math.floor((i * countSmall) / (countLarge + countSmall))
-      ? 's'
-      : 'L',
-  ).join('')
-
 export const mosStepPattern = (
   countLarge: number,
   countSmall: number,
   mode: MosMode | null,
 ): string => {
-  const total = countLarge + countSmall
-  if (total <= 0) throw new Error('MOS size must be positive.')
-  if (!mode) return defaultModePattern(countLarge, countSmall)
-
-  const period = mode.period ?? gcd(countLarge, countSmall)
-  const generator = mode.up + mode.down
-  if (generator <= 0 || gcd(generator, total) !== period) {
-    throw new Error('Incompatible MOS mode brightness.')
-  }
-
-  // Validate with the library helper while preserving the permissive declaration ordering in our grammar.
-  stepString(countLarge, countSmall, { up: mode.up, down: mode.down, period })
-
-  const bright = new Set<number>()
-  let degree = 0
-  for (let i = 0; i < countLarge; i++) {
-    bright.add(degree)
-    degree = mmod(degree + generator, total)
-  }
-  return Array.from({ length: total }, (_, i) => (bright.has(i) ? 'L' : 's')).join('')
+  if (countLarge + countSmall <= 0) throw new Error('MOS size must be positive.')
+  return stepString(
+    countLarge,
+    countSmall,
+    mode ? { up: mode.up, down: mode.down, period: mode.period } : undefined,
+  )
 }
 
 export const createMosConfig = (expressions: MosExpressionType[]): MosConfig => {
@@ -131,12 +87,6 @@ export const createMosConfig = (expressions: MosExpressionType[]): MosConfig => 
         if (expression.denominator <= 0)
           throw new Error('MOS hardness denominator must be positive.')
         hardness = { numerator: expression.numerator, denominator: expression.denominator }
-        break
-      case 'MosLargeDeclaration':
-        largeSteps = expression.value.numerator / expression.value.denominator
-        break
-      case 'MosSmallDeclaration':
-        smallSteps = expression.value.numerator / expression.value.denominator
         break
     }
   }

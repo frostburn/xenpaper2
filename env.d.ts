@@ -1,6 +1,8 @@
 /// <reference types="vite/client" />
 
 declare module 'moment-of-symmetry' {
+  export type MosMonzo = readonly [number, number]
+
   export function stepString(
     countLarge: number,
     countSmall: number,
@@ -8,6 +10,6 @@ declare module 'moment-of-symmetry' {
   ): string
 
   export function generateNotation(pattern: string): {
-    scale: Map<string, readonly [number, number]>
+    scale: Map<string, MosMonzo>
   }
 }

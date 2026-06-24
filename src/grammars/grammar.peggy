@@ -218,13 +218,14 @@ RootNominalValue = octave:OctaveModifier? nominal:PitchAbsolute {
   return { ...nominal, octave: octave?.octave ?? 0, location: location() };
 }
 
-SetMos = "MOS"i _ "{" _ expressions:(_ @MosExpression)* _ "}" {
-  return node('SetMos', { expressions });
+SetMos = token:MosToken _ open:MosOpen _ expressions:(_ @MosExpression)* _ close:MosClose {
+  return node('SetMos', { token, open, expressions, close });
 }
+MosToken = "MOS"i { return node('MosToken'); }
+MosOpen = "{" { return node('MosOpen'); }
+MosClose = "}" { return node('MosClose'); }
 MosExpression
-  = MosLargeDeclaration
-  / MosSmallDeclaration
-  / MosRationalEquave
+  = MosRationalEquave
   / MosMode
   / MosHardnessDeclaration
   / MosCountLarge
@@ -232,16 +233,14 @@ MosExpression
   / MosLongIntegerPattern
   / MosSmallIntegerPattern
   / MosAbstractStepPattern
-MosLargeDeclaration = "L"i _ ":" _ value:PitchOctaveDivision { return { type: 'MosLargeDeclaration', value }; }
-MosSmallDeclaration = "s"i _ ":" _ value:PitchOctaveDivision { return { type: 'MosSmallDeclaration', value }; }
-MosRationalEquave = "<" _ numerator:Int denominator:(_ "/" _ @Int)? _ ">" { return { type: 'MosRationalEquave', numerator, denominator: denominator ?? 1 }; }
-MosAbstractStepPattern = pattern:$([Ls]+) { return { type: 'MosAbstractStepPattern', pattern }; }
-MosSmallIntegerPattern = pattern:$([0-9]+) { return { type: 'MosIntegerPattern', pattern: pattern.split('').map(d => parseInt(d, 10)) }; }
-MosLongIntegerPattern = pattern:Int _ "," _ rest:(_ @Int _ ","? _)* { return { type: 'MosIntegerPattern', pattern: [pattern, ...rest] }; }
-MosHardnessDeclaration = numerator:Int _ "/" _ denominator:Int { return { type: 'MosHardnessDeclaration', numerator, denominator }; }
-MosCountLarge = count:Int _ "L"i { return { type: 'MosCountLarge', count }; }
-MosCountSmall = count:Int _ "s"i { return { type: 'MosCountSmall', count }; }
-MosMode = up:Int _ "|" _ down:Int _ period:("(" _ @Int _ ")")? { return { type: 'MosMode', up, down, period }; }
+MosRationalEquave = "<" _ numerator:Int denominator:(_ "/" _ @Int)? _ ">" { return node('MosRationalEquave', { numerator, denominator: denominator ?? 1 }); }
+MosAbstractStepPattern = pattern:$([Ls]+) { return node('MosAbstractStepPattern', { pattern }); }
+MosSmallIntegerPattern = pattern:$([0-9]+) { return node('MosIntegerPattern', { pattern: pattern.split('').map(d => parseInt(d, 10)) }); }
+MosLongIntegerPattern = pattern:Int _ "," _ rest:(_ @Int _ ","? _)* { return node('MosIntegerPattern', { pattern: [pattern, ...rest] }); }
+MosHardnessDeclaration = numerator:Int _ "/" _ denominator:Int { return node('MosHardnessDeclaration', { numerator, denominator }); }
+MosCountLarge = count:Int _ "L"i { return node('MosCountLarge', { count }); }
+MosCountSmall = count:Int _ "s"i { return node('MosCountSmall', { count }); }
+MosMode = up:Int _ "|" _ down:Int _ period:("(" _ @Int _ ")")? { return node('MosMode', { up, down, period }); }
 
 SetScale = "{" _ scale:(EdoScale / PythagoreanScale / PitchGroupScale) _ "}" {
   return node('SetScale', { scale });
