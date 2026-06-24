@@ -1,7 +1,7 @@
 import { generateNotation, stepString, type MosMonzo } from 'moment-of-symmetry'
 import { centsToValue, valueToCents } from 'xen-dev-utils/conversion'
 
-import type { MosExpressionValueType } from '../grammar.generated'
+import type { MosExpressionValueType } from './grammar.generated'
 
 type MosMode = { up: number; down: number; period: number | null }
 
