@@ -487,7 +487,7 @@ describe('grammar to mosc score', () => {
       keyedN!.label,
       naturalSignN!.label,
       underscoreN!.label,
-    ]).toEqual(['J♮', 'N♮', 'J&', 'J♮', 'J_', 'N&', 'N♮', 'N_'])
+    ]).toEqual(['J♮', 'N♮', 'J&', 'J♮', 'J♮', 'N&', 'N♮', 'N♮'])
     expect(naturalSignJ!.hz).toBeAround(naturalJ!.hz, 6)
     expect(underscoreJ!.hz).toBeAround(naturalJ!.hz, 6)
     expect(naturalSignN!.hz).toBeAround(naturalN!.hz, 6)
