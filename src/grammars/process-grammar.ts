@@ -34,7 +34,12 @@ import {
   keySignatureAccidentals,
 } from './pythagorean'
 import { applyFjsInflections } from './fjs/inflections'
-import { createMosConfig, normalizeMosNominal, type MosConfig } from './mos'
+import {
+  createMosConfig,
+  mosKeySignatureAccidentals,
+  normalizeMosNominal,
+  type MosConfig,
+} from './mos'
 
 import type {
   MoscBeatScore,
@@ -90,7 +95,7 @@ const absoluteMosPitchToCents = (
   const { key, equaves } = normalizeMosNominal(pitch.nominal, context.mos)
   const effectiveAccidentals = pitch.accidentals.length
     ? pitch.accidentals
-    : (context.mosKeySignature.get(key) ?? [])
+    : (context.mos!.keySignature.get(key) ?? [])
   const nominalSteps_ = nominalSteps.get(key)
   if (nominalSteps_ === undefined) throw new Error(`Undefined MOS nominal '${pitch.nominal}'.`)
   let steps = nominalSteps_ + (octave + equaves) * equaveSteps
@@ -337,7 +342,7 @@ export const pitchToLabel = (pitch: PitchType, context: Context): string => {
       const { key } = normalizeMosNominal(nominal, context.mos!)
       const effectiveAccidentals = accidentals.length
         ? accidentals
-        : (context.mosKeySignature.get(key) ?? [])
+        : (context.mos!.keySignature.get(key) ?? [])
       return `${'^'.repeat(Math.max(ups, 0))}${'v'.repeat(Math.max(-ups, 0))}${'/'.repeat(Math.max(lifts, 0))}${'\\'.repeat(Math.max(-lifts, 0))}${nominal}${effectiveAccidentals.join('')}`
     }
     const { ups, lifts, nominal, accidentals, inflections } = pitch.value
@@ -394,7 +399,6 @@ type Context = {
   stepSize: number
   mappingIsIntegerSteps: boolean
   mos: MosConfig | null
-  mosKeySignature: Map<string, AccidentalType[]>
   keySignature: Map<string, KeySignatureAdjustment>
   graceSubdivision: number | null
   graceNotesRemaining: number
@@ -954,70 +958,6 @@ const droneToMosc = (drone: DroneType, context: Context): MoscBeatPlayableNote[]
 const setMos = (setMos: SetMosType, context: Context): void => {
   const mos = createMosConfig(setMos.expressions.map((expression) => expression.value))
   context.mos = mos
-  context.mosKeySignature = new Map()
-}
-
-const mosKeySignatureAccidentals = (
-  tonic: string,
-  expressions: SetMosType['expressions'],
-  context: Context,
-): Map<string, AccidentalType[]> => {
-  if (!context.mos) throw new Error('MOS key used before a MOS declaration.')
-  const { key: tonicKey } = normalizeMosNominal(tonic, context.mos)
-  const tonicIndex = context.mos.nominalOrder.indexOf(tonicKey)
-  if (tonicIndex < 0) throw new Error(`Undefined MOS nominal '${tonic}'.`)
-
-  const keyedMos =
-    expressions.length === 0
-      ? createMosConfig(context.mos.expressions)
-      : createMosConfig([
-          ...context.mos.expressions.filter(
-            ({ type }) =>
-              type !== 'MosAbstractStepPattern' &&
-              type !== 'MosIntegerPattern' &&
-              type !== 'MosCountLarge' &&
-              type !== 'MosCountSmall' &&
-              type !== 'MosMode',
-          ),
-          { type: 'MosCountLarge', count: (context.mos.pattern.match(/L/g) ?? []).length },
-          { type: 'MosCountSmall', count: (context.mos.pattern.match(/s/g) ?? []).length },
-          expressions.map((expression) => expression.value).find(({ type }) => type === 'MosMode')!,
-        ])
-  const tonicMonzo = context.mos.nominalMonzos.get(tonicKey)!
-  const result = new Map<string, AccidentalType[]>()
-  for (let index = 0; index < context.mos.nominalOrder.length; index++) {
-    const nominal = context.mos.nominalOrder[index]!
-    const keyedNominal =
-      keyedMos.nominalOrder[
-        (index - tonicIndex + context.mos.nominalOrder.length) % context.mos.nominalOrder.length
-      ]
-    if (!keyedNominal) continue
-
-    const actualMonzo = context.mos.nominalMonzos.get(nominal)!
-    const keyedMonzo = keyedMos.nominalMonzos.get(keyedNominal)!
-    const desiredMonzo: [number, number] = [
-      tonicMonzo[0]! + keyedMonzo[0]!,
-      tonicMonzo[1]! + keyedMonzo[1]!,
-    ]
-
-    let accidentalCount: number | null = null
-    for (let equaves = -2; equaves <= 2; equaves++) {
-      const deltaLarge = desiredMonzo[0] - actualMonzo[0]! + equaves * keyedMos.equaveMonzo[0]!
-      const deltaSmall = desiredMonzo[1] - actualMonzo[1]! + equaves * keyedMos.equaveMonzo[1]!
-      if (deltaLarge === -deltaSmall) {
-        accidentalCount = deltaLarge
-        break
-      }
-    }
-    if (accidentalCount === null || accidentalCount === 0) continue
-    const accidental = (accidentalCount > 0 ? '&' : '@') as AccidentalType
-    accidentalCount = Math.abs(accidentalCount)
-    result.set(
-      nominal,
-      Array.from({ length: accidentalCount }, () => accidental),
-    )
-  }
-  return result
 }
 
 const setScale = (setScale: SetScaleType, context: Context): void => {
@@ -1302,10 +1242,11 @@ const setterToMosc = (setter: SetterType | DelimiterType, context: Context): Mos
 
   if (type === 'SetKey') {
     if (setter.keyType === 'mos') {
-      context.mosKeySignature = mosKeySignatureAccidentals(
+      if (!context.mos) throw new Error('MOS key used before a MOS declaration.')
+      context.mos.keySignature = mosKeySignatureAccidentals(
         setter.tonic.nominal,
         setter.expressions,
-        context,
+        context.mos,
       )
     } else {
       const { tonic, mode } = setter
@@ -1468,7 +1409,6 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
     stepSize: 1,
     mappingIsIntegerSteps: false,
     mos: null,
-    mosKeySignature: new Map(),
     keySignature: new Map(),
     graceSubdivision: null,
     graceNotesRemaining: 0,
