@@ -7,6 +7,7 @@ import { centsToValue, equaveDivisionToValue, valueToCents } from 'xen-dev-utils
 import type {
   XenpaperAST,
   SetScaleType,
+  SetMosType,
   SetRootType,
   NoteType,
   SampleRateNoteType,
@@ -33,6 +34,7 @@ import {
   keySignatureAccidentals,
 } from './pythagorean'
 import { applyFjsInflections } from './fjs/inflections'
+import { createMosConfig, normalizeMosNominal, type MosConfig } from './mos'
 
 import type {
   MoscBeatScore,
@@ -76,6 +78,38 @@ type AbsolutePitchMonzo = {
   monzo: Monzo
   ups: number
   lifts: number
+}
+
+const absoluteMosPitchToCents = (
+  pitch: PitchAbsoluteType,
+  octave: number,
+  context: Context,
+): number => {
+  if (!context.mos) throw new Error('MOS pitch used before a MOS declaration.')
+  const { key, equaves } = normalizeMosNominal(pitch.nominal, context.mos)
+  const nominalSteps = context.mos.nominalSteps.get(key)
+  if (nominalSteps === undefined) throw new Error(`Undefined MOS nominal '${pitch.nominal}'.`)
+  let steps = nominalSteps + (octave + equaves) * context.mos.equaveSteps
+  for (const accidental of pitch.accidentals) {
+    switch (accidental) {
+      case '&':
+        steps += context.mos.chromaSteps
+        break
+      case '@':
+        steps -= context.mos.chromaSteps
+        break
+      case 'e':
+        steps += context.mos.chromaSteps / 2
+        break
+      case 'a':
+        steps -= context.mos.chromaSteps / 2
+        break
+      default:
+        throw new Error(`Accidental ${accidental} is not a MOS accidental.`)
+    }
+  }
+  steps += pitch.ups + (pitch.lifts * context.mos.lift) / context.mos.stepSize
+  return steps * context.mos.stepSize
 }
 
 const absolutePitchToMonzo = (
@@ -134,6 +168,9 @@ export const pitchToRatio = (pitch: PitchType, context: Context): number => {
   }
 
   if (type === 'PitchAbsolute') {
+    if (pitch.value.nominalType === 'mos') {
+      return centsToValue(absoluteMosPitchToCents(pitch.value, pitch.octave?.octave ?? 0, context))
+    }
     const absolutePitch = absolutePitchToMonzo(pitch.value, pitch.octave?.octave ?? 0, context)
     const monzo = sub(absolutePitch.monzo, rootNominal.monzo)
     // Compute power-user mapping on the fly
@@ -291,6 +328,10 @@ export const pitchToLabel = (pitch: PitchType, context: Context): string => {
   }
 
   if (type === 'PitchAbsolute') {
+    if (pitch.value.nominalType === 'mos') {
+      const { ups, lifts, nominal, accidentals } = pitch.value
+      return `${'^'.repeat(Math.max(ups, 0))}${'v'.repeat(Math.max(-ups, 0))}${'/'.repeat(Math.max(lifts, 0))}${'\\'.repeat(Math.max(-lifts, 0))}${nominal}${accidentals.join('')}`
+    }
     const { ups, lifts, nominal, accidentals, inflections } = pitch.value
     const keySignature = applyKeySignature(nominal, accidentals, context)
     const effectiveUps = ups + keySignature.ups
@@ -344,6 +385,7 @@ type Context = {
   mapping: number[]
   stepSize: number
   mappingIsIntegerSteps: boolean
+  mos: MosConfig | null
   keySignature: Map<string, KeySignatureAdjustment>
   graceSubdivision: number | null
   graceNotesRemaining: number
@@ -900,6 +942,11 @@ const droneToMosc = (drone: DroneType, context: Context): MoscBeatPlayableNote[]
   return playableToMoscAtCurrentTime(drone.value, context)
 }
 
+const setMos = (setMos: SetMosType, context: Context): void => {
+  const mos = createMosConfig(setMos.expressions.map((expression) => expression.value))
+  context.mos = mos
+}
+
 const setScale = (setScale: SetScaleType, context: Context): void => {
   const { scale } = setScale
   const { type } = scale
@@ -1339,6 +1386,7 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
     mapping: PRIME_CENTS,
     stepSize: 1,
     mappingIsIntegerSteps: false,
+    mos: null,
     keySignature: new Map(),
     graceSubdivision: null,
     graceNotesRemaining: 0,
@@ -1385,6 +1433,11 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
 
     if (type === 'SetScale') {
       setScale(item, context)
+      return
+    }
+
+    if (type === 'SetMos') {
+      setMos(item, context)
       return
     }
 

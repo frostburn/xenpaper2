@@ -19,8 +19,7 @@ const notationSections: SidebarSection[] = [
 16/9 128/81 3/2 4/3 32/27 9/8 1/1--
 ..
 # Ascending 12edo minor
-0- 2 3 5 7 8 10 12-- 
-`,
+0- 2 3 5 7 8 10 12--`,
       },
       {
         description: 'Upper-case nominals are followed by notes in lower-case an octave higher.',

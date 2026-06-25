@@ -41,6 +41,30 @@ describe('grammarToChars', () => {
     ])
   })
 
+  it('syntax-highlights MOS declarations with nuanced MOS colors', () => {
+    expect(colors(grammarToChars(parse('MOS{4L3s 4|2 5:3} J')))).toEqual([
+      'mosGroup',
+      'mosGroup',
+      'mosGroup',
+      'mosGroup',
+      'mos',
+      'mos',
+      'mos',
+      'mos',
+      'mos',
+      'mos',
+      'mos',
+      'mos',
+      'mos',
+      'mos',
+      'mos',
+      'mos',
+      'mosGroup',
+      undefined,
+      'pitch',
+    ])
+  })
+
   it('highlights the inversion prefix on standalone ratio chords', () => {
     expect(colors(grammarToChars(parse('/6:5:4')))).toEqual([
       'delimiter',

@@ -15,6 +15,7 @@ import {
 import BlobDownloadLink from './BlobDownloadLink.vue'
 import NewInV2Sidebar from './NewInV2Sidebar.vue'
 import NotationSidebar from './NotationSidebar.vue'
+import MosSidebar from './MosSidebar.vue'
 import PitchRuler from './PitchRuler.vue'
 import TutorialSidebar from './TutorialSidebar.vue'
 
@@ -142,6 +143,7 @@ onUnmounted(() => {
     <TutorialSidebar v-if="sidebarMode === 'info'" @set-tune="emit('setTune', $event)" />
     <NewInV2Sidebar v-else-if="sidebarMode === 'new-v2'" @set-tune="emit('setTune', $event)" />
     <NotationSidebar v-else-if="sidebarMode === 'notation'" @set-tune="emit('setTune', $event)" />
+    <MosSidebar v-else-if="sidebarMode === 'mos'" @set-tune="emit('setTune', $event)" />
 
     <section v-else-if="sidebarMode === 'share'" class="sidebar-panel share-panel">
       <header class="sidebar-heading">

@@ -78,6 +78,14 @@ const emit = defineEmits<{
     </button>
     <button
       class="action-button"
+      :class="{ active: sidebarMode === 'mos' }"
+      type="button"
+      @click="emit('showSidebar', 'mos')"
+    >
+      MOS
+    </button>
+    <button
+      class="action-button"
       :class="{ active: sidebarMode === 'share' }"
       type="button"
       @click="emit('showSidebar', 'share')"

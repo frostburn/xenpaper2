@@ -203,6 +203,14 @@ a {
   color: var(--xenpaper-orange);
 }
 
+.highlight-mosGroup {
+  color: var(--xenpaper-green);
+}
+
+.highlight-mos {
+  color: var(--xenpaper-light-green);
+}
+
 .highlight-setterGroup {
   color: var(--xenpaper-purple);
 }
