@@ -69,16 +69,46 @@ J K L M N O P Q j-`,
     ],
   },
   {
-    title: 'Multi-period scales (TODO)',
-    demos: [],
+    title: 'Multi-period scales',
+    demos: [
+      {
+        description:
+          'MOS scales that have multiple identical periods per octave have less modes available.',
+        tune: `# ssLssL
+MOS{2L 4s 0|4(2)}
+J K L M N O j-
+
+# sLssLs
+MOS{2L 4s 2|2(2)}
+J K L M N O j-
+
+# LssLss (period is optional)
+MOS{2L 4s 4|0}
+J K L M N O j-`,
+      },
+    ],
   },
   {
-    title: 'Accidentals (TODO)',
-    demos: [],
+    title: 'Accidentals',
+    demos: [
+      {
+        description:
+          'Ampersand & (read "am") raises by one chroma (L - s), while at-sign @ (read "at") lowers by one chroma.',
+        tune: `MOS{2L 5s}
+J J& K L M N@ N O P j-`,
+      },
+    ],
   },
   {
-    title: 'Half-accidentals (TODO)',
-    demos: [],
+    title: 'Half-accidentals',
+    demos: [
+      {
+        description:
+          'The e and a accidentals (read "semi-am" and "semi-at") raise or lower by half a chroma.',
+        tune: `MOS{2L 5s 3:1}
+J Je J& K L M N@ Na N O P j-`,
+      },
+    ],
   },
   {
     title: 'Ups and downs (TODO)',
