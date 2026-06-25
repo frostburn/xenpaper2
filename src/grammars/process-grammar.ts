@@ -353,7 +353,8 @@ export const pitchToLabel = (pitch: PitchType, context: Context): string => {
       const effectiveUps = ups + signature.ups
       const effectiveLifts = lifts + signature.lifts
       const effectiveAccidentals = accidentals.length ? accidentals : signature.accidentals
-      return `${'^'.repeat(Math.max(effectiveUps, 0))}${'v'.repeat(Math.max(-effectiveUps, 0))}${'/'.repeat(Math.max(effectiveLifts, 0))}${'\\'.repeat(Math.max(-effectiveLifts, 0))}${nominal}${effectiveAccidentals.join('')}`
+      const accidentalLabel = effectiveAccidentals.length ? effectiveAccidentals.join('') : '♮'
+      return `${'^'.repeat(Math.max(effectiveUps, 0))}${'v'.repeat(Math.max(-effectiveUps, 0))}${'/'.repeat(Math.max(effectiveLifts, 0))}${'\\'.repeat(Math.max(-effectiveLifts, 0))}${nominal}${accidentalLabel}`
     }
     const { ups, lifts, nominal, accidentals, inflections } = pitch.value
     const keySignature = applyKeySignature(nominal, accidentals, context)
