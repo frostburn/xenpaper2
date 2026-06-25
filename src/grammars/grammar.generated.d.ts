@@ -81,6 +81,8 @@ export type PitchRatioType = NodeType<'PitchRatio'> & {
 }
 
 export type PitchDegreeType = NodeType<'PitchDegree'> & {
+  ups: number
+  lifts: number
   degree: number
 }
 

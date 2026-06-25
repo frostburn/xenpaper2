@@ -60,15 +60,17 @@ PitchAbsoluteMos
 MosAccidental = [\&@ea♮_]
 PitchCents = cents:Number "c"i { return node('PitchCents',{cents}); }
 PitchHz = hz:Number _ "hz"i { return node('PitchHz',{hz}); }
-PitchOctaveDivision = numerator:Int _ [\\/] _ denominator:Int octaveSize:PitchOctaveDivisionSuffix {
+PitchOctaveDivision = numerator:Int [\\/] denominator:Int octaveSize:PitchOctaveDivisionSuffix {
   return node('PitchOctaveDivision',{numerator,denominator,octaveSize});
-} / numerator:Int _ "\\" _ denominator:Int { return node('PitchOctaveDivision',{numerator,denominator,octaveSize:2}); }
+} / numerator:Int "\\" denominator:Int { return node('PitchOctaveDivision',{numerator,denominator,octaveSize:2}); }
 PitchOctaveDivisionSuffix = _ "ed"i _ os:OctaveSize? { return os ?? 2; } / _ "<" _ os:OctaveSize _ ">" { return os; }
 OctaveSize = fraction:Fraction {
   return fraction.numerator / fraction.denominator;
 }
 PitchRatio = fraction:SlashFraction { return node('PitchRatio', fraction); }
-PitchDegree = degree:Int { return node('PitchDegree',{degree}); }
+PitchDegree = updowns:UpsAndDowns degree:Int {
+  return node('PitchDegree',{...updowns, degree});
+}
 Hold = parts:(HoldDash / BarLineInHold)+ {
   const length = parts.filter((part) => part.type === 'HoldDash').length;
   return node('Hold', { length, parts });
@@ -273,7 +275,7 @@ Whitespace "whitespace" = [,\n\r\t ]+ { return node('Whitespace',{delimiter:true
 SignedNumber "number" = sign:("+" / "-")? n:Number { return sign === "-" ? -n : n; }
 Number "number" = n:$([0-9]+ ("." [0-9]*)?) { return Number(n); }
 Fraction = numerator:Int denominator:(_ "/" _ @Int)? { return { numerator, denominator: denominator ?? 1 }; }
-SlashFraction = numerator:Int _ "/" _ denominator:Int { return { numerator, denominator }; }
+SlashFraction = numerator:Int "/" denominator:Int { return { numerator, denominator }; }
 Int "integer" = n:$([0-9]+) { return parseInt(n, 10); }
 SuperScriptInt "superscript integer" = digits:SuperScriptDigit+ { return parseInt(digits.join(''), 10); }
 SuperScriptDigit = "⁰" { return '0'; } / "¹" { return '1'; } / "²" { return '2'; } / "³" { return '3'; } / "⁴" { return '4'; } / "⁵" { return '5'; } / "⁶" { return '6'; } / "⁷" { return '7'; } / "⁸" { return '8'; } / "⁹" { return '9'; }

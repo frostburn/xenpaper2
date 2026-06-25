@@ -187,8 +187,9 @@ export const pitchToRatio = (pitch: PitchType, context: Context): number => {
   }
 
   if (type === 'PitchDegree') {
-    const { degree } = pitch.value
-    return pitchDegreeToRatio(degree, scale, octaveSize) * octaveMulti
+    const { degree, ups, lifts } = pitch.value
+    const degreeRatio = pitchDegreeToRatio(degree, scale, octaveSize)
+    return degreeRatio * centsToValue((ups ?? 0) * up + (lifts ?? 0) * lift) * octaveMulti
   }
 
   if (type === 'PitchAbsolute') {
@@ -346,9 +347,11 @@ export const pitchToLabel = (pitch: PitchType, context: Context): string => {
   }
 
   if (type === 'PitchDegree') {
-    const { degree } = pitch.value
+    const { degree, ups, lifts } = pitch.value
     const [wrappedDegree] = pitchDegreeWrap(degree, context.scale)
-    return context.scaleLabels[wrappedDegree]!
+    const upDownPrefix = `${'^'.repeat(Math.max(0, ups ?? 0))}${'v'.repeat(Math.max(0, -(ups ?? 0)))}`
+    const liftDropPrefix = `${'/'.repeat(Math.max(0, lifts ?? 0))}${'\\'.repeat(Math.max(0, -(lifts ?? 0)))}`
+    return `${upDownPrefix}${liftDropPrefix}${context.scaleLabels[wrappedDegree]!}`
   }
 
   if (type === 'PitchAbsolute') {
@@ -997,6 +1000,8 @@ const setScale = (setScale: SetScaleType, context: Context): void => {
       const degreePitches: PitchDegreeType[] = [
         {
           type: 'PitchDegree',
+          ups: 0,
+          lifts: 0,
           degree: 0,
           delimiter: false,
           location: pitchGroupScalePrefix.location,
