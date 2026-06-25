@@ -187,8 +187,9 @@ export const pitchToRatio = (pitch: PitchType, context: Context): number => {
   }
 
   if (type === 'PitchDegree') {
-    const { degree } = pitch.value
-    return pitchDegreeToRatio(degree, scale, octaveSize) * octaveMulti
+    const { degree, ups, lifts } = pitch.value
+    const degreeRatio = pitchDegreeToRatio(degree, scale, octaveSize)
+    return degreeRatio * centsToValue(ups * up + lifts * lift) * octaveMulti
   }
 
   if (type === 'PitchAbsolute') {
@@ -346,9 +347,18 @@ export const pitchToLabel = (pitch: PitchType, context: Context): string => {
   }
 
   if (type === 'PitchDegree') {
-    const { degree } = pitch.value
+    const { degree, ups, lifts } = pitch.value
     const [wrappedDegree] = pitchDegreeWrap(degree, context.scale)
-    return context.scaleLabels[wrappedDegree]!
+    const upDownPrefix = `${'^'.repeat(Math.max(0, ups))}${'v'.repeat(Math.max(0, -ups))}`
+    const liftDropPrefix = `${'/'.repeat(Math.max(0, lifts))}${'\\'.repeat(Math.max(0, -lifts))}`
+    const baseLabel = context.scaleLabels[wrappedDegree]!
+    if (ups === 0 && lifts === 0) {
+      return baseLabel
+    }
+    const labelWithoutCents = baseLabel.includes('  ')
+      ? baseLabel.slice(0, baseLabel.lastIndexOf('  '))
+      : baseLabel
+    return `${upDownPrefix}${liftDropPrefix}${labelWithoutCents}  ${centsLabel}`
   }
 
   if (type === 'PitchAbsolute') {
@@ -997,6 +1007,8 @@ const setScale = (setScale: SetScaleType, context: Context): void => {
       const degreePitches: PitchDegreeType[] = [
         {
           type: 'PitchDegree',
+          ups: 0,
+          lifts: 0,
           degree: 0,
           delimiter: false,
           location: pitchGroupScalePrefix.location,

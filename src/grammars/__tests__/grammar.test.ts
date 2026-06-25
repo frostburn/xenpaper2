@@ -52,7 +52,8 @@ const strip = <T>(data: T): T => {
           key !== 'location' &&
           key !== 'delimiter' &&
           key !== 'parts' &&
-          !(key === 'octave' && record[key] === null)
+          !(key === 'octave' && record[key] === null) &&
+          !((key === 'ups' || key === 'lifts') && record.type === 'PitchDegree' && record[key] === 0)
         ) {
           obj[key] = strip(record[key])
         }
@@ -85,6 +86,42 @@ describe('grammar', () => {
           },
         })
         expect(ast.sequence.items[0].tail).toBeNull()
+        expect(
+          ((ast.sequence.items[0] as unknown as { pitch: { value: { ups: number; lifts: number } } })
+            .pitch.value),
+        ).toMatchObject({
+          ups: 0,
+          lifts: 0,
+        })
+      })
+
+      it('should parse up/down and lift/drop scale degrees', () => {
+        expect(strip(parser(String.raw`^0 v1 /2 \3`).sequence.items)).toMatchObject([
+          { type: 'Note', pitch: { value: { type: 'PitchDegree', degree: 0, ups: 1 } } },
+          { type: 'Note', pitch: { value: { type: 'PitchDegree', degree: 1, ups: -1 } } },
+          { type: 'Note', pitch: { value: { type: 'PitchDegree', degree: 2, lifts: 1 } } },
+          { type: 'Note', pitch: { value: { type: 'PitchDegree', degree: 3, lifts: -1 } } },
+        ])
+      })
+
+      it('should require compact ratio and octave-division pitch syntax', () => {
+        expect(strip(parser('3/2').sequence.items)).toMatchObject([
+          { type: 'Note', pitch: { value: { type: 'PitchRatio', numerator: 3, denominator: 2 } } },
+        ])
+        expect(strip(parser('3 /2').sequence.items)).toMatchObject([
+          { type: 'Note', pitch: { value: { type: 'PitchDegree', degree: 3 } } },
+          { type: 'Note', pitch: { value: { type: 'PitchDegree', degree: 2, lifts: 1 } } },
+        ])
+        expect(strip(parser(String.raw`3\2`).sequence.items)).toMatchObject([
+          {
+            type: 'Note',
+            pitch: { value: { type: 'PitchOctaveDivision', numerator: 3, denominator: 2 } },
+          },
+        ])
+        expect(strip(parser(String.raw`3 \2`).sequence.items)).toMatchObject([
+          { type: 'Note', pitch: { value: { type: 'PitchDegree', degree: 3 } } },
+          { type: 'Note', pitch: { value: { type: 'PitchDegree', degree: 2, lifts: -1 } } },
+        ])
       })
 
       it('should parse repeat markers as sequence items', () => {
@@ -1700,7 +1737,7 @@ describe('grammar', () => {
 
       it('should parse scale setters with additional whitespace', () => {
         expect(
-          strip(parser("{ 12 edo 3 / 2 }{ 4 : 5 :: 6 ' }{ m 1 / 1, 9 / 8 ' }")).sequence.items,
+          strip(parser("{ 12 edo 3 / 2 }{ 4 : 5 :: 6 ' }{ m 1/1, 9/8 ' }")).sequence.items,
         ).toEqual([
           {
             type: 'SetScale',
@@ -2259,7 +2296,7 @@ describe('grammar', () => {
       it('should parse setters with additional whitespace', () => {
         expect(
           strip(
-            parser('( bpm : 440 ; div : 1 / 4 ; env : 0 1 2 3 ; rl : 200c , 400 hz ){ r 7 / 5 }'),
+            parser('( bpm : 440 ; div : 1 / 4 ; env : 0 1 2 3 ; rl : 200c , 400 hz ){ r 7/5 }'),
           ).sequence.items,
         ).toEqual([
           {
