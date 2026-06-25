@@ -1,5 +1,5 @@
 import { generateNotation, stepString, type MosMonzo } from 'moment-of-symmetry'
-import { centsToValue, valueToCents } from 'xen-dev-utils/conversion'
+import { valueToCents } from 'xen-dev-utils/conversion'
 
 import type { MosExpressionValueType } from './grammar.generated'
 
@@ -130,12 +130,6 @@ export const createMosConfig = (expressions: MosExpressionValueType[]): MosConfi
     equaveSteps,
   }
 }
-
-export const mosScaleRatios = (config: MosConfig): number[] =>
-  Array.from(config.nominalSteps.values()).map((steps) => centsToValue(steps * config.stepSize))
-
-export const mosScaleLabels = (config: MosConfig): string[] =>
-  Array.from(config.nominalSteps.keys())
 
 export const normalizeMosNominal = (
   nominal: string,

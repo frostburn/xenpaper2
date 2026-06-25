@@ -34,13 +34,7 @@ import {
   keySignatureAccidentals,
 } from './pythagorean'
 import { applyFjsInflections } from './fjs/inflections'
-import {
-  createMosConfig,
-  mosScaleLabels,
-  mosScaleRatios,
-  normalizeMosNominal,
-  type MosConfig,
-} from './mos'
+import { createMosConfig, normalizeMosNominal, type MosConfig } from './mos'
 
 import type {
   MoscBeatScore,
@@ -951,8 +945,6 @@ const droneToMosc = (drone: DroneType, context: Context): MoscBeatPlayableNote[]
 const setMos = (setMos: SetMosType, context: Context): void => {
   const mos = createMosConfig(setMos.expressions.map((expression) => expression.value))
   context.mos = mos
-  context.scale = mosScaleRatios(mos)
-  context.scaleLabels = mosScaleLabels(mos)
 }
 
 const setScale = (setScale: SetScaleType, context: Context): void => {

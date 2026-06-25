@@ -459,6 +459,17 @@ describe('grammar to mosc score', () => {
     expect(after?.hz).toBeAround(before!.hz, 6)
   })
 
+  it('keeps MOS scale separate from the numbered scale', () => {
+    const [one, two, zeroPrime, K, L, j] = noteItems("MOS{3L 2s <3>} 1 2 '0 K L j")
+
+    expect(one?.hz).toBeAround(220 * Math.pow(2, 1 / 12), 6)
+    expect(two?.hz).toBeAround(220 * Math.pow(2, 2 / 12), 6)
+    expect(zeroPrime?.hz).toBeAround(440, 6)
+    expect(K?.hz).toBeAround(220 * Math.pow(3, 2 / 8), 6)
+    expect(L?.hz).toBeAround(220 * Math.pow(3, 4 / 8), 6)
+    expect(j?.hz).toBeAround(660, 6)
+  })
+
   it('applies major key signatures to Latin and matching Greek nominals', () => {
     expect(noteLabels('(key:G Major) F Zet F_ Zet_')).toEqual(['F♯', 'Ζ♯', 'F♮', 'Ζ♮'])
   })

@@ -89,7 +89,11 @@ J K L M N O P Q j-`,
     demos: [],
   },
   {
-    title: 'Key signatures and modulation',
+    title: 'Key signatures and modulation (TODO)',
+    demos: [],
+  },
+  {
+    title: 'MOS config is independent (TODO)',
     demos: [],
   },
 ]
