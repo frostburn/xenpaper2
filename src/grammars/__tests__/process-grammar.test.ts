@@ -447,6 +447,13 @@ describe('grammar to mosc score', () => {
     expect(noteLabels('MOS{4L3s 4|2 5:3} J MOS{5:3 4|2 4L 3s} J')).toEqual(['J', 'J'])
   })
 
+  it('rejects MOS mode periods that do not match the period count', () => {
+    const source = parseAndProcessSourceCode('MOS{5L 2s 2|4(2)} J')
+
+    expect(source.playable).toBe(false)
+    expect(source.error).toContain('MOS mode period must be 1 for 5L 2s.')
+  })
+
   it('applies MOS key signatures by recalculating the existing MOS on the tonic', () => {
     expect(noteLabels('MOS{5L 2s} (key:K) J K L M N O P')).toEqual([
       'J&',
@@ -460,7 +467,7 @@ describe('grammar to mosc score', () => {
   })
 
   it('applies MOS key signatures with an explicit mode override', () => {
-    expect(noteLabels('MOS{5L 2s} (key:K 2|4(2)) J K L M N O P')).toEqual([
+    expect(noteLabels('MOS{5L 2s} (key:K 2|4) J K L M N O P')).toEqual([
       'J',
       'K',
       'L',
@@ -471,8 +478,15 @@ describe('grammar to mosc score', () => {
     ])
   })
 
+  it('rejects MOS key mode periods that do not match the period count', () => {
+    const source = parseAndProcessSourceCode('MOS{5L 2s} (key:K 2|4(2)) J')
+
+    expect(source.playable).toBe(false)
+    expect(source.error).toContain('MOS mode period must be 1 for 5L 2s.')
+  })
+
   it('accepts MOS key tonics with up/down prefixes and MOS accidentals', () => {
-    expect(noteLabels('MOS{5L 2s} (key:^K& 2|4(2)) J K L M N O P')).toEqual([
+    expect(noteLabels('MOS{5L 2s} (key:^K& 2|4) J K L M N O P')).toEqual([
       '^J&',
       '^K&',
       '^L&',

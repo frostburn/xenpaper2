@@ -5,6 +5,15 @@ import type { AccidentalType, MosExpressionType, MosExpressionValueType } from '
 
 type MosMode = { up: number; down: number; period: number | null }
 
+const gcdInteger = (a: number, b: number): number => {
+  while (b !== 0) {
+    const next = a % b
+    a = b
+    b = next
+  }
+  return Math.abs(a)
+}
+
 export type MosKeySignatureAdjustment = {
   ups: number
   lifts: number
@@ -111,6 +120,12 @@ export const createMosConfig = (expressions: MosExpressionValueType[]): MosConfi
 
   const actualCountLarge = (pattern.match(/L/g) ?? []).length
   const actualCountSmall = pattern.length - actualCountLarge
+  const periodCount = gcdInteger(actualCountLarge, actualCountSmall)
+  if (mode?.period != null && mode.period !== periodCount) {
+    throw new Error(
+      `MOS mode period must be ${periodCount} for ${actualCountLarge}L ${actualCountSmall}s.`,
+    )
+  }
   if (sizeOfLargeStep === null || sizeOfSmallStep === null) {
     if (hardness === null) {
       hardness = integerPattern
