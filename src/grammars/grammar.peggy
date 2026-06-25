@@ -193,8 +193,12 @@ VelocityShorthand
   / "fff"i { return 1; }
   / "ff"i { return 0.8; }
   / "f"i { return 0.6; }
-SetKey = "key"i _ ":" _ tonic:KeyTonic _ mode:KeyMode { return node('SetKey', { tonic, mode }); }
+SetKey
+  = "key"i _ ":" _ tonic:KeyTonic _ mode:KeyMode { return node('SetKey', { tonic, mode, keyType: 'pythagorean' }); }
+  / "key"i _ ":" _ tonic:MosKeyTonic expressions:MosKeyExpressionItem* { return node('SetKey', { tonic, expressions, keyType: 'mos' }); }
 KeyTonic = updowns:UpsAndDowns nominal:(GreekNominal / LatinNominal) accidentals:Accidental* inflections:Inflection* { return { ...updowns, ...nominal, accidentals, inflections }; }
+MosKeyTonic = nominal:MosNominal { return { ...nominal }; }
+MosKeyExpressionItem = _ value:(MosMode) { return node('MosExpression', { value }); }
 KeyMode
   = "major"i { return "ionian"; }
   / "ionian"i { return "ionian"; }

@@ -318,10 +318,24 @@ export type KeyModeType =
   | 'aeolian'
   | 'locrian'
 
-export type SetKeyType = NodeType<'SetKey'> & {
-  tonic: KeyTonicType
-  mode: KeyModeType
+export type MosKeyTonicType = {
+  nominal: string
+  nominalType: 'mos'
 }
+
+export type SetKeyType = NodeType<'SetKey'> &
+  (
+    | {
+        keyType: 'pythagorean'
+        tonic: KeyTonicType
+        mode: KeyModeType
+      }
+    | {
+        keyType: 'mos'
+        tonic: MosKeyTonicType
+        expressions: MosExpressionType[]
+      }
+  )
 
 // ruler
 

@@ -447,6 +447,30 @@ describe('grammar to mosc score', () => {
     expect(noteLabels('MOS{4L3s 4|2 5:3} J MOS{5:3 4|2 4L 3s} J')).toEqual(['J', 'J'])
   })
 
+  it('applies MOS key signatures by recalculating the existing MOS on the tonic', () => {
+    expect(noteLabels('MOS{5L 2s} (key:K) J K L M N O P')).toEqual([
+      'J&',
+      'K',
+      'L',
+      'M',
+      'N&',
+      'O',
+      'P',
+    ])
+  })
+
+  it('applies MOS key signatures with an explicit mode override', () => {
+    expect(noteLabels('MOS{5L 2s} (key:K 2|4(2)) J K L M N O P')).toEqual([
+      'J',
+      'K',
+      'L',
+      'M@',
+      'N',
+      'O',
+      'P@',
+    ])
+  })
+
   it('accepts short rational MOS equaves', () => {
     const [j] = noteItems('MOS{4L3s <3>} J')
 
@@ -533,7 +557,7 @@ describe('grammar to mosc score', () => {
     const source = parseAndProcessSourceCode('(key:X Major) F')
 
     expect(source.playable).toBe(false)
-    expect(source.error).toContain('Expected Greek nominal or [a-g] but "X" found.')
+    expect(source.error).toContain('Expected ")", ";", or integer but "M" found.')
   })
 
   it('should translate sample-rate notes', () => {

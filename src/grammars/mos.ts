@@ -15,7 +15,11 @@ export type MosConfig = {
   lift: number
   chromaSteps: number
   nominalSteps: Map<string, number>
+  nominalMonzos: Map<string, MosMonzo>
+  nominalOrder: string[]
+  expressions: MosExpressionValueType[]
   equaveSteps: number
+  equaveMonzo: MosMonzo
 }
 
 export const mosExpressionPrecedence = (expression: MosExpressionValueType): number => {
@@ -119,9 +123,13 @@ export const createMosConfig = (expressions: MosExpressionValueType[]): MosConfi
   const equaveSteps = actualCountLarge * sizeOfLargeStep + actualCountSmall * sizeOfSmallStep
   if (equaveSteps <= 0) throw new Error('MOS equave steps must be positive.')
   const stepSize = valueToCents(equaveSize) / equaveSteps
-  const notation = generateNotation(pattern) as { scale: Map<string, MosMonzo> }
+  const notation = generateNotation(pattern) as { scale: Map<string, MosMonzo>; equave: MosMonzo }
   const nominalSteps = new Map<string, number>()
+  const nominalMonzos = new Map<string, MosMonzo>()
+  const nominalOrder: string[] = []
   for (const [nominal, mosMonzo] of notation.scale) {
+    nominalOrder.push(nominal)
+    nominalMonzos.set(nominal, mosMonzo)
     nominalSteps.set(nominal, mosMonzo[0] * sizeOfLargeStep + mosMonzo[1] * sizeOfSmallStep)
   }
 
@@ -135,7 +143,11 @@ export const createMosConfig = (expressions: MosExpressionValueType[]): MosConfi
     lift,
     chromaSteps: sizeOfLargeStep - sizeOfSmallStep,
     nominalSteps,
+    nominalMonzos,
+    nominalOrder,
+    expressions,
     equaveSteps,
+    equaveMonzo: notation.equave,
   }
 }
 
