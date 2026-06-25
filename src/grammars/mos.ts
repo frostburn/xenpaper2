@@ -5,6 +5,12 @@ import type { AccidentalType, MosExpressionType, MosExpressionValueType } from '
 
 type MosMode = { up: number; down: number; period: number | null }
 
+export type MosKeySignatureAdjustment = {
+  ups: number
+  lifts: number
+  accidentals: AccidentalType[]
+}
+
 export type MosConfig = {
   pattern: string
   equaveSize: number
@@ -20,7 +26,7 @@ export type MosConfig = {
   expressions: MosExpressionValueType[]
   equaveSteps: number
   equaveMonzo: MosMonzo
-  keySignature: Map<string, AccidentalType[]>
+  keySignature: Map<string, MosKeySignatureAdjustment>
 }
 
 export const mosExpressionPrecedence = (expression: MosExpressionValueType): number => {
@@ -196,10 +202,10 @@ const mosAccidentalsFromChroma = (chromaCount: number): AccidentalType[] => {
 }
 
 export const mosKeySignatureAccidentals = (
-  tonic: { nominal: string; accidentals: AccidentalType[] },
+  tonic: { ups: number; lifts: number; nominal: string; accidentals: AccidentalType[] },
   expressions: MosExpressionType[],
   config: MosConfig,
-): Map<string, AccidentalType[]> => {
+): Map<string, MosKeySignatureAdjustment> => {
   const { key: tonicKey } = normalizeMosNominal(tonic.nominal, config)
   const tonicIndex = config.nominalOrder.indexOf(tonicKey)
   if (tonicIndex < 0) throw new Error(`Undefined MOS nominal '${tonic.nominal}'.`)
@@ -224,7 +230,7 @@ export const mosKeySignatureAccidentals = (
     config.nominalMonzos.get(tonicKey)!,
     tonic.accidentals,
   )
-  const result = new Map<string, AccidentalType[]>()
+  const result = new Map<string, MosKeySignatureAdjustment>()
   for (let index = 0; index < config.nominalOrder.length; index++) {
     const nominal = config.nominalOrder[index]!
     const keyedNominal =
@@ -249,8 +255,10 @@ export const mosKeySignatureAccidentals = (
         break
       }
     }
-    if (accidentalCount === null || accidentalCount === 0) continue
-    result.set(nominal, mosAccidentalsFromChroma(accidentalCount))
+    if (accidentalCount === null) continue
+    const accidentals = accidentalCount === 0 ? [] : mosAccidentalsFromChroma(accidentalCount)
+    if (tonic.ups === 0 && tonic.lifts === 0 && accidentals.length === 0) continue
+    result.set(nominal, { ups: tonic.ups, lifts: tonic.lifts, accidentals })
   }
   return result
 }

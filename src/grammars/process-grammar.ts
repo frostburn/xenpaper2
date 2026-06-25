@@ -39,6 +39,7 @@ import {
   mosKeySignatureAccidentals,
   normalizeMosNominal,
   type MosConfig,
+  type MosKeySignatureAdjustment,
 } from './mos'
 
 import type {
@@ -85,6 +86,12 @@ type AbsolutePitchMonzo = {
   lifts: number
 }
 
+const EMPTY_MOS_KEY_SIGNATURE_ADJUSTMENT: MosKeySignatureAdjustment = {
+  ups: 0,
+  lifts: 0,
+  accidentals: [],
+}
+
 const absoluteMosPitchToCents = (
   pitch: PitchAbsoluteType,
   octave: number,
@@ -93,9 +100,8 @@ const absoluteMosPitchToCents = (
   if (!context.mos) throw new Error('MOS pitch used before a MOS declaration.')
   const { nominalSteps, equaveSteps, chromaSteps, up, lift, stepSize } = context.mos
   const { key, equaves } = normalizeMosNominal(pitch.nominal, context.mos)
-  const effectiveAccidentals = pitch.accidentals.length
-    ? pitch.accidentals
-    : (context.mos!.keySignature.get(key) ?? [])
+  const signature = context.mos.keySignature.get(key) ?? EMPTY_MOS_KEY_SIGNATURE_ADJUSTMENT
+  const effectiveAccidentals = pitch.accidentals.length ? pitch.accidentals : signature.accidentals
   const nominalSteps_ = nominalSteps.get(key)
   if (nominalSteps_ === undefined) throw new Error(`Undefined MOS nominal '${pitch.nominal}'.`)
   let steps = nominalSteps_ + (octave + equaves) * equaveSteps
@@ -117,7 +123,7 @@ const absoluteMosPitchToCents = (
         throw new Error(`Accidental ${accidental} is not a MOS accidental.`)
     }
   }
-  steps += pitch.ups * up + pitch.lifts * lift
+  steps += (pitch.ups + signature.ups) * up + (pitch.lifts + signature.lifts) * lift
   return steps * stepSize
 }
 
@@ -340,10 +346,11 @@ export const pitchToLabel = (pitch: PitchType, context: Context): string => {
     if (pitch.value.nominalType === 'mos') {
       const { ups, lifts, nominal, accidentals } = pitch.value
       const { key } = normalizeMosNominal(nominal, context.mos!)
-      const effectiveAccidentals = accidentals.length
-        ? accidentals
-        : (context.mos!.keySignature.get(key) ?? [])
-      return `${'^'.repeat(Math.max(ups, 0))}${'v'.repeat(Math.max(-ups, 0))}${'/'.repeat(Math.max(lifts, 0))}${'\\'.repeat(Math.max(-lifts, 0))}${nominal}${effectiveAccidentals.join('')}`
+      const signature = context.mos!.keySignature.get(key) ?? EMPTY_MOS_KEY_SIGNATURE_ADJUSTMENT
+      const effectiveUps = ups + signature.ups
+      const effectiveLifts = lifts + signature.lifts
+      const effectiveAccidentals = accidentals.length ? accidentals : signature.accidentals
+      return `${'^'.repeat(Math.max(effectiveUps, 0))}${'v'.repeat(Math.max(-effectiveUps, 0))}${'/'.repeat(Math.max(effectiveLifts, 0))}${'\\'.repeat(Math.max(-effectiveLifts, 0))}${nominal}${effectiveAccidentals.join('')}`
     }
     const { ups, lifts, nominal, accidentals, inflections } = pitch.value
     const keySignature = applyKeySignature(nominal, accidentals, context)
