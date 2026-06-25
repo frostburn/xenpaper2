@@ -289,6 +289,11 @@ Ct-`,
 # ~9:12:16:17
 [\`A D G /Ab]---`,
       },
+      {
+        description: 'Ups and lifts attach to numeric scale degrees too.',
+        tune: `(^:1\\24;/:5\\25)
+0 ^0 1 v2 2 /0`,
+      },
     ],
   },
 

@@ -111,8 +111,34 @@ J Je J& K L M N@ Na N O P j-`,
     ],
   },
   {
-    title: 'Ups and downs (TODO)',
-    demos: [],
+    title: 'Ups and downs',
+    demos: [
+      {
+        description:
+          'Diamond-mos pitches get their own ups and downs from the underlying equal temperament.',
+        tune: String.raw`# Minihard Trial implying 17edo
+# L = 7\17
+# s = 3\17
+# & = L-s = 4\17
+# e = &/2 = 2\17
+# ^ = 1\17 (always one step)
+# / = 5\17 (always five steps)
+MOS{2L 1s 7:3}
+J ^J Je ^Je J& /J vK K`,
+      },
+      {
+        description:
+          'Hardness declarations are not simplified. 8:4 implies basic hardness but finer octave division.',
+        tune: `# 12edo Lydian but ups are 1\\48
+MOS{5L 2s 8:4}
+J ^J Je vJ& J&`,
+      },
+      {
+        description: 'MOS ups and lifts are customizable.',
+        tune: `MOS{7L 1s 43:10 4|3 ^4 /21}
+[J K vL N O]--`,
+      },
+    ],
   },
   {
     title: 'Other equaves (TODO)',
