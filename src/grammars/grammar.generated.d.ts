@@ -319,8 +319,11 @@ export type KeyModeType =
   | 'locrian'
 
 export type MosKeyTonicType = {
+  ups: number
+  lifts: number
   nominal: string
   nominalType: 'mos'
+  accidentals: AccidentalType[]
 }
 
 export type SetKeyType = NodeType<'SetKey'> &

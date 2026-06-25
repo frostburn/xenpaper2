@@ -153,14 +153,56 @@ export const createMosConfig = (expressions: MosExpressionValueType[]): MosConfi
   }
 }
 
+const applyMosAccidentalsToMonzo = (
+  monzo: MosMonzo,
+  accidentals: AccidentalType[],
+): [number, number] => {
+  const result: [number, number] = [monzo[0]!, monzo[1]!]
+  for (const accidental of accidentals) {
+    switch (accidental) {
+      case '&':
+        result[0] += 1
+        result[1] -= 1
+        break
+      case '@':
+        result[0] -= 1
+        result[1] += 1
+        break
+      case 'e':
+        result[0] += 0.5
+        result[1] -= 0.5
+        break
+      case 'a':
+        result[0] -= 0.5
+        result[1] += 0.5
+        break
+      default:
+        throw new Error(`Accidental ${accidental} is not a MOS accidental.`)
+    }
+  }
+  return result
+}
+
+const mosAccidentalsFromChroma = (chromaCount: number): AccidentalType[] => {
+  const accidentals: AccidentalType[] = []
+  const accidental = chromaCount > 0 ? '&' : '@'
+  let remaining = Math.abs(chromaCount)
+  while (remaining >= 1) {
+    accidentals.push(accidental)
+    remaining -= 1
+  }
+  if (remaining === 0.5) accidentals.push(chromaCount > 0 ? 'e' : 'a')
+  return accidentals
+}
+
 export const mosKeySignatureAccidentals = (
-  tonic: string,
+  tonic: { nominal: string; accidentals: AccidentalType[] },
   expressions: MosExpressionType[],
   config: MosConfig,
 ): Map<string, AccidentalType[]> => {
-  const { key: tonicKey } = normalizeMosNominal(tonic, config)
+  const { key: tonicKey } = normalizeMosNominal(tonic.nominal, config)
   const tonicIndex = config.nominalOrder.indexOf(tonicKey)
-  if (tonicIndex < 0) throw new Error(`Undefined MOS nominal '${tonic}'.`)
+  if (tonicIndex < 0) throw new Error(`Undefined MOS nominal '${tonic.nominal}'.`)
 
   const keyedMos =
     expressions.length === 0
@@ -178,7 +220,10 @@ export const mosKeySignatureAccidentals = (
           { type: 'MosCountSmall', count: (config.pattern.match(/s/g) ?? []).length },
           expressions.map((expression) => expression.value).find(({ type }) => type === 'MosMode')!,
         ])
-  const tonicMonzo = config.nominalMonzos.get(tonicKey)!
+  const tonicMonzo = applyMosAccidentalsToMonzo(
+    config.nominalMonzos.get(tonicKey)!,
+    tonic.accidentals,
+  )
   const result = new Map<string, AccidentalType[]>()
   for (let index = 0; index < config.nominalOrder.length; index++) {
     const nominal = config.nominalOrder[index]!
@@ -205,12 +250,7 @@ export const mosKeySignatureAccidentals = (
       }
     }
     if (accidentalCount === null || accidentalCount === 0) continue
-    const accidental = (accidentalCount > 0 ? '&' : '@') as AccidentalType
-    accidentalCount = Math.abs(accidentalCount)
-    result.set(
-      nominal,
-      Array.from({ length: accidentalCount }, () => accidental),
-    )
+    result.set(nominal, mosAccidentalsFromChroma(accidentalCount))
   }
   return result
 }

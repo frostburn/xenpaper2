@@ -197,7 +197,7 @@ SetKey
   = "key"i _ ":" _ tonic:KeyTonic _ mode:KeyMode { return node('SetKey', { tonic, mode, keyType: 'pythagorean' }); }
   / "key"i _ ":" _ tonic:MosKeyTonic expressions:MosKeyExpressionItem* { return node('SetKey', { tonic, expressions, keyType: 'mos' }); }
 KeyTonic = updowns:UpsAndDowns nominal:(GreekNominal / LatinNominal) accidentals:Accidental* inflections:Inflection* { return { ...updowns, ...nominal, accidentals, inflections }; }
-MosKeyTonic = nominal:MosNominal { return { ...nominal }; }
+MosKeyTonic = updowns:UpsAndDowns nominal:MosNominal accidentals:MosAccidental* { return { ...updowns, ...nominal, accidentals }; }
 MosKeyExpressionItem = _ value:(MosMode) { return node('MosExpression', { value }); }
 KeyMode
   = "major"i { return "ionian"; }

@@ -471,6 +471,18 @@ describe('grammar to mosc score', () => {
     ])
   })
 
+  it('accepts MOS key tonics with up/down prefixes and MOS accidentals', () => {
+    expect(noteLabels('MOS{5L 2s} (key:^K& 2|4(2)) J K L M N O P')).toEqual([
+      'J&',
+      'K&',
+      'L&',
+      'M',
+      'N&',
+      'O&',
+      'P',
+    ])
+  })
+
   it('accepts short rational MOS equaves', () => {
     const [j] = noteItems('MOS{4L3s <3>} J')
 

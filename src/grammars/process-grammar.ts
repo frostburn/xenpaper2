@@ -1244,7 +1244,7 @@ const setterToMosc = (setter: SetterType | DelimiterType, context: Context): Mos
     if (setter.keyType === 'mos') {
       if (!context.mos) throw new Error('MOS key used before a MOS declaration.')
       context.mos.keySignature = mosKeySignatureAccidentals(
-        setter.tonic.nominal,
+        setter.tonic,
         setter.expressions,
         context.mos,
       )
