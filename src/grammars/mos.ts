@@ -21,7 +21,7 @@ export type MosConfig = {
 export const mosExpressionPrecedence = (expression: MosExpressionValueType): number => {
   switch (expression.type) {
     case 'MosRationalEquave':
-    case 'MosHardnessDeclaration':
+    case 'MosHardness':
     case 'MosMode':
       return 1
     default:
@@ -48,6 +48,8 @@ export const createMosConfig = (expressions: MosExpressionValueType[]): MosConfi
   let sizeOfSmallStep: number | null = null
   let hardness: { numerator: number; denominator: number } | null = null
   let mode: MosMode | null = null
+  let up = 1
+  let lift = 5
 
   for (const expression of [...expressions].sort(
     (a, b) => mosExpressionPrecedence(a) - mosExpressionPrecedence(b),
@@ -77,10 +79,16 @@ export const createMosConfig = (expressions: MosExpressionValueType[]): MosConfi
         if (expression.denominator <= 0) throw new Error('MOS equave denominator must be positive.')
         equaveSize = expression.numerator / expression.denominator
         break
-      case 'MosHardnessDeclaration':
+      case 'MosHardness':
         if (expression.denominator <= 0)
           throw new Error('MOS hardness denominator must be positive.')
         hardness = { numerator: expression.numerator, denominator: expression.denominator }
+        break
+      case 'MosUp':
+        up = expression.up
+        break
+      case 'MosLift':
+        lift = expression.lift
         break
     }
   }
@@ -123,8 +131,8 @@ export const createMosConfig = (expressions: MosExpressionValueType[]): MosConfi
     sizeOfLargeStep,
     sizeOfSmallStep,
     stepSize,
-    up: stepSize,
-    lift: 5 * stepSize,
+    up,
+    lift,
     chromaSteps: sizeOfLargeStep - sizeOfSmallStep,
     nominalSteps,
     equaveSteps,

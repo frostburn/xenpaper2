@@ -86,30 +86,31 @@ const absoluteMosPitchToCents = (
   context: Context,
 ): number => {
   if (!context.mos) throw new Error('MOS pitch used before a MOS declaration.')
+  const { nominalSteps, equaveSteps, chromaSteps, up, lift, stepSize } = context.mos
   const { key, equaves } = normalizeMosNominal(pitch.nominal, context.mos)
-  const nominalSteps = context.mos.nominalSteps.get(key)
-  if (nominalSteps === undefined) throw new Error(`Undefined MOS nominal '${pitch.nominal}'.`)
-  let steps = nominalSteps + (octave + equaves) * context.mos.equaveSteps
+  const nominalSteps_ = nominalSteps.get(key)
+  if (nominalSteps_ === undefined) throw new Error(`Undefined MOS nominal '${pitch.nominal}'.`)
+  let steps = nominalSteps_ + (octave + equaves) * equaveSteps
   for (const accidental of pitch.accidentals) {
     switch (accidental) {
       case '&':
-        steps += context.mos.chromaSteps
+        steps += chromaSteps
         break
       case '@':
-        steps -= context.mos.chromaSteps
+        steps -= chromaSteps
         break
       case 'e':
-        steps += context.mos.chromaSteps / 2
+        steps += chromaSteps / 2
         break
       case 'a':
-        steps -= context.mos.chromaSteps / 2
+        steps -= chromaSteps / 2
         break
       default:
         throw new Error(`Accidental ${accidental} is not a MOS accidental.`)
     }
   }
-  steps += pitch.ups + (pitch.lifts * context.mos.lift) / context.mos.stepSize
-  return steps * context.mos.stepSize
+  steps += pitch.ups * up + pitch.lifts * lift
+  return steps * stepSize
 }
 
 const absolutePitchToMonzo = (

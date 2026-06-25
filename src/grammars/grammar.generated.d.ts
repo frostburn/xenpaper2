@@ -178,7 +178,9 @@ export type MosExpressionValueType =
   | { type: 'MosCountLarge'; count: number }
   | { type: 'MosCountSmall'; count: number }
   | { type: 'MosMode'; up: number; down: number; period: number | null }
-  | { type: 'MosHardnessDeclaration'; numerator: number; denominator: number }
+  | { type: 'MosHardness'; numerator: number; denominator: number }
+  | { type: 'MosUp'; up: number }
+  | { type: 'MosLift'; lift: number }
 
 export type MosExpressionType = NodeType<'MosExpression'> & {
   value: MosExpressionValueType

@@ -224,8 +224,10 @@ SetMos = "MOS"i _ "{" expressions:MosExpressionItem* _ "}" {
 MosExpressionItem = _ value:MosExpression { return node('MosExpression', { value }); }
 MosExpression
   = MosRationalEquave
+  / MosUp
+  / MosLift
   / MosMode
-  / MosHardnessDeclaration
+  / MosHardness
   / MosCountLarge
   / MosCountSmall
   / MosLongIntegerPattern
@@ -235,10 +237,12 @@ MosRationalEquave = "<" _ numerator:Int denominator:(_ "/" _ @Int)? _ ">" { retu
 MosAbstractStepPattern = pattern:$([Ls]+) { return { type: 'MosAbstractStepPattern', pattern }; }
 MosSmallIntegerPattern = pattern:$([0-9]+) { return { type: 'MosIntegerPattern', pattern: pattern.split('').map(d => parseInt(d, 10)) }; }
 MosLongIntegerPattern = pattern:Int _ "," _ rest:(_ @Int _ ","? _)* { return { type: 'MosIntegerPattern', pattern: [pattern, ...rest] }; }
-MosHardnessDeclaration = numerator:Int _ ":" _ denominator:Int { return { type: 'MosHardnessDeclaration', numerator, denominator }; }
+MosHardness = numerator:Int _ ":" _ denominator:Int { return { type: 'MosHardness', numerator, denominator }; }
 MosCountLarge = count:Int _ "L"i { return { type: 'MosCountLarge', count }; }
 MosCountSmall = count:Int _ "s"i { return { type: 'MosCountSmall', count }; }
 MosMode = up:Int _ "|" _ down:Int _ period:("(" _ @Int _ ")")? { return { type: 'MosMode', up, down, period }; }
+MosUp = "^" up:Int { return { type: 'MosUp', up}; }
+MosLift = "/" lift:Int { return { type: 'MosLift', lift}; }
 
 SetScale = "{" _ scale:(EdoScale / PythagoreanScale / PitchGroupScale) _ "}" {
   return node('SetScale', { scale });
