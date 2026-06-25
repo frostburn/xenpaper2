@@ -53,7 +53,11 @@ const strip = <T>(data: T): T => {
           key !== 'delimiter' &&
           key !== 'parts' &&
           !(key === 'octave' && record[key] === null) &&
-          !((key === 'ups' || key === 'lifts') && record.type === 'PitchDegree' && record[key] === 0)
+          !(
+            (key === 'ups' || key === 'lifts') &&
+            record.type === 'PitchDegree' &&
+            record[key] === 0
+          )
         ) {
           obj[key] = strip(record[key])
         }
@@ -87,8 +91,8 @@ describe('grammar', () => {
         })
         expect(ast.sequence.items[0].tail).toBeNull()
         expect(
-          ((ast.sequence.items[0] as unknown as { pitch: { value: { ups: number; lifts: number } } })
-            .pitch.value),
+          (ast.sequence.items[0] as unknown as { pitch: { value: { ups: number; lifts: number } } })
+            .pitch.value,
         ).toMatchObject({
           ups: 0,
           lifts: 0,
@@ -2295,9 +2299,8 @@ describe('grammar', () => {
 
       it('should parse setters with additional whitespace', () => {
         expect(
-          strip(
-            parser('( bpm : 440 ; div : 1 / 4 ; env : 0 1 2 3 ; rl : 200c , 400 hz ){ r 7/5 }'),
-          ).sequence.items,
+          strip(parser('( bpm : 440 ; div : 1 / 4 ; env : 0 1 2 3 ; rl : 200c , 400 hz ){ r 7/5 }'))
+            .sequence.items,
         ).toEqual([
           {
             type: 'SetterGroup',
