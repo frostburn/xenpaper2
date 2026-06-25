@@ -466,6 +466,34 @@ describe('grammar to mosc score', () => {
     ])
   })
 
+  it('allows MOS naturals to restore true natural pitches after a key change', () => {
+    const [
+      naturalJ,
+      naturalN,
+      keyedJ,
+      naturalSignJ,
+      underscoreJ,
+      keyedN,
+      naturalSignN,
+      underscoreN,
+    ] = noteItems('MOS{5L 2s} J N (key:K) J J♮ J_ N N♮ N_')
+
+    expect([
+      naturalJ!.label,
+      naturalN!.label,
+      keyedJ!.label,
+      naturalSignJ!.label,
+      underscoreJ!.label,
+      keyedN!.label,
+      naturalSignN!.label,
+      underscoreN!.label,
+    ]).toEqual(['J', 'N', 'J&', 'J♮', 'J_', 'N&', 'N♮', 'N_'])
+    expect(naturalSignJ!.hz).toBeAround(naturalJ!.hz, 6)
+    expect(underscoreJ!.hz).toBeAround(naturalJ!.hz, 6)
+    expect(naturalSignN!.hz).toBeAround(naturalN!.hz, 6)
+    expect(underscoreN!.hz).toBeAround(naturalN!.hz, 6)
+  })
+
   it('applies MOS key signatures with an explicit mode override', () => {
     expect(noteLabels('MOS{5L 2s} (key:K 2|4) J K L M N O P')).toEqual([
       'J',

@@ -197,6 +197,9 @@ const applyMosAccidentalsToMonzo = (
         result[0] -= 0.5
         result[1] += 0.5
         break
+      case '♮':
+      case '_':
+        break
       default:
         throw new Error(`Accidental ${accidental} is not a MOS accidental.`)
     }

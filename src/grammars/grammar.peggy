@@ -57,7 +57,7 @@ PitchAbsolute
  / PitchAbsoluteMos
 PitchAbsoluteMos
  = updowns: UpsAndDowns nominal:MosNominal accidentals:MosAccidental* { return node('PitchAbsolute', {...updowns, ...nominal, accidentals, inflections: []}) }
-MosAccidental = [\&@ea]
+MosAccidental = [\&@ea♮_]
 PitchCents = cents:Number "c"i { return node('PitchCents',{cents}); }
 PitchHz = hz:Number _ "hz"i { return node('PitchHz',{hz}); }
 PitchOctaveDivision = numerator:Int _ [\\/] _ denominator:Int octaveSize:PitchOctaveDivisionSuffix {

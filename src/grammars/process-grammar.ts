@@ -119,6 +119,9 @@ const absoluteMosPitchToCents = (
       case 'a':
         steps -= chromaSteps / 2
         break
+      case '♮':
+      case '_':
+        break
       default:
         throw new Error(`Accidental ${accidental} is not a MOS accidental.`)
     }
