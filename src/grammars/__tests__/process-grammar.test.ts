@@ -421,10 +421,10 @@ describe('grammar to mosc score', () => {
   it('processes absolute Diamond-MOS pitches in equal steps', () => {
     const [j, k, jUp, jLift, jAmp, jLowered, lowerJ] = noteItems('MOS{5L 2s} J K ^J /J J& J@ j')
 
-    expect(j?.label).toBe('J')
+    expect(j?.label).toBe('J♮')
     expect(k?.hz).toBeAround(220 * Math.pow(2, 2 / 12), 6)
-    expect(jUp?.label).toBe('^J')
-    expect(jLift?.label).toBe('/J')
+    expect(jUp?.label).toBe('^J♮')
+    expect(jLift?.label).toBe('/J♮')
     expect(jAmp?.label).toBe('J&')
     expect(jLowered?.label).toBe('J@')
     expect(lowerJ?.hz).toBeAround(440, 6)
@@ -444,13 +444,91 @@ describe('grammar to mosc score', () => {
   })
 
   it('accepts MOS mode and hardness declarations in any order', () => {
-    expect(noteLabels('MOS{4L3s 4|2 5:3} J MOS{5:3 4|2 4L 3s} J')).toEqual(['J', 'J'])
+    expect(noteLabels('MOS{4L3s 4|2 5:3} J MOS{5:3 4|2 4L 3s} J')).toEqual(['J♮', 'J♮'])
+  })
+
+  it('rejects MOS mode periods that do not match the period count', () => {
+    const source = parseAndProcessSourceCode('MOS{5L 2s 2|4(2)} J')
+
+    expect(source.playable).toBe(false)
+    expect(source.error).toContain('MOS mode period must be 1 for 5L 2s.')
+  })
+
+  it('applies MOS key signatures by recalculating the existing MOS on the tonic', () => {
+    expect(noteLabels('MOS{5L 2s} (key:K) J K L M N O P')).toEqual([
+      'J&',
+      'K♮',
+      'L♮',
+      'M♮',
+      'N&',
+      'O♮',
+      'P♮',
+    ])
+  })
+
+  it('allows MOS naturals to restore true natural pitches after a key change', () => {
+    const [
+      naturalJ,
+      naturalN,
+      keyedJ,
+      naturalSignJ,
+      underscoreJ,
+      keyedN,
+      naturalSignN,
+      underscoreN,
+    ] = noteItems('MOS{5L 2s} J N (key:K) J J♮ J_ N N♮ N_')
+
+    expect([
+      naturalJ!.label,
+      naturalN!.label,
+      keyedJ!.label,
+      naturalSignJ!.label,
+      underscoreJ!.label,
+      keyedN!.label,
+      naturalSignN!.label,
+      underscoreN!.label,
+    ]).toEqual(['J♮', 'N♮', 'J&', 'J♮', 'J♮', 'N&', 'N♮', 'N♮'])
+    expect(naturalSignJ!.hz).toBeAround(naturalJ!.hz, 6)
+    expect(underscoreJ!.hz).toBeAround(naturalJ!.hz, 6)
+    expect(naturalSignN!.hz).toBeAround(naturalN!.hz, 6)
+    expect(underscoreN!.hz).toBeAround(naturalN!.hz, 6)
+  })
+
+  it('applies MOS key signatures with an explicit mode override', () => {
+    expect(noteLabels('MOS{5L 2s} (key:K 2|4) J K L M N O P')).toEqual([
+      'J♮',
+      'K♮',
+      'L♮',
+      'M@',
+      'N♮',
+      'O♮',
+      'P@',
+    ])
+  })
+
+  it('rejects MOS key mode periods that do not match the period count', () => {
+    const source = parseAndProcessSourceCode('MOS{5L 2s} (key:K 2|4(2)) J')
+
+    expect(source.playable).toBe(false)
+    expect(source.error).toContain('MOS mode period must be 1 for 5L 2s.')
+  })
+
+  it('accepts MOS key tonics with up/down prefixes and MOS accidentals', () => {
+    expect(noteLabels('MOS{5L 2s} (key:^K& 2|4) J K L M N O P')).toEqual([
+      '^J&',
+      '^K&',
+      '^L&',
+      '^M♮',
+      '^N&',
+      '^O&',
+      '^P♮',
+    ])
   })
 
   it('accepts short rational MOS equaves', () => {
     const [j] = noteItems('MOS{4L3s <3>} J')
 
-    expect(j?.label).toBe('J')
+    expect(j?.label).toBe('J♮')
   })
 
   it('keeps MOS up and lift steps separate from Latin and Greek absolute pitch config', () => {
@@ -533,7 +611,7 @@ describe('grammar to mosc score', () => {
     const source = parseAndProcessSourceCode('(key:X Major) F')
 
     expect(source.playable).toBe(false)
-    expect(source.error).toContain('Expected Greek nominal or [a-g] but "X" found.')
+    expect(source.error).toContain('Expected ")", ";", or integer but "M" found.')
   })
 
   it('should translate sample-rate notes', () => {

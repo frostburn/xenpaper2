@@ -34,7 +34,13 @@ import {
   keySignatureAccidentals,
 } from './pythagorean'
 import { applyFjsInflections } from './fjs/inflections'
-import { createMosConfig, normalizeMosNominal, type MosConfig } from './mos'
+import {
+  createMosConfig,
+  mosKeySignatureAccidentals,
+  normalizeMosNominal,
+  type MosConfig,
+  type MosKeySignatureAdjustment,
+} from './mos'
 
 import type {
   MoscBeatScore,
@@ -80,6 +86,12 @@ type AbsolutePitchMonzo = {
   lifts: number
 }
 
+const EMPTY_MOS_KEY_SIGNATURE_ADJUSTMENT: MosKeySignatureAdjustment = {
+  ups: 0,
+  lifts: 0,
+  accidentals: [],
+}
+
 const absoluteMosPitchToCents = (
   pitch: PitchAbsoluteType,
   octave: number,
@@ -88,10 +100,12 @@ const absoluteMosPitchToCents = (
   if (!context.mos) throw new Error('MOS pitch used before a MOS declaration.')
   const { nominalSteps, equaveSteps, chromaSteps, up, lift, stepSize } = context.mos
   const { key, equaves } = normalizeMosNominal(pitch.nominal, context.mos)
+  const signature = context.mos.keySignature.get(key) ?? EMPTY_MOS_KEY_SIGNATURE_ADJUSTMENT
+  const effectiveAccidentals = pitch.accidentals.length ? pitch.accidentals : signature.accidentals
   const nominalSteps_ = nominalSteps.get(key)
   if (nominalSteps_ === undefined) throw new Error(`Undefined MOS nominal '${pitch.nominal}'.`)
   let steps = nominalSteps_ + (octave + equaves) * equaveSteps
-  for (const accidental of pitch.accidentals) {
+  for (const accidental of effectiveAccidentals) {
     switch (accidental) {
       case '&':
         steps += chromaSteps
@@ -105,11 +119,14 @@ const absoluteMosPitchToCents = (
       case 'a':
         steps -= chromaSteps / 2
         break
+      case '♮':
+      case '_':
+        break
       default:
         throw new Error(`Accidental ${accidental} is not a MOS accidental.`)
     }
   }
-  steps += pitch.ups * up + pitch.lifts * lift
+  steps += (pitch.ups + signature.ups) * up + (pitch.lifts + signature.lifts) * lift
   return steps * stepSize
 }
 
@@ -331,7 +348,15 @@ export const pitchToLabel = (pitch: PitchType, context: Context): string => {
   if (type === 'PitchAbsolute') {
     if (pitch.value.nominalType === 'mos') {
       const { ups, lifts, nominal, accidentals } = pitch.value
-      return `${'^'.repeat(Math.max(ups, 0))}${'v'.repeat(Math.max(-ups, 0))}${'/'.repeat(Math.max(lifts, 0))}${'\\'.repeat(Math.max(-lifts, 0))}${nominal}${accidentals.join('')}`
+      const { key } = normalizeMosNominal(nominal, context.mos!)
+      const signature = context.mos!.keySignature.get(key) ?? EMPTY_MOS_KEY_SIGNATURE_ADJUSTMENT
+      const effectiveUps = ups + signature.ups
+      const effectiveLifts = lifts + signature.lifts
+      const effectiveAccidentals = accidentals.length ? accidentals : signature.accidentals
+      const accidentalLabel = effectiveAccidentals.length
+        ? effectiveAccidentals.map((accidental) => (accidental === '_' ? '♮' : accidental)).join('')
+        : '♮'
+      return `${'^'.repeat(Math.max(effectiveUps, 0))}${'v'.repeat(Math.max(-effectiveUps, 0))}${'/'.repeat(Math.max(effectiveLifts, 0))}${'\\'.repeat(Math.max(-effectiveLifts, 0))}${nominal}${accidentalLabel}`
     }
     const { ups, lifts, nominal, accidentals, inflections } = pitch.value
     const keySignature = applyKeySignature(nominal, accidentals, context)
@@ -1229,8 +1254,17 @@ const setterToMosc = (setter: SetterType | DelimiterType, context: Context): Mos
   }
 
   if (type === 'SetKey') {
-    const { tonic, mode } = setter
-    context.keySignature = keySignatureAccidentals(tonic, mode)
+    if (setter.keyType === 'mos') {
+      if (!context.mos) throw new Error('MOS key used before a MOS declaration.')
+      context.mos.keySignature = mosKeySignatureAccidentals(
+        setter.tonic,
+        setter.expressions,
+        context.mos,
+      )
+    } else {
+      const { tonic, mode } = setter
+      context.keySignature = keySignatureAccidentals(tonic, mode)
+    }
     return []
   }
 

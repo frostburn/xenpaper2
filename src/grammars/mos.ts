@@ -1,9 +1,16 @@
 import { generateNotation, stepString, type MosMonzo } from 'moment-of-symmetry'
 import { valueToCents } from 'xen-dev-utils/conversion'
+import { gcd } from 'xen-dev-utils/fraction'
 
-import type { MosExpressionValueType } from './grammar.generated'
+import type { AccidentalType, MosExpressionType, MosExpressionValueType } from './grammar.generated'
 
 type MosMode = { up: number; down: number; period: number | null }
+
+export type MosKeySignatureAdjustment = {
+  ups: number
+  lifts: number
+  accidentals: AccidentalType[]
+}
 
 export type MosConfig = {
   pattern: string
@@ -15,7 +22,12 @@ export type MosConfig = {
   lift: number
   chromaSteps: number
   nominalSteps: Map<string, number>
+  nominalMonzos: Map<string, MosMonzo>
+  nominalOrder: string[]
+  expressions: MosExpressionValueType[]
   equaveSteps: number
+  equaveMonzo: MosMonzo
+  keySignature: Map<string, MosKeySignatureAdjustment>
 }
 
 export const mosExpressionPrecedence = (expression: MosExpressionValueType): number => {
@@ -100,6 +112,12 @@ export const createMosConfig = (expressions: MosExpressionValueType[]): MosConfi
 
   const actualCountLarge = (pattern.match(/L/g) ?? []).length
   const actualCountSmall = pattern.length - actualCountLarge
+  const periodCount = gcd(actualCountLarge, actualCountSmall)
+  if (mode?.period != null && mode.period !== periodCount) {
+    throw new Error(
+      `MOS mode period must be ${periodCount} for ${actualCountLarge}L ${actualCountSmall}s.`,
+    )
+  }
   if (sizeOfLargeStep === null || sizeOfSmallStep === null) {
     if (hardness === null) {
       hardness = integerPattern
@@ -119,9 +137,13 @@ export const createMosConfig = (expressions: MosExpressionValueType[]): MosConfi
   const equaveSteps = actualCountLarge * sizeOfLargeStep + actualCountSmall * sizeOfSmallStep
   if (equaveSteps <= 0) throw new Error('MOS equave steps must be positive.')
   const stepSize = valueToCents(equaveSize) / equaveSteps
-  const notation = generateNotation(pattern) as { scale: Map<string, MosMonzo> }
+  const notation = generateNotation(pattern) as { scale: Map<string, MosMonzo>; equave: MosMonzo }
   const nominalSteps = new Map<string, number>()
+  const nominalMonzos = new Map<string, MosMonzo>()
+  const nominalOrder: string[] = []
   for (const [nominal, mosMonzo] of notation.scale) {
+    nominalOrder.push(nominal)
+    nominalMonzos.set(nominal, mosMonzo)
     nominalSteps.set(nominal, mosMonzo[0] * sizeOfLargeStep + mosMonzo[1] * sizeOfSmallStep)
   }
 
@@ -135,8 +157,120 @@ export const createMosConfig = (expressions: MosExpressionValueType[]): MosConfi
     lift,
     chromaSteps: sizeOfLargeStep - sizeOfSmallStep,
     nominalSteps,
+    nominalMonzos,
+    nominalOrder,
+    expressions,
     equaveSteps,
+    equaveMonzo: notation.equave,
+    keySignature: new Map(),
   }
+}
+
+const applyMosAccidentalsToMonzo = (
+  monzo: MosMonzo,
+  accidentals: AccidentalType[],
+): [number, number] => {
+  const result: [number, number] = [monzo[0]!, monzo[1]!]
+  for (const accidental of accidentals) {
+    switch (accidental) {
+      case '&':
+        result[0] += 1
+        result[1] -= 1
+        break
+      case '@':
+        result[0] -= 1
+        result[1] += 1
+        break
+      case 'e':
+        result[0] += 0.5
+        result[1] -= 0.5
+        break
+      case 'a':
+        result[0] -= 0.5
+        result[1] += 0.5
+        break
+      case '♮':
+      case '_':
+        break
+      default:
+        throw new Error(`Accidental ${accidental} is not a MOS accidental.`)
+    }
+  }
+  return result
+}
+
+const mosAccidentalsFromChroma = (chromaCount: number): AccidentalType[] => {
+  const accidentals: AccidentalType[] = []
+  const accidental = chromaCount > 0 ? '&' : '@'
+  let remaining = Math.abs(chromaCount)
+  while (remaining >= 1) {
+    accidentals.push(accidental)
+    remaining -= 1
+  }
+  if (remaining === 0.5) accidentals.push(chromaCount > 0 ? 'e' : 'a')
+  return accidentals
+}
+
+export const mosKeySignatureAccidentals = (
+  tonic: { ups: number; lifts: number; nominal: string; accidentals: AccidentalType[] },
+  expressions: MosExpressionType[],
+  config: MosConfig,
+): Map<string, MosKeySignatureAdjustment> => {
+  const { key: tonicKey } = normalizeMosNominal(tonic.nominal, config)
+  const tonicIndex = config.nominalOrder.indexOf(tonicKey)
+  if (tonicIndex < 0) throw new Error(`Undefined MOS nominal '${tonic.nominal}'.`)
+
+  const keyedMos =
+    expressions.length === 0
+      ? createMosConfig(config.expressions)
+      : createMosConfig([
+          ...config.expressions.filter(
+            ({ type }) =>
+              type !== 'MosAbstractStepPattern' &&
+              type !== 'MosIntegerPattern' &&
+              type !== 'MosCountLarge' &&
+              type !== 'MosCountSmall' &&
+              type !== 'MosMode',
+          ),
+          { type: 'MosCountLarge', count: (config.pattern.match(/L/g) ?? []).length },
+          { type: 'MosCountSmall', count: (config.pattern.match(/s/g) ?? []).length },
+          expressions.map((expression) => expression.value).find(({ type }) => type === 'MosMode')!,
+        ])
+  const tonicMonzo = applyMosAccidentalsToMonzo(
+    config.nominalMonzos.get(tonicKey)!,
+    tonic.accidentals,
+  )
+  const result = new Map<string, MosKeySignatureAdjustment>()
+  for (let index = 0; index < config.nominalOrder.length; index++) {
+    const nominal = config.nominalOrder[index]!
+    const keyedNominal =
+      keyedMos.nominalOrder[
+        (index - tonicIndex + config.nominalOrder.length) % config.nominalOrder.length
+      ]
+    if (!keyedNominal) continue
+
+    const actualMonzo = config.nominalMonzos.get(nominal)!
+    const keyedMonzo = keyedMos.nominalMonzos.get(keyedNominal)!
+    const desiredMonzo: [number, number] = [
+      tonicMonzo[0]! + keyedMonzo[0]!,
+      tonicMonzo[1]! + keyedMonzo[1]!,
+    ]
+
+    let accidentalCount: number | null = null
+    for (let equaves = -2; equaves <= 2; equaves++) {
+      const deltaLarge = desiredMonzo[0] - actualMonzo[0]! + equaves * keyedMos.equaveMonzo[0]!
+      const deltaSmall = desiredMonzo[1] - actualMonzo[1]! + equaves * keyedMos.equaveMonzo[1]!
+      if (deltaLarge === -deltaSmall) {
+        accidentalCount = deltaLarge
+        break
+      }
+    }
+    if (accidentalCount === null) continue
+    const accidentals = accidentalCount === 0 ? [] : mosAccidentalsFromChroma(accidentalCount)
+    if (tonic.ups === 0 && tonic.lifts === 0 && accidentals.length === 0) continue
+    result.set(nominal, { ups: tonic.ups, lifts: tonic.lifts, accidentals })
+  }
+  return result
 }
 
 export const normalizeMosNominal = (
