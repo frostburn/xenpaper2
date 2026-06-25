@@ -363,14 +363,14 @@ export const pitchToLabel = (pitch: PitchType, context: Context): string => {
       const accidentalLabel = effectiveAccidentals.length
         ? effectiveAccidentals.map((accidental) => (accidental === '_' ? '♮' : accidental)).join('')
         : '♮'
-      return `${'^'.repeat(Math.max(effectiveUps, 0))}${'v'.repeat(Math.max(-effectiveUps, 0))}${'/'.repeat(Math.max(effectiveLifts, 0))}${'\\'.repeat(Math.max(-effectiveLifts, 0))}${nominal}${accidentalLabel}`
+      return `${'^'.repeat(Math.max(effectiveUps, 0))}${'v'.repeat(Math.max(-effectiveUps, 0))}${'/'.repeat(Math.max(effectiveLifts, 0))}${'\\'.repeat(Math.max(-effectiveLifts, 0))}${nominal}${accidentalLabel}  ${centsLabel}`
     }
     const { ups, lifts, nominal, accidentals, inflections } = pitch.value
     const keySignature = applyKeySignature(nominal, accidentals, context)
     const effectiveUps = ups + keySignature.ups
     const effectiveLifts = lifts + keySignature.lifts
     const effectiveInflections = [...keySignature.inflections, ...inflections]
-    return (
+    const absoluteLabel =
       (effectiveUps > 0 ? '^' : 'v').repeat(Math.abs(effectiveUps)) +
       (effectiveLifts > 0 ? '/' : '\\').repeat(Math.abs(effectiveLifts)) +
       normalizeNominal(nominal) +
@@ -378,7 +378,7 @@ export const pitchToLabel = (pitch: PitchType, context: Context): string => {
       effectiveInflections
         .map(({ type, value, flavor }) => `${type === 'superscript' ? '^' : 'v'}${value}${flavor}`)
         .join('')
-    )
+    return `${absoluteLabel}  ${centsLabel}`
   }
 
   throw new Error(`Unknown pitch type "${type}"`)

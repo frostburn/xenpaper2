@@ -88,31 +88,31 @@ const noteLabelDurations = (input: string): Array<[string, number]> =>
 describe('grace note syntax', () => {
   it('plays a short-form grace note and steals its duration from the following note', () => {
     expect(noteItems('(8?) D C')).toMatchObject([
-      { label: 'D♮', time: 0, timeEnd: 0.125 },
-      { label: 'C♮', time: 0.125, timeEnd: 0.5 },
+      { label: 'D♮  498.0c', time: 0, timeEnd: 0.125 },
+      { label: 'C♮  294.1c', time: 0.125, timeEnd: 0.5 },
     ])
   })
 
   it('plays long-form grace notes with fractional subdivisions', () => {
     expect(noteItems('(grace:16) D C')).toMatchObject([
-      { label: 'D♮', time: 0, timeEnd: 0.0625 },
-      { label: 'C♮', time: 0.0625, timeEnd: 0.5 },
+      { label: 'D♮  498.0c', time: 0, timeEnd: 0.0625 },
+      { label: 'C♮  294.1c', time: 0.0625, timeEnd: 0.5 },
     ])
   })
 
   it('uses repeated short-form grace note markers for multiple grace notes', () => {
     expect(noteItems('(8??) D C B-')).toMatchObject([
-      { label: 'D♮', time: 0, timeEnd: 0.125 },
-      { label: 'C♮', time: 0.125, timeEnd: 0.25 },
-      { label: 'B♮', time: 0.25, timeEnd: 1 },
+      { label: 'D♮  498.0c', time: 0, timeEnd: 0.125 },
+      { label: 'C♮  294.1c', time: 0.125, timeEnd: 0.25 },
+      { label: 'B♮  203.9c', time: 0.25, timeEnd: 1 },
     ])
   })
 
   it('skips drones when applying grace notes and stolen time', () => {
     expect(noteItems('(8?) (drone: 0) D C')).toMatchObject([
       { label: '0\\12  0.0c', time: 0, timeEnd: 0.5 },
-      { label: 'D♮', time: 0, timeEnd: 0.125 },
-      { label: 'C♮', time: 0.125, timeEnd: 0.5 },
+      { label: 'D♮  498.0c', time: 0, timeEnd: 0.125 },
+      { label: 'C♮  294.1c', time: 0.125, timeEnd: 0.5 },
     ])
   })
 })
@@ -194,7 +194,7 @@ describe('ratio chord syntax inside chords', () => {
       '1198.0c',
       '384.4c',
       '9/7  435.1c',
-      'c♮',
+      'c♮  294.1c',
     ])
   })
 
@@ -236,27 +236,27 @@ describe('grammar to mosc score', () => {
     ] = noteItems('Cv5 C#^5 Ct^11n A^0l A^5h C#v5h A^17m A^5f A^31 A^31f A^31c')
 
     expect(fifthLimitSubscript?.hz).toBeAround(264, 6)
-    expect(fifthLimitSubscript?.label).toBe('C♮v5')
+    expect(fifthLimitSubscript?.label).toBe('C♮v5  315.6c')
     expect(fifthLimitSuperscript?.hz).toBeAround(275, 6)
-    expect(fifthLimitSuperscript?.label).toBe('C♯^5')
+    expect(fifthLimitSuperscript?.label).toBe('C♯^5  386.3c')
     expect(neutralEleven?.hz).toBeAround((220 * 11) / 9, 6)
-    expect(neutralEleven?.label).toBe('C‡^11n')
+    expect(neutralEleven?.label).toBe('C‡^11n  347.4c')
     expect(lumisComma?.hz).toBeAround(440.20249573794024, 6)
-    expect(lumisComma?.label).toBe('A♮^0l')
+    expect(lumisComma?.label).toBe('A♮^0l  0.8c')
     expect(helmholtzEllis?.hz).toBeAround(445.5, 6)
-    expect(helmholtzEllis?.label).toBe('A♮^5h')
+    expect(helmholtzEllis?.label).toBe('A♮^5h  21.5c')
     expect(helmholtzEllisDown?.hz).toBeAround(275, 6)
-    expect(helmholtzEllisDown?.label).toBe('C♯v5h')
+    expect(helmholtzEllisDown?.label).toBe('C♯v5h  386.3c')
     expect(hewm53?.hz).toBeAround((440 * 18) / 17, 6)
-    expect(hewm53?.label).toBe('A♮^17m')
+    expect(hewm53?.label).toBe('A♮^17m  99.0c')
     expect(flora?.hz).toBeAround((440 * 80) / 81, 6)
-    expect(flora?.label).toBe('A♮^5f')
+    expect(flora?.label).toBe('A♮^5f  1178.5c')
     expect(thirtyOneDefault?.hz).toBeAround((440 * 31) / 32, 6)
-    expect(thirtyOneDefault?.label).toBe('A♮^31')
+    expect(thirtyOneDefault?.label).toBe('A♮^31  1145.0c')
     expect(thirtyOneFlora?.hz).toBeAround((440 * 31) / 32, 6)
-    expect(thirtyOneFlora?.label).toBe('A♮^31f')
+    expect(thirtyOneFlora?.label).toBe('A♮^31f  1145.0c')
     expect(thirtyOneClassic?.hz).toBeAround((440 * 248) / 243, 6)
-    expect(thirtyOneClassic?.label).toBe('A♮^31c')
+    expect(thirtyOneClassic?.label).toBe('A♮^31c  35.3c')
   })
 
   it('applies up and lift setters to absolute pitches', () => {
@@ -265,13 +265,13 @@ describe('grammar to mosc score', () => {
     )
 
     expect(ratioUp?.hz).toBeAround((440 * 81) / 80, 6)
-    expect(ratioUp?.label).toBe('^A♮')
+    expect(ratioUp?.label).toBe('^A♮  21.5c')
     expect(ratioLift?.hz).toBeAround((440 * 64) / 63, 6)
-    expect(ratioLift?.label).toBe('/A♮')
+    expect(ratioLift?.label).toBe('/A♮  27.3c')
     expect(centsUp?.hz).toBeAround(440 * Math.pow(2, 25 / 1200), 6)
-    expect(centsUp?.label).toBe('^A♮')
+    expect(centsUp?.label).toBe('^A♮  25.0c')
     expect(divisionLift?.hz).toBeAround(440 * Math.pow(2, 1 / 12), 6)
-    expect(divisionLift?.label).toBe('/A♮')
+    expect(divisionLift?.label).toBe('/A♮  100.0c')
   })
 
   it('tempers FJS inflections', () => {
@@ -421,12 +421,12 @@ describe('grammar to mosc score', () => {
   it('processes absolute Diamond-MOS pitches in equal steps', () => {
     const [j, k, jUp, jLift, jAmp, jLowered, lowerJ] = noteItems('MOS{5L 2s} J K ^J /J J& J@ j')
 
-    expect(j?.label).toBe('J♮')
+    expect(j?.label).toBe('J♮  0.0c')
     expect(k?.hz).toBeAround(220 * Math.pow(2, 2 / 12), 6)
-    expect(jUp?.label).toBe('^J♮')
-    expect(jLift?.label).toBe('/J♮')
-    expect(jAmp?.label).toBe('J&')
-    expect(jLowered?.label).toBe('J@')
+    expect(jUp?.label).toBe('^J♮  100.0c')
+    expect(jLift?.label).toBe('/J♮  500.0c')
+    expect(jAmp?.label).toBe('J&  100.0c')
+    expect(jLowered?.label).toBe('J@  1100.0c')
     expect(lowerJ?.hz).toBeAround(440, 6)
   })
 
@@ -444,7 +444,7 @@ describe('grammar to mosc score', () => {
   })
 
   it('accepts MOS mode and hardness declarations in any order', () => {
-    expect(noteLabels('MOS{4L3s 4|2 5:3} J MOS{5:3 4|2 4L 3s} J')).toEqual(['J♮', 'J♮'])
+    expect(noteLabels('MOS{4L3s 4|2 5:3} J MOS{5:3 4|2 4L 3s} J')).toEqual(['J♮  0.0c', 'J♮  0.0c'])
   })
 
   it('rejects MOS mode periods that do not match the period count', () => {
@@ -456,13 +456,13 @@ describe('grammar to mosc score', () => {
 
   it('applies MOS key signatures by recalculating the existing MOS on the tonic', () => {
     expect(noteLabels('MOS{5L 2s} (key:K) J K L M N O P')).toEqual([
-      'J&',
-      'K♮',
-      'L♮',
-      'M♮',
-      'N&',
-      'O♮',
-      'P♮',
+      'J&  100.0c',
+      'K♮  200.0c',
+      'L♮  400.0c',
+      'M♮  600.0c',
+      'N&  800.0c',
+      'O♮  900.0c',
+      'P♮  1100.0c',
     ])
   })
 
@@ -487,7 +487,16 @@ describe('grammar to mosc score', () => {
       keyedN!.label,
       naturalSignN!.label,
       underscoreN!.label,
-    ]).toEqual(['J♮', 'N♮', 'J&', 'J♮', 'J♮', 'N&', 'N♮', 'N♮'])
+    ]).toEqual([
+      'J♮  0.0c',
+      'N♮  700.0c',
+      'J&  100.0c',
+      'J♮  0.0c',
+      'J♮  0.0c',
+      'N&  800.0c',
+      'N♮  700.0c',
+      'N♮  700.0c',
+    ])
     expect(naturalSignJ!.hz).toBeAround(naturalJ!.hz, 6)
     expect(underscoreJ!.hz).toBeAround(naturalJ!.hz, 6)
     expect(naturalSignN!.hz).toBeAround(naturalN!.hz, 6)
@@ -496,13 +505,13 @@ describe('grammar to mosc score', () => {
 
   it('applies MOS key signatures with an explicit mode override', () => {
     expect(noteLabels('MOS{5L 2s} (key:K 2|4) J K L M N O P')).toEqual([
-      'J♮',
-      'K♮',
-      'L♮',
-      'M@',
-      'N♮',
-      'O♮',
-      'P@',
+      'J♮  0.0c',
+      'K♮  200.0c',
+      'L♮  400.0c',
+      'M@  500.0c',
+      'N♮  700.0c',
+      'O♮  900.0c',
+      'P@  1000.0c',
     ])
   })
 
@@ -515,13 +524,13 @@ describe('grammar to mosc score', () => {
 
   it('accepts MOS key tonics with up/down prefixes and MOS accidentals', () => {
     expect(noteLabels('MOS{5L 2s} (key:^K& 2|4) J K L M N O P')).toEqual([
-      '^J&',
-      '^K&',
-      '^L&',
-      '^M♮',
-      '^N&',
-      '^O&',
-      '^P♮',
+      '^J&  200.0c',
+      '^K&  400.0c',
+      '^L&  600.0c',
+      '^M♮  700.0c',
+      '^N&  900.0c',
+      '^O&  1100.0c',
+      '^P♮  1200.0c',
     ])
   })
 
@@ -537,7 +546,15 @@ describe('grammar to mosc score', () => {
       naturalM!.label,
       keyedM!.label,
       naturalSignM!.label,
-    ]).toEqual(['J♮', '^/J&', 'J♮', '^J♮', 'M♮', '^/M♮', 'M♮'])
+    ]).toEqual([
+      'J♮  0.0c',
+      '^/J&  700.0c',
+      'J♮  0.0c',
+      '^J♮  100.0c',
+      'M♮  600.0c',
+      '^/M♮  1200.0c',
+      'M♮  600.0c',
+    ])
     expect(naturalSignJ!.hz).toBeAround(naturalJ!.hz, 6)
     expect(naturalSignM!.hz).toBeAround(naturalM!.hz, 6)
   })
@@ -545,7 +562,7 @@ describe('grammar to mosc score', () => {
   it('accepts short rational MOS equaves', () => {
     const [j] = noteItems('MOS{4L3s <3>} J')
 
-    expect(j?.label).toBe('J♮')
+    expect(j?.label).toBe('J♮  0.0c')
   })
 
   it('keeps MOS up and lift steps separate from Latin and Greek absolute pitch config', () => {
@@ -566,51 +583,60 @@ describe('grammar to mosc score', () => {
   })
 
   it('applies major key signatures to Latin and matching Greek nominals', () => {
-    expect(noteLabels('(key:G Major) F Zet F_ Zet_')).toEqual(['F♯', 'Ζ♯', 'F♮', 'Ζ♮'])
+    expect(noteLabels('(key:G Major) F Zet F_ Zet_')).toEqual([
+      'F♯  905.9c',
+      'Ζ♯  305.9c',
+      'F♮  792.2c',
+      'Ζ♮  192.2c',
+    ])
   })
 
   it('applies flat key signatures and lets explicit accidentals override them', () => {
-    expect(noteLabels('(key:F Major) B B_ B#')).toEqual(['B♭', 'B♮', 'B♯'])
+    expect(noteLabels('(key:F Major) B B_ B#')).toEqual(['B♭  90.2c', 'B♮  203.9c', 'B♯  317.6c'])
   })
 
   it('supports modal key signatures and major/minor aliases', () => {
-    expect(noteLabels('(key:C Ionian) F (key:C Major) F')).toEqual(['F♮', 'F♮'])
-    expect(noteLabels('(key:A Aeolian) F (key:A minor) F')).toEqual(['F♮', 'F♮'])
-    expect(noteLabels('(key:D Dorian) B F (key:C Lydian) F')).toEqual(['B♮', 'F♮', 'F♯'])
+    expect(noteLabels('(key:C Ionian) F (key:C Major) F')).toEqual(['F♮  792.2c', 'F♮  792.2c'])
+    expect(noteLabels('(key:A Aeolian) F (key:A minor) F')).toEqual(['F♮  792.2c', 'F♮  792.2c'])
+    expect(noteLabels('(key:D Dorian) B F (key:C Lydian) F')).toEqual([
+      'B♮  203.9c',
+      'F♮  792.2c',
+      'F♯  905.9c',
+    ])
     expect(noteLabels('(key:G Mixolydian) F (key:C Phrygian) E (key:C Locrian) G')).toEqual([
-      'F♮',
-      'E♭',
-      'G♭',
+      'F♮  792.2c',
+      'E♭  588.3c',
+      'G♭  882.4c',
     ])
   })
 
   it('applies tonic accidentals across extended Pythagorean key signatures', () => {
     expect(noteLabels('(key:C# Major) C D E F G A B')).toEqual([
-      'C♯',
-      'D♯',
-      'E♯',
-      'F♯',
-      'G♯',
-      'A♯',
-      'B♯',
+      'C♯  407.8c',
+      'D♯  611.7c',
+      'E♯  815.6c',
+      'F♯  905.9c',
+      'G♯  1109.8c',
+      'A♯  113.7c',
+      'B♯  317.6c',
     ])
     expect(noteLabels('(key:Ct Major) C D E F G A B')).toEqual([
-      'C‡',
-      'D‡',
-      'E‡',
-      'F‡',
-      'G‡',
-      'A‡',
-      'B‡',
+      'C‡  351.0c',
+      'D‡  554.9c',
+      'E‡  758.8c',
+      'F‡  849.0c',
+      'G‡  1052.9c',
+      'A‡  56.8c',
+      'B‡  260.8c',
     ])
     expect(noteLabels('(key:F# Major) F G A B C D E')).toEqual([
-      'F♯',
-      'G♯',
-      'A♯',
-      'B♮',
-      'C♯',
-      'D♯',
-      'E♯',
+      'F♯  905.9c',
+      'G♯  1109.8c',
+      'A♯  113.7c',
+      'B♮  203.9c',
+      'C♯  407.8c',
+      'D♯  611.7c',
+      'E♯  815.6c',
     ])
   })
 
@@ -619,11 +645,11 @@ describe('grammar to mosc score', () => {
       '(key:^C^5 Lydian) C D F_ ^F_ Gv5',
     )
 
-    expect(upC?.label).toBe('^C♮^5')
-    expect(neutralD?.label).toBe('^D♮^5')
-    expect(naturalF?.label).toBe('F♮')
-    expect(explicitUpNaturalF?.label).toBe('^F♮')
-    expect(extraInflectedG?.label).toBe('^G♮^5v5')
+    expect(upC?.label).toBe('^C♮^5  276.2c')
+    expect(neutralD?.label).toBe('^D♮^5  480.1c')
+    expect(naturalF?.label).toBe('F♮  792.2c')
+    expect(explicitUpNaturalF?.label).toBe('^F♮  795.7c')
+    expect(extraInflectedG?.label).toBe('^G♮^5v5  999.7c')
     expect(upC?.hz).toBeAround(220 * (32 / 27) * (80 / 81) * Math.pow(243 / 242, 0.5), 6)
   })
 
@@ -1382,7 +1408,15 @@ describe('grammar to mosc score', () => {
   it('translates spiral-of-fifths nominals in default Pythagorean tuning', () => {
     const notes = noteItems('F C G D `A E B')
 
-    expect(notes.map((note) => note.label)).toEqual(['F♮', 'C♮', 'G♮', 'D♮', 'A♮', 'E♮', 'B♮'])
+    expect(notes.map((note) => note.label)).toEqual([
+      'F♮  792.2c',
+      'C♮  294.1c',
+      'G♮  996.1c',
+      'D♮  498.0c',
+      'A♮  0.0c',
+      'E♮  702.0c',
+      'B♮  203.9c',
+    ])
 
     const expectedRatios = [128 / 81, 32 / 27, 16 / 9, 4 / 3, 1, 3 / 2, 9 / 4]
     notes.forEach((note, index) => expect(note.hz / 220).toBeAround(expectedRatios[index]!, 10))
@@ -1391,7 +1425,12 @@ describe('grammar to mosc score', () => {
   it('can associate a root setter frequency with an absolute nominal', () => {
     const notes = noteItems('{r261.6256Hz as C} C E G 0')
 
-    expect(notes.map((note) => note.label)).toEqual(['C♮', 'E♮', 'G♮', String.raw`0\12  0.0c`])
+    expect(notes.map((note) => note.label)).toEqual([
+      'C♮  0.0c',
+      'E♮  407.8c',
+      'G♮  702.0c',
+      String.raw`0\12  0.0c`,
+    ])
     expect(notes[0]?.hz).toBeAround(261.6256, 6)
     expect(notes[1]?.hz).toBeAround(261.6256 * (81 / 64), 6)
     expect(notes[2]?.hz).toBeAround(261.6256 * (3 / 2), 6)
@@ -1410,7 +1449,11 @@ describe('grammar to mosc score', () => {
   it('can associate a root setter frequency with an octave-shifted absolute nominal', () => {
     const notes = noteItems('{r216Hz as `A} `A A 0')
 
-    expect(notes.map((note) => note.label)).toEqual(['A♮', 'A♮', String.raw`0\12  0.0c`])
+    expect(notes.map((note) => note.label)).toEqual([
+      'A♮  0.0c',
+      'A♮  1200.0c',
+      String.raw`0\12  0.0c`,
+    ])
     expect(notes[0]?.hz).toBeAround(216, 6)
     expect(notes[1]?.hz).toBeAround(432, 6)
     expect(notes[2]?.hz).toBeAround(216, 6)
@@ -1428,7 +1471,13 @@ describe('grammar to mosc score', () => {
   it('tempers spiral-of-fifths nominals and accidentals to the active edo mapping', () => {
     const notes = noteItems('{31edo} `A E B F# Cb')
 
-    expect(notes.map((note) => note.label)).toEqual(['A♮', 'E♮', 'B♮', 'F♯', 'C♭'])
+    expect(notes.map((note) => note.label)).toEqual([
+      'A♮  0.0c',
+      'E♮  696.8c',
+      'B♮  193.5c',
+      'F♯  890.3c',
+      'C♭  232.3c',
+    ])
     const expectedRatios = [
       1,
       Math.pow(2, 18 / 31),
@@ -1442,7 +1491,14 @@ describe('grammar to mosc score', () => {
   it('translates interordinal Greek nominals halfway around the octave spiral', () => {
     const notes = noteItems('Alp Bet Gam Del Eps Zet')
 
-    expect(notes.map((note) => note.label)).toEqual(['Α♮', 'Β♮', 'Γ♮', 'Δ♮', 'Ε♮', 'Ζ♮'])
+    expect(notes.map((note) => note.label)).toEqual([
+      'Α♮  600.0c',
+      'Β♮  803.9c',
+      'Γ♮  894.1c',
+      'Δ♮  1098.0c',
+      'Ε♮  102.0c',
+      'Ζ♮  192.2c',
+    ])
     const expectedRatios = [
       Math.SQRT2,
       9 / 4 / Math.SQRT2,
