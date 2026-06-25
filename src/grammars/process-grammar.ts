@@ -92,6 +92,9 @@ const EMPTY_MOS_KEY_SIGNATURE_ADJUSTMENT: MosKeySignatureAdjustment = {
   accidentals: [],
 }
 
+const hasNaturalAccidental = (accidentals: AccidentalType[]): boolean =>
+  accidentals.some((accidental) => accidental === '♮' || accidental === '_')
+
 const absoluteMosPitchToCents = (
   pitch: PitchAbsoluteType,
   octave: number,
@@ -101,6 +104,9 @@ const absoluteMosPitchToCents = (
   const { nominalSteps, equaveSteps, chromaSteps, up, lift, stepSize } = context.mos
   const { key, equaves } = normalizeMosNominal(pitch.nominal, context.mos)
   const signature = context.mos.keySignature.get(key) ?? EMPTY_MOS_KEY_SIGNATURE_ADJUSTMENT
+  const undoKeyUpsAndLifts = hasNaturalAccidental(pitch.accidentals)
+  const signatureUps = undoKeyUpsAndLifts ? 0 : signature.ups
+  const signatureLifts = undoKeyUpsAndLifts ? 0 : signature.lifts
   const effectiveAccidentals = pitch.accidentals.length ? pitch.accidentals : signature.accidentals
   const nominalSteps_ = nominalSteps.get(key)
   if (nominalSteps_ === undefined) throw new Error(`Undefined MOS nominal '${pitch.nominal}'.`)
@@ -126,7 +132,7 @@ const absoluteMosPitchToCents = (
         throw new Error(`Accidental ${accidental} is not a MOS accidental.`)
     }
   }
-  steps += (pitch.ups + signature.ups) * up + (pitch.lifts + signature.lifts) * lift
+  steps += (pitch.ups + signatureUps) * up + (pitch.lifts + signatureLifts) * lift
   return steps * stepSize
 }
 
@@ -350,8 +356,9 @@ export const pitchToLabel = (pitch: PitchType, context: Context): string => {
       const { ups, lifts, nominal, accidentals } = pitch.value
       const { key } = normalizeMosNominal(nominal, context.mos!)
       const signature = context.mos!.keySignature.get(key) ?? EMPTY_MOS_KEY_SIGNATURE_ADJUSTMENT
-      const effectiveUps = ups + signature.ups
-      const effectiveLifts = lifts + signature.lifts
+      const undoKeyUpsAndLifts = hasNaturalAccidental(accidentals)
+      const effectiveUps = ups + (undoKeyUpsAndLifts ? 0 : signature.ups)
+      const effectiveLifts = lifts + (undoKeyUpsAndLifts ? 0 : signature.lifts)
       const effectiveAccidentals = accidentals.length ? accidentals : signature.accidentals
       const accidentalLabel = effectiveAccidentals.length
         ? effectiveAccidentals.map((accidental) => (accidental === '_' ? '♮' : accidental)).join('')
@@ -440,7 +447,13 @@ const applyKeySignature = (
   const signature =
     context.keySignature.get(nominal.toUpperCase()) ?? EMPTY_KEY_SIGNATURE_ADJUSTMENT
   if (accidentals.length) {
-    return { ...signature, accidentals }
+    return {
+      ...signature,
+      ups: hasNaturalAccidental(accidentals) ? 0 : signature.ups,
+      lifts: hasNaturalAccidental(accidentals) ? 0 : signature.lifts,
+      accidentals,
+      inflections: hasNaturalAccidental(accidentals) ? [] : signature.inflections,
+    }
   }
 
   return signature

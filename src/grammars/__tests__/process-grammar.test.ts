@@ -525,6 +525,23 @@ describe('grammar to mosc score', () => {
     ])
   })
 
+  it('allows MOS naturals to undo key-signature ups and lifts', () => {
+    const [naturalJ, naturalM, keyedJ, naturalSignJ, explicitUpNaturalJ, keyedM, naturalSignM] =
+      noteItems('MOS{5L 2s} J M (key:^/K& 2|4) J J♮ ^J♮ M M♮')
+
+    expect([
+      naturalJ!.label,
+      keyedJ!.label,
+      naturalSignJ!.label,
+      explicitUpNaturalJ!.label,
+      naturalM!.label,
+      keyedM!.label,
+      naturalSignM!.label,
+    ]).toEqual(['J♮', '^/J&', 'J♮', '^J♮', 'M♮', '^/M♮', 'M♮'])
+    expect(naturalSignJ!.hz).toBeAround(naturalJ!.hz, 6)
+    expect(naturalSignM!.hz).toBeAround(naturalM!.hz, 6)
+  })
+
   it('accepts short rational MOS equaves', () => {
     const [j] = noteItems('MOS{4L3s <3>} J')
 
@@ -598,11 +615,14 @@ describe('grammar to mosc score', () => {
   })
 
   it('applies Ups and Downs and FJS inflections from key signatures', () => {
-    const [upC, neutralD, naturalF, extraInflectedG] = noteItems('(key:^C^5 Lydian) C D F_ Gv5')
+    const [upC, neutralD, naturalF, explicitUpNaturalF, extraInflectedG] = noteItems(
+      '(key:^C^5 Lydian) C D F_ ^F_ Gv5',
+    )
 
     expect(upC?.label).toBe('^C♮^5')
     expect(neutralD?.label).toBe('^D♮^5')
-    expect(naturalF?.label).toBe('^F♮^5')
+    expect(naturalF?.label).toBe('F♮')
+    expect(explicitUpNaturalF?.label).toBe('^F♮')
     expect(extraInflectedG?.label).toBe('^G♮^5v5')
     expect(upC?.hz).toBeAround(220 * (32 / 27) * (80 / 81) * Math.pow(243 / 242, 0.5), 6)
   })
