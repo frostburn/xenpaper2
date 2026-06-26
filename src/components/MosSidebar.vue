@@ -37,11 +37,11 @@ J K L M N O P Q j-`,
 MOS{LsLsLLs}
 J K L M N O P j-
 
-# "Sothic" of "Smitonic"
-# Three scale degrees are bright (i.e. wide)
-# while three degrees are dark (i.e. narrow)
+# "Kagrenacan" of "Smitonic"
+# Two scale degrees are bright (i.e. wide)
+# while four degrees are dark (i.e. narrow)
 # as measured from the root note.
-MOS{4L 3s 3|3}
+MOS{4L 3s 2|4}
 J K L M N O P j-`,
       },
     ],
@@ -128,29 +128,98 @@ J ^J Je ^Je J& /J vK K`,
       },
       {
         description:
-          'Hardness declarations are not simplified. 8:4 implies basic hardness but finer octave division.',
+          'Hardness declarations are not reduced. 8:4 implies basic hardness but finer octave division.',
         tune: `# 12edo Lydian but ups are 1\\48
 MOS{5L 2s 8:4}
 J ^J Je vJ& J&`,
       },
       {
         description: 'MOS ups and lifts are customizable.',
-        tune: `MOS{7L 1s 43:10 4|3 ^4 /21}
-[J K vL N O]--`,
+        tune: `MOS{7L 1s 43:10 3|4 ^4 /12}
+[J vL /N O ^Q j k]---`,
       },
     ],
   },
   {
-    title: 'Other equaves (TODO)',
-    demos: [],
+    title: 'Other equaves',
+    demos: [
+      {
+        description: 'MOS equave is set by enclosing it in angle brackets.',
+        tune: `# "Cassiopeian" of "Lambda (Bohlen-Pierce)"
+MOS{4L5s<3> 5|3}
+J K L M N O P Q R j-`,
+      },
+      {
+        tune: `# 9edf is acceptable for Carlos Alpha
+# "Dionian" of hard "Saturnian"
+MOS{2L3s<3/2> 2|2 3:1}
+J K L M N j-`,
+      },
+    ],
   },
   {
-    title: 'Key signatures and modulation (TODO)',
-    demos: [],
+    title: 'Modulation and key signatures',
+    demos: [
+      {
+        description: 'You can move the same MOS mode to a different key...',
+        tune: `# "Erev" of "Machinoid"
+MOS{5L 1s}
+J K L M N O j-
+
+# Same scale but 4\\11 higher
+# J becomes J& and K becomes K&
+(key:L)
+L M N O j k l-`,
+      },
+      {
+        description: '...or specify a new UDP mode altogether.',
+        tune: `# "Medicinal" of "Manual"
+MOS{4L 1s 3|1}
+J K L M N j-
+
+# Switch to "Indical" mode on K
+# M becomes M@
+(key:K 1|3)
+K L M N j k-`,
+      },
+    ],
   },
   {
-    title: 'MOS config is independent (TODO)',
-    demos: [],
+    title: 'Large scales',
+    demos: [
+      {
+        description:
+          'When the system runs out of nominals it starts over but prefixes everything with a J.',
+        tune: `(env:1192)(8)
+MOS{14L5s}
+J---- K L M N O P Q R S T
+U V W X Y Z JJ JK j----`,
+      },
+    ],
+  },
+  {
+    title: 'MOS config is independent',
+    demos: [
+      {
+        description: 'MOS configuration only affects the nominals from J onwards.',
+        tune: `# Set numbered scale
+{5ed3}
+# Undo damage to diatonic notation
+{Pythagorean}
+(^:81/80)
+
+# Diamond-mos has its own graves,
+# primes, ups and downs.
+MOS{2L1s<4/3>}
+\`J J K L j 'j "j "^j "j--
+
+# The numbered scale is untouched
+0 1 2 3 4 '0-
+
+# Diatonic notation is still Ptolemaic
+c d ve f g- 'c`,
+      },
+    ],
   },
 ]
 </script>
