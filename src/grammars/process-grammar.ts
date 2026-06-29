@@ -19,7 +19,6 @@ import type {
   PitchAbsoluteType,
   PitchDegreeType,
   AccidentalType,
-  InflectionType,
   RatioChordPitchType,
   SetterType,
   DelimiterType,
@@ -33,6 +32,7 @@ import {
   normalizeAccidentals,
   keySignatureAccidentals,
   keySignatureFromPitches,
+  type KeySignatureAdjustment,
 } from './pythagorean'
 import { applyFjsInflections } from './fjs/inflections'
 import {
@@ -153,8 +153,8 @@ const absolutePitchToMonzo = (
 
   return {
     monzo,
-    ups: ups + keySignature.ups,
-    lifts: lifts + keySignature.lifts,
+    ups: ups + sumSignatureSteps(keySignature.ups),
+    lifts: lifts + sumSignatureSteps(keySignature.lifts),
   }
 }
 
@@ -378,8 +378,8 @@ export const pitchToLabel = (pitch: PitchType, context: Context): string => {
     }
     const { ups, lifts, nominal, accidentals, inflections } = pitch.value
     const keySignature = applyKeySignature(nominal, accidentals, context)
-    const effectiveUps = ups + keySignature.ups
-    const effectiveLifts = lifts + keySignature.lifts
+    const effectiveUps = ups + sumSignatureSteps(keySignature.ups)
+    const effectiveLifts = lifts + sumSignatureSteps(keySignature.lifts)
     const effectiveInflections = [...keySignature.inflections, ...inflections]
     const absoluteLabel =
       (effectiveUps > 0 ? '^' : 'v').repeat(Math.abs(effectiveUps)) +
@@ -436,16 +436,11 @@ type Context = {
   stolenTime: number
 }
 
-type KeySignatureAdjustment = {
-  ups: number
-  lifts: number
-  accidentals: AccidentalType[]
-  inflections: InflectionType[]
-}
+const sumSignatureSteps = (steps: number[]): number => steps.reduce((sum, step) => sum + step, 0)
 
 const EMPTY_KEY_SIGNATURE_ADJUSTMENT: KeySignatureAdjustment = {
-  ups: 0,
-  lifts: 0,
+  ups: [],
+  lifts: [],
   accidentals: [],
   inflections: [],
 }
@@ -460,8 +455,8 @@ const applyKeySignature = (
   if (accidentals.length) {
     return {
       ...signature,
-      ups: hasNaturalAccidental(accidentals) ? 0 : signature.ups,
-      lifts: hasNaturalAccidental(accidentals) ? 0 : signature.lifts,
+      ups: hasNaturalAccidental(accidentals) ? [] : signature.ups,
+      lifts: hasNaturalAccidental(accidentals) ? [] : signature.lifts,
       accidentals,
       inflections: hasNaturalAccidental(accidentals) ? [] : signature.inflections,
     }

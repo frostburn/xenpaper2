@@ -169,15 +169,18 @@ export function nominalToMonzo(nominal: string, accidentals: AccidentalType[]) {
 }
 
 export type KeySignatureAdjustment = {
-  ups: number
-  lifts: number
+  ups: number[]
+  lifts: number[]
   accidentals: AccidentalType[]
   inflections: InflectionType[]
 }
 
+const signatureSteps = (count: number): number[] =>
+  Array.from({ length: Math.abs(count) }, () => Math.sign(count))
+
 const keySignatureAdjustmentFromTonic = (tonic: KeyTonicType): KeySignatureAdjustment => ({
-  ups: tonic.ups,
-  lifts: tonic.lifts,
+  ups: signatureSteps(tonic.ups),
+  lifts: signatureSteps(tonic.lifts),
   accidentals: tonic.accidentals.filter((accidental) => !NATURAL_ACCIDENTALS.has(accidental)),
   inflections: tonic.inflections,
 })
@@ -218,8 +221,8 @@ export function keySignatureAccidentals(
 
   const tonicAdjustment = keySignatureAdjustmentFromTonic(tonic)
   if (
-    tonicAdjustment.ups !== 0 ||
-    tonicAdjustment.lifts !== 0 ||
+    tonicAdjustment.ups.length ||
+    tonicAdjustment.lifts.length ||
     tonicAdjustment.accidentals.length ||
     tonicAdjustment.inflections.length
   ) {
