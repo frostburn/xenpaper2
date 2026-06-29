@@ -41,6 +41,8 @@ export type AccidentalType =
   | 'd'
   | '♭'
   | 'b'
+  | 'p'
+  | 'q'
   | '𝄬'
   | '𝄭'
   | '𝄮'

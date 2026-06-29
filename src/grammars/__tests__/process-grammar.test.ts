@@ -606,6 +606,14 @@ describe('grammar to mosc score', () => {
     expect(noteLabels('(key:F Major) B B_ B#')).toEqual(['B♭  90.2c', 'B♮  203.9c', 'B♯  317.6c'])
   })
 
+  it('supports pythagorean comma accidentals', () => {
+    const [plainC, signatureC] = noteItems('C (sig: Cbp) C')
+
+    expect(plainC?.label).toBe('C♮  294.1c')
+    expect(signatureC?.label).toBe('C♭p  203.9c')
+    expect(signatureC?.hz).toBeAround(220 * (9 / 8), 6)
+  })
+
   it('applies custom key signatures to matching Latin and Greek nominals', () => {
     expect(noteLabels('(sig: Cv5 Fv5 Gv5) C Zet G C_')).toEqual([
       'C♮v5  315.6c',

@@ -30,7 +30,7 @@ MosNominal = nominal:$([j-z]i+) { return { nominal, nominalType: 'mos' } }
 GreekNominal "Greek nominal" = ([α-ω]i / "alp"i / "bet"i / "gam"i / "del"i / "eps"i / "zet"i / "eta"i / "the"i / "iot"i / "kap"i / "muu"i / "nuu"i / "xii"i / "omi"i / "pii"i / "rho"i / "fsi"i / "sig"i / "tau"i / "ups"i / "phi"i / "chi"i / "psi"i / "ome"i) {
   return { nominal: text(), nominalType: 'greek' };
 }
-Accidental "accidental" = '𝄪' / '𝄫' / '𝄲' / '𝄳' / '𝄬' / '𝄭' / '𝄮' / '𝄯' / '𝄰' / '𝄱' / [x♯#‡t♮_d♭b]
+Accidental "accidental" = '𝄪' / '𝄫' / '𝄲' / '𝄳' / '𝄬' / '𝄭' / '𝄮' / '𝄯' / '𝄰' / '𝄱' / [x♯#‡t♮_d♭bpq]
 UpsAndDowns "Ups and Downs" = ('^' / 'v' / '/' / '\\')* {
   let ups = 0;
   let lifts = 0;
