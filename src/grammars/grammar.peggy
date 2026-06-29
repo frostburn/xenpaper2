@@ -157,7 +157,7 @@ SetterGroup = "(" _ first:Setter rest:(Semicolon Setter)* _ ")" {
   for (const part of rest) setters.push(part[0], part[1]);
   return node('SetterGroup', { setters });
 }
-Setter = SetBpm / SetBms / SetGrace / SetSubdivision / Drone / SetUp / SetLift / SetOsc / SetNoise / SetEnv / SetVolume / SetVelocity / SetKey / SetRulerRange / SetRulerPlot / SetVelocityShorthand
+Setter = SetBpm / SetBms / SetGrace / SetSubdivision / Drone / SetUp / SetLift / SetOsc / SetNoise / SetEnv / SetVolume / SetVelocity / SetKey / SetSignature / SetRulerRange / SetRulerPlot / SetVelocityShorthand
 SetBpm = "bpm"i _ ":" _ bpm:Number { return node('SetBpm', { bpm }); }
 SetBms = "bms"i _ ":" _ bms:Number { return node('SetBms', { bms }); }
 SetSubdivision = ("div"i _ ":" _)? fraction:Fraction {
@@ -198,6 +198,8 @@ VelocityShorthand
 SetKey
   = "key"i _ ":" _ tonic:KeyTonic _ mode:KeyMode { return node('SetKey', { tonic, mode, keyType: 'pythagorean' }); }
   / "key"i _ ":" _ tonic:MosKeyTonic expressions:MosKeyExpressionItem* { return node('SetKey', { tonic, expressions, keyType: 'mos' }); }
+SetSignature = "sig"i _ ":" items:SignatureItem* { return node('SetSignature', { items }); }
+SignatureItem = _ value:KeyTonic { return value; }
 KeyTonic = updowns:UpsAndDowns nominal:(GreekNominal / LatinNominal) accidentals:Accidental* inflections:Inflection* { return { ...updowns, ...nominal, accidentals, inflections }; }
 MosKeyTonic = updowns:UpsAndDowns nominal:MosNominal accidentals:MosAccidental* { return { ...updowns, ...nominal, accidentals }; }
 MosKeyExpressionItem = _ value:(MosMode) { return node('MosExpression', { value }); }

@@ -172,6 +172,34 @@ export type KeySignatureAdjustment = {
   inflections: InflectionType[]
 }
 
+const keySignatureAdjustmentFromTonic = (tonic: KeyTonicType): KeySignatureAdjustment => ({
+  ups: tonic.ups,
+  lifts: tonic.lifts,
+  accidentals: tonic.accidentals.filter((accidental) => !NATURAL_ACCIDENTALS.has(accidental)),
+  inflections: tonic.inflections,
+})
+
+export function keySignatureFromPitches(
+  pitches: KeyTonicType[],
+): Map<string, KeySignatureAdjustment> {
+  const result = new Map<string, KeySignatureAdjustment>()
+
+  for (const pitch of pitches) {
+    const key = pitch.nominal.toUpperCase()
+    if (!NOMINAL_MONZOS.has(key)) {
+      throw new Error(`Undefined key signature nominal '${pitch.nominal}'.`)
+    }
+
+    const adjustment = keySignatureAdjustmentFromTonic(pitch)
+    const keyLetter = NOMINAL_TO_KEY_LETTER.get(key) ?? key
+    for (const nominal of KEY_LETTER_TO_NOMINALS.get(keyLetter) ?? [keyLetter]) {
+      result.set(nominal, { ...adjustment, accidentals: [...adjustment.accidentals] })
+    }
+  }
+
+  return result
+}
+
 export function keySignatureAccidentals(
   tonic: KeyTonicType,
   mode: KeyModeType,
@@ -181,21 +209,19 @@ export function keySignatureAccidentals(
     throw new Error(`Undefined key signature tonic '${tonic.nominal}'.`)
   }
 
-  const tonicAccidentals = tonic.accidentals.filter(
-    (accidental) => !NATURAL_ACCIDENTALS.has(accidental),
-  )
-  const tonicAdjustment = {
-    ups: tonic.ups,
-    lifts: tonic.lifts,
-    accidentals: tonicAccidentals,
-    inflections: tonic.inflections,
-  }
   const keyLetter = NOMINAL_TO_KEY_LETTER.get(key) ?? key
   const fifths = (MAJOR_KEY_FIFTHS.get(keyLetter) ?? 0) + (KEY_MODE_FIFTH_OFFSETS.get(mode) ?? 0)
-  const result = new Map<string, KeySignatureAdjustment>()
-  for (const keyLetter of ALL_KEY_LETTERS) {
-    for (const nominal of KEY_LETTER_TO_NOMINALS.get(keyLetter) ?? [keyLetter]) {
-      result.set(nominal, { ...tonicAdjustment, accidentals: [...tonicAccidentals] })
+  const pitches: KeyTonicType[] = []
+
+  const tonicAdjustment = keySignatureAdjustmentFromTonic(tonic)
+  if (
+    tonicAdjustment.ups !== 0 ||
+    tonicAdjustment.lifts !== 0 ||
+    tonicAdjustment.accidentals.length ||
+    tonicAdjustment.inflections.length
+  ) {
+    for (const nominal of ALL_KEY_LETTERS) {
+      pitches.push({ ...tonic, nominal, nominalType: 'latin' })
     }
   }
 
@@ -203,14 +229,23 @@ export function keySignatureAccidentals(
   const accidental: AccidentalType = fifths >= 0 ? '♯' : '♭'
 
   for (let index = 0; index < Math.abs(fifths); index++) {
-    const keyLetter = order[index % order.length]!
-    for (const nominal of KEY_LETTER_TO_NOMINALS.get(keyLetter) ?? [keyLetter]) {
-      const current = result.get(nominal) ?? tonicAdjustment
-      result.set(nominal, { ...current, accidentals: [...current.accidentals, accidental] })
+    const nominal = order[index % order.length]!
+    let current = pitches.find((pitch) => pitch.nominal === nominal)
+    if (!current) {
+      current = {
+        ups: 0,
+        lifts: 0,
+        nominal,
+        nominalType: 'latin',
+        accidentals: [],
+        inflections: [],
+      }
+      pitches.push(current)
     }
+    current.accidentals = [...current.accidentals, accidental]
   }
 
-  return result
+  return keySignatureFromPitches(pitches)
 }
 
 export function normalizeNominal(nominal: string) {

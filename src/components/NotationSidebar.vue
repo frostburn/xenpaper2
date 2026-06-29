@@ -95,12 +95,13 @@ F A C 0`,
     demos: [
       {
         description:
-          'Key signatures can be set with `(key:G Major)` or modal names like `(key:D Dorian)`. Plain nominals receive the signature accidentals, while an explicit natural sign ♮ or underscore _ restores the unaltered nominal.',
+          'Key signatures can be set with `(key:G Major)` or modal names like `(key:D Dorian)`. Custom signatures use `(sig: C# F#)` or microtonal items like `(sig: ^A /E Bd)`. Plain nominals receive the signature accidentals, while an explicit natural sign ♮ or underscore _ restores the unaltered nominal.',
         tune: `# G major sharpens F
 (key:G Major)
 G- A B c d e f g-
-# Flat seventh to tonic
-f_- g--`,
+# Custom signature with an up-A, lifted E, and demiflat B
+(sig: ^A /E Bd)
+a e b b_`,
       },
     ],
   },

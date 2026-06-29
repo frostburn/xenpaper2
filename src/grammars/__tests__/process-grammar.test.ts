@@ -9,6 +9,8 @@ declare module 'vitest' {
 import { parseAndProcessSourceCode } from '../../utils'
 import { parse } from '../grammar.generated.js'
 import { processGrammar } from '../process-grammar'
+import { keySignatureAccidentals, keySignatureFromPitches } from '../pythagorean'
+import type { KeyTonicType } from '../grammar.generated'
 
 expect.extend({
   toBeAround(actual, expected, precision = 2) {
@@ -602,6 +604,38 @@ describe('grammar to mosc score', () => {
 
   it('applies flat key signatures and lets explicit accidentals override them', () => {
     expect(noteLabels('(key:F Major) B B_ B#')).toEqual(['B♭  90.2c', 'B♮  203.9c', 'B♯  317.6c'])
+  })
+
+  it('applies custom key signatures to matching Latin and Greek nominals', () => {
+    expect(noteLabels('(sig: Cv5 Fv5 Gv5) C Zet G C_')).toEqual([
+      'C♮v5  315.6c',
+      'Ζ♮v5  213.7c',
+      'G♮v5  1017.6c',
+      'C♮  294.1c',
+    ])
+    expect(noteLabels('(sig: ^A /E Bd) A E B B_')).toEqual([
+      '^A♮  3.6c',
+      '/E♮  719.4c',
+      'Bd  147.1c',
+      'B♮  203.9c',
+    ])
+  })
+
+  it('builds automatic key signatures with the custom signature machinery', () => {
+    const cSharp: KeyTonicType = {
+      ups: 0,
+      lifts: 0,
+      nominal: 'C',
+      nominalType: 'latin',
+      accidentals: ['♯'],
+      inflections: [],
+    }
+    const fSharp: KeyTonicType = { ...cSharp, nominal: 'F' }
+    const dMajor: KeyTonicType = { ...cSharp, nominal: 'D', accidentals: [] }
+
+    expect(keySignatureAccidentals(dMajor, 'ionian')).toEqual(
+      keySignatureFromPitches([cSharp, fSharp]),
+    )
   })
 
   it('supports modal key signatures and major/minor aliases', () => {

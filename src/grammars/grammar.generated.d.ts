@@ -342,6 +342,10 @@ export type SetKeyType = NodeType<'SetKey'> &
       }
   )
 
+export type SetSignatureType = NodeType<'SetSignature'> & {
+  items: KeyTonicType[]
+}
+
 // ruler
 
 export type SetRulerRangeType = NodeType<'SetRulerRange'> & {
@@ -369,6 +373,7 @@ export type SetterType =
   | SetVolumeType
   | SetVelocityType
   | SetKeyType
+  | SetSignatureType
   | SetRulerType
 
 export type SetterGroupType = NodeType<'SetterGroup'> & {

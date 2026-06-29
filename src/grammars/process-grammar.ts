@@ -32,6 +32,7 @@ import {
   normalizeNominal,
   normalizeAccidentals,
   keySignatureAccidentals,
+  keySignatureFromPitches,
 } from './pythagorean'
 import { applyFjsInflections } from './fjs/inflections'
 import {
@@ -1290,6 +1291,11 @@ const setterToMosc = (setter: SetterType | DelimiterType, context: Context): Mos
       const { tonic, mode } = setter
       context.keySignature = keySignatureAccidentals(tonic, mode)
     }
+    return []
+  }
+
+  if (type === 'SetSignature') {
+    context.keySignature = keySignatureFromPitches(setter.items)
     return []
   }
 
