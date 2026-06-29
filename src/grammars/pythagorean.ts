@@ -299,29 +299,6 @@ export function normalizeAccidentals(accidentals: AccidentalType[]) {
     result.push('𝄫')
     decumulate(monzo, [22, -14, 0])
   }
-  while (monzo[1]! >= 12) {
-    result.push('p')
-    decumulate(monzo, [-19, 12, 0])
-  }
-  while (monzo[1]! <= -12) {
-    result.push('q')
-    decumulate(monzo, [19, -12, 0])
-  }
-  if (monzo[0]! < -5.5 && monzo[1]! > 0 && monzo[1]! < 7) {
-    result.push('♭')
-    decumulate(monzo, [11, -7, 0])
-  } else if (monzo[0]! > 5.5 && monzo[1]! < 0 && monzo[1]! > -7) {
-    result.push('♯')
-    decumulate(monzo, [-11, 7, 0])
-  }
-  while (monzo[1]! >= 12) {
-    result.push('p')
-    decumulate(monzo, [-19, 12, 0])
-  }
-  while (monzo[1]! <= -12) {
-    result.push('q')
-    decumulate(monzo, [19, -12, 0])
-  }
   if (monzo[1]! >= 7) {
     result.push('♯')
     decumulate(monzo, [-11, 7, 0])
@@ -329,13 +306,6 @@ export function normalizeAccidentals(accidentals: AccidentalType[]) {
   if (monzo[1]! <= -7) {
     result.push('♭')
     decumulate(monzo, [11, -7, 0])
-  }
-  if (monzo[0]! < -5.5 && monzo[1]! > 0) {
-    result.push('p')
-    decumulate(monzo, [-19, 12, 0])
-  } else if (monzo[0]! > 5.5 && monzo[1]! < 0) {
-    result.push('q')
-    decumulate(monzo, [19, -12, 0])
   }
   if (monzo[1]! > 0) {
     result.push('‡')
