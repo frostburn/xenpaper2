@@ -183,10 +183,10 @@ J K L M N j-
 K L M N j k-`},
       {
         description:
-          'MOS key signatures can be generated with `(key:K)` or set explicitly with `(sig: J& ^/M@)`. Naturals restore the unaltered nominal.',
+          'Custom key signatures are. Natural sign restores the unaltered nominal.',
         tune: `MOS{5L 7s 15:13 6|5}
 (sig: ^^^K ^M& vN@ ^^\\P ^^^R vvvS ^^^T vvvU)
-J K L M N O P Q R S T U j-`,
+J K L M N O P Q R S T U j U_ j-`,
       },
     ],
   },

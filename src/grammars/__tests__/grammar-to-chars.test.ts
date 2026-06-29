@@ -41,6 +41,23 @@ describe('grammarToChars', () => {
     ])
   })
 
+  it('syntax-highlights custom key signature setters', () => {
+    expect(colors(grammarToChars(parse('(sig: C# F#)')))).toEqual([
+      'setterGroup',
+      'scale',
+      'scale',
+      'scale',
+      'scale',
+      'scale',
+      'scale',
+      'scale',
+      'scale',
+      'scale',
+      'scale',
+      'setterGroup',
+    ])
+  })
+
   it('syntax-highlights MOS declarations with nuanced MOS colors', () => {
     expect(colors(grammarToChars(parse('MOS{4L3s 4|2 5:3} J')))).toEqual([
       'mosGroup',

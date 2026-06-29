@@ -91,6 +91,7 @@ const colorMap = new Map<string, HighlightColor>([
   ['SetMos', 'mosGroup'],
   ['SetMos.MosExpression', 'mos'],
   ['SetKey', 'scale'],
+  ['SetSignature', 'scale'],
   ['SetRoot', 'scaleGroup'],
   ['SetRoot.Pitch', 'scale'],
   ['SetRoot.PitchAbsolute', 'scale'],
