@@ -24,6 +24,8 @@ import type {
   DelimiterType,
   UpLiftStepType,
   SequenceItemsType,
+  KeyTonicType,
+  MosKeyTonicType,
 } from './grammar.generated'
 
 import {
@@ -32,12 +34,14 @@ import {
   normalizeAccidentals,
   keySignatureAccidentals,
   keySignatureFromPitches,
+  type KeySignature,
   type KeySignatureAdjustment,
 } from './pythagorean'
 import { applyFjsInflections } from './fjs/inflections'
 import {
   createMosConfig,
   mosKeySignatureAccidentals,
+  mosKeySignatureFromPitches,
   normalizeMosNominal,
   type MosConfig,
   type MosKeySignatureAdjustment,
@@ -153,8 +157,8 @@ const absolutePitchToMonzo = (
 
   return {
     monzo,
-    ups: ups + sumSignatureSteps(keySignature.ups),
-    lifts: lifts + sumSignatureSteps(keySignature.lifts),
+    ups: ups + keySignature.ups,
+    lifts: lifts + keySignature.lifts,
   }
 }
 
@@ -378,8 +382,8 @@ export const pitchToLabel = (pitch: PitchType, context: Context): string => {
     }
     const { ups, lifts, nominal, accidentals, inflections } = pitch.value
     const keySignature = applyKeySignature(nominal, accidentals, context)
-    const effectiveUps = ups + sumSignatureSteps(keySignature.ups)
-    const effectiveLifts = lifts + sumSignatureSteps(keySignature.lifts)
+    const effectiveUps = ups + keySignature.ups
+    const effectiveLifts = lifts + keySignature.lifts
     const effectiveInflections = [...keySignature.inflections, ...inflections]
     const absoluteLabel =
       (effectiveUps > 0 ? '^' : 'v').repeat(Math.abs(effectiveUps)) +
@@ -430,17 +434,15 @@ type Context = {
   stepSize: number
   mappingIsIntegerSteps: boolean
   mos: MosConfig | null
-  keySignature: Map<string, KeySignatureAdjustment>
+  keySignature: KeySignature
   graceSubdivision: number | null
   graceNotesRemaining: number
   stolenTime: number
 }
 
-const sumSignatureSteps = (steps: number[]): number => steps.reduce((sum, step) => sum + step, 0)
-
 const EMPTY_KEY_SIGNATURE_ADJUSTMENT: KeySignatureAdjustment = {
-  ups: [],
-  lifts: [],
+  ups: 0,
+  lifts: 0,
   accidentals: [],
   inflections: [],
 }
@@ -455,8 +457,8 @@ const applyKeySignature = (
   if (accidentals.length) {
     return {
       ...signature,
-      ups: hasNaturalAccidental(accidentals) ? [] : signature.ups,
-      lifts: hasNaturalAccidental(accidentals) ? [] : signature.lifts,
+      ups: hasNaturalAccidental(accidentals) ? 0 : signature.ups,
+      lifts: hasNaturalAccidental(accidentals) ? 0 : signature.lifts,
       accidentals,
       inflections: hasNaturalAccidental(accidentals) ? [] : signature.inflections,
     }
@@ -1290,7 +1292,20 @@ const setterToMosc = (setter: SetterType | DelimiterType, context: Context): Mos
   }
 
   if (type === 'SetSignature') {
-    context.keySignature = keySignatureFromPitches(setter.items)
+    const mosItems = setter.items.filter(
+      (item): item is MosKeyTonicType => item.nominalType === 'mos',
+    )
+    if (mosItems.length) {
+      if (!context.mos) throw new Error('MOS signature used before a MOS declaration.')
+      if (mosItems.length !== setter.items.length) {
+        throw new Error('MOS signatures cannot mix MOS and Pythagorean nominals.')
+      }
+      context.mos.keySignature = mosKeySignatureFromPitches(mosItems, context.mos)
+    } else {
+      context.keySignature = keySignatureFromPitches(
+        setter.items.filter((item): item is KeyTonicType => item.nominalType !== 'mos'),
+      )
+    }
     return []
   }
 

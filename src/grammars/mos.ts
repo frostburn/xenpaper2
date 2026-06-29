@@ -12,6 +12,8 @@ export type MosKeySignatureAdjustment = {
   accidentals: AccidentalType[]
 }
 
+export type MosKeySignature = Map<string, MosKeySignatureAdjustment>
+
 export type MosConfig = {
   pattern: string
   equaveSize: number
@@ -27,7 +29,7 @@ export type MosConfig = {
   expressions: MosExpressionValueType[]
   equaveSteps: number
   equaveMonzo: MosMonzo
-  keySignature: Map<string, MosKeySignatureAdjustment>
+  keySignature: MosKeySignature
 }
 
 export const mosExpressionPrecedence = (expression: MosExpressionValueType): number => {
@@ -211,11 +213,30 @@ const mosAccidentalsFromChroma = (chromaCount: number): AccidentalType[] => {
   return accidentals
 }
 
+export const mosKeySignatureFromPitches = (
+  pitches: Array<{ ups: number; lifts: number; nominal: string; accidentals: AccidentalType[] }>,
+  config: MosConfig,
+): MosKeySignature => {
+  const result: MosKeySignature = new Map()
+
+  for (const pitch of pitches) {
+    const { key } = normalizeMosNominal(pitch.nominal, config)
+    if (!config.nominalMonzos.has(key)) throw new Error(`Undefined MOS nominal '${pitch.nominal}'.`)
+    result.set(key, {
+      ups: pitch.ups,
+      lifts: pitch.lifts,
+      accidentals: [...pitch.accidentals],
+    })
+  }
+
+  return result
+}
+
 export const mosKeySignatureAccidentals = (
   tonic: { ups: number; lifts: number; nominal: string; accidentals: AccidentalType[] },
   expressions: MosExpressionType[],
   config: MosConfig,
-): Map<string, MosKeySignatureAdjustment> => {
+): MosKeySignature => {
   const { key: tonicKey } = normalizeMosNominal(tonic.nominal, config)
   const tonicIndex = config.nominalOrder.indexOf(tonicKey)
   if (tonicIndex < 0) throw new Error(`Undefined MOS nominal '${tonic.nominal}'.`)
@@ -240,7 +261,7 @@ export const mosKeySignatureAccidentals = (
     config.nominalMonzos.get(tonicKey)!,
     tonic.accidentals,
   )
-  const result = new Map<string, MosKeySignatureAdjustment>()
+  const result: MosKeySignature = new Map()
   for (let index = 0; index < config.nominalOrder.length; index++) {
     const nominal = config.nominalOrder[index]!
     const keyedNominal =

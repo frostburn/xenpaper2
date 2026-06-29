@@ -345,7 +345,7 @@ export type SetKeyType = NodeType<'SetKey'> &
   )
 
 export type SetSignatureType = NodeType<'SetSignature'> & {
-  items: KeyTonicType[]
+  items: Array<KeyTonicType | MosKeyTonicType>
 }
 
 // ruler

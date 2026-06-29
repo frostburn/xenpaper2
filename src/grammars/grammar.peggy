@@ -199,7 +199,7 @@ SetKey
   = "key"i _ ":" _ tonic:KeyTonic _ mode:KeyMode { return node('SetKey', { tonic, mode, keyType: 'pythagorean' }); }
   / "key"i _ ":" _ tonic:MosKeyTonic expressions:MosKeyExpressionItem* { return node('SetKey', { tonic, expressions, keyType: 'mos' }); }
 SetSignature = "sig"i _ ":" items:SignatureItem* { return node('SetSignature', { items }); }
-SignatureItem = _ value:KeyTonic { return value; }
+SignatureItem = _ value:(KeyTonic / MosKeyTonic) { return value; }
 KeyTonic = updowns:UpsAndDowns nominal:(GreekNominal / LatinNominal) accidentals:Accidental* inflections:Inflection* { return { ...updowns, ...nominal, accidentals, inflections }; }
 MosKeyTonic = updowns:UpsAndDowns nominal:MosNominal accidentals:MosAccidental* { return { ...updowns, ...nominal, accidentals }; }
 MosKeyExpressionItem = _ value:(MosMode) { return node('MosExpression', { value }); }

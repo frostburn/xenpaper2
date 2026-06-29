@@ -477,6 +477,15 @@ describe('grammar to mosc score', () => {
     ])
   })
 
+  it('applies custom MOS key signatures', () => {
+    expect(noteLabels('MOS{5L 2s} (sig: J& ^/M@) J M J_ M_')).toEqual([
+      'J&  100.0c',
+      '^/M@  1100.0c',
+      'J♮  0.0c',
+      'M♮  600.0c',
+    ])
+  })
+
   it('allows MOS naturals to restore true natural pitches after a key change', () => {
     const [
       naturalJ,

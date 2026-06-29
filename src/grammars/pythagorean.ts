@@ -169,26 +169,23 @@ export function nominalToMonzo(nominal: string, accidentals: AccidentalType[]) {
 }
 
 export type KeySignatureAdjustment = {
-  ups: number[]
-  lifts: number[]
+  ups: number
+  lifts: number
   accidentals: AccidentalType[]
   inflections: InflectionType[]
 }
 
-const signatureSteps = (count: number): number[] =>
-  Array.from({ length: Math.abs(count) }, () => Math.sign(count))
+export type KeySignature = Map<string, KeySignatureAdjustment>
 
 const keySignatureAdjustmentFromTonic = (tonic: KeyTonicType): KeySignatureAdjustment => ({
-  ups: signatureSteps(tonic.ups),
-  lifts: signatureSteps(tonic.lifts),
+  ups: tonic.ups,
+  lifts: tonic.lifts,
   accidentals: tonic.accidentals.filter((accidental) => !NATURAL_ACCIDENTALS.has(accidental)),
   inflections: tonic.inflections,
 })
 
-export function keySignatureFromPitches(
-  pitches: KeyTonicType[],
-): Map<string, KeySignatureAdjustment> {
-  const result = new Map<string, KeySignatureAdjustment>()
+export function keySignatureFromPitches(pitches: KeyTonicType[]): KeySignature {
+  const result: KeySignature = new Map()
 
   for (const pitch of pitches) {
     const key = pitch.nominal.toUpperCase()
@@ -209,7 +206,7 @@ export function keySignatureFromPitches(
 export function keySignatureAccidentals(
   tonic: KeyTonicType,
   mode: KeyModeType,
-): Map<string, KeySignatureAdjustment> {
+): KeySignature {
   const key = tonic.nominal.toUpperCase()
   if (!NOMINAL_MONZOS.has(key)) {
     throw new Error(`Undefined key signature tonic '${tonic.nominal}'.`)
@@ -221,8 +218,8 @@ export function keySignatureAccidentals(
 
   const tonicAdjustment = keySignatureAdjustmentFromTonic(tonic)
   if (
-    tonicAdjustment.ups.length ||
-    tonicAdjustment.lifts.length ||
+    tonicAdjustment.ups !== 0 ||
+    tonicAdjustment.lifts !== 0 ||
     tonicAdjustment.accidentals.length ||
     tonicAdjustment.inflections.length
   ) {
