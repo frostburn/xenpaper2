@@ -669,6 +669,27 @@ describe('grammar to mosc score', () => {
     expect(source.error).toContain('Expected ")", ";", or integer but "M" found.')
   })
 
+  it('overrides nominals and derives accidentals from custom sharp and syntonic steps', () => {
+    const notes = noteItems('(C:1/1; #:25c; 𝄮:81/80) C C♮ C# Cb C𝄮 C𝄯 C𝄰')
+
+    expect(notes.map((note) => note.label)).toEqual(['C♮', 'C♮', 'C♯', 'C♭', 'C𝄮', 'C𝄯', 'C𝄰'])
+    expect(notes[0]?.hz).toBeAround(220, 6)
+    expect(notes[1]?.hz).toBeAround(220, 6)
+    expect(notes[2]?.hz).toBeAround(220 * Math.pow(2, 25 / 1200), 6)
+    expect(notes[3]?.hz).toBeAround(220 / Math.pow(2, 25 / 1200), 6)
+    expect(notes[4]?.hz).toBeAround(220 * (81 / 80), 6)
+    expect(notes[5]?.hz).toBeAround(220 * (80 / 81), 6)
+    expect(notes[6]?.hz).toBeAround(220 * (81 / 80) * Math.pow(2, 25 / 1200), 6)
+  })
+
+  it('applies key-signature accidentals using custom sharp-derived flats', () => {
+    const notes = noteItems('(key:F Major; B:1/1; #:16/15) B B♮')
+
+    expect(notes.map((note) => note.label)).toEqual(['B♭', 'B♮'])
+    expect(notes[0]?.hz).toBeAround(220 * (15 / 16), 6)
+    expect(notes[1]?.hz).toBeAround(220, 6)
+  })
+
   it('should translate sample-rate notes', () => {
     const source = parseAndProcessSourceCode('!-')
 

@@ -1,5 +1,5 @@
 import { dot } from 'xen-dev-utils/number-array'
-import { type Monzo, sub } from 'xen-dev-utils/monzo'
+import { type Monzo, sub, toMonzo } from 'xen-dev-utils/monzo'
 import { PRIME_CENTS } from 'xen-dev-utils/primes'
 import { gcd, mmod, geoMod } from 'xen-dev-utils/fraction'
 import { centsToValue, equaveDivisionToValue, valueToCents } from 'xen-dev-utils/conversion'
@@ -32,6 +32,8 @@ import {
   normalizeNominal,
   normalizeAccidentals,
   keySignatureAccidentals,
+  type PtolMonzo,
+  type PythagoreanCustomizations,
 } from './pythagorean'
 import { applyFjsInflections } from './fjs/inflections'
 import {
@@ -145,7 +147,7 @@ const absolutePitchToMonzo = (
   const keySignature = applyKeySignature(nominal, accidentals, context)
   const effectiveInflections = [...keySignature.inflections, ...inflections]
   const monzo = applyFjsInflections(
-    nominalToMonzo(nominal, keySignature.accidentals).slice(),
+    nominalToMonzo(nominal, keySignature.accidentals, context.pythagoreanCustomizations).slice(),
     effectiveInflections,
   ).slice() as Monzo
   monzo[0] = (monzo[0] ?? 0) + octave
@@ -410,7 +412,6 @@ const edoToLabels = (edoSize: number, ratios: number[], octaveSize: number): str
 //
 
 const ENV_VALUES = [0, 0.003, 0.006, 0.01, 0.033, 0.1, 0.33, 1, 3.3, 10]
-
 type Context = {
   rootHz: number
   rootNominal: {
@@ -430,6 +431,7 @@ type Context = {
   mappingIsIntegerSteps: boolean
   mos: MosConfig | null
   keySignature: Map<string, KeySignatureAdjustment>
+  pythagoreanCustomizations: PythagoreanCustomizations
   graceSubdivision: number | null
   graceNotesRemaining: number
   stolenTime: number
@@ -1120,6 +1122,29 @@ const setScale = (setScale: SetScaleType, context: Context): void => {
   throw new Error(`Unknown scale type "${type}"`)
 }
 
+const upLiftStepToMonzo = (name: string, value: UpLiftStepType): PtolMonzo => {
+  if (value.type === 'PitchRatio') {
+    const { numerator, denominator } = value
+    assertFinitePositive(`${name}.denominator`, denominator)
+    const monzo = toMonzo({ n: numerator, d: denominator })
+    if (monzo.slice(3).some((component) => component !== 0)) {
+      throw new Error(`${name} ratio overrides only support prime factors 2, 3, and 5`)
+    }
+    return [monzo[0] ?? 0, monzo[1] ?? 0, monzo[2] ?? 0]
+  }
+
+  if (value.type === 'PitchCents') {
+    const { cents } = value
+    limit(name, cents, -12000, 12000)
+    return [cents / 1200, 0, 0]
+  }
+
+  const { numerator, denominator, octaveSize } = value
+  assertFinitePositive(`${name}.denominator`, denominator)
+  assertFinitePositive(`${name}.octaveSize`, octaveSize)
+  return [(Math.log2(octaveSize) * numerator) / denominator, 0, 0]
+}
+
 const upLiftStepToCents = (name: string, value: UpLiftStepType): number => {
   if (value.type === 'PitchRatio') {
     const { numerator, denominator } = value
@@ -1200,6 +1225,26 @@ const setterToMosc = (setter: SetterType | DelimiterType, context: Context): Mos
 
   if (type === 'SetLift') {
     context.lift = upLiftStepToCents('SetLift', setter.value)
+    return []
+  }
+
+  if (type === 'SetNominalOverride') {
+    const { target, value } = setter
+    context.pythagoreanCustomizations.nominals.set(
+      target.nominal.toUpperCase(),
+      upLiftStepToMonzo('SetNominalOverride', value),
+    )
+    return []
+  }
+
+  if (type === 'SetAccidentalOverride') {
+    const { accidental, value } = setter
+    const monzo = upLiftStepToMonzo('SetAccidentalOverride', value)
+    if (accidental === '𝄮') {
+      context.pythagoreanCustomizations.syntonicCommaDown = monzo
+    } else {
+      context.pythagoreanCustomizations.sharp = monzo
+    }
     return []
   }
 
@@ -1448,6 +1493,11 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
     mappingIsIntegerSteps: false,
     mos: null,
     keySignature: new Map(),
+    pythagoreanCustomizations: {
+      nominals: new Map(),
+      sharp: null,
+      syntonicCommaDown: null,
+    },
     graceSubdivision: null,
     graceNotesRemaining: 0,
     stolenTime: 0,

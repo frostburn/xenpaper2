@@ -1887,6 +1887,33 @@ describe('grammar', () => {
         ])
       })
 
+      it('should parse nominal, sharp, and syntonic accidental override setters', () => {
+        expect(strip(parser('(C:1/1; #:25c; 𝄮:81/80)')).sequence.items).toEqual([
+          {
+            type: 'SetterGroup',
+            setters: [
+              {
+                type: 'SetNominalOverride',
+                target: { nominal: 'C', greek: false },
+                value: { type: 'PitchRatio', numerator: 1, denominator: 1 },
+              },
+              { type: 'Semicolon' },
+              {
+                type: 'SetAccidentalOverride',
+                accidental: '#',
+                value: { type: 'PitchCents', cents: 25 },
+              },
+              { type: 'Semicolon' },
+              {
+                type: 'SetAccidentalOverride',
+                accidental: '𝄮',
+                value: { type: 'PitchRatio', numerator: 81, denominator: 80 },
+              },
+            ],
+          },
+        ])
+      })
+
       it('should parse sequence with bms setter', () => {
         expect(strip(parser('(bms:100; bms: 999.2)')).sequence.items).toEqual([
           {
@@ -2394,7 +2421,7 @@ describe('grammar', () => {
       it('should error if setter is empty or not delimited properly', () => {
         expectParserErrorMessage(
           '()',
-          'Expected "/", "^", "al", "bms", "bpm", "coda", "d", "da", "dal", "div", "drone", "env", "f", "ff", "fff", "fine", "grace", "key", "mf", "mp", "noise", "osc", "p", "plot", "pp", "ppp", "rl", "segno", "to", "vel", "vol", or integer but ")" found.',
+          'Expected "/", "^", "al", "bms", "bpm", "coda", "d", "da", "dal", "div", "drone", "env", "f", "ff", "fff", "fine", "grace", "key", "mf", "mp", "noise", "osc", "p", "plot", "pp", "ppp", "rl", "segno", "to", "vel", "vol", Greek nominal, [#♯𝄮]u, [a-z], or integer but ")" found.',
         )
         expectParserErrorMessage('(div:16;)', 'but ")" found.')
         expectParserErrorMessage('(div:16;;div:16)', 'but ";" found.')

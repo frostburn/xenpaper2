@@ -1,4 +1,4 @@
-import { type Monzo, accumulate, decumulate } from 'xen-dev-utils/monzo'
+import { type Monzo, accumulate, decumulate, add, scale } from 'xen-dev-utils/monzo'
 
 import type { AccidentalType, InflectionType, KeyModeType, KeyTonicType } from './grammar.generated'
 
@@ -38,35 +38,55 @@ const NOMINAL_MONZOS = new Map<string, PtolMonzo>([
   ['Ζ', [7.5, -4, 0]],
 ])
 
-const ACCIDENTAL_MONZOS = new Map<AccidentalType, PtolMonzo>([
-  ['♮', [0, 0, 0]],
-  ['_', [0, 0, 0]],
+const SHARP_MONZO: PtolMonzo = [-11, 7, 0]
+const SYNTONIC_COMMA_DOWN_MONZO: PtolMonzo = [-4, 4, -1]
 
-  ['♯', [-11, 7, 0]],
-  ['#', [-11, 7, 0]],
+const asMonzo = (monzo: PtolMonzo): Monzo => monzo as unknown as Monzo
+const asPtolMonzo = (monzo: Monzo): PtolMonzo => monzo as unknown as PtolMonzo
 
-  ['♭', [11, -7, 0]],
-  ['b', [11, -7, 0]],
+const accidentalToMonzo = (
+  accidental: AccidentalType,
+  customizations?: PythagoreanCustomizations,
+): PtolMonzo | undefined => {
+  const sharp = customizations?.sharp ?? SHARP_MONZO
+  const syntonicCommaDown = customizations?.syntonicCommaDown ?? SYNTONIC_COMMA_DOWN_MONZO
 
-  ['𝄪', [-22, 14, 0]],
-  ['x', [-22, 14, 0]],
-
-  ['𝄫', [22, -14, 0]],
-
-  ['𝄲', [-5.5, 3.5, 0]],
-  ['‡', [-5.5, 3.5, 0]],
-  ['t', [-5.5, 3.5, 0]],
-
-  ['𝄳', [5.5, -3.5, 0]],
-  ['d', [5.5, -3.5, 0]],
-
-  ['𝄬', [7, -3, -1]],
-  ['𝄭', [15, -11, 1]],
-  ['𝄮', [-4, 4, -1]],
-  ['𝄯', [4, -4, 1]],
-  ['𝄰', [-15, 11, -1]],
-  ['𝄱', [-7, 3, 1]],
-])
+  switch (accidental) {
+    case '♮':
+    case '_':
+      return [0, 0, 0]
+    case '♯':
+    case '#':
+      return sharp
+    case '♭':
+    case 'b':
+      return asPtolMonzo(scale(asMonzo(sharp), -1))
+    case '𝄪':
+    case 'x':
+      return asPtolMonzo(scale(asMonzo(sharp), 2))
+    case '𝄫':
+      return asPtolMonzo(scale(asMonzo(sharp), -2))
+    case '𝄲':
+    case '‡':
+    case 't':
+      return asPtolMonzo(scale(asMonzo(sharp), 0.5))
+    case '𝄳':
+    case 'd':
+      return asPtolMonzo(scale(asMonzo(sharp), -0.5))
+    case '𝄬':
+      return asPtolMonzo(add(asMonzo(syntonicCommaDown), scale(asMonzo(sharp), -1)))
+    case '𝄭':
+      return asPtolMonzo(add(scale(asMonzo(syntonicCommaDown), -1), asMonzo(sharp)))
+    case '𝄮':
+      return syntonicCommaDown
+    case '𝄯':
+      return asPtolMonzo(scale(asMonzo(syntonicCommaDown), -1))
+    case '𝄰':
+      return asPtolMonzo(add(asMonzo(syntonicCommaDown), asMonzo(sharp)))
+    case '𝄱':
+      return asPtolMonzo(add(scale(asMonzo(syntonicCommaDown), -1), scale(asMonzo(sharp), -1)))
+  }
+}
 
 const GREEK_TO_SCRIPT = new Map<string, string>([
   ['alp', 'α'],
@@ -146,11 +166,21 @@ const KEY_MODE_FIFTH_OFFSETS = new Map<KeyModeType, number>([
 const SHARP_KEY_ORDER = ['F', 'C', 'G', 'D', 'A', 'E', 'B']
 const FLAT_KEY_ORDER = ['B', 'E', 'A', 'D', 'G', 'C', 'F']
 const ALL_KEY_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G']
-const NATURAL_ACCIDENTALS = new Set<AccidentalType>(['♮', '_'])
+export const NATURAL_ACCIDENTALS = new Set<AccidentalType>(['♮', '_'])
 
-export function nominalToMonzo(nominal: string, accidentals: AccidentalType[]) {
+export type PythagoreanCustomizations = {
+  nominals: Map<string, PtolMonzo>
+  sharp: PtolMonzo | null
+  syntonicCommaDown: PtolMonzo | null
+}
+
+export function nominalToMonzo(
+  nominal: string,
+  accidentals: AccidentalType[],
+  customizations?: PythagoreanCustomizations,
+) {
   const key = nominal.toUpperCase()
-  const result = NOMINAL_MONZOS.get(key)?.slice()
+  const result = (customizations?.nominals.get(key) ?? NOMINAL_MONZOS.get(key))?.slice()
   if (result === undefined) {
     throw new Error(`Undefined nominal '${nominal}'.`)
   }
@@ -160,7 +190,7 @@ export function nominalToMonzo(nominal: string, accidentals: AccidentalType[]) {
     result[0]! += 1
   }
   for (const accidental of accidentals) {
-    accumulate(result, ACCIDENTAL_MONZOS.get(accidental) as unknown as Monzo)
+    accumulate(result, accidentalToMonzo(accidental, customizations) as unknown as Monzo)
   }
   return result as unknown as PtolMonzo
 }
@@ -230,7 +260,7 @@ export function normalizeNominal(nominal: string) {
 export function normalizeAccidentals(accidentals: AccidentalType[]) {
   const monzo = [0, 0, 0]
   for (const accidental of accidentals) {
-    accumulate(monzo, ACCIDENTAL_MONZOS.get(accidental) as unknown as Monzo)
+    accumulate(monzo, accidentalToMonzo(accidental) as unknown as Monzo)
   }
   const result: AccidentalType[] = []
   while (monzo[2]! > 0) {
@@ -241,7 +271,7 @@ export function normalizeAccidentals(accidentals: AccidentalType[]) {
     } else {
       result.push('𝄯')
     }
-    decumulate(monzo, ACCIDENTAL_MONZOS.get(result.slice(-1)[0]!) as unknown as Monzo)
+    decumulate(monzo, accidentalToMonzo(result.slice(-1)[0]!) as unknown as Monzo)
   }
   while (monzo[2]! < 0) {
     if (monzo[1]! < 0) {
@@ -251,7 +281,7 @@ export function normalizeAccidentals(accidentals: AccidentalType[]) {
     } else {
       result.push('𝄮')
     }
-    decumulate(monzo, ACCIDENTAL_MONZOS.get(result.slice(-1)[0]!) as unknown as Monzo)
+    decumulate(monzo, accidentalToMonzo(result.slice(-1)[0]!) as unknown as Monzo)
   }
   while (monzo[1]! >= 14) {
     result.push('𝄪')
