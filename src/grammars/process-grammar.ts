@@ -1343,8 +1343,8 @@ export type InitialRulerState = BuildingInitialRulerState & {
   octaveSize: number
 }
 
-const LATIN_NOMINAL_ORDER = ['C', 'D', 'E', 'F', 'G', 'A', 'B']
-const GREEK_NOMINAL_ORDER = ['Gam', 'Del', 'Eps', 'Zet', 'Eta', 'Alp', 'Bet']
+const LATIN_NOMINALS = ['C', 'D', 'E', 'F', 'G', 'A', 'B']
+const GREEK_NOMINALS = ['Gam', 'Del', 'Eps', 'Zet', 'Eta', 'Alp', 'Bet']
 
 const PLOT_LOCATION = {
   source: undefined,
@@ -1357,8 +1357,8 @@ const nominalPlotPitches = (nominalType: PlotNominalType, context: Context): Pit
     nominalType === 'mos'
       ? (context.mos?.nominalOrder ?? [])
       : nominalType === 'greek'
-        ? GREEK_NOMINAL_ORDER
-        : LATIN_NOMINAL_ORDER
+        ? GREEK_NOMINALS
+        : LATIN_NOMINALS
 
   return nominals.map((nominal) => ({
     type: 'Pitch',
@@ -1391,9 +1391,7 @@ const nominalPlotToMosc = (nominalType: PlotNominalType, context: Context): Mosc
   if (!pitches.length) return []
 
   const notes = pitches.map((pitch): MoscNote => {
-    let ratio = pitchToRatio(pitch, context)
-    while (ratio < 1) ratio *= context.octaveSize
-    while (ratio >= context.octaveSize) ratio /= context.octaveSize
+    const ratio = geoMod(pitchToRatio(pitch, context), context.octaveSize)
     const cents = valueToCents(ratio)
 
     return {
@@ -1405,7 +1403,7 @@ const nominalPlotToMosc = (nominalType: PlotNominalType, context: Context): Mosc
     }
   })
 
-  return notes.sort((a, b) => a.hz - b.hz)
+  return notes
 }
 
 const setterToRulerState = (

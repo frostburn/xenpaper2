@@ -1576,6 +1576,9 @@ describe('grammar to ruler state', () => {
   // 1 (rl:0,'0) 2
   //
 
+  const plotLabelsByHz = (plot: { hz: number; label: string }[]): string[] =>
+    [...plot].sort((a, b) => a.hz - b.hz).map((note) => note.label)
+
   const RULER_RANGE_TEST = JSON.parse(
     `{"type":"XenpaperGrammar","delimiter":false,"sequence":{"type":"Sequence","delimiter":false,"items":[{"type":"Note","delimiter":false,"pitch":{"type":"Pitch","delimiter":false,"value":{"type":"PitchDegree","delimiter":false,"ups":0,"lifts":0,"degree":1,"len":1,"pos":0},"len":1,"pos":0},"len":1,"pos":0},{"type":"Whitespace","delimiter":true,"len":1,"pos":1},{"type":"SetterGroup","delimiter":false,"setters":[{"type":"SetRulerRange","delimiter":false,"low":{"type":"Pitch","delimiter":false,"value":{"type":"PitchDegree","delimiter":false,"ups":0,"lifts":0,"degree":0,"len":1,"pos":6},"len":1,"pos":6},"high":{"type":"Pitch","delimiter":false,"value":{"type":"PitchDegree","delimiter":false,"ups":0,"lifts":0,"degree":0,"len":1,"pos":9},"octave":{"type":"OctaveModifier","delimiter":false,"octave":1,"len":1,"pos":8},"len":2,"pos":8},"len":7,"pos":3}],"len":9,"pos":2},{"type":"Whitespace","delimiter":true,"len":1,"pos":11},{"type":"Note","delimiter":false,"pitch":{"type":"Pitch","delimiter":false,"value":{"type":"PitchDegree","delimiter":false,"ups":0,"lifts":0,"degree":2,"len":1,"pos":12},"len":1,"pos":12},"len":1,"pos":12}],"len":13,"pos":0},"len":13,"pos":0}`,
   )
@@ -1602,7 +1605,7 @@ describe('grammar to ruler state', () => {
   it('plots default Latin nominals upward from zero cents', () => {
     const plot = processGrammar(parseSource('(plot:Latin)')).initialRulerState.plots[0]!
 
-    expect(plot.map((note) => note.label)).toEqual([
+    expect(plotLabelsByHz(plot)).toEqual([
       'A♮  0.0c',
       'B♮  203.9c',
       'C♮  294.1c',
@@ -1611,15 +1614,12 @@ describe('grammar to ruler state', () => {
       'F♮  792.2c',
       'G♮  996.1c',
     ])
-    expect(plot.map((note) => note.hz)).toEqual(
-      [...plot.map((note) => note.hz)].sort((a, b) => a - b),
-    )
   })
 
   it('plots A-rooted Latin nominals upward from zero cents', () => {
     const plot = processGrammar(parseSource('{r as A}(plot:Latin)')).initialRulerState.plots[0]!
 
-    expect(plot.map((note) => note.label)).toEqual([
+    expect(plotLabelsByHz(plot)).toEqual([
       'A♮  0.0c',
       'B♮  203.9c',
       'C♮  294.1c',
@@ -1628,15 +1628,12 @@ describe('grammar to ruler state', () => {
       'F♮  792.2c',
       'G♮  996.1c',
     ])
-    expect(plot.map((note) => note.hz)).toEqual(
-      [...plot.map((note) => note.hz)].sort((a, b) => a - b),
-    )
   })
 
   it('plots Latin nominals from the associated root nominal', () => {
     const plot = processGrammar(parseSource('{r as D}(plot: Latin)')).initialRulerState.plots[0]!
 
-    expect(plot.map((note) => note.label)).toEqual([
+    expect(plotLabelsByHz(plot)).toEqual([
       'D♮  0.0c',
       'E♮  203.9c',
       'F♮  294.1c',
@@ -1650,7 +1647,7 @@ describe('grammar to ruler state', () => {
   it('plots Greek nominals from the associated root nominal', () => {
     const plot = processGrammar(parseSource('{r as Gam}(plot:GREEK)')).initialRulerState.plots[0]!
 
-    expect(plot.map((note) => note.label)).toEqual([
+    expect(plotLabelsByHz(plot)).toEqual([
       'Γ♮  0.0c',
       'Δ♮  203.9c',
       'Ε♮  407.8c',
@@ -1664,7 +1661,7 @@ describe('grammar to ruler state', () => {
   it('keeps plain Greek plots in one octave above zero', () => {
     const plot = processGrammar(parseSource('(plot:Greek)')).initialRulerState.plots[0]!
 
-    expect(plot.map((note) => note.label)).toEqual([
+    expect(plotLabelsByHz(plot)).toEqual([
       'Ε♮  102.0c',
       'Ζ♮  192.2c',
       'Η♮  396.1c',
@@ -1678,7 +1675,7 @@ describe('grammar to ruler state', () => {
   it('plots MOS nominals upward from the MOS root', () => {
     const plot = processGrammar(parseSource('MOS{5L2s}(pLoT:MoS)')).initialRulerState.plots[0]!
 
-    expect(plot.map((note) => note.label)).toEqual([
+    expect(plotLabelsByHz(plot)).toEqual([
       'J♮  0.0c',
       'K♮  200.0c',
       'L♮  400.0c',
