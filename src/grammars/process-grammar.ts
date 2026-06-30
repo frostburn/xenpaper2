@@ -1438,14 +1438,20 @@ const nominalPlotToMosc = (nominalType: PlotNominalType, context: Context): Mosc
   const pitches = nominalPlotPitches(nominalType, context)
   if (!pitches.length) return []
 
-  const rootRatio = pitchToRatio(pitches[0]!, context)
+  const hasMatchingRootNominal = nominalType === context.rootNominalPitch.nominalType
+  const rootRatio = hasMatchingRootNominal ? pitchToRatio(pitches[0]!, context) : 1
   let previousRatio = 0
-  return pitches.map((pitch): MoscNote => {
+  const notes = pitches.map((pitch): MoscNote => {
     let ratio = pitchToRatio(pitch, context) / rootRatio
-    while (ratio < previousRatio || ratio < 1) {
-      ratio *= context.octaveSize
+    if (hasMatchingRootNominal) {
+      while (ratio < 1 || ratio < previousRatio) {
+        ratio *= context.octaveSize
+      }
+      previousRatio = ratio
+    } else {
+      while (ratio < 1) ratio *= context.octaveSize
+      while (ratio >= context.octaveSize) ratio /= context.octaveSize
     }
-    previousRatio = ratio
     const cents = valueToCents(ratio)
 
     return {
@@ -1456,6 +1462,11 @@ const nominalPlotToMosc = (nominalType: PlotNominalType, context: Context): Mosc
       label: replaceCentsLabel(pitchToLabel(pitch, context), cents),
     }
   })
+
+  if (!hasMatchingRootNominal) {
+    notes.sort((a, b) => a.hz - b.hz)
+  }
+  return notes
 }
 
 const setterToRulerState = (

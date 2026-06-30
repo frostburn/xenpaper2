@@ -1661,16 +1661,18 @@ describe('grammar to ruler state', () => {
     ])
   })
 
-  it('keeps Greek plots in one octave above zero', () => {
+  it('keeps plain Greek plots in one octave above zero', () => {
     const plot = processGrammar(parseSource('(plot:Greek)')).initialRulerState.plots[0]!
-    const cents = plot.map((note) => Number(note.label.match(/  ([0-9.]+)c$/)?.[1]))
 
-    expect(cents[0]).toBe(0)
-    cents.forEach((value) => {
-      expect(value).toBeGreaterThanOrEqual(0)
-      expect(value).toBeLessThan(1200)
-    })
-    expect(cents).toEqual([...cents].sort((a, b) => a - b))
+    expect(plot.map((note) => note.label)).toEqual([
+      'Ε♮  102.0c',
+      'Ζ♮  192.2c',
+      'Η♮  396.1c',
+      'Α♮  600.0c',
+      'Β♮  803.9c',
+      'Γ♮  894.1c',
+      'Δ♮  1098.0c',
+    ])
   })
 
   it('plots MOS nominals from the associated root nominal', () => {
