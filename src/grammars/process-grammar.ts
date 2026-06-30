@@ -19,12 +19,13 @@ import type {
   PitchAbsoluteType,
   PitchDegreeType,
   AccidentalType,
-  InflectionType,
   RatioChordPitchType,
   SetterType,
   DelimiterType,
   UpLiftStepType,
   SequenceItemsType,
+  KeyTonicType,
+  MosKeyTonicType,
 } from './grammar.generated'
 
 import {
@@ -32,11 +33,15 @@ import {
   normalizeNominal,
   normalizeAccidentals,
   keySignatureAccidentals,
+  keySignatureFromPitches,
+  type KeySignature,
+  type KeySignatureAdjustment,
 } from './pythagorean'
 import { applyFjsInflections } from './fjs/inflections'
 import {
   createMosConfig,
   mosKeySignatureAccidentals,
+  mosKeySignatureFromPitches,
   normalizeMosNominal,
   type MosConfig,
   type MosKeySignatureAdjustment,
@@ -429,17 +434,10 @@ type Context = {
   stepSize: number
   mappingIsIntegerSteps: boolean
   mos: MosConfig | null
-  keySignature: Map<string, KeySignatureAdjustment>
+  keySignature: KeySignature
   graceSubdivision: number | null
   graceNotesRemaining: number
   stolenTime: number
-}
-
-type KeySignatureAdjustment = {
-  ups: number
-  lifts: number
-  accidentals: AccidentalType[]
-  inflections: InflectionType[]
 }
 
 const EMPTY_KEY_SIGNATURE_ADJUSTMENT: KeySignatureAdjustment = {
@@ -1289,6 +1287,24 @@ const setterToMosc = (setter: SetterType | DelimiterType, context: Context): Mos
     } else {
       const { tonic, mode } = setter
       context.keySignature = keySignatureAccidentals(tonic, mode)
+    }
+    return []
+  }
+
+  if (type === 'SetSignature') {
+    const mosItems = setter.items.filter(
+      (item): item is MosKeyTonicType => item.nominalType === 'mos',
+    )
+    if (mosItems.length) {
+      if (!context.mos) throw new Error('MOS signature used before a MOS declaration.')
+      if (mosItems.length !== setter.items.length) {
+        throw new Error('MOS signatures cannot mix MOS and Pythagorean nominals.')
+      }
+      context.mos.keySignature = mosKeySignatureFromPitches(mosItems, context.mos)
+    } else {
+      context.keySignature = keySignatureFromPitches(
+        setter.items.filter((item): item is KeyTonicType => item.nominalType !== 'mos'),
+      )
     }
     return []
   }

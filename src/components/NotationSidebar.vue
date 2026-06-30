@@ -102,6 +102,22 @@ G- A B c d e f g-
 # Flat seventh to tonic
 f_- g--`,
       },
+      {
+        description:
+          'Custom key signatures allow you to attach ups, lifts, accidentals and inflections (see below) to plain nominals. A natural sign restores the original nominal.',
+        tune: `# 5-limit Phrygian
+(sig: Bbv5 Cv5 Fv5 Gv5)
+\`A \`B C D E F G A- B_ A-`,
+      },
+      {
+        description:
+          'Use the pythagorean accidentals p/q (a.k.a. po and qu from Color notation) to jump between named pitches.',
+        tune: `# Against root A,
+# B becomes 10/9 while
+# c takes the place of 9/8.
+(sig: B^5 Cbp)
+\`A \`B C D E F G A-`,
+      },
     ],
   },
   {

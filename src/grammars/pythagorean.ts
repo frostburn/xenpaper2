@@ -53,6 +53,9 @@ const ACCIDENTAL_MONZOS = new Map<AccidentalType, PtolMonzo>([
 
   ['𝄫', [22, -14, 0]],
 
+  ['p', [-19, 12, 0]],
+  ['q', [19, -12, 0]],
+
   ['𝄲', [-5.5, 3.5, 0]],
   ['‡', [-5.5, 3.5, 0]],
   ['t', [-5.5, 3.5, 0]],
@@ -172,30 +175,53 @@ export type KeySignatureAdjustment = {
   inflections: InflectionType[]
 }
 
-export function keySignatureAccidentals(
-  tonic: KeyTonicType,
-  mode: KeyModeType,
-): Map<string, KeySignatureAdjustment> {
+export type KeySignature = Map<string, KeySignatureAdjustment>
+
+const keySignatureAdjustmentFromTonic = (tonic: KeyTonicType): KeySignatureAdjustment => ({
+  ups: tonic.ups,
+  lifts: tonic.lifts,
+  accidentals: tonic.accidentals.filter((accidental) => !NATURAL_ACCIDENTALS.has(accidental)),
+  inflections: tonic.inflections,
+})
+
+export function keySignatureFromPitches(pitches: KeyTonicType[]): KeySignature {
+  const result: KeySignature = new Map()
+
+  for (const pitch of pitches) {
+    const key = pitch.nominal.toUpperCase()
+    if (!NOMINAL_MONZOS.has(key)) {
+      throw new Error(`Undefined key signature nominal '${pitch.nominal}'.`)
+    }
+
+    const adjustment = keySignatureAdjustmentFromTonic(pitch)
+    const keyLetter = NOMINAL_TO_KEY_LETTER.get(key) ?? key
+    for (const nominal of KEY_LETTER_TO_NOMINALS.get(keyLetter) ?? [keyLetter]) {
+      result.set(nominal, { ...adjustment, accidentals: [...adjustment.accidentals] })
+    }
+  }
+
+  return result
+}
+
+export function keySignatureAccidentals(tonic: KeyTonicType, mode: KeyModeType): KeySignature {
   const key = tonic.nominal.toUpperCase()
   if (!NOMINAL_MONZOS.has(key)) {
     throw new Error(`Undefined key signature tonic '${tonic.nominal}'.`)
   }
 
-  const tonicAccidentals = tonic.accidentals.filter(
-    (accidental) => !NATURAL_ACCIDENTALS.has(accidental),
-  )
-  const tonicAdjustment = {
-    ups: tonic.ups,
-    lifts: tonic.lifts,
-    accidentals: tonicAccidentals,
-    inflections: tonic.inflections,
-  }
   const keyLetter = NOMINAL_TO_KEY_LETTER.get(key) ?? key
   const fifths = (MAJOR_KEY_FIFTHS.get(keyLetter) ?? 0) + (KEY_MODE_FIFTH_OFFSETS.get(mode) ?? 0)
-  const result = new Map<string, KeySignatureAdjustment>()
-  for (const keyLetter of ALL_KEY_LETTERS) {
-    for (const nominal of KEY_LETTER_TO_NOMINALS.get(keyLetter) ?? [keyLetter]) {
-      result.set(nominal, { ...tonicAdjustment, accidentals: [...tonicAccidentals] })
+  const pitches: KeyTonicType[] = []
+
+  const tonicAdjustment = keySignatureAdjustmentFromTonic(tonic)
+  if (
+    tonicAdjustment.ups !== 0 ||
+    tonicAdjustment.lifts !== 0 ||
+    tonicAdjustment.accidentals.length ||
+    tonicAdjustment.inflections.length
+  ) {
+    for (const nominal of ALL_KEY_LETTERS) {
+      pitches.push({ ...tonic, nominal, nominalType: 'latin' })
     }
   }
 
@@ -203,14 +229,23 @@ export function keySignatureAccidentals(
   const accidental: AccidentalType = fifths >= 0 ? '♯' : '♭'
 
   for (let index = 0; index < Math.abs(fifths); index++) {
-    const keyLetter = order[index % order.length]!
-    for (const nominal of KEY_LETTER_TO_NOMINALS.get(keyLetter) ?? [keyLetter]) {
-      const current = result.get(nominal) ?? tonicAdjustment
-      result.set(nominal, { ...current, accidentals: [...current.accidentals, accidental] })
+    const nominal = order[index % order.length]!
+    let current = pitches.find((pitch) => pitch.nominal === nominal)
+    if (!current) {
+      current = {
+        ups: 0,
+        lifts: 0,
+        nominal,
+        nominalType: 'latin',
+        accidentals: [],
+        inflections: [],
+      }
+      pitches.push(current)
     }
+    current.accidentals = [...current.accidentals, accidental]
   }
 
-  return result
+  return keySignatureFromPitches(pitches)
 }
 
 export function normalizeNominal(nominal: string) {
@@ -229,7 +264,16 @@ export function normalizeNominal(nominal: string) {
 
 export function normalizeAccidentals(accidentals: AccidentalType[]) {
   const monzo = [0, 0, 0]
+  let poqu = 0
   for (const accidental of accidentals) {
+    // Don't try to figure out po or qu
+    if (accidental === 'p') {
+      poqu++
+      continue
+    } else if (accidental === 'q') {
+      poqu--
+      continue
+    }
     accumulate(monzo, ACCIDENTAL_MONZOS.get(accidental) as unknown as Monzo)
   }
   const result: AccidentalType[] = []
@@ -276,6 +320,12 @@ export function normalizeAccidentals(accidentals: AccidentalType[]) {
   }
   if (!result.length) {
     result.push('♮')
+  }
+  for (let i = 0; i < poqu; ++i) {
+    result.push('p')
+  }
+  for (let i = 0; i < -poqu; ++i) {
+    result.push('q')
   }
   return result
 }

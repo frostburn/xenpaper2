@@ -182,6 +182,13 @@ J K L M N j-
 (key:K 1|3)
 K L M N j k-`,
       },
+      {
+        description:
+          'Custom key signatures are supported. A natural sign restores the unaltered nominal.',
+        tune: `MOS{5L 7s 15:13 6|5}
+(sig: ^^^K ^M& vN@ ^^\\P ^^^R vvvS ^^^T vvvU)
+J K L M N O P Q R S T U j U_ j-`,
+      },
     ],
   },
   {
