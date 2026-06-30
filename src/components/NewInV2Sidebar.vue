@@ -80,6 +80,17 @@ const newInV2Sections: SidebarSection[] = [
     ],
   },
   {
+    title: 'Ruler',
+    demos: [
+      {
+        description:
+          'Ruler plots can now show nominal families explicitly: use (plot:Latin), (plot:Greek), or (plot:MOS) to add Latin, Greek, or MOS nominal guide pitches while plain (plot) still plots the current numbered scale.',
+        tune: `(plot:Latin){r as C}(plot:Greek)
+MOS{5L2s}(plot:MOS)`,
+      },
+    ],
+  },
+  {
     title: 'More forgiving notation',
     demos: [
       {

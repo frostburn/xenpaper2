@@ -1675,18 +1675,17 @@ describe('grammar to ruler state', () => {
     ])
   })
 
-  it('plots MOS nominals from the associated root nominal', () => {
-    const plot = processGrammar(parseSource('MOS{5L2s}{r as K}(pLoT:MoS)')).initialRulerState
-      .plots[0]!
+  it('plots MOS nominals upward from the MOS root', () => {
+    const plot = processGrammar(parseSource('MOS{5L2s}(pLoT:MoS)')).initialRulerState.plots[0]!
 
     expect(plot.map((note) => note.label)).toEqual([
-      'K♮  0.0c',
-      'L♮  200.0c',
-      'M♮  400.0c',
-      'N♮  500.0c',
-      'O♮  700.0c',
-      'P♮  900.0c',
-      'J♮  1000.0c',
+      'J♮  0.0c',
+      'K♮  200.0c',
+      'L♮  400.0c',
+      'M♮  600.0c',
+      'N♮  700.0c',
+      'O♮  900.0c',
+      'P♮  1100.0c',
     ])
   })
 

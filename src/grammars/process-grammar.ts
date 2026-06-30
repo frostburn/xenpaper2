@@ -200,10 +200,7 @@ export const pitchToRatio = (pitch: PitchType, context: Context): number => {
 
   if (type === 'PitchAbsolute') {
     if (pitch.value.nominalType === 'mos') {
-      return centsToValue(
-        absoluteMosPitchToCents(pitch.value, pitch.octave?.octave ?? 0, context) -
-          context.mosRootCents,
-      )
+      return centsToValue(absoluteMosPitchToCents(pitch.value, pitch.octave?.octave ?? 0, context))
     }
     const absolutePitch = absolutePitchToMonzo(pitch.value, pitch.octave?.octave ?? 0, context)
     const monzo = sub(absolutePitch.monzo, rootNominal.monzo)
@@ -276,17 +273,9 @@ const setRoot = (item: SetRootType, context: Context): void => {
     return
   }
 
+  const rootNominal = absolutePitchToMonzo(item.rootNominal, item.rootNominal.octave, context)
   context.rootHz = nextRootHz
-  context.rootNominalPitch = item.rootNominal
-  if (item.rootNominal.nominalType === 'mos') {
-    context.mosRootCents = absoluteMosPitchToCents(
-      item.rootNominal,
-      item.rootNominal.octave,
-      context,
-    )
-  } else {
-    context.rootNominal = absolutePitchToMonzo(item.rootNominal, item.rootNominal.octave, context)
-  }
+  context.rootNominal = rootNominal
 }
 
 const consumeDuration = (units: number, context: Context): { time: number; timeEnd: number } => {
@@ -435,7 +424,6 @@ type Context = {
     ups: number
     lifts: number
   }
-  rootNominalPitch: PitchAbsoluteType & { octave: number }
   time: number
   subdivision: number
   scale: number[]
@@ -447,7 +435,6 @@ type Context = {
   stepSize: number
   mappingIsIntegerSteps: boolean
   mos: MosConfig | null
-  mosRootCents: number
   keySignature: KeySignature
   graceSubdivision: number | null
   graceNotesRemaining: number
@@ -1006,10 +993,6 @@ const droneToMosc = (drone: DroneType, context: Context): MoscBeatPlayableNote[]
 const setMos = (setMos: SetMosType, context: Context): void => {
   const mos = createMosConfig(setMos.expressions.map((expression) => expression.value))
   context.mos = mos
-  context.mosRootCents =
-    context.rootNominalPitch.nominalType === 'mos'
-      ? absoluteMosPitchToCents(context.rootNominalPitch, context.rootNominalPitch.octave, context)
-      : 0
 }
 
 const setScale = (setScale: SetScaleType, context: Context): void => {
@@ -1362,24 +1345,6 @@ export type InitialRulerState = BuildingInitialRulerState & {
 
 const LATIN_NOMINAL_ORDER = ['C', 'D', 'E', 'F', 'G', 'A', 'B']
 const GREEK_NOMINAL_ORDER = ['Gam', 'Del', 'Eps', 'Zet', 'Eta', 'Alp', 'Bet']
-const LATIN_TO_GREEK_NOMINAL = new Map([
-  ['A', 'Alp'],
-  ['B', 'Bet'],
-  ['C', 'Gam'],
-  ['D', 'Del'],
-  ['E', 'Eps'],
-  ['F', 'Zet'],
-  ['G', 'Eta'],
-])
-const GREEK_TO_LATIN_NOMINAL = new Map(
-  [...LATIN_TO_GREEK_NOMINAL].map(([latin, greek]) => [greek.toUpperCase(), latin]),
-)
-
-const rotateFrom = (items: string[], start: string): string[] => {
-  const index = items.findIndex((item) => item.toUpperCase() === start.toUpperCase())
-  if (index < 0) return items
-  return [...items.slice(index), ...items.slice(0, index)]
-}
 
 const PLOT_LOCATION = {
   source: undefined,
@@ -1387,26 +1352,13 @@ const PLOT_LOCATION = {
   end: { offset: 0, line: 1, column: 1 },
 }
 
-const plotRootNominal = (nominalType: PlotNominalType, context: Context): string => {
-  const { rootNominalPitch } = context
-  if (nominalType === rootNominalPitch.nominalType) return rootNominalPitch.nominal
-  if (nominalType === 'latin' && rootNominalPitch.nominalType === 'greek') {
-    return GREEK_TO_LATIN_NOMINAL.get(rootNominalPitch.nominal.toUpperCase()) ?? 'A'
-  }
-  if (nominalType === 'greek' && rootNominalPitch.nominalType === 'latin') {
-    return LATIN_TO_GREEK_NOMINAL.get(rootNominalPitch.nominal.toUpperCase()) ?? 'Alp'
-  }
-  return nominalType === 'mos' ? 'J' : nominalType === 'greek' ? 'Alp' : 'A'
-}
-
 const nominalPlotPitches = (nominalType: PlotNominalType, context: Context): PitchType[] => {
-  const rootNominal = plotRootNominal(nominalType, context)
   const nominals =
     nominalType === 'mos'
-      ? rotateFrom(context.mos?.nominalOrder ?? [], rootNominal)
+      ? (context.mos?.nominalOrder ?? [])
       : nominalType === 'greek'
-        ? rotateFrom(GREEK_NOMINAL_ORDER, rootNominal)
-        : rotateFrom(LATIN_NOMINAL_ORDER, rootNominal)
+        ? GREEK_NOMINAL_ORDER
+        : LATIN_NOMINAL_ORDER
 
   return nominals.map((nominal) => ({
     type: 'Pitch',
@@ -1438,20 +1390,10 @@ const nominalPlotToMosc = (nominalType: PlotNominalType, context: Context): Mosc
   const pitches = nominalPlotPitches(nominalType, context)
   if (!pitches.length) return []
 
-  const hasMatchingRootNominal = nominalType === context.rootNominalPitch.nominalType
-  const rootRatio = hasMatchingRootNominal ? pitchToRatio(pitches[0]!, context) : 1
-  let previousRatio = 0
   const notes = pitches.map((pitch): MoscNote => {
-    let ratio = pitchToRatio(pitch, context) / rootRatio
-    if (hasMatchingRootNominal) {
-      while (ratio < 1 || ratio < previousRatio) {
-        ratio *= context.octaveSize
-      }
-      previousRatio = ratio
-    } else {
-      while (ratio < 1) ratio *= context.octaveSize
-      while (ratio >= context.octaveSize) ratio /= context.octaveSize
-    }
+    let ratio = pitchToRatio(pitch, context)
+    while (ratio < 1) ratio *= context.octaveSize
+    while (ratio >= context.octaveSize) ratio /= context.octaveSize
     const cents = valueToCents(ratio)
 
     return {
@@ -1463,10 +1405,7 @@ const nominalPlotToMosc = (nominalType: PlotNominalType, context: Context): Mosc
     }
   })
 
-  if (!hasMatchingRootNominal) {
-    notes.sort((a, b) => a.hz - b.hz)
-  }
-  return notes
+  return notes.sort((a, b) => a.hz - b.hz)
 }
 
 const setterToRulerState = (
@@ -1581,18 +1520,6 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
       ups: 0,
       lifts: 0,
     },
-    rootNominalPitch: {
-      type: 'PitchAbsolute',
-      delimiter: false,
-      location: PLOT_LOCATION,
-      ups: 0,
-      lifts: 0,
-      nominal: 'A',
-      nominalType: 'latin',
-      accidentals: [],
-      inflections: [],
-      octave: 0,
-    },
     time: 0,
     subdivision: 0.5,
     scale,
@@ -1604,7 +1531,6 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
     stepSize: 1,
     mappingIsIntegerSteps: false,
     mos: null,
-    mosRootCents: 0,
     keySignature: new Map(),
     graceSubdivision: null,
     graceNotesRemaining: 0,
