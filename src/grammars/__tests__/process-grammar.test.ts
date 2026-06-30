@@ -1576,9 +1576,115 @@ describe('grammar to ruler state', () => {
   // 1 (rl:0,'0) 2
   //
 
+  const plotLabelsByHz = (plot: { hz: number; label: string }[]): string[] =>
+    [...plot].sort((a, b) => a.hz - b.hz).map((note) => note.label)
+
   const RULER_RANGE_TEST = JSON.parse(
     `{"type":"XenpaperGrammar","delimiter":false,"sequence":{"type":"Sequence","delimiter":false,"items":[{"type":"Note","delimiter":false,"pitch":{"type":"Pitch","delimiter":false,"value":{"type":"PitchDegree","delimiter":false,"ups":0,"lifts":0,"degree":1,"len":1,"pos":0},"len":1,"pos":0},"len":1,"pos":0},{"type":"Whitespace","delimiter":true,"len":1,"pos":1},{"type":"SetterGroup","delimiter":false,"setters":[{"type":"SetRulerRange","delimiter":false,"low":{"type":"Pitch","delimiter":false,"value":{"type":"PitchDegree","delimiter":false,"ups":0,"lifts":0,"degree":0,"len":1,"pos":6},"len":1,"pos":6},"high":{"type":"Pitch","delimiter":false,"value":{"type":"PitchDegree","delimiter":false,"ups":0,"lifts":0,"degree":0,"len":1,"pos":9},"octave":{"type":"OctaveModifier","delimiter":false,"octave":1,"len":1,"pos":8},"len":2,"pos":8},"len":7,"pos":3}],"len":9,"pos":2},{"type":"Whitespace","delimiter":true,"len":1,"pos":11},{"type":"Note","delimiter":false,"pitch":{"type":"Pitch","delimiter":false,"value":{"type":"PitchDegree","delimiter":false,"ups":0,"lifts":0,"degree":2,"len":1,"pos":12},"len":1,"pos":12},"len":1,"pos":12}],"len":13,"pos":0},"len":13,"pos":0}`,
   )
+
+  it('still plots numbered degrees without a nominal type', () => {
+    const plot = processGrammar(parseSource('(plot)')).initialRulerState.plots[0]!
+
+    expect(plot.map((note) => note.label)).toEqual([
+      String.raw`0\12  0.0c`,
+      String.raw`1\12  100.0c`,
+      String.raw`2\12  200.0c`,
+      String.raw`3\12  300.0c`,
+      String.raw`4\12  400.0c`,
+      String.raw`5\12  500.0c`,
+      String.raw`6\12  600.0c`,
+      String.raw`7\12  700.0c`,
+      String.raw`8\12  800.0c`,
+      String.raw`9\12  900.0c`,
+      String.raw`10\12  1000.0c`,
+      String.raw`11\12  1100.0c`,
+    ])
+  })
+
+  it('plots default Latin nominals upward from zero cents', () => {
+    const plot = processGrammar(parseSource('(plot:Latin)')).initialRulerState.plots[0]!
+
+    expect(plotLabelsByHz(plot)).toEqual([
+      'A♮  0.0c',
+      'B♮  203.9c',
+      'C♮  294.1c',
+      'D♮  498.0c',
+      'E♮  702.0c',
+      'F♮  792.2c',
+      'G♮  996.1c',
+    ])
+  })
+
+  it('plots A-rooted Latin nominals upward from zero cents', () => {
+    const plot = processGrammar(parseSource('{r as A}(plot:Latin)')).initialRulerState.plots[0]!
+
+    expect(plotLabelsByHz(plot)).toEqual([
+      'A♮  0.0c',
+      'B♮  203.9c',
+      'C♮  294.1c',
+      'D♮  498.0c',
+      'E♮  702.0c',
+      'F♮  792.2c',
+      'G♮  996.1c',
+    ])
+  })
+
+  it('plots Latin nominals from the associated root nominal', () => {
+    const plot = processGrammar(parseSource('{r as D}(plot: Latin)')).initialRulerState.plots[0]!
+
+    expect(plotLabelsByHz(plot)).toEqual([
+      'D♮  0.0c',
+      'E♮  203.9c',
+      'F♮  294.1c',
+      'G♮  498.0c',
+      'A♮  702.0c',
+      'B♮  905.9c',
+      'C♮  996.1c',
+    ])
+  })
+
+  it('plots Greek nominals from the associated root nominal', () => {
+    const plot = processGrammar(parseSource('{r as Gam}(plot:GREEK)')).initialRulerState.plots[0]!
+
+    expect(plotLabelsByHz(plot)).toEqual([
+      'Γ♮  0.0c',
+      'Δ♮  203.9c',
+      'Ε♮  407.8c',
+      'Ζ♮  498.0c',
+      'Η♮  702.0c',
+      'Α♮  905.9c',
+      'Β♮  1109.8c',
+    ])
+  })
+
+  it('keeps plain Greek plots in one octave above zero', () => {
+    const plot = processGrammar(parseSource('(plot:Greek)')).initialRulerState.plots[0]!
+
+    expect(plotLabelsByHz(plot)).toEqual([
+      'Ε♮  102.0c',
+      'Ζ♮  192.2c',
+      'Η♮  396.1c',
+      'Α♮  600.0c',
+      'Β♮  803.9c',
+      'Γ♮  894.1c',
+      'Δ♮  1098.0c',
+    ])
+  })
+
+  it('plots MOS nominals upward from the MOS root', () => {
+    const plot = processGrammar(parseSource('MOS{5L2s}(pLoT:MoS)')).initialRulerState.plots[0]!
+
+    expect(plotLabelsByHz(plot)).toEqual([
+      'J♮  0.0c',
+      'K♮  200.0c',
+      'L♮  400.0c',
+      'M♮  600.0c',
+      'N♮  700.0c',
+      'O♮  900.0c',
+      'P♮  1100.0c',
+    ])
+  })
 
   it('should translate ruler range', () => {
     expect(processGrammar(RULER_RANGE_TEST).initialRulerState).toEqual({

@@ -26,6 +26,7 @@ import type {
   SequenceItemsType,
   KeyTonicType,
   MosKeyTonicType,
+  PlotNominalType,
 } from './grammar.generated'
 
 import {
@@ -1342,6 +1343,69 @@ export type InitialRulerState = BuildingInitialRulerState & {
   octaveSize: number
 }
 
+const LATIN_NOMINALS = ['C', 'D', 'E', 'F', 'G', 'A', 'B']
+const GREEK_NOMINALS = ['Gam', 'Del', 'Eps', 'Zet', 'Eta', 'Alp', 'Bet']
+
+const PLOT_LOCATION = {
+  source: undefined,
+  start: { offset: 0, line: 1, column: 1 },
+  end: { offset: 0, line: 1, column: 1 },
+}
+
+const nominalPlotPitches = (nominalType: PlotNominalType, context: Context): PitchType[] => {
+  const nominals =
+    nominalType === 'mos'
+      ? (context.mos?.nominalOrder ?? [])
+      : nominalType === 'greek'
+        ? GREEK_NOMINALS
+        : LATIN_NOMINALS
+
+  return nominals.map((nominal) => ({
+    type: 'Pitch',
+    delimiter: false,
+    location: PLOT_LOCATION,
+    octave: null,
+    value: {
+      type: 'PitchAbsolute',
+      delimiter: false,
+      location: PLOT_LOCATION,
+      ups: 0,
+      lifts: 0,
+      nominal,
+      nominalType,
+      accidentals: [],
+      inflections: [],
+    },
+  }))
+}
+
+const replaceCentsLabel = (label: string, cents: number): string => {
+  const centsLabel = `${cents.toFixed(1)}c`
+  const separator = label.lastIndexOf('  ')
+  if (separator < 0) return `${label}  ${centsLabel}`
+  return `${label.slice(0, separator)}  ${centsLabel}`
+}
+
+const nominalPlotToMosc = (nominalType: PlotNominalType, context: Context): MoscNote[] => {
+  const pitches = nominalPlotPitches(nominalType, context)
+  if (!pitches.length) return []
+
+  const notes = pitches.map((pitch): MoscNote => {
+    const ratio = geoMod(pitchToRatio(pitch, context), context.octaveSize)
+    const cents = valueToCents(ratio)
+
+    return {
+      type: 'NOTE_TIME',
+      time: context.time,
+      timeEnd: context.time,
+      hz: ratio * context.rootHz,
+      label: replaceCentsLabel(pitchToLabel(pitch, context), cents),
+    }
+  })
+
+  return notes
+}
+
 const setterToRulerState = (
   initial: BuildingInitialRulerState,
   setter: SetterType | DelimiterType,
@@ -1352,15 +1416,17 @@ const setterToRulerState = (
   if (delimiter) return initial
 
   if (type === 'SetRulerPlot') {
-    const newPlot = context.scale.map(
-      (ratio, i): MoscNote => ({
-        type: 'NOTE_TIME',
-        time: context.time,
-        timeEnd: context.time,
-        hz: ratio * context.rootHz,
-        label: context.scaleLabels[i]!,
-      }),
-    )
+    const newPlot = setter.nominalType
+      ? nominalPlotToMosc(setter.nominalType, context)
+      : context.scale.map(
+          (ratio, i): MoscNote => ({
+            type: 'NOTE_TIME',
+            time: context.time,
+            timeEnd: context.time,
+            hz: ratio * context.rootHz,
+            label: context.scaleLabels[i]!,
+          }),
+        )
 
     return {
       ...initial,

@@ -355,7 +355,11 @@ export type SetRulerRangeType = NodeType<'SetRulerRange'> & {
   high: PitchType
 }
 
-export type SetRulerPlotType = NodeType<'SetRulerPlot'>
+export type PlotNominalType = 'latin' | 'greek' | 'mos'
+
+export type SetRulerPlotType = NodeType<'SetRulerPlot'> & {
+  nominalType: PlotNominalType | null
+}
 
 export type SetRulerType = SetRulerRangeType | SetRulerPlotType
 
