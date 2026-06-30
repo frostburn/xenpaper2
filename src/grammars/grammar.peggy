@@ -216,7 +216,9 @@ KeyMode
 EnvValues "four digits" = a:EnvDigit _ d:EnvDigit _ s:EnvDigit _ r:EnvDigit { return { a, d, s, r }; }
 EnvDigit = digit:[0-9] { return parseInt(digit, 10); }
 SetRulerRange = "rl"i _ ":" _ low:Pitch _ "," _ high:Pitch { return node('SetRulerRange', { low, high }); }
-SetRulerPlot = "plot"i _ ":" _ nominalType:PlotNominalType { return node('SetRulerPlot', { nominalType }); }
+SetRulerPlot
+  = "plot"i _ ":" _ nominalType:PlotNominalType { return node('SetRulerPlot', { nominalType }); }
+  / "plot"i { return node('SetRulerPlot', { nominalType: null }); }
 PlotNominalType
   = "latin"i { return 'latin'; }
   / "greek"i { return 'greek'; }

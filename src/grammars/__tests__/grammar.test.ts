@@ -2298,6 +2298,20 @@ describe('grammar', () => {
         ])
       })
 
+      it('should parse sequence with numbered-degree ruler plot', () => {
+        expect(strip(parser('(plot)')).sequence.items).toEqual([
+          {
+            type: 'SetterGroup',
+            setters: [
+              {
+                type: 'SetRulerPlot',
+                nominalType: null,
+              },
+            ],
+          },
+        ])
+      })
+
       it('should parse setters with additional whitespace', () => {
         expect(
           strip(parser('( bpm : 440 ; div : 1 / 4 ; env : 0 1 2 3 ; rl : 200c , 400 hz ){ r 7/5 }'))

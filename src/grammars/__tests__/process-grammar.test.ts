@@ -1580,6 +1580,59 @@ describe('grammar to ruler state', () => {
     `{"type":"XenpaperGrammar","delimiter":false,"sequence":{"type":"Sequence","delimiter":false,"items":[{"type":"Note","delimiter":false,"pitch":{"type":"Pitch","delimiter":false,"value":{"type":"PitchDegree","delimiter":false,"ups":0,"lifts":0,"degree":1,"len":1,"pos":0},"len":1,"pos":0},"len":1,"pos":0},{"type":"Whitespace","delimiter":true,"len":1,"pos":1},{"type":"SetterGroup","delimiter":false,"setters":[{"type":"SetRulerRange","delimiter":false,"low":{"type":"Pitch","delimiter":false,"value":{"type":"PitchDegree","delimiter":false,"ups":0,"lifts":0,"degree":0,"len":1,"pos":6},"len":1,"pos":6},"high":{"type":"Pitch","delimiter":false,"value":{"type":"PitchDegree","delimiter":false,"ups":0,"lifts":0,"degree":0,"len":1,"pos":9},"octave":{"type":"OctaveModifier","delimiter":false,"octave":1,"len":1,"pos":8},"len":2,"pos":8},"len":7,"pos":3}],"len":9,"pos":2},{"type":"Whitespace","delimiter":true,"len":1,"pos":11},{"type":"Note","delimiter":false,"pitch":{"type":"Pitch","delimiter":false,"value":{"type":"PitchDegree","delimiter":false,"ups":0,"lifts":0,"degree":2,"len":1,"pos":12},"len":1,"pos":12},"len":1,"pos":12}],"len":13,"pos":0},"len":13,"pos":0}`,
   )
 
+  it('still plots numbered degrees without a nominal type', () => {
+    const plot = processGrammar(parseSource('(plot)')).initialRulerState.plots[0]!
+
+    expect(plot.map((note) => note.label)).toEqual([
+      String.raw`0\12  0.0c`,
+      String.raw`1\12  100.0c`,
+      String.raw`2\12  200.0c`,
+      String.raw`3\12  300.0c`,
+      String.raw`4\12  400.0c`,
+      String.raw`5\12  500.0c`,
+      String.raw`6\12  600.0c`,
+      String.raw`7\12  700.0c`,
+      String.raw`8\12  800.0c`,
+      String.raw`9\12  900.0c`,
+      String.raw`10\12  1000.0c`,
+      String.raw`11\12  1100.0c`,
+    ])
+  })
+
+  it('plots default Latin nominals upward from zero cents', () => {
+    const plot = processGrammar(parseSource('(plot:Latin)')).initialRulerState.plots[0]!
+
+    expect(plot.map((note) => note.label)).toEqual([
+      'A♮  0.0c',
+      'B♮  203.9c',
+      'C♮  294.1c',
+      'D♮  498.0c',
+      'E♮  702.0c',
+      'F♮  792.2c',
+      'G♮  996.1c',
+    ])
+    expect(plot.map((note) => note.hz)).toEqual(
+      [...plot.map((note) => note.hz)].sort((a, b) => a - b),
+    )
+  })
+
+  it('plots A-rooted Latin nominals upward from zero cents', () => {
+    const plot = processGrammar(parseSource('{r as A}(plot:Latin)')).initialRulerState.plots[0]!
+
+    expect(plot.map((note) => note.label)).toEqual([
+      'A♮  0.0c',
+      'B♮  203.9c',
+      'C♮  294.1c',
+      'D♮  498.0c',
+      'E♮  702.0c',
+      'F♮  792.2c',
+      'G♮  996.1c',
+    ])
+    expect(plot.map((note) => note.hz)).toEqual(
+      [...plot.map((note) => note.hz)].sort((a, b) => a - b),
+    )
+  })
+
   it('plots Latin nominals from the associated root nominal', () => {
     const plot = processGrammar(parseSource('{r as D}(plot: Latin)')).initialRulerState.plots[0]!
 
@@ -1606,6 +1659,18 @@ describe('grammar to ruler state', () => {
       'Α♮  905.9c',
       'Β♮  1109.8c',
     ])
+  })
+
+  it('keeps Greek plots in one octave above zero', () => {
+    const plot = processGrammar(parseSource('(plot:Greek)')).initialRulerState.plots[0]!
+    const cents = plot.map((note) => Number(note.label.match(/  ([0-9.]+)c$/)?.[1]))
+
+    expect(cents[0]).toBe(0)
+    cents.forEach((value) => {
+      expect(value).toBeGreaterThanOrEqual(0)
+      expect(value).toBeLessThan(1200)
+    })
+    expect(cents).toEqual([...cents].sort((a, b) => a - b))
   })
 
   it('plots MOS nominals from the associated root nominal', () => {

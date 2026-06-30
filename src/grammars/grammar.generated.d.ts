@@ -358,7 +358,7 @@ export type SetRulerRangeType = NodeType<'SetRulerRange'> & {
 export type PlotNominalType = 'latin' | 'greek' | 'mos'
 
 export type SetRulerPlotType = NodeType<'SetRulerPlot'> & {
-  nominalType: PlotNominalType
+  nominalType: PlotNominalType | null
 }
 
 export type SetRulerType = SetRulerRangeType | SetRulerPlotType

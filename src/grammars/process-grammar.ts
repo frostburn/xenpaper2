@@ -1427,6 +1427,37 @@ const nominalPlotPitches = (nominalType: PlotNominalType, context: Context): Pit
   }))
 }
 
+const replaceCentsLabel = (label: string, cents: number): string => {
+  const centsLabel = `${cents.toFixed(1)}c`
+  const separator = label.lastIndexOf('  ')
+  if (separator < 0) return `${label}  ${centsLabel}`
+  return `${label.slice(0, separator)}  ${centsLabel}`
+}
+
+const nominalPlotToMosc = (nominalType: PlotNominalType, context: Context): MoscNote[] => {
+  const pitches = nominalPlotPitches(nominalType, context)
+  if (!pitches.length) return []
+
+  const rootRatio = pitchToRatio(pitches[0]!, context)
+  let previousRatio = 0
+  return pitches.map((pitch): MoscNote => {
+    let ratio = pitchToRatio(pitch, context) / rootRatio
+    while (ratio < previousRatio || ratio < 1) {
+      ratio *= context.octaveSize
+    }
+    previousRatio = ratio
+    const cents = valueToCents(ratio)
+
+    return {
+      type: 'NOTE_TIME',
+      time: context.time,
+      timeEnd: context.time,
+      hz: ratio * context.rootHz,
+      label: replaceCentsLabel(pitchToLabel(pitch, context), cents),
+    }
+  })
+}
+
 const setterToRulerState = (
   initial: BuildingInitialRulerState,
   setter: SetterType | DelimiterType,
@@ -1437,15 +1468,17 @@ const setterToRulerState = (
   if (delimiter) return initial
 
   if (type === 'SetRulerPlot') {
-    const newPlot = nominalPlotPitches(setter.nominalType, context).map(
-      (pitch): MoscNote => ({
-        type: 'NOTE_TIME',
-        time: context.time,
-        timeEnd: context.time,
-        hz: pitchToHz(pitch, context),
-        label: pitchToLabel(pitch, context),
-      }),
-    )
+    const newPlot = setter.nominalType
+      ? nominalPlotToMosc(setter.nominalType, context)
+      : context.scale.map(
+          (ratio, i): MoscNote => ({
+            type: 'NOTE_TIME',
+            time: context.time,
+            timeEnd: context.time,
+            hz: ratio * context.rootHz,
+            label: context.scaleLabels[i]!,
+          }),
+        )
 
     return {
       ...initial,
