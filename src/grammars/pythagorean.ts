@@ -264,7 +264,16 @@ export function normalizeNominal(nominal: string) {
 
 export function normalizeAccidentals(accidentals: AccidentalType[]) {
   const monzo = [0, 0, 0]
+  let poqu = 0
   for (const accidental of accidentals) {
+    // Don't try to figure out po or qu
+    if (accidental === 'p') {
+      poqu++
+      continue
+    } else if (accidental === 'q') {
+      poqu--
+      continue
+    }
     accumulate(monzo, ACCIDENTAL_MONZOS.get(accidental) as unknown as Monzo)
   }
   const result: AccidentalType[] = []
@@ -311,6 +320,12 @@ export function normalizeAccidentals(accidentals: AccidentalType[]) {
   }
   if (!result.length) {
     result.push('♮')
+  }
+  for (let i = 0; i < poqu; ++i) {
+    result.push('p')
+  }
+  for (let i = 0; i < -poqu; ++i) {
+    result.push('q')
   }
   return result
 }

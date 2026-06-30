@@ -619,6 +619,7 @@ describe('grammar to mosc score', () => {
     const [plainC, signatureC] = noteItems('C (sig: Cbp) C')
 
     expect(plainC?.label).toBe('C♮  294.1c')
+    expect(signatureC?.label).toBe('C♭p  203.9c')
     expect(signatureC?.hz).toBeAround(220 * (9 / 8), 6)
   })
 
