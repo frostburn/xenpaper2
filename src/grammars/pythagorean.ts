@@ -203,10 +203,7 @@ export function keySignatureFromPitches(pitches: KeyTonicType[]): KeySignature {
   return result
 }
 
-export function keySignatureAccidentals(
-  tonic: KeyTonicType,
-  mode: KeyModeType,
-): KeySignature {
+export function keySignatureAccidentals(tonic: KeyTonicType, mode: KeyModeType): KeySignature {
   const key = tonic.nominal.toUpperCase()
   if (!NOMINAL_MONZOS.has(key)) {
     throw new Error(`Undefined key signature tonic '${tonic.nominal}'.`)

@@ -104,10 +104,10 @@ f_- g--`,
       },
       {
         description:
-          'Custom key signatures use `(sig: C# F#)` or microtonal items like `(sig: ^A /E Bd)`.',
-        tune: `# Custom signature with an up-A, lifted E, and demiflat B
-(sig: ^A /E Bd)
-a e b b_`,
+          'Custom key signatures allow you to attach ups, lifts, accidentals and inflections (see below) to plain nominals. A natural sign restores the original nominal.',
+        tune: `# 5-limit Phrygian
+(sig: Bbv5 Cv5 Fv5 Gv5)
+\`A \`B C D E F G A- B_ A-`,
       },
     ],
   },

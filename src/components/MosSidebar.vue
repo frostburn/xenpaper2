@@ -180,10 +180,10 @@ J K L M N j-
 # Switch to "Indical" mode on K
 # M becomes M@
 (key:K 1|3)
-K L M N j k-`},
+K L M N j k-`,
+      },
       {
-        description:
-          'Custom key signatures are. Natural sign restores the unaltered nominal.',
+        description: 'Custom key signatures are. Natural sign restores the unaltered nominal.',
         tune: `MOS{5L 7s 15:13 6|5}
 (sig: ^^^K ^M& vN@ ^^\\P ^^^R vvvS ^^^T vvvU)
 J K L M N O P Q R S T U j U_ j-`,
