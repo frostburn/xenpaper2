@@ -170,8 +170,8 @@ const tutorialSections: SidebarSection[] = [
     demos: [
       {
         description:
-          'The current scale can be plotted by calling (plot). Calling it multiple times renders multiple scales.',
-        tune: '(plot){19edo}(plot)',
+          'The current nominal system can be plotted with commands like (plot:Latin), (plot:Greek), or (plot:MOS). Calling plot commands multiple times renders multiple scales.',
+        tune: '(plot:Latin){r as C}(plot:Greek)',
       },
     ],
   },

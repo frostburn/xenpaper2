@@ -1580,6 +1580,49 @@ describe('grammar to ruler state', () => {
     `{"type":"XenpaperGrammar","delimiter":false,"sequence":{"type":"Sequence","delimiter":false,"items":[{"type":"Note","delimiter":false,"pitch":{"type":"Pitch","delimiter":false,"value":{"type":"PitchDegree","delimiter":false,"ups":0,"lifts":0,"degree":1,"len":1,"pos":0},"len":1,"pos":0},"len":1,"pos":0},{"type":"Whitespace","delimiter":true,"len":1,"pos":1},{"type":"SetterGroup","delimiter":false,"setters":[{"type":"SetRulerRange","delimiter":false,"low":{"type":"Pitch","delimiter":false,"value":{"type":"PitchDegree","delimiter":false,"ups":0,"lifts":0,"degree":0,"len":1,"pos":6},"len":1,"pos":6},"high":{"type":"Pitch","delimiter":false,"value":{"type":"PitchDegree","delimiter":false,"ups":0,"lifts":0,"degree":0,"len":1,"pos":9},"octave":{"type":"OctaveModifier","delimiter":false,"octave":1,"len":1,"pos":8},"len":2,"pos":8},"len":7,"pos":3}],"len":9,"pos":2},{"type":"Whitespace","delimiter":true,"len":1,"pos":11},{"type":"Note","delimiter":false,"pitch":{"type":"Pitch","delimiter":false,"value":{"type":"PitchDegree","delimiter":false,"ups":0,"lifts":0,"degree":2,"len":1,"pos":12},"len":1,"pos":12},"len":1,"pos":12}],"len":13,"pos":0},"len":13,"pos":0}`,
   )
 
+  it('plots Latin nominals from the associated root nominal', () => {
+    const plot = processGrammar(parseSource('{r as D}(plot: Latin)')).initialRulerState.plots[0]!
+
+    expect(plot.map((note) => note.label)).toEqual([
+      'D♮  0.0c',
+      'E♮  203.9c',
+      'F♮  294.1c',
+      'G♮  498.0c',
+      'A♮  702.0c',
+      'B♮  905.9c',
+      'C♮  996.1c',
+    ])
+  })
+
+  it('plots Greek nominals from the associated root nominal', () => {
+    const plot = processGrammar(parseSource('{r as Gam}(plot:GREEK)')).initialRulerState.plots[0]!
+
+    expect(plot.map((note) => note.label)).toEqual([
+      'Γ♮  0.0c',
+      'Δ♮  203.9c',
+      'Ε♮  407.8c',
+      'Ζ♮  498.0c',
+      'Η♮  702.0c',
+      'Α♮  905.9c',
+      'Β♮  1109.8c',
+    ])
+  })
+
+  it('plots MOS nominals from the associated root nominal', () => {
+    const plot = processGrammar(parseSource('MOS{5L2s}{r as K}(pLoT:MoS)')).initialRulerState
+      .plots[0]!
+
+    expect(plot.map((note) => note.label)).toEqual([
+      'K♮  0.0c',
+      'L♮  200.0c',
+      'M♮  400.0c',
+      'N♮  500.0c',
+      'O♮  700.0c',
+      'P♮  900.0c',
+      'J♮  1000.0c',
+    ])
+  })
+
   it('should translate ruler range', () => {
     expect(processGrammar(RULER_RANGE_TEST).initialRulerState).toEqual({
       lowHz: 220,

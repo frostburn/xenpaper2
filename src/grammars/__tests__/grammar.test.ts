@@ -2285,12 +2285,13 @@ describe('grammar', () => {
       })
 
       it('should parse sequence with ruler plot', () => {
-        expect(strip(parser('(plot)')).sequence.items).toEqual([
+        expect(strip(parser('(pLoT:MoS)')).sequence.items).toEqual([
           {
             type: 'SetterGroup',
             setters: [
               {
                 type: 'SetRulerPlot',
+                nominalType: 'mos',
               },
             ],
           },
