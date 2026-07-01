@@ -39,6 +39,7 @@ describe('share-link', () => {
   it('builds hash fragments for shared source code', () => {
     expect(getShareHash('linked tune')).toBe('#linked_tune')
     expect(getShareHash('embed:linked tune')).toBe('#embed%3Alinked_tune')
+    expect(getShareHash('[1 2 3]-')).toBe('#%5B1_2_3%5D-')
     expect(getShareHash(`"0-\`0-100%`)).toBe('#"0-`0-100%25')
     expect(getShareHash(['linked tune'])).toBe('#linked_tune')
   })

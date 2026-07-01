@@ -32,6 +32,8 @@ export const encodeSharedSource = (sourceCode: string): string =>
     .replace(/%/g, '%25')
     .replace(/:/g, '%3A')
     .replace(/~/g, ESCAPED_SOURCE_SEPARATOR)
+    .replace(/\[/g, '%5B')
+    .replace(/\]/g, '%5D')
     .replace(/_/g, ENCODED_UNDERSCORE_TOKEN)
     .replace(/ /g, ENCODED_SPACE_TOKEN)
 
