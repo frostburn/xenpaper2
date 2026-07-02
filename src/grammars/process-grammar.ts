@@ -259,6 +259,8 @@ const customMappingToContext = (scale: CustomMappingScaleType, context: Context)
   }
   assertFinitePositive('CustomMappingScale.anchorEntry', anchor.value)
   context.stepSize = PRIME_CENTS[anchorIndex]! / anchor.value
+  context.up = context.stepSize
+  context.lift = 5 * context.stepSize
   context.mapping = PRIME_CENTS.slice(0, NUM_COMPONENTS).map((c) => Math.round(c / context.stepSize))
   scale.entries.forEach((entry, index) => {
     context.mapping[index] = entry.value

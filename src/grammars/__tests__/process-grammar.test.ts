@@ -1545,6 +1545,15 @@ describe('grammar to mosc score', () => {
     expect(centsMapping[1]?.label).toBe('E♮  696.6c')
   })
 
+  it('sets ups and lifts from custom mappings measured in steps', () => {
+    const notes = noteItems('{<17 27 40]} `A `^A `/A')
+
+    expect(notes[1]!.hz / notes[0]!.hz).toBeAround(Math.pow(2, 1 / 17), 10)
+    expect(notes[1]?.label).toBe('^A♮  70.6c')
+    expect(notes[2]!.hz / notes[0]!.hz).toBeAround(Math.pow(2, 5 / 17), 10)
+    expect(notes[2]?.label).toBe('/A♮  352.9c')
+  })
+
   it('tempers spiral-of-fifths nominals and accidentals to the active edo mapping', () => {
     const notes = noteItems('{31edo} `A E B F# Cb')
 
