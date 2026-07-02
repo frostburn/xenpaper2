@@ -258,13 +258,20 @@ MosMode = up:Int _ "|" _ down:Int _ period:("(" _ @Int _ ")")? { return { type: 
 MosUp = "^" up:Int { return { type: 'MosUp', up}; }
 MosLift = "/" lift:Int { return { type: 'MosLift', lift}; }
 
-SetScale = "{" _ scale:(EdoScale / PythagoreanScale / PitchGroupScale) _ "}" {
+SetScale = "{" _ scale:(EdoScale / CustomMappingScale / PythagoreanScale / PitchGroupScale) _ "}" {
   return node('SetScale', { scale });
 }
 EdoScale = divisions:Int _ "ed"i "o"i? _ octaveSize:OctaveSize? {
   return node('EdoScale', { divisions, octaveSize: octaveSize ?? 2 });
 }
 PythagoreanScale = "pythagorean"i { return node('PythagoreanScale') };
+CustomMappingScale = ("<" / "⟨") _ entries:CustomMappingEntryList _ "]" anchor:(_ "@" _ @Int)? {
+  return node('CustomMappingScale', { entries, anchor: anchor ?? null });
+}
+CustomMappingEntryList = first:CustomMappingEntry rest:((_ ","? _) @CustomMappingEntry)* {
+  return [first, ...rest];
+}
+CustomMappingEntry = cents:Number _ "c"i { return { value: cents, unit: 'cents' }; } / steps:Number { return { value: steps, unit: 'steps' }; }
 ScaleOctaveMarker = "'" { return node('ScaleOctaveMarker'); }
 PitchGroupScalePrefix = p:"m"i _ {
   return node('PitchGroupScalePrefix', { prefix: p.toLowerCase() });

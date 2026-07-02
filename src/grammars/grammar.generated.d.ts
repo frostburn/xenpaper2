@@ -169,6 +169,16 @@ export type EdoScaleType = NodeType<'EdoScale'> & {
 
 export type PythagoreanScaleType = NodeType<'PythagoreanScale'>
 
+export type CustomMappingEntryType = {
+  value: number
+  unit: 'steps' | 'cents'
+}
+
+export type CustomMappingScaleType = NodeType<'CustomMappingScale'> & {
+  entries: CustomMappingEntryType[]
+  anchor: number | null
+}
+
 export type ScaleOctaveMarkerType = NodeType<'ScaleOctaveMarker'>
 
 export type PitchGroupScalePrefixType = NodeType<'PitchGroupScalePrefix'> & {
@@ -205,7 +215,7 @@ export type PitchGroupScaleType = NodeType<'PitchGroupScale'> & {
 //
 
 export type SetScaleType = NodeType<'SetScale'> & {
-  scale: EdoScaleType | PythagoreanScaleType | PitchGroupScaleType
+  scale: EdoScaleType | CustomMappingScaleType | PythagoreanScaleType | PitchGroupScaleType
 }
 
 export type RootNominalType = PitchAbsoluteType & {
