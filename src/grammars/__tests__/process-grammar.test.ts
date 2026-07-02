@@ -1534,10 +1534,7 @@ describe('grammar to mosc score', () => {
     expect(defaultAnchor[1]?.label).toBe('E♮  705.9c')
 
     const primeThreeAnchor = noteItems('{<12, 19, 28]@3} `A E')
-    expect(primeThreeAnchor[1]!.hz / 220).toBeAround(
-      Math.pow(2, (7 * Math.log2(3)) / 19),
-      10,
-    )
+    expect(primeThreeAnchor[1]!.hz / 220).toBeAround(Math.pow(3, 7 / 19), 10)
     expect(primeThreeAnchor[1]?.label).toBe('E♮  700.7c')
 
     const centsMapping = noteItems('{<1200c 1896.5784c 2786.3137c]} `A E')
