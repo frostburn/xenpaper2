@@ -6,7 +6,7 @@ import TheFooter from './components/TheFooter.vue'
 import XenpaperEmbedToolbar from './components/XenpaperEmbedToolbar.vue'
 import XenpaperSidebar from './components/XenpaperSidebar.vue'
 import XenpaperToolbar from './components/XenpaperToolbar.vue'
-import { decodeShareHashForRouter, encodeShareHashForUrl } from './share-link'
+import { encodeShareHashForUrl } from './share-link'
 import { useXenpaperStore } from './stores/xenpaper'
 
 const xenpaper = useXenpaperStore()
@@ -54,12 +54,10 @@ const replaceBrowserAddressHash = (hash: string): void => {
 const replaceShareRoute = async (): Promise<void> => {
   xenpaper.saveSourceCodeToBrowser()
 
-  const routerHash = decodeShareHashForRouter(currentRouteHash.value)
-
-  if (route.hash !== routerHash) {
+  if (route.hash !== currentRouteHash.value) {
     await router.replace({
       query: route.query,
-      hash: routerHash,
+      hash: currentRouteHash.value,
     })
   }
 

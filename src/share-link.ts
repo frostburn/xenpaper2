@@ -32,8 +32,6 @@ export const encodeSharedSource = (sourceCode: string): string =>
     .replace(/%/g, '%25')
     .replace(/:/g, '%3A')
     .replace(/~/g, ESCAPED_SOURCE_SEPARATOR)
-    .replace(/\[/g, '%5B')
-    .replace(/\]/g, '%5D')
     .replace(/_/g, ENCODED_UNDERSCORE_TOKEN)
     .replace(/ /g, ENCODED_SPACE_TOKEN)
 
@@ -74,19 +72,11 @@ export const decodeSharedSources = (encodedSources: string): string[] => {
   return normalizeSourceCodes(encodedSourceCodes.map(decodeSharedSource))
 }
 
-export const decodeShareHashForRouter = (hash: string): string => {
-  try {
-    return decodeURIComponent(hash)
-  } catch {
-    return hash
-  }
-}
-
 export const encodeShareHashForUrl = (hash: string): string =>
   Array.from(hash, (character) => {
     const charCode = character.charCodeAt(0)
 
-    return charCode <= 0x1f || charCode === 0x7f
+    return charCode <= 0x1f || charCode === 0x7f || character === '[' || character === ']'
       ? encodeURIComponent(character).toUpperCase()
       : character
   }).join('')

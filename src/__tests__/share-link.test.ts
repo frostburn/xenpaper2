@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
 
 import {
-  decodeShareHashForRouter,
   decodeSharedSource,
   encodeShareHashForUrl,
   encodeSharedSource,
@@ -40,7 +39,7 @@ describe('share-link', () => {
   it('builds hash fragments for shared source code', () => {
     expect(getShareHash('linked tune')).toBe('#linked_tune')
     expect(getShareHash('embed:linked tune')).toBe('#embed%3Alinked_tune')
-    expect(getShareHash('[1 2 3]-')).toBe('#%5B1_2_3%5D-')
+    expect(getShareHash('[1 2 3]-')).toBe('#[1_2_3]-')
     expect(getShareHash(`"0-\`0-100%`)).toBe('#"0-`0-100%25')
     expect(getShareHash(['linked tune'])).toBe('#linked_tune')
   })
@@ -72,10 +71,11 @@ describe('share-link', () => {
     expect(getSharedSourceCodes(hash)).toEqual([source])
   })
 
-  it('decodes percent escapes before hash fragments are passed to Vue Router', () => {
-    expect(decodeShareHashForRouter('#%5B1_2_3%5D-')).toBe('#[1_2_3]-')
-    expect(decodeShareHashForRouter('#embed%3Alinked_tune')).toBe('#embed:linked_tune')
-    expect(decodeShareHashForRouter('#100%25_done')).toBe('#100%_done')
+  it('encodes MediaWiki-unfriendly brackets before hash fragments are used in absolute URLs', () => {
+    const hash = getShareHash('[1 2 3]-')
+
+    expect(encodeShareHashForUrl(hash)).toBe('#%5B1_2_3%5D-')
+    expect(new URL(encodeShareHashForUrl(hash), 'https://example.test/').hash).toBe('#%5B1_2_3%5D-')
   })
 
   it('encodes control characters before hash fragments are used in absolute URLs', () => {
