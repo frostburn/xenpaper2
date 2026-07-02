@@ -74,6 +74,14 @@ export const decodeSharedSources = (encodedSources: string): string[] => {
   return normalizeSourceCodes(encodedSourceCodes.map(decodeSharedSource))
 }
 
+export const decodeShareHashForRouter = (hash: string): string => {
+  try {
+    return decodeURIComponent(hash)
+  } catch {
+    return hash
+  }
+}
+
 export const encodeShareHashForUrl = (hash: string): string =>
   Array.from(hash, (character) => {
     const charCode = character.charCodeAt(0)

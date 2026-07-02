@@ -6,6 +6,7 @@ import TheFooter from './components/TheFooter.vue'
 import XenpaperEmbedToolbar from './components/XenpaperEmbedToolbar.vue'
 import XenpaperSidebar from './components/XenpaperSidebar.vue'
 import XenpaperToolbar from './components/XenpaperToolbar.vue'
+import { decodeShareHashForRouter } from './share-link'
 import { useXenpaperStore } from './stores/xenpaper'
 
 const xenpaper = useXenpaperStore()
@@ -45,7 +46,7 @@ const replaceShareRoute = async (): Promise<void> => {
 
   await router.replace({
     query: route.query,
-    hash: currentRouteHash.value,
+    hash: decodeShareHashForRouter(currentRouteHash.value),
   })
 }
 

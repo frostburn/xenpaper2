@@ -328,12 +328,22 @@ describe('App source editor keyboard shortcuts', () => {
 
     expect(store.sourceCodes).toEqual(['first', 'second_tab'])
     expect(store.routeHash).toBe('#first~second%20tab')
-    await vi.waitFor(() => expect(router.currentRoute.value.hash).toBe('#first~second%20tab'))
+    await vi.waitFor(() => expect(router.currentRoute.value.hash).toBe('#first~second tab'))
 
     const { store: restoredStore } = await mountApp('#first~second%20tab~third')
 
     expect(restoredStore.sourceCodes).toEqual(['first', 'second_tab', 'third'])
     expect(restoredStore.sourceTabs).toHaveLength(3)
+  })
+
+  it('passes decoded hash fragments to the router to avoid double-encoded address bar URLs', async () => {
+    const { router, store, wrapper } = await mountApp('#first')
+
+    await wrapper.get<HTMLTextAreaElement>('textarea').setValue('[1 2 3]-')
+    await flushPromises()
+
+    expect(store.routeHash).toBe('#%5B1_2_3%5D-')
+    await vi.waitFor(() => expect(router.currentRoute.value.hash).toBe('#[1_2_3]-'))
   })
 
   it('builds generated embed URLs with the dedicated route and no embed hash prefix', async () => {

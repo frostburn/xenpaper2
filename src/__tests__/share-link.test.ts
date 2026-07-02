@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 
 import {
+  decodeShareHashForRouter,
   decodeSharedSource,
   encodeShareHashForUrl,
   encodeSharedSource,
@@ -69,6 +70,12 @@ describe('share-link', () => {
 
     expect(hash).toBe('#literal%7Etilde')
     expect(getSharedSourceCodes(hash)).toEqual([source])
+  })
+
+  it('decodes percent escapes before hash fragments are passed to Vue Router', () => {
+    expect(decodeShareHashForRouter('#%5B1_2_3%5D-')).toBe('#[1_2_3]-')
+    expect(decodeShareHashForRouter('#embed%3Alinked_tune')).toBe('#embed:linked_tune')
+    expect(decodeShareHashForRouter('#100%25_done')).toBe('#100%_done')
   })
 
   it('encodes control characters before hash fragments are used in absolute URLs', () => {
