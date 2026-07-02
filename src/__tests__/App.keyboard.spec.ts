@@ -344,6 +344,7 @@ describe('App source editor keyboard shortcuts', () => {
 
     expect(store.routeHash).toBe('#%5B1_2_3%5D-')
     await vi.waitFor(() => expect(router.currentRoute.value.hash).toBe('#[1_2_3]-'))
+    expect(window.location.hash).toBe('#%5B1_2_3%5D-')
   })
 
   it('builds generated embed URLs with the dedicated route and no embed hash prefix', async () => {
