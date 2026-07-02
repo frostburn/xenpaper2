@@ -1,6 +1,6 @@
 import { dot } from 'xen-dev-utils/number-array'
 import { type Monzo, sub } from 'xen-dev-utils/monzo'
-import { PRIME_CENTS } from 'xen-dev-utils/primes'
+import { PRIMES, PRIME_CENTS } from 'xen-dev-utils/primes'
 import { gcd, mmod, geoMod } from 'xen-dev-utils/fraction'
 import { centsToValue, equaveDivisionToValue, valueToCents } from 'xen-dev-utils/conversion'
 
@@ -27,6 +27,7 @@ import type {
   KeyTonicType,
   MosKeyTonicType,
   PlotNominalType,
+  CustomMappingScaleType,
 } from './grammar.generated'
 
 import {
@@ -223,6 +224,48 @@ export const pitchToRatio = (pitch: PitchType, context: Context): number => {
   }
 
   throw new Error(`Unknown pitch type "${type}"`)
+}
+
+
+const primeToIndex = (prime: number): number => {
+  const index = PRIMES.indexOf(prime)
+  if (index < 0 || index >= NUM_COMPONENTS) {
+    throw new Error(`CustomMappingScale.anchor must be a supported prime, got ${prime}`)
+  }
+  return index
+}
+
+const customMappingToContext = (scale: CustomMappingScaleType, context: Context): void => {
+  if (!scale.entries.length) throw new Error('CustomMappingScale.entries must not be empty')
+  const firstUnit = scale.entries[0]!.unit
+  if (scale.entries.some((entry) => entry.unit !== firstUnit)) {
+    throw new Error('CustomMappingScale entries must all use the same unit')
+  }
+
+  if (firstUnit === 'cents') {
+    context.stepSize = 1
+    context.mapping = PRIME_CENTS.slice(0, NUM_COMPONENTS)
+    scale.entries.forEach((entry, index) => {
+      context.mapping[index] = entry.value
+    })
+    context.mappingIsIntegerSteps = false
+    return
+  }
+
+  const anchorIndex = scale.anchor === null ? 0 : primeToIndex(scale.anchor)
+  const anchor = scale.entries[anchorIndex]
+  if (!anchor) {
+    throw new Error(`CustomMappingScale.anchor @${scale.anchor} requires at least ${anchorIndex + 1} mapping entries`)
+  }
+  assertFinitePositive('CustomMappingScale.anchorEntry', anchor.value)
+  context.stepSize = PRIME_CENTS[anchorIndex]! / anchor.value
+  context.up = context.stepSize
+  context.lift = 5 * context.stepSize
+  context.mapping = PRIME_CENTS.slice(0, NUM_COMPONENTS).map((c) => Math.round(c / context.stepSize))
+  scale.entries.forEach((entry, index) => {
+    context.mapping[index] = entry.value
+  })
+  context.mappingIsIntegerSteps = scale.entries.every((entry) => Number.isInteger(entry.value))
 }
 
 const edoToRatios = (edoSize: number, octaveSize: number): number[] => {
@@ -1104,6 +1147,11 @@ const setScale = (setScale: SetScaleType, context: Context): void => {
       Math.round(c / context.stepSize),
     )
     context.mappingIsIntegerSteps = true
+    return
+  }
+
+  if (type === 'CustomMappingScale') {
+    customMappingToContext(scale, context)
     return
   }
 

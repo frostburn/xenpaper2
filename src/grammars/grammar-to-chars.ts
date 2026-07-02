@@ -79,6 +79,7 @@ const colorMap = new Map<string, HighlightColor>([
   ['Whitespace', 'delimiter'],
   ['EdoScale', 'scale'],
   ['PythagoreanScale', 'scale'],
+  ['CustomMappingScale', 'scale'],
   ['PitchGroupScale', 'scale'],
   ['PitchGroupScale.Pitch', 'scale'],
   ['PitchGroupScale.RatioChordPitch', 'scale'],

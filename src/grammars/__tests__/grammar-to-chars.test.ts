@@ -104,6 +104,27 @@ describe('grammarToChars', () => {
     ])
   })
 
+  it('syntax-highlights custom mapping scale setters', () => {
+    expect(colors(grammarToChars(parse('{<12, 19, 28]@3}')))).toEqual([
+      'scaleGroup',
+      'scale',
+      'scale',
+      'scale',
+      'scale',
+      'scale',
+      'scale',
+      'scale',
+      'scale',
+      'scale',
+      'scale',
+      'scale',
+      'scale',
+      'scale',
+      'scale',
+      'scaleGroup',
+    ])
+  })
+
   it('syntax-highlights edo absolute pitches that land between integer steps', () => {
     const ast = parse('{12edo} Ct E')
     processGrammar(ast)
