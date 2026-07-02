@@ -39,6 +39,7 @@ describe('share-link', () => {
   it('builds hash fragments for shared source code', () => {
     expect(getShareHash('linked tune')).toBe('#linked_tune')
     expect(getShareHash('embed:linked tune')).toBe('#embed%3Alinked_tune')
+    expect(getShareHash('[1 2 3]-')).toBe('#[1_2_3]-')
     expect(getShareHash(`"0-\`0-100%`)).toBe('#"0-`0-100%25')
     expect(getShareHash(['linked tune'])).toBe('#linked_tune')
   })
@@ -68,6 +69,13 @@ describe('share-link', () => {
 
     expect(hash).toBe('#literal%7Etilde')
     expect(getSharedSourceCodes(hash)).toEqual([source])
+  })
+
+  it('encodes MediaWiki-unfriendly brackets before hash fragments are used in absolute URLs', () => {
+    const hash = getShareHash('[1 2 3]-')
+
+    expect(encodeShareHashForUrl(hash)).toBe('#%5B1_2_3%5D-')
+    expect(new URL(encodeShareHashForUrl(hash), 'https://example.test/').hash).toBe('#%5B1_2_3%5D-')
   })
 
   it('encodes control characters before hash fragments are used in absolute URLs', () => {

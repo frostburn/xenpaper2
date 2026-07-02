@@ -6,6 +6,7 @@ import TheFooter from './components/TheFooter.vue'
 import XenpaperEmbedToolbar from './components/XenpaperEmbedToolbar.vue'
 import XenpaperSidebar from './components/XenpaperSidebar.vue'
 import XenpaperToolbar from './components/XenpaperToolbar.vue'
+import { encodeShareHashForUrl } from './share-link'
 import { useXenpaperStore } from './stores/xenpaper'
 
 const xenpaper = useXenpaperStore()
@@ -38,15 +39,29 @@ const initialRouteHash = (): string => {
 const currentRouteHash = computed(() => xenpaper.routeHash)
 const isEmbedMode = computed(() => route.meta.embedMode === true)
 
+const replaceBrowserAddressHash = (hash: string): void => {
+  const encodedHash = encodeShareHashForUrl(hash)
+
+  if (window.location.hash === encodedHash) return
+
+  window.history.replaceState(
+    window.history.state,
+    '',
+    `${window.location.pathname}${window.location.search}${encodedHash}`,
+  )
+}
+
 const replaceShareRoute = async (): Promise<void> => {
   xenpaper.saveSourceCodeToBrowser()
 
-  if (route.hash === currentRouteHash.value) return
+  if (route.hash !== currentRouteHash.value) {
+    await router.replace({
+      query: route.query,
+      hash: currentRouteHash.value,
+    })
+  }
 
-  await router.replace({
-    query: route.query,
-    hash: currentRouteHash.value,
-  })
+  replaceBrowserAddressHash(currentRouteHash.value)
 }
 
 const syncDocumentTitle = (title: string): void => {

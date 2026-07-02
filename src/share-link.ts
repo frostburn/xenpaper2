@@ -76,7 +76,7 @@ export const encodeShareHashForUrl = (hash: string): string =>
   Array.from(hash, (character) => {
     const charCode = character.charCodeAt(0)
 
-    return charCode <= 0x1f || charCode === 0x7f
+    return charCode <= 0x1f || charCode === 0x7f || character === '[' || character === ']'
       ? encodeURIComponent(character).toUpperCase()
       : character
   }).join('')

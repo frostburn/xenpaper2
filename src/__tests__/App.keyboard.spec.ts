@@ -336,6 +336,27 @@ describe('App source editor keyboard shortcuts', () => {
     expect(restoredStore.sourceTabs).toHaveLength(3)
   })
 
+  it('passes decoded hash fragments to the router to avoid double-encoded address bar URLs', async () => {
+    const { router, store, wrapper } = await mountApp('#first')
+
+    await wrapper.get<HTMLTextAreaElement>('textarea').setValue('[1 2 3]-')
+    await flushPromises()
+
+    expect(store.routeHash).toBe('#[1_2_3]-')
+    await vi.waitFor(() => expect(router.currentRoute.value.hash).toBe('#[1_2_3]-'))
+    expect(window.location.hash).toBe('#%5B1_2_3%5D-')
+  })
+
+  it('preserves percent signs while syncing source changes through the route hash', async () => {
+    const { store, wrapper } = await mountApp('#first')
+
+    await wrapper.get<HTMLTextAreaElement>('textarea').setValue('(vel:50% )')
+    await flushPromises()
+
+    expect(store.routeHash).toBe('#(vel%3A50%25_)')
+    expect(wrapper.get<HTMLTextAreaElement>('textarea').element.value).toBe('(vel:50% )')
+  })
+
   it('builds generated embed URLs with the dedicated route and no embed hash prefix', async () => {
     const { store } = await mountApp('#linked_tune')
 
