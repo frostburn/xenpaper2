@@ -361,7 +361,7 @@ C D F G A c`,
       },
       {
         description:
-          'Cent entries set the mapping in cents and use a one-cent step size. For step entries, add an anchor such as @3 to derive the step size from the 3-prime instead of the equave; for example {<12 19 28]@3}.',
+          'Cent entries set the mapping directly in cents. Anchors apply only to step entries: add @3 to derive the step size from the 3-prime instead of the equave; for example {<12 19 28]@3}.',
         tune: `# Generator climb in WE tuned tetracot
 {<1199.559c 1903.939c 2784.414c]}
 \`A    E     F     |

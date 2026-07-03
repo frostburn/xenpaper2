@@ -243,6 +243,9 @@ const customMappingToContext = (scale: CustomMappingScaleType, context: Context)
   }
 
   if (firstUnit === 'cents') {
+    if (scale.anchor !== null) {
+      throw new Error('CustomMappingScale.anchor cannot be used with cent entries')
+    }
     context.stepSize = 1
     context.mapping = PRIME_CENTS.slice(0, NUM_COMPONENTS)
     scale.entries.forEach((entry, index) => {

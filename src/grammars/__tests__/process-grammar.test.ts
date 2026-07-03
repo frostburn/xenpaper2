@@ -1728,6 +1728,10 @@ describe('grammar numeric validation', () => {
     ['(/:1/0) /A', 'SetLift.denominator must be a finite positive number, got 0'],
     ['(^:12001c) ^A', 'SetUp must be between -12000 and 12000, got 12001'],
     ['{0edo} 0', 'EdoScale.divisions must be between 1 and 10000, got 0'],
+    [
+      '{<1200c 1896.5784c 2786.3137c]@3} 0',
+      'CustomMappingScale.anchor cannot be used with cent entries',
+    ],
     ['1/0', 'PitchRatio.denominator must be a finite positive number, got 0'],
     [String.raw`1\0`, 'PitchOctaveDivision.denominator must be a finite positive number, got 0'],
   ])('should reject invalid numeric input in %s', (source, expectedError) => {
