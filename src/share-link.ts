@@ -1,10 +1,9 @@
 const ENCODED_SPACE_TOKEN = '_'
-const ENCODED_UNDERSCORE_TOKEN = '%20'
+const MODERN_SOURCE_PREFIX = '.'
 
 const hasBrowserWindow = (): boolean => typeof window !== 'undefined'
 
 const SOURCE_SEPARATOR = '~'
-const ESCAPED_SOURCE_SEPARATOR = '%7E'
 
 const removeHashPrefix = (hash: string): string => (hash.startsWith('#') ? hash.slice(1) : hash)
 
@@ -26,18 +25,58 @@ const parseStoredSourceCodes = (storedSourceCodes: string | null): string[] | un
   }
 }
 
-const SHARED_SOURCE_ESCAPES: Record<string, string> = {
-  '%': '%25',
-  ':': '%3A',
-  [SOURCE_SEPARATOR]: ESCAPED_SOURCE_SEPARATOR,
-  _: ENCODED_UNDERSCORE_TOKEN,
+const MODERN_SOURCE_ESCAPES: Record<string, string> = {
+  [MODERN_SOURCE_PREFIX]: '..',
+  '%': '.p',
+  ':': '.c',
+  [SOURCE_SEPARATOR]: '.t',
+  _: '.u',
   ' ': ENCODED_SPACE_TOKEN,
 }
 
-export const encodeSharedSource = (sourceCode: string): string =>
-  sourceCode.replace(/[%:~_ ]/g, (character) => SHARED_SOURCE_ESCAPES[character] ?? character)
+const MODERN_SOURCE_UNESCAPES: Record<string, string> = {
+  [MODERN_SOURCE_PREFIX]: MODERN_SOURCE_PREFIX,
+  p: '%',
+  c: ':',
+  t: SOURCE_SEPARATOR,
+  u: '_',
+}
 
-export const decodeSharedSource = (encodedSource: string): string => {
+export const encodeSharedSource = (sourceCode: string): string =>
+  `${MODERN_SOURCE_PREFIX}${sourceCode.replace(/[.%:~_ ]/g, (character) => MODERN_SOURCE_ESCAPES[character] ?? character)}`
+
+const decodeModernSharedSource = (encodedSource: string): string => {
+  let restoredSource = ''
+
+  for (let index = MODERN_SOURCE_PREFIX.length; index < encodedSource.length; index += 1) {
+    const character = encodedSource[index]
+
+    if (character === ENCODED_SPACE_TOKEN) {
+      restoredSource += ' '
+      continue
+    }
+
+    if (character !== MODERN_SOURCE_PREFIX) {
+      restoredSource += character
+      continue
+    }
+
+    const escapedCharacter = encodedSource[index + 1]
+    const unescapedCharacter = MODERN_SOURCE_UNESCAPES[escapedCharacter ?? '']
+
+    if (unescapedCharacter === undefined) {
+      restoredSource += character
+      continue
+    }
+
+    restoredSource += unescapedCharacter
+    index += 1
+  }
+
+  return restoredSource
+}
+
+const decodeLegacySharedSource = (encodedSource: string): string => {
   const percentPlaceholder = '\0percent\0'
   const underscorePlaceholder = '\0underscore\0'
   let restoredSource = encodedSource
@@ -60,6 +99,11 @@ export const decodeSharedSource = (encodedSource: string): string => {
     .join('_')
 }
 
+export const decodeSharedSource = (encodedSource: string): string =>
+  encodedSource.startsWith(MODERN_SOURCE_PREFIX)
+    ? decodeModernSharedSource(encodedSource)
+    : decodeLegacySharedSource(encodedSource)
+
 export const encodeSharedSources = (sourceCodes: string[]): string => {
   const normalizedSourceCodes = normalizeSourceCodes(sourceCodes)
 
@@ -71,28 +115,19 @@ export const encodeSharedSources = (sourceCodes: string[]): string => {
 const isEncodedWhitespace = (character: string | undefined): boolean =>
   character !== undefined && /[\s_]/.test(character)
 
-const isUnescapedSourceTilde = (encodedSources: string, index: number): boolean => {
-  if (encodedSources[index] !== SOURCE_SEPARATOR) return false
-
-  const previousCharacter = encodedSources[index - 1]
-  const nextCharacter = encodedSources[index + 1]
-
-  return (
-    previousCharacter === undefined ||
-    isEncodedWhitespace(previousCharacter) ||
-    isEncodedWhitespace(nextCharacter)
-  )
-}
-
-const splitEncodedSources = (encodedSources: string): string[] => {
+const splitLegacyEncodedSources = (encodedSources: string): string[] => {
   const encodedSourceCodes: string[] = []
   let sourceStartIndex = 0
 
   for (let index = 0; index < encodedSources.length; index += 1) {
-    if (
-      encodedSources[index] !== SOURCE_SEPARATOR ||
-      isUnescapedSourceTilde(encodedSources, index)
-    ) {
+    const previousCharacter = encodedSources[index - 1]
+    const nextCharacter = encodedSources[index + 1]
+    const isSourceTilde =
+      previousCharacter === undefined ||
+      isEncodedWhitespace(previousCharacter) ||
+      isEncodedWhitespace(nextCharacter)
+
+    if (encodedSources[index] !== SOURCE_SEPARATOR || isSourceTilde) {
       continue
     }
 
@@ -106,7 +141,9 @@ const splitEncodedSources = (encodedSources: string): string[] => {
 }
 
 export const decodeSharedSources = (encodedSources: string): string[] => {
-  const encodedSourceCodes = splitEncodedSources(encodedSources)
+  const encodedSourceCodes = encodedSources.startsWith(MODERN_SOURCE_PREFIX)
+    ? encodedSources.split(SOURCE_SEPARATOR)
+    : splitLegacyEncodedSources(encodedSources)
 
   return normalizeSourceCodes(encodedSourceCodes.map(decodeSharedSource))
 }

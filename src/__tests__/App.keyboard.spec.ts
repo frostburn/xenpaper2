@@ -286,14 +286,14 @@ describe('App source editor keyboard shortcuts', () => {
     await flushPromises()
 
     expect(aboutRouter.currentRoute.value.path).toBe('/about')
-    expect(aboutRouter.currentRoute.value.hash).toBe('#updated_about_tune')
+    expect(aboutRouter.currentRoute.value.hash).toBe('#.updated_about_tune')
 
     const { router: embedRouter, store: embedStore } = await mountApp('#embed_tune', '/embed')
     embedStore.setSourceCode('updated embed tune')
     await flushPromises()
 
     expect(embedRouter.currentRoute.value.path).toBe('/embed/')
-    expect(embedRouter.currentRoute.value.hash).toBe('#updated_embed_tune')
+    expect(embedRouter.currentRoute.value.hash).toBe('#.updated_embed_tune')
   })
 
   it('adds source code tabs with isolated editor contents', async () => {
@@ -327,10 +327,10 @@ describe('App source editor keyboard shortcuts', () => {
     await flushPromises()
 
     expect(store.sourceCodes).toEqual(['first', 'second_tab'])
-    expect(store.routeHash).toBe('#first~second%20tab')
-    await vi.waitFor(() => expect(router.currentRoute.value.hash).toBe('#first~second%20tab'))
+    expect(store.routeHash).toBe('#.first~.second.utab')
+    await vi.waitFor(() => expect(router.currentRoute.value.hash).toBe('#.first~.second.utab'))
 
-    const { store: restoredStore } = await mountApp('#first~second%20tab~third')
+    const { store: restoredStore } = await mountApp('#.first~.second.utab~.third')
 
     expect(restoredStore.sourceCodes).toEqual(['first', 'second_tab', 'third'])
     expect(restoredStore.sourceTabs).toHaveLength(3)
@@ -342,9 +342,9 @@ describe('App source editor keyboard shortcuts', () => {
     await wrapper.get<HTMLTextAreaElement>('textarea').setValue('[1 2 3]-')
     await flushPromises()
 
-    expect(store.routeHash).toBe('#[1_2_3]-')
-    await vi.waitFor(() => expect(router.currentRoute.value.hash).toBe('#[1_2_3]-'))
-    expect(window.location.hash).toBe('#%5B1_2_3%5D-')
+    expect(store.routeHash).toBe('#.[1_2_3]-')
+    await vi.waitFor(() => expect(router.currentRoute.value.hash).toBe('#.[1_2_3]-'))
+    expect(window.location.hash).toBe('#.%5B1_2_3%5D-')
   })
 
   it('preserves percent signs while syncing source changes through the route hash', async () => {
@@ -353,24 +353,24 @@ describe('App source editor keyboard shortcuts', () => {
     await wrapper.get<HTMLTextAreaElement>('textarea').setValue('(vel:50% )')
     await flushPromises()
 
-    expect(store.routeHash).toBe('#(vel%3A50%25_)')
+    expect(store.routeHash).toBe('#.(vel.c50.p_)')
     expect(wrapper.get<HTMLTextAreaElement>('textarea').element.value).toBe('(vel:50% )')
   })
 
   it('builds generated embed URLs with the dedicated route and no embed hash prefix', async () => {
-    const { store } = await mountApp('#linked_tune')
+    const { store } = await mountApp('#.linked_tune')
 
     expect(new URL(store.embedUrl).pathname).toBe('/embed/')
-    expect(new URL(store.embedUrl).hash).toBe('#linked_tune')
+    expect(new URL(store.embedUrl).hash).toBe('#.linked_tune')
     expect(store.embedUrl).not.toContain('#embed:')
-    expect(store.embedCode).toContain('src="http://localhost:3000/embed/#linked_tune"')
+    expect(store.embedCode).toContain('src="http://localhost:3000/embed/#.linked_tune"')
   })
 
   it('points embed edit links to the root editor route', async () => {
-    const { wrapper } = await mountApp('#linked_tune', '/embed/')
+    const { wrapper } = await mountApp('#.linked_tune', '/embed/')
 
     expect(wrapper.get<HTMLAnchorElement>('.edit-link').element.href).toBe(
-      'http://localhost:3000/#linked_tune',
+      'http://localhost:3000/#.linked_tune',
     )
   })
 
