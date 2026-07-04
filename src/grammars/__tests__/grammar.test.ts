@@ -1446,6 +1446,49 @@ describe('grammar', () => {
         expectParserErrorMessage('{12ed/3}', 'Expected "o", "}", or integer but "/" found.')
       })
 
+      it('should parse sequence with custom mapping scale setter', () => {
+        expect(strip(parser('{⟨17 27 40]}')).sequence.items).toEqual([
+          {
+            type: 'SetScale',
+            scale: {
+              type: 'CustomMappingScale',
+              entries: [
+                { value: 17, unit: 'steps' },
+                { value: 27, unit: 'steps' },
+                { value: 40, unit: 'steps' },
+              ],
+              anchor: null,
+            },
+          },
+        ])
+
+        expect(strip(parser('{<12, 19, 28]@3}')).sequence.items[0]).toEqual({
+          type: 'SetScale',
+          scale: {
+            type: 'CustomMappingScale',
+            entries: [
+              { value: 12, unit: 'steps' },
+              { value: 19, unit: 'steps' },
+              { value: 28, unit: 'steps' },
+            ],
+            anchor: 3,
+          },
+        })
+
+        expect(strip(parser('{<1200c 1896.5784c 2786.3137c]}')).sequence.items[0]).toEqual({
+          type: 'SetScale',
+          scale: {
+            type: 'CustomMappingScale',
+            entries: [
+              { value: 1200, unit: 'cents' },
+              { value: 1896.5784, unit: 'cents' },
+              { value: 2786.3137, unit: 'cents' },
+            ],
+            anchor: null,
+          },
+        })
+      })
+
       it('should parse sequence with ratio scale setter', () => {
         expect(strip(parser('{4:5:6}')).sequence.items).toEqual([
           {

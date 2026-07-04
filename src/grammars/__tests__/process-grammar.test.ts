@@ -1528,6 +1528,29 @@ describe('grammar to mosc score', () => {
     expect(beforeScale[1]?.hz).toBeAround(220, 6)
   })
 
+  it('tempers spiral-of-fifths nominals to custom mappings', () => {
+    const defaultAnchor = noteItems('{⟨17 27 40]} `A E')
+    expect(defaultAnchor[1]!.hz / 220).toBeAround(Math.pow(2, 10 / 17), 10)
+    expect(defaultAnchor[1]?.label).toBe('E♮  705.9c')
+
+    const primeThreeAnchor = noteItems('{<12, 19, 28]@3} `A E')
+    expect(primeThreeAnchor[1]!.hz / 220).toBeAround(Math.pow(3, 7 / 19), 10)
+    expect(primeThreeAnchor[1]?.label).toBe('E♮  700.7c')
+
+    const centsMapping = noteItems('{<1200c 1896.5784c 2786.3137c]} `A E')
+    expect(centsMapping[1]!.hz / 220).toBeAround(Math.pow(2, 696.5784 / 1200), 10)
+    expect(centsMapping[1]?.label).toBe('E♮  696.6c')
+  })
+
+  it('sets ups and lifts from custom mappings measured in steps', () => {
+    const notes = noteItems('{<17 27 40]} `A `^A `/A')
+
+    expect(notes[1]!.hz / notes[0]!.hz).toBeAround(Math.pow(2, 1 / 17), 10)
+    expect(notes[1]?.label).toBe('^A♮  70.6c')
+    expect(notes[2]!.hz / notes[0]!.hz).toBeAround(Math.pow(2, 5 / 17), 10)
+    expect(notes[2]?.label).toBe('/A♮  352.9c')
+  })
+
   it('tempers spiral-of-fifths nominals and accidentals to the active edo mapping', () => {
     const notes = noteItems('{31edo} `A E B F# Cb')
 
@@ -1705,6 +1728,10 @@ describe('grammar numeric validation', () => {
     ['(/:1/0) /A', 'SetLift.denominator must be a finite positive number, got 0'],
     ['(^:12001c) ^A', 'SetUp must be between -12000 and 12000, got 12001'],
     ['{0edo} 0', 'EdoScale.divisions must be between 1 and 10000, got 0'],
+    [
+      '{<1200c 1896.5784c 2786.3137c]@3} 0',
+      'CustomMappingScale.anchor cannot be used with cent entries',
+    ],
     ['1/0', 'PitchRatio.denominator must be a finite positive number, got 0'],
     [String.raw`1\0`, 'PitchOctaveDivision.denominator must be a finite positive number, got 0'],
   ])('should reject invalid numeric input in %s', (source, expectedError) => {
