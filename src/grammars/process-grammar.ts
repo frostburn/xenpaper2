@@ -1067,7 +1067,8 @@ const pointTime = (
   item: NoteType | SampleRateNoteType | ChordType | RatioChordType,
   context: Context,
 ): [number, number] => {
-  const arr: [number, number] = [context.time, context.time]
+  const mappedTime = mapGrooveBeat(context.time, context.groove)
+  const arr: [number, number] = [mappedTime, mappedTime]
   times.push(arr)
   item.time = arr
   return arr
@@ -1078,6 +1079,7 @@ const playableToMoscAtCurrentTime = (
   context: Context,
 ): MoscBeatPlayableNote[] => {
   const startTime = context.time
+  const mappedStartTime = mapGrooveBeat(startTime, context.groove)
   const originalTail = item.tail
   const graceSubdivision = context.graceSubdivision
   const graceNotesRemaining = context.graceNotesRemaining
@@ -1096,8 +1098,8 @@ const playableToMoscAtCurrentTime = (
   context.stolenTime = stolenTime
   return moscItems.map((moscItem) => ({
     ...moscItem,
-    time: startTime,
-    timeEnd: startTime,
+    time: mappedStartTime,
+    timeEnd: mappedStartTime,
   }))
 }
 
@@ -1671,10 +1673,10 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
   let activeDroneTimes: [number, number][] = []
   const stopActiveDrone = (): void => {
     activeDroneItems.forEach((droneItem) => {
-      droneItem.timeEnd = context.time
+      droneItem.timeEnd = mapGrooveBeat(context.time, context.groove)
     })
     activeDroneTimes.forEach((time) => {
-      time[1] = context.time
+      time[1] = mapGrooveBeat(context.time, context.groove)
     })
     activeDroneItems = []
     activeDroneTimes = []

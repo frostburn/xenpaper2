@@ -120,6 +120,26 @@ describe('groove setter', () => {
     })
   })
 
+  it('groove-times drones at their mapped start and end beats', () => {
+    const droneNotes = noteItems('(groove:(5)!-- !-)(drone:0)(4)1 2 (drone:off)').filter(
+      (note) => note.label === '0\\12  0.0c',
+    )
+
+    expect(droneNotes).toHaveLength(1)
+    expect(droneNotes[0]!.time).toBe(0)
+    expect(droneNotes[0]!.timeEnd).toBeAround(0.6)
+  })
+
+  it('groove-times drones that start away from the cycle origin', () => {
+    const droneNotes = noteItems('(groove:(5)!-- !-)(4)1 (drone:0) 2 (drone:off)').filter(
+      (note) => note.label === '0\\12  0.0c',
+    )
+
+    expect(droneNotes).toHaveLength(1)
+    expect(droneNotes[0]!.time).toBeAround(0.3)
+    expect(droneNotes[0]!.timeEnd).toBeAround(0.6)
+  })
+
   it('repeats longer groove spans across bars', () => {
     const notes = noteItems('(groove:(4)!--!-!) 0 1 2 | 3 4 5 | 6 7 8 ||')
 
