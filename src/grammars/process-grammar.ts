@@ -328,13 +328,10 @@ const setRoot = (item: SetRootType, context: Context): void => {
   context.rootNominal = rootNominal
 }
 
-const positiveModulo = (value: number, modulus: number): number =>
-  ((value % modulus) + modulus) % modulus
-
 const mapGrooveBeat = (time: number, groove: Groove | null): number => {
   if (groove === null) return time
   const cycle = Math.floor(time / groove.span)
-  const sourceTime = positiveModulo(time, groove.span)
+  const sourceTime = mmod(time, groove.span)
   const points = groove.points
 
   for (let i = 0; i < points.length - 1; i++) {
