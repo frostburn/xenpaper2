@@ -87,6 +87,26 @@ const noteLabels = (input: string): string[] => noteItems(input).map((item) => i
 const noteLabelDurations = (input: string): Array<[string, number]> =>
   noteItems(input).map((item) => [item.label, item.timeEnd - item.time])
 
+describe('groove setter', () => {
+  it('shuffles evenly spaced sample-rate notes to an uneven pattern', () => {
+    const notes = processGrammar(parseSource('(groove:(5)!-- !-)(2)! !')).score.sequence.filter(
+      (item) => item.type === 'SAMPLE_RATE_NOTE_BEAT_TIME',
+    )
+
+    expect(notes[0]!.time).toBe(0)
+    expect(notes[0]!.timeEnd).toBeAround(0.6)
+    expect(notes[1]!.time).toBeAround(0.6)
+    expect(notes[1]!.timeEnd).toBe(1)
+  })
+
+  it('linearly interpolates beats between the original even grid', () => {
+    const [note] = noteItems('(groove:(5)!-- !-)(4)0')
+
+    expect(note!.time).toBe(0)
+    expect(note!.timeEnd).toBeAround(0.3)
+  })
+})
+
 describe('grace note syntax', () => {
   it('plays a short-form grace note and steals its duration from the following note', () => {
     expect(noteItems('(8?) D C')).toMatchObject([

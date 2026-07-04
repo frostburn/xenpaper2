@@ -1951,6 +1951,25 @@ describe('grammar', () => {
         ])
       })
 
+      it('should parse sequence with groove setter', () => {
+        expect(strip(parser('(groove:(5)!-- !-)')).sequence.items).toEqual([
+          {
+            type: 'SetterGroup',
+            setters: [
+              {
+                type: 'SetGroove',
+                items: [
+                  { type: 'SetSubdivision', subdivision: 5, denominator: 1 },
+                  { type: 'SampleRateNote', tail: { type: 'Hold', length: 2 } },
+                  { type: 'Whitespace' },
+                  { type: 'SampleRateNote', tail: { type: 'Hold', length: 1 } },
+                ],
+              },
+            ],
+          },
+        ])
+      })
+
       it('should parse sequence with subdivision setter', () => {
         expect(strip(parser('(div:4; div:1/4)')).sequence.items).toEqual([
           {
@@ -2452,7 +2471,7 @@ describe('grammar', () => {
       it('should error if setter is empty or not delimited properly', () => {
         expectParserErrorMessage(
           '()',
-          'Expected "/", "^", "al", "bms", "bpm", "coda", "d", "da", "dal", "div", "drone", "env", "f", "ff", "fff", "fine", "grace", "key", "mf", "mp", "noise", "osc", "p", "plot", "pp", "ppp", "rl", "segno", "sig", "to", "vel", "vol", or integer but ")" found.',
+          'Expected "/", "^", "al", "bms", "bpm", "coda", "d", "da", "dal", "div", "drone", "env", "f", "ff", "fff", "fine", "grace", "groove", "key", "mf", "mp", "noise", "osc", "p", "plot", "pp", "ppp", "rl", "segno", "sig", "to", "vel", "vol", or integer but ")" found.',
         )
         expectParserErrorMessage('(div:16;)', 'but ")" found.')
         expectParserErrorMessage('(div:16;;div:16)', 'but ";" found.')
