@@ -640,7 +640,7 @@ const expandRepeatedSequenceItems = (items: SequenceItemsType[]): SequenceItemsT
   const openRepeat = (
     item: Extract<SequenceItemsType, { type: 'RepeatStart' | 'RepeatEndStart' }>,
   ): void => {
-    limit('Repeat count', item.repeatCount, 1, 100)
+    limit('Repeat count', item.repeatCount, 1, 1000)
     expandedItems.push(item)
     repetitionStack.push({
       startIndex: expandedItems.length,
