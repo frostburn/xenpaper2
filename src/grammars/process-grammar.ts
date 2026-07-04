@@ -1,7 +1,7 @@
 import { dot } from 'xen-dev-utils/number-array'
 import { type Monzo, sub, toMonzo } from 'xen-dev-utils/monzo'
 import { PRIMES, PRIME_CENTS } from 'xen-dev-utils/primes'
-import { gcd, mmod, geoMod } from 'xen-dev-utils/fraction'
+import { Fraction, gcd, mmod, geoMod } from 'xen-dev-utils/fraction'
 import { centsToValue, equaveDivisionToValue, valueToCents } from 'xen-dev-utils/conversion'
 
 import type {
@@ -166,7 +166,7 @@ const absolutePitchToMonzo = (
 }
 
 const ratioFractionToMonzo = (fraction: RatioFraction): Monzo =>
-  toMonzo(`${fraction.numerator}/${fraction.denominator}`).slice(0, NUM_COMPONENTS) as Monzo
+  toMonzo(new Fraction(fraction.numerator, fraction.denominator))
 
 const ratioToMappedCents = (fraction: RatioFraction, context: Context): number => {
   const monzo = ratioFractionToMonzo(fraction)

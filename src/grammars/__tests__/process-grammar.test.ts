@@ -295,6 +295,7 @@ describe('ratio chord syntax inside chords', () => {
       '5/4  386.3c',
       '35/24  700.0c',
     ])
+    expect(noteLabels('{12edo} ~101/1')).toEqual(['101/1  800.0c'])
   })
 })
 
