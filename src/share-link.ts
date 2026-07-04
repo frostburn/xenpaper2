@@ -1,5 +1,6 @@
 const ENCODED_SPACE_TOKEN = '_'
-const MODERN_SOURCE_PREFIX = '.'
+const ENCODED_UNDERSCORE_TOKEN = '%20'
+const ENCODED_TILDE_TOKEN = '%1E'
 
 const hasBrowserWindow = (): boolean => typeof window !== 'undefined'
 
@@ -25,65 +26,27 @@ const parseStoredSourceCodes = (storedSourceCodes: string | null): string[] | un
   }
 }
 
-const MODERN_SOURCE_ESCAPES: Record<string, string> = {
-  [MODERN_SOURCE_PREFIX]: '..',
-  '%': '.p',
-  ':': '.c',
-  [SOURCE_SEPARATOR]: '.t',
-  _: '.u',
+const SHARED_SOURCE_ESCAPES: Record<string, string> = {
+  '%': '%25',
+  ':': '%3A',
+  [SOURCE_SEPARATOR]: ENCODED_TILDE_TOKEN,
+  _: ENCODED_UNDERSCORE_TOKEN,
   ' ': ENCODED_SPACE_TOKEN,
 }
 
-const MODERN_SOURCE_UNESCAPES: Record<string, string> = {
-  [MODERN_SOURCE_PREFIX]: MODERN_SOURCE_PREFIX,
-  p: '%',
-  c: ':',
-  t: SOURCE_SEPARATOR,
-  u: '_',
-}
-
 export const encodeSharedSource = (sourceCode: string): string =>
-  `${MODERN_SOURCE_PREFIX}${sourceCode.replace(/[.%:~_ ]/g, (character) => MODERN_SOURCE_ESCAPES[character] ?? character)}`
+  sourceCode.replace(/[%:~_ ]/g, (character) => SHARED_SOURCE_ESCAPES[character] ?? character)
 
-const decodeModernSharedSource = (encodedSource: string): string => {
-  let restoredSource = ''
-
-  for (let index = MODERN_SOURCE_PREFIX.length; index < encodedSource.length; index += 1) {
-    const character = encodedSource[index]
-
-    if (character === ENCODED_SPACE_TOKEN) {
-      restoredSource += ' '
-      continue
-    }
-
-    if (character !== MODERN_SOURCE_PREFIX) {
-      restoredSource += character
-      continue
-    }
-
-    const escapedCharacter = encodedSource[index + 1]
-    const unescapedCharacter = MODERN_SOURCE_UNESCAPES[escapedCharacter ?? '']
-
-    if (unescapedCharacter === undefined) {
-      restoredSource += character
-      continue
-    }
-
-    restoredSource += unescapedCharacter
-    index += 1
-  }
-
-  return restoredSource
-}
-
-const decodeLegacySharedSource = (encodedSource: string): string => {
+export const decodeSharedSource = (encodedSource: string): string => {
   const percentPlaceholder = '\0percent\0'
   const underscorePlaceholder = '\0underscore\0'
+  const tildePlaceholder = '\0tilde\0'
   let restoredSource = encodedSource
     .replace(/%25/g, percentPlaceholder)
     .replace(/%_/g, underscorePlaceholder) // Old URLs use an illegal URI scheme
     .replace(/ /g, underscorePlaceholder) // Say hi to Vue Router
     .replace(/%20/g, underscorePlaceholder)
+    .replace(/%1E/gi, tildePlaceholder)
 
   try {
     restoredSource = decodeURIComponent(restoredSource)
@@ -97,12 +60,9 @@ const decodeLegacySharedSource = (encodedSource: string): string => {
     .join('%')
     .split(underscorePlaceholder)
     .join('_')
+    .split(tildePlaceholder)
+    .join(SOURCE_SEPARATOR)
 }
-
-export const decodeSharedSource = (encodedSource: string): string =>
-  encodedSource.startsWith(MODERN_SOURCE_PREFIX)
-    ? decodeModernSharedSource(encodedSource)
-    : decodeLegacySharedSource(encodedSource)
 
 export const encodeSharedSources = (sourceCodes: string[]): string => {
   const normalizedSourceCodes = normalizeSourceCodes(sourceCodes)
@@ -112,38 +72,8 @@ export const encodeSharedSources = (sourceCodes: string[]): string => {
     : normalizedSourceCodes.map(encodeSharedSource).join(SOURCE_SEPARATOR)
 }
 
-const isEncodedWhitespace = (character: string | undefined): boolean =>
-  character !== undefined && /[\s_]/.test(character)
-
-const splitLegacyEncodedSources = (encodedSources: string): string[] => {
-  const encodedSourceCodes: string[] = []
-  let sourceStartIndex = 0
-
-  for (let index = 0; index < encodedSources.length; index += 1) {
-    const previousCharacter = encodedSources[index - 1]
-    const nextCharacter = encodedSources[index + 1]
-    const isSourceTilde =
-      previousCharacter === undefined ||
-      isEncodedWhitespace(previousCharacter) ||
-      isEncodedWhitespace(nextCharacter)
-
-    if (encodedSources[index] !== SOURCE_SEPARATOR || isSourceTilde) {
-      continue
-    }
-
-    encodedSourceCodes.push(encodedSources.slice(sourceStartIndex, index))
-    sourceStartIndex = index + SOURCE_SEPARATOR.length
-  }
-
-  encodedSourceCodes.push(encodedSources.slice(sourceStartIndex))
-
-  return encodedSourceCodes
-}
-
 export const decodeSharedSources = (encodedSources: string): string[] => {
-  const encodedSourceCodes = encodedSources.startsWith(MODERN_SOURCE_PREFIX)
-    ? encodedSources.split(SOURCE_SEPARATOR)
-    : splitLegacyEncodedSources(encodedSources)
+  const encodedSourceCodes = encodedSources.split(SOURCE_SEPARATOR)
 
   return normalizeSourceCodes(encodedSourceCodes.map(decodeSharedSource))
 }

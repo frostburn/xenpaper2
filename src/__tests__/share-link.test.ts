@@ -32,23 +32,23 @@ describe('share-link', () => {
   it('uses underscores for spaces while preserving literal underscores', () => {
     const encoded = encodeSharedSource('pitch_name with space')
 
-    expect(encoded).toBe('.pitch.uname_with_space')
+    expect(encoded).toBe('pitch%20name_with_space')
     expect(decodeSharedSource(encoded)).toBe('pitch_name with space')
   })
 
   it('builds hash fragments for shared source code', () => {
-    expect(getShareHash('linked tune')).toBe('#.linked_tune')
-    expect(getShareHash('embed:linked tune')).toBe('#.embed.clinked_tune')
-    expect(getShareHash('[1 2 3]-')).toBe('#.[1_2_3]-')
-    expect(getShareHash(`"0-\`0-100%`)).toBe('#."0-`0-100.p')
-    expect(getShareHash(['linked tune'])).toBe('#.linked_tune')
+    expect(getShareHash('linked tune')).toBe('#linked_tune')
+    expect(getShareHash('embed:linked tune')).toBe('#embed%3Alinked_tune')
+    expect(getShareHash('[1 2 3]-')).toBe('#[1_2_3]-')
+    expect(getShareHash(`"0-\`0-100%`)).toBe('#"0-`0-100%25')
+    expect(getShareHash(['linked tune'])).toBe('#linked_tune')
   })
 
   it('builds and restores multi-source hash fragments in order', () => {
     const sources = ['first tab', 'second:tab with_under', 'third\nline', 'tilde~tab']
     const hash = getShareHash(sources)
 
-    expect(hash).toBe('#.first_tab~.second.ctab_with.uunder~.third\nline~.tilde.ttab')
+    expect(hash).toBe('#first_tab~second%3Atab_with%20under~third\nline~tilde%1Etab')
     expect(getSharedSourceCodes(hash)).toEqual(sources)
   })
 
@@ -56,10 +56,10 @@ describe('share-link', () => {
     const source = '|: 0 |(^1) 1 :|(^2) 2'
     const hash = getShareHash(source)
 
-    expect(hash).toBe('#.|.c_0_|(^1)_1_.c|(^2)_2')
+    expect(hash).toBe('#|%3A_0_|(^1)_1_%3A|(^2)_2')
     expect(getSharedSourceCodes(hash)).toEqual([source])
     expect(new URL(encodeShareHashForUrl(hash), 'https://example.test/').hash).toBe(
-      '#.|.c_0_|(^1)_1_.c|(^2)_2',
+      '#|%3A_0_|(^1)_1_%3A|(^2)_2',
     )
   })
 
@@ -67,41 +67,37 @@ describe('share-link', () => {
     const source = 'literal~tilde'
     const hash = getShareHash(source)
 
-    expect(hash).toBe('#.literal.ttilde')
+    expect(hash).toBe('#literal%1Etilde')
     expect(getSharedSourceCodes(hash)).toEqual([source])
   })
 
-  it('keeps unescaped source tildes in one shared source', () => {
+  it('escapes source-code tildes without using the tab separator', () => {
     const source = '# This should ~work~ too\n{12edo} ~[9/8 4/3] ~/6::3'
+    const hash = getShareHash(source)
 
-    expect(
-      getSharedSourceCodes('#%23_This_should_~work~_too%0A{12edo}_~[9/8_4/3]_~/6%3A%3A3'),
-    ).toEqual([source])
-    expect(getSharedSourceCodes('#{12edo}_~9/8_~4/3_~3/2_~2/1')).toEqual([
-      '{12edo} ~9/8 ~4/3 ~3/2 ~2/1',
-    ])
+    expect(hash).toBe('##_This_should_%1Ework%1E_too\n{12edo}_%1E[9/8_4/3]_%1E/6%3A%3A3')
+    expect(getSharedSourceCodes(hash)).toEqual([source])
+    expect(getShareHash('{12edo} ~9/8 ~4/3 ~3/2 ~2/1')).toBe('#{12edo}_%1E9/8_%1E4/3_%1E3/2_%1E2/1')
   })
 
   it('encodes MediaWiki-unfriendly brackets before hash fragments are used in absolute URLs', () => {
     const hash = getShareHash('[1 2 3]-')
 
-    expect(encodeShareHashForUrl(hash)).toBe('#.%5B1_2_3%5D-')
-    expect(new URL(encodeShareHashForUrl(hash), 'https://example.test/').hash).toBe(
-      '#.%5B1_2_3%5D-',
-    )
+    expect(encodeShareHashForUrl(hash)).toBe('#%5B1_2_3%5D-')
+    expect(new URL(encodeShareHashForUrl(hash), 'https://example.test/').hash).toBe('#%5B1_2_3%5D-')
   })
 
   it('encodes control characters before hash fragments are used in absolute URLs', () => {
     const hash = getShareHash('0_2\n4_5\t6_7')
 
-    expect(encodeShareHashForUrl(hash)).toBe('#.0.u2%0A4.u5%096.u7')
+    expect(encodeShareHashForUrl(hash)).toBe('#0%202%0A4%205%096%207')
     expect(new URL(encodeShareHashForUrl(hash), 'https://example.test/').hash).toBe(
-      '#.0.u2%0A4.u5%096.u7',
+      '#0%202%0A4%205%096%207',
     )
   })
 
   it('treats embed-prefixed text as normal shared source code', () => {
-    expect(getSharedSourceCodes('#.embed.clinked_tune')).toEqual(['embed:linked tune'])
+    expect(getSharedSourceCodes('#embed%3Alinked_tune')).toEqual(['embed:linked tune'])
   })
 
   it('restores source code from a route hash without a leading hash prefix', () => {
