@@ -71,10 +71,15 @@ describe('share-link', () => {
     expect(getSharedSourceCodes(hash)).toEqual([source])
   })
 
-  it('keeps unescaped tempered ratios in one shared source', () => {
-    const source = '{12edo} ~9/8 ~4/3 ~3/2 ~2/1'
+  it('keeps unescaped source tildes in one shared source', () => {
+    const source = '# This should ~work~ too\n{12edo} ~[9/8 4/3] ~/6::3'
 
-    expect(getSharedSourceCodes('#{12edo}_~9/8_~4/3_~3/2_~2/1')).toEqual([source])
+    expect(
+      getSharedSourceCodes('#%23_This_should_~work~_too%0A{12edo}_~[9/8_4/3]_~/6%3A%3A3'),
+    ).toEqual([source])
+    expect(getSharedSourceCodes('#{12edo}_~9/8_~4/3_~3/2_~2/1')).toEqual([
+      '{12edo} ~9/8 ~4/3 ~3/2 ~2/1',
+    ])
   })
 
   it('encodes MediaWiki-unfriendly brackets before hash fragments are used in absolute URLs', () => {

@@ -66,12 +66,20 @@ export const encodeSharedSources = (sourceCodes: string[]): string => {
     : normalizedSourceCodes.map(encodeSharedSource).join(SOURCE_SEPARATOR)
 }
 
-const isUnescapedTemperedPrefix = (encodedSources: string, index: number): boolean => {
+const isEncodedWhitespace = (character: string | undefined): boolean =>
+  character !== undefined && /[\s_]/.test(character)
+
+const isUnescapedSourceTilde = (encodedSources: string, index: number): boolean => {
   if (encodedSources[index] !== SOURCE_SEPARATOR) return false
 
+  const previousCharacter = encodedSources[index - 1]
   const nextCharacter = encodedSources[index + 1]
 
-  return nextCharacter !== undefined && /[\d[/]/.test(nextCharacter)
+  return (
+    isEncodedWhitespace(previousCharacter) ||
+    isEncodedWhitespace(nextCharacter) ||
+    (nextCharacter !== undefined && /[\d[/]/.test(nextCharacter))
+  )
 }
 
 const splitEncodedSources = (encodedSources: string): string[] => {
@@ -81,7 +89,7 @@ const splitEncodedSources = (encodedSources: string): string[] => {
   for (let index = 0; index < encodedSources.length; index += 1) {
     if (
       encodedSources[index] !== SOURCE_SEPARATOR ||
-      isUnescapedTemperedPrefix(encodedSources, index)
+      isUnescapedSourceTilde(encodedSources, index)
     ) {
       continue
     }
