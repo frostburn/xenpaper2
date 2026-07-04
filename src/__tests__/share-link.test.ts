@@ -48,7 +48,7 @@ describe('share-link', () => {
     const sources = ['first tab', 'second:tab with_under', 'third\nline', 'tilde~tab']
     const hash = getShareHash(sources)
 
-    expect(hash).toBe('#first_tab~second%3Atab_with%20under~third\nline~tilde%7Etab')
+    expect(hash).toBe('#first_tab~second%3Atab_with%20under~third\nline~tilde%1Etab')
     expect(getSharedSourceCodes(hash)).toEqual(sources)
   })
 
@@ -67,8 +67,21 @@ describe('share-link', () => {
     const source = 'literal~tilde'
     const hash = getShareHash(source)
 
-    expect(hash).toBe('#literal%7Etilde')
+    expect(hash).toBe('#literal%1Etilde')
     expect(getSharedSourceCodes(hash)).toEqual([source])
+  })
+
+  it('restores literal tildes after router-normalized control characters', () => {
+    expect(getSharedSourceCodes('#literal\x1etilde')).toEqual(['literal~tilde'])
+  })
+
+  it('escapes source-code tildes without using the tab separator', () => {
+    const source = '# This should ~work~ too\n{12edo} ~[9/8 4/3] ~/6::3'
+    const hash = getShareHash(source)
+
+    expect(hash).toBe('##_This_should_%1Ework%1E_too\n{12edo}_%1E[9/8_4/3]_%1E/6%3A%3A3')
+    expect(getSharedSourceCodes(hash)).toEqual([source])
+    expect(getShareHash('{12edo} ~9/8 ~4/3 ~3/2 ~2/1')).toBe('#{12edo}_%1E9/8_%1E4/3_%1E3/2_%1E2/1')
   })
 
   it('encodes MediaWiki-unfriendly brackets before hash fragments are used in absolute URLs', () => {

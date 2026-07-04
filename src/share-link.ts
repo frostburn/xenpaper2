@@ -1,11 +1,10 @@
-// Swap spaces and underscores when encoding
 const ENCODED_SPACE_TOKEN = '_'
 const ENCODED_UNDERSCORE_TOKEN = '%20'
+const ENCODED_TILDE_TOKEN = '%1E'
 
 const hasBrowserWindow = (): boolean => typeof window !== 'undefined'
 
 const SOURCE_SEPARATOR = '~'
-const ESCAPED_SOURCE_SEPARATOR = '%7E'
 
 const removeHashPrefix = (hash: string): string => (hash.startsWith('#') ? hash.slice(1) : hash)
 
@@ -27,22 +26,28 @@ const parseStoredSourceCodes = (storedSourceCodes: string | null): string[] | un
   }
 }
 
+const SHARED_SOURCE_ESCAPES: Record<string, string> = {
+  '%': '%25',
+  ':': '%3A',
+  [SOURCE_SEPARATOR]: ENCODED_TILDE_TOKEN,
+  _: ENCODED_UNDERSCORE_TOKEN,
+  ' ': ENCODED_SPACE_TOKEN,
+}
+
 export const encodeSharedSource = (sourceCode: string): string =>
-  sourceCode
-    .replace(/%/g, '%25')
-    .replace(/:/g, '%3A')
-    .replace(/~/g, ESCAPED_SOURCE_SEPARATOR)
-    .replace(/_/g, ENCODED_UNDERSCORE_TOKEN)
-    .replace(/ /g, ENCODED_SPACE_TOKEN)
+  sourceCode.replace(/[%:~_ ]/g, (character) => SHARED_SOURCE_ESCAPES[character] ?? character)
 
 export const decodeSharedSource = (encodedSource: string): string => {
   const percentPlaceholder = '\0percent\0'
   const underscorePlaceholder = '\0underscore\0'
+  const tildePlaceholder = '\0tilde\0'
   let restoredSource = encodedSource
     .replace(/%25/g, percentPlaceholder)
     .replace(/%_/g, underscorePlaceholder) // Old URLs use an illegal URI scheme
     .replace(/ /g, underscorePlaceholder) // Say hi to Vue Router
     .replace(/%20/g, underscorePlaceholder)
+    .replace(/%1E/gi, tildePlaceholder)
+    .replace(/\x1e/g, tildePlaceholder)
 
   try {
     restoredSource = decodeURIComponent(restoredSource)
@@ -56,6 +61,8 @@ export const decodeSharedSource = (encodedSource: string): string => {
     .join('%')
     .split(underscorePlaceholder)
     .join('_')
+    .split(tildePlaceholder)
+    .join(SOURCE_SEPARATOR)
 }
 
 export const encodeSharedSources = (sourceCodes: string[]): string => {
