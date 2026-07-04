@@ -71,6 +71,10 @@ describe('share-link', () => {
     expect(getSharedSourceCodes(hash)).toEqual([source])
   })
 
+  it('restores literal tildes after router-normalized control characters', () => {
+    expect(getSharedSourceCodes('#literal\x1etilde')).toEqual(['literal~tilde'])
+  })
+
   it('escapes source-code tildes without using the tab separator', () => {
     const source = '# This should ~work~ too\n{12edo} ~[9/8 4/3] ~/6::3'
     const hash = getShareHash(source)
