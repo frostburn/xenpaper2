@@ -10,6 +10,7 @@ export type NodeType<Type extends string = string, Delimiter extends boolean = f
 export type DelimiterType =
   | NodeType<'Colon', true>
   | NodeType<'InversionPrefix', true>
+  | NodeType<'TemperedPrefix', true>
   | NodeType<'Semicolon', true>
   | NodeType<'BarLine', true>
   | NodeType<'Whitespace', true>
@@ -80,6 +81,8 @@ export type PitchOctaveDivisionType = NodeType<'PitchOctaveDivision'> & {
 export type PitchRatioType = NodeType<'PitchRatio'> & {
   numerator: number
   denominator: number
+  tempered?: boolean
+  temperedPrefix?: DelimiterType
 }
 
 export type PitchDegreeType = NodeType<'PitchDegree'> & {
@@ -140,14 +143,19 @@ export type SampleRateNoteType = NodeType<'SampleRateNote'> & {
 export type RatioChordPitchType = NodeType<'RatioChordPitch'> & {
   pitch: number
   inverted?: boolean
+  tempered?: boolean
 }
 
 export type ChordType = NodeType<'Chord'> & {
+  tempered?: boolean
+  temperedPrefix?: DelimiterType
   pitches: Array<RatioChordPitchType | PitchType | SampleRateNoteType | DelimiterType>
   tail: TailType | null
 }
 
 export type RatioChordType = NodeType<'RatioChord'> & {
+  tempered?: boolean
+  temperedPrefix?: DelimiterType
   inverted?: boolean
   inversionPrefix?: DelimiterType
   pitches: Array<RatioChordPitchType | DelimiterType>

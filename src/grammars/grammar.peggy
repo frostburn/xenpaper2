@@ -15,7 +15,7 @@ SampleRateNote = "!" tail:Hold? {
   return node('SampleRateNote', { tail });
 }
 SampleRatePitch = "!" { return node('SampleRateNote', { tail: null }); }
-Pitch = octave:OctaveModifier? value:(PitchAbsolute / PitchCents / PitchHz / PitchOctaveDivision / PitchRatio / PitchDegree) {
+Pitch = octave:OctaveModifier? value:(PitchAbsolute / PitchCents / PitchHz / PitchOctaveDivision / TemperedPitchRatio / PitchRatio / PitchDegree) {
   return node('Pitch', { octave, value });
 }
 OctaveModifier = shifts:(Apostrophe / Quote / Grave)+ {
@@ -67,7 +67,9 @@ PitchOctaveDivisionSuffix = _ "ed"i _ os:OctaveSize? { return os ?? 2; } / _ "<"
 OctaveSize = fraction:Fraction {
   return fraction.numerator / fraction.denominator;
 }
+TemperedPrefix = '~' { return node('TemperedPrefix', { delimiter: true }); }
 PitchRatio = fraction:SlashFraction { return node('PitchRatio', fraction); }
+TemperedPitchRatio = prefix:TemperedPrefix fraction:SlashFraction { return node('PitchRatio', { ...fraction, tempered: true, temperedPrefix: prefix }); }
 PitchDegree = updowns:UpsAndDowns degree:Int {
   return node('PitchDegree',{...updowns, degree});
 }
@@ -86,10 +88,11 @@ PitchGroup = first:Pitch rest:(Whitespace Pitch)* {
   return result;
 }
 ChordPitch = Pitch / SampleRatePitch
-ChordRatioChordPitches = &("/"? Int _ ":" !"|") inversionPrefix:InversionPrefix? pitches:RatioChordPitches {
+ChordRatioChordPitches = temperedPrefix:TemperedPrefix? &("/"? Int _ ":" !"|") inversionPrefix:InversionPrefix? pitches:RatioChordPitches {
   return [
+    ...(temperedPrefix ? [temperedPrefix] : []),
     ...(inversionPrefix ? [inversionPrefix] : []),
-    ...pitches.map((pitch) => pitch.type === 'RatioChordPitch' && inversionPrefix ? { ...pitch, inverted: true } : pitch),
+    ...pitches.map((pitch) => pitch.type === 'RatioChordPitch' ? { ...pitch, ...(inversionPrefix ? { inverted: true } : {}), ...(temperedPrefix ? { tempered: true } : {}) } : pitch),
   ];
 }
 ChordPitchElement = ChordRatioChordPitches / ChordPitch
@@ -113,16 +116,17 @@ RatioChordPitches = first:RatioChordPitch rest:((_ Colon _)+ RatioChordPitch)* {
   }
   return result;
 }
-RatioChord = inversionPrefix:InversionPrefix? pitches:RatioChordPitches tail:Hold? {
+RatioChord = temperedPrefix:TemperedPrefix? inversionPrefix:InversionPrefix? pitches:RatioChordPitches tail:Hold? {
   return node('RatioChord', {
+    ...(temperedPrefix ? { tempered: true, temperedPrefix } : {}),
     ...(inversionPrefix ? { inverted: true, inversionPrefix } : {}),
-    pitches: pitches.map((pitch) => pitch.type === 'RatioChordPitch' && inversionPrefix ? { ...pitch, inverted: true } : pitch),
+    pitches: pitches.map((pitch) => pitch.type === 'RatioChordPitch' ? { ...pitch, ...(inversionPrefix ? { inverted: true } : {}), ...(temperedPrefix ? { tempered: true } : {}) } : pitch),
     tail,
   });
 }
-RatioChordItem = &("/"? Int _ ":" !"|") rc:RatioChord { return rc; }
-Chord = "[" _ pitches:ChordPitchGroup _ "]" tail:Hold? {
-  return node('Chord', { pitches, tail });
+RatioChordItem = &('~'? "/"? Int _ ":" !"|") rc:RatioChord { return rc; }
+Chord = temperedPrefix:TemperedPrefix? "[" _ pitches:ChordPitchGroup _ "]" tail:Hold? {
+  return node('Chord', { pitches: temperedPrefix ? pitches.map((pitch) => pitch.type === 'Pitch' && pitch.value.type === 'PitchRatio' ? { ...pitch, value: { ...pitch.value, tempered: true } } : pitch.type === 'RatioChordPitch' ? { ...pitch, tempered: true } : pitch) : pitches, tail, ...(temperedPrefix ? { tempered: true, temperedPrefix } : {}) });
 }
 RepeatEndStart = ":|:" count:RepeatCount? {
   return node('RepeatEndStart',{delimiter:true, repeatCount: count ?? 2});

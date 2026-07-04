@@ -275,6 +275,22 @@ describe('ratio chord syntax inside chords', () => {
       'Cannot expand a ratio chord from a sample-rate pitch',
     )
   })
+
+  it('tempers ratio pitches and ratio chord segments with the tilde prefix', () => {
+    expect(noteLabels('{12edo} ~3/2')).toEqual(['3/2  700.0c'])
+    expect(noteLabels('{12edo} ~4:5:6')).toEqual(['4/4  0.0c', '5/4  400.0c', '6/4  700.0c'])
+    expect(noteLabels('{12edo} ~/6::4')).toEqual([
+      '6/6  0.0c',
+      '6/5  300.0c',
+      '6/4  700.0c',
+    ])
+    expect(noteLabels('{12edo} ~[4/3 /6:5:4]')).toEqual([
+      '4/3  500.0c',
+      '8/5  800.0c',
+      '2/1  1200.0c',
+    ])
+    expect(noteLabels('{12edo} [4/3 ~3/2]')).toEqual(['4/3  498.0c', '3/2  700.0c'])
+  })
 })
 
 describe('grammar to mosc score', () => {
