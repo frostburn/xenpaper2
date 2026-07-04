@@ -71,6 +71,12 @@ describe('share-link', () => {
     expect(getSharedSourceCodes(hash)).toEqual([source])
   })
 
+  it('keeps unescaped tempered ratios in one shared source', () => {
+    const source = '{12edo} ~9/8 ~4/3 ~3/2 ~2/1'
+
+    expect(getSharedSourceCodes('#{12edo}_~9/8_~4/3_~3/2_~2/1')).toEqual([source])
+  })
+
   it('encodes MediaWiki-unfriendly brackets before hash fragments are used in absolute URLs', () => {
     const hash = getShareHash('[1 2 3]-')
 
