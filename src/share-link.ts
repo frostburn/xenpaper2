@@ -1,4 +1,3 @@
-// Swap spaces and underscores when encoding
 const ENCODED_SPACE_TOKEN = '_'
 const ENCODED_UNDERSCORE_TOKEN = '%20'
 
@@ -27,13 +26,16 @@ const parseStoredSourceCodes = (storedSourceCodes: string | null): string[] | un
   }
 }
 
+const SHARED_SOURCE_ESCAPES: Record<string, string> = {
+  '%': '%25',
+  ':': '%3A',
+  [SOURCE_SEPARATOR]: ESCAPED_SOURCE_SEPARATOR,
+  _: ENCODED_UNDERSCORE_TOKEN,
+  ' ': ENCODED_SPACE_TOKEN,
+}
+
 export const encodeSharedSource = (sourceCode: string): string =>
-  sourceCode
-    .replace(/%/g, '%25')
-    .replace(/:/g, '%3A')
-    .replace(/~/g, ESCAPED_SOURCE_SEPARATOR)
-    .replace(/_/g, ENCODED_UNDERSCORE_TOKEN)
-    .replace(/ /g, ENCODED_SPACE_TOKEN)
+  sourceCode.replace(/[%:~_ ]/g, (character) => SHARED_SOURCE_ESCAPES[character] ?? character)
 
 export const decodeSharedSource = (encodedSource: string): string => {
   const percentPlaceholder = '\0percent\0'
@@ -76,9 +78,9 @@ const isUnescapedSourceTilde = (encodedSources: string, index: number): boolean 
   const nextCharacter = encodedSources[index + 1]
 
   return (
+    previousCharacter === undefined ||
     isEncodedWhitespace(previousCharacter) ||
-    isEncodedWhitespace(nextCharacter) ||
-    (nextCharacter !== undefined && /[\d[/]/.test(nextCharacter))
+    isEncodedWhitespace(nextCharacter)
   )
 }
 
