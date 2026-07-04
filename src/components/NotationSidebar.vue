@@ -88,6 +88,21 @@ F A C 0`,
 # Anti-major using a sensible inflection
 [C vE G]--.`,
       },
+      {
+        description:
+          'Use `~` to temper ratios and ratio chords through the current prime mapping instead of playing them as exact just intervals.',
+        tune: `{53edo} (osc:semisine) (1) (mp)
+# Overtones are locked together
+5::15--
+# Tempered shimmering
+~5::15--
+# Tempered ratios
+(f) ~1/1 ~13/10 ~4/3 (mf)
+# Tempered chord
+~[4/3 7/3 9/3 11/3]--
+# Untempered chord on a tempered root
+[~3/2 4::7]--`,
+      },
     ],
   },
   {

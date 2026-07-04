@@ -65,6 +65,7 @@ const colorMap = new Map<string, HighlightColor>([
   ['Pitch', 'pitch'],
   ['SampleRateNote', 'pitch'],
   ['InversionPrefix', 'delimiter'],
+  ['TemperedPrefix', 'delimiter'],
   ['RatioChordPitch', 'pitch'],
   ['Chord', 'chord'],
   ['Chord.Whitespace', 'pitch'],
