@@ -1,7 +1,7 @@
 import { dot } from 'xen-dev-utils/number-array'
-import { type Monzo, sub } from 'xen-dev-utils/monzo'
+import { type Monzo, sub, toMonzo } from 'xen-dev-utils/monzo'
 import { PRIMES, PRIME_CENTS } from 'xen-dev-utils/primes'
-import { gcd, mmod, geoMod } from 'xen-dev-utils/fraction'
+import { Fraction, gcd, mmod, geoMod } from 'xen-dev-utils/fraction'
 import { centsToValue, equaveDivisionToValue, valueToCents } from 'xen-dev-utils/conversion'
 
 import type {
@@ -165,6 +165,29 @@ const absolutePitchToMonzo = (
   }
 }
 
+const ratioFractionToMonzo = (fraction: RatioFraction): Monzo =>
+  toMonzo(new Fraction(fraction.numerator, fraction.denominator))
+
+const ratioToMappedCents = (fraction: RatioFraction, context: Context): number => {
+  const monzo = ratioFractionToMonzo(fraction)
+  let tail = 0
+  for (let i = context.mapping.length; i < monzo.length; ++i) {
+    tail += Math.round(PRIME_CENTS[i]! / context.stepSize) * monzo[i]!
+  }
+
+  return (dot(context.mapping, monzo) + tail) * context.stepSize
+}
+
+const ratioFractionToRatio = (fraction: RatioFraction): number => {
+  assertFinitePositive('Ratio denominator', fraction.denominator)
+  const ratio = fraction.numerator / fraction.denominator
+  limit('Pitch ratio', ratio, 0, 100)
+  return ratio
+}
+
+const temperedRatioFractionToRatio = (fraction: RatioFraction, context: Context): number =>
+  centsToValue(ratioToMappedCents(fraction, context))
+
 export const pitchToRatio = (pitch: PitchType, context: Context): number => {
   const { scale, octaveSize, mapping, stepSize, up, lift, rootNominal } = context
   assertFinitePositive('context.octaveSize', octaveSize)
@@ -176,8 +199,10 @@ export const pitchToRatio = (pitch: PitchType, context: Context): number => {
   if (type === 'PitchRatio') {
     const { numerator, denominator } = pitch.value
     assertFinitePositive('PitchRatio.denominator', denominator)
-    const ratio = numerator / denominator
-    limit('Pitch ratio', ratio, 0, 100)
+    const fraction = { numerator, denominator }
+    const ratio = pitch.value.tempered
+      ? temperedRatioFractionToRatio(fraction, context)
+      : ratioFractionToRatio(fraction)
     return ratio * octaveMulti
   }
 
@@ -812,9 +837,13 @@ const isSampleRateNoteType = (pitch: ChordPitchType): pitch is SampleRateNoteTyp
   return pitch.type === 'SampleRateNote'
 }
 
-const startsRatioChordSegment = (pitches: ChordPitchType[], index: number): boolean =>
-  isRatioChordPitchType(pitches[index]!) ||
-  (pitches[index]?.type === 'InversionPrefix' && isRatioChordPitchType(pitches[index + 1]!))
+const startsRatioChordSegment = (pitches: ChordPitchType[], index: number): boolean => {
+  const pitch = pitches[index]
+  if (isRatioChordPitchType(pitch!)) return true
+  if (pitch?.type === 'InversionPrefix') return isRatioChordPitchType(pitches[index + 1]!)
+  if (pitch?.type === 'TemperedPrefix') return startsRatioChordSegment(pitches, index + 1)
+  return false
+}
 
 type RatioFraction = { numerator: number; denominator: number }
 
@@ -831,6 +860,7 @@ const pitchRatioFraction = (pitch: PitchType): RatioFraction | null =>
 const expandChordPitchGroup = (
   chordPitches: ChordPitchType[],
   getPitchRatio: (pitch: PitchType) => number,
+  temperRatioFraction: (fraction: RatioFraction) => number,
   preserveLeadingRatioChordLabel: (hasExplicitPreviousPitch: boolean) => boolean,
 ): ExpandedChordPitch[] => {
   const result: ExpandedChordPitch[] = []
@@ -841,7 +871,14 @@ const expandChordPitchGroup = (
   }
   let canStackRatioChord = true
 
-  const addRatioPitchType = (ratio: number, fraction: RatioFraction | null): void => {
+  const addRatioPitchType = (
+    ratio: number,
+    fraction: RatioFraction | null,
+    tempered = false,
+  ): void => {
+    if (tempered && fraction) {
+      ratio = temperRatioFraction(fraction)
+    }
     result.push({ type: 'RatioChordPitch', ratio, fraction })
     previousPitchRatio = ratio
     previousPitchFraction = fraction
@@ -905,6 +942,7 @@ const expandChordPitchGroup = (
               basePitchRatio *
                 (inverted ? firstDenominator / lastNumerator : lastNumerator / firstDenominator),
               createFraction(lastNumerator),
+              pitch.tempered,
             )
           }
         }
@@ -914,6 +952,7 @@ const expandChordPitchGroup = (
             basePitchRatio *
               (inverted ? firstDenominator / numerator : numerator / firstDenominator),
             createFraction(numerator),
+            pitch.tempered,
           )
         }
 
@@ -1031,6 +1070,7 @@ const chordToMosc = (
   return expandChordPitchGroup(
     chordPitches,
     (pitch) => pitchToHz(pitch, context) / context.rootHz,
+    (fraction) => temperedRatioFractionToRatio(fraction, context),
     (hasExplicitPreviousPitch) => chord.type === 'RatioChord' || !hasExplicitPreviousPitch,
   ).map((pitch): MoscBeatPlayableNote => {
     if (pitch.type === 'SampleRateNote') {
@@ -1181,6 +1221,7 @@ const setScale = (setScale: SetScaleType, context: Context): void => {
       const expandedPitches = expandChordPitchGroup(
         scalePitches,
         (pitch) => pitchToRatio(pitch, context),
+        (fraction) => temperedRatioFractionToRatio(fraction, context),
         (hasExplicitPreviousPitch) => !hasExplicitPreviousPitch,
       )
 
