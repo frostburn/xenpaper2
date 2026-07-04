@@ -348,7 +348,7 @@ C D F G A c`,
     demos: [
       {
         description:
-          'Custom mappings set the prime mapping directly. Step entries derive the step size from the equave by default, so {<17 27 40]} maps primes 2, 3, and 5 to 17, 27, and 40 steps of 17c val.',
+          'Custom mappings set the prime mapping directly. Step entries derive the step size from the octave by default, so {<17 27 40]} maps primes 2, 3, and 5 to 17, 27, and 40 steps of 17c val. To use other primes as equaves use @ e.g. {<17 27 40]@3}.',
         tune: `# This progression would drift with plain
 # {17edo} so we use the 17c val instead.
 {<17 27 40]}
@@ -360,8 +360,7 @@ C D F G A c`,
 {r\`Av5} :|`,
       },
       {
-        description:
-          'Cent entries set the mapping directly in cents. Anchors apply only to step entries: add @3 to derive the step size from the 3-prime instead of the equave; for example {<12 19 28]@3}.',
+        description: 'Cent entries set the mapping directly in cents.',
         tune: `# Generator climb in WE tuned tetracot
 {<1199.559c 1903.939c 2784.414c]}
 \`A    E     F     |
@@ -369,7 +368,7 @@ C D F G A c`,
 C#^25 D^5   F^5   |
 D#^125-     E^125 |
 E#^5^5^5^5- C^5   |
-[E A]---          |`,
+[E A]---          ||`,
       },
     ],
   },

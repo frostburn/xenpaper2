@@ -226,7 +226,6 @@ export const pitchToRatio = (pitch: PitchType, context: Context): number => {
   throw new Error(`Unknown pitch type "${type}"`)
 }
 
-
 const primeToIndex = (prime: number): number => {
   const index = PRIMES.indexOf(prime)
   if (index < 0 || index >= NUM_COMPONENTS) {
@@ -258,13 +257,17 @@ const customMappingToContext = (scale: CustomMappingScaleType, context: Context)
   const anchorIndex = scale.anchor === null ? 0 : primeToIndex(scale.anchor)
   const anchor = scale.entries[anchorIndex]
   if (!anchor) {
-    throw new Error(`CustomMappingScale.anchor @${scale.anchor} requires at least ${anchorIndex + 1} mapping entries`)
+    throw new Error(
+      `CustomMappingScale.anchor @${scale.anchor} requires at least ${anchorIndex + 1} mapping entries`,
+    )
   }
   assertFinitePositive('CustomMappingScale.anchorEntry', anchor.value)
   context.stepSize = PRIME_CENTS[anchorIndex]! / anchor.value
   context.up = context.stepSize
   context.lift = 5 * context.stepSize
-  context.mapping = PRIME_CENTS.slice(0, NUM_COMPONENTS).map((c) => Math.round(c / context.stepSize))
+  context.mapping = PRIME_CENTS.slice(0, NUM_COMPONENTS).map((c) =>
+    Math.round(c / context.stepSize),
+  )
   scale.entries.forEach((entry, index) => {
     context.mapping[index] = entry.value
   })
