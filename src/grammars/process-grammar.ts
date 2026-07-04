@@ -1,5 +1,5 @@
 import { dot } from 'xen-dev-utils/number-array'
-import { type Monzo, sub } from 'xen-dev-utils/monzo'
+import { type Monzo, sub, toMonzo } from 'xen-dev-utils/monzo'
 import { PRIMES, PRIME_CENTS } from 'xen-dev-utils/primes'
 import { gcd, mmod, geoMod } from 'xen-dev-utils/fraction'
 import { centsToValue, equaveDivisionToValue, valueToCents } from 'xen-dev-utils/conversion'
@@ -165,31 +165,8 @@ const absolutePitchToMonzo = (
   }
 }
 
-const ratioFractionToMonzo = (fraction: RatioFraction): Monzo => {
-  let numerator = fraction.numerator
-  let denominator = fraction.denominator
-  const monzo = Array(NUM_COMPONENTS).fill(0) as Monzo
-
-  for (let i = 0; i < PRIMES.length && i < NUM_COMPONENTS; i++) {
-    const prime = PRIMES[i]!
-    while (numerator % prime === 0) {
-      numerator /= prime
-      monzo[i] = (monzo[i] ?? 0) + 1
-    }
-    while (denominator % prime === 0) {
-      denominator /= prime
-      monzo[i] = (monzo[i] ?? 0) - 1
-    }
-  }
-
-  if (numerator !== 1 || denominator !== 1) {
-    throw new Error(
-      `Tempered ratio contains unsupported prime factors, got ${fraction.numerator}/${fraction.denominator}`,
-    )
-  }
-
-  return monzo
-}
+const ratioFractionToMonzo = (fraction: RatioFraction): Monzo =>
+  toMonzo(`${fraction.numerator}/${fraction.denominator}`).slice(0, NUM_COMPONENTS) as Monzo
 
 const ratioToMappedCents = (fraction: RatioFraction, context: Context): number => {
   const monzo = ratioFractionToMonzo(fraction)
@@ -860,9 +837,13 @@ const isSampleRateNoteType = (pitch: ChordPitchType): pitch is SampleRateNoteTyp
   return pitch.type === 'SampleRateNote'
 }
 
-const startsRatioChordSegment = (pitches: ChordPitchType[], index: number): boolean =>
-  isRatioChordPitchType(pitches[index]!) ||
-  (pitches[index]?.type === 'InversionPrefix' && isRatioChordPitchType(pitches[index + 1]!))
+const startsRatioChordSegment = (pitches: ChordPitchType[], index: number): boolean => {
+  const pitch = pitches[index]
+  if (isRatioChordPitchType(pitch!)) return true
+  if (pitch?.type === 'InversionPrefix') return isRatioChordPitchType(pitches[index + 1]!)
+  if (pitch?.type === 'TemperedPrefix') return startsRatioChordSegment(pitches, index + 1)
+  return false
+}
 
 type RatioFraction = { numerator: number; denominator: number }
 
