@@ -276,6 +276,29 @@ describe('grammarToChars', () => {
     ])
   })
 
+  it('highlights groove setters while preserving nested rhythm colors', () => {
+    expect(colors(grammarToChars(parse('(groove:(5)!-- !-)')))).toEqual([
+      'setterGroup',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'pitch',
+      'pitch',
+      'pitch',
+      'delimiter',
+      'pitch',
+      'pitch',
+      'setterGroup',
+    ])
+  })
+
   it('highlights grace setters', () => {
     expect(colors(grammarToChars(parse('(8?) (grace:16)')))).toEqual([
       'setterGroup',

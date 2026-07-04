@@ -157,7 +157,7 @@ SetterGroup = "(" _ first:Setter rest:(Semicolon Setter)* _ ")" {
   for (const part of rest) setters.push(part[0], part[1]);
   return node('SetterGroup', { setters });
 }
-Setter = SetBpm / SetBms / SetGrace / SetSubdivision / Drone / SetUp / SetLift / SetOsc / SetNoise / SetEnv / SetVolume / SetVelocity / SetKey / SetSignature / SetRulerRange / SetRulerPlot / SetVelocityShorthand
+Setter = SetBpm / SetBms / SetGrace / SetGroove / SetSubdivision / Drone / SetUp / SetLift / SetOsc / SetNoise / SetEnv / SetVolume / SetVelocity / SetKey / SetSignature / SetRulerRange / SetRulerPlot / SetVelocityShorthand
 SetBpm = "bpm"i _ ":" _ bpm:Number { return node('SetBpm', { bpm }); }
 SetBms = "bms"i _ ":" _ bms:Number { return node('SetBms', { bms }); }
 SetSubdivision = ("div"i _ ":" _)? fraction:Fraction {
@@ -166,6 +166,9 @@ SetSubdivision = ("div"i _ ":" _)? fraction:Fraction {
     denominator: fraction.denominator,
   });
 }
+SetGroove = "groove"i _ ":" _ items:GrooveItem* { return node('SetGroove', { items }); }
+GrooveItem = GrooveSubdivision / SetSubdivision / SampleRateNote / Whitespace
+GrooveSubdivision = "(" _ setter:SetSubdivision _ ")" { return setter; }
 SetGrace = data:(("grace"i _ ":" _ fraction:Fraction count:(_ @Int)? { return { fraction, count: count ?? 1 }; }) / (fraction:Fraction _ questionMarks:$("?"+) { return { fraction, count: questionMarks.length }; })) {
   return node('SetGrace', {
     subdivision: data.fraction.numerator,

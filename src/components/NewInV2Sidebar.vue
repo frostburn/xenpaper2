@@ -294,6 +294,37 @@ MOS{5L2s}(plot:MOS)`,
       },
     ],
   },
+  {
+    title: 'Groove',
+    demos: [
+      {
+        description:
+          'Set an uneven groove to play with a swung feel. Even divisions of the same span will be cyclically mapped to match it.',
+        tune: `# Straight
+0 0 4 4 7 7 9 9 10 10 9 9 7 7 4 4 |
+# Triplet swing
+(groove:(3)!-!)
+0 0 4 4 7 7 9 9 10 10 9 9 7 7 4 4 |
+# Quintuplet swing
+(groove:(5)!--!-)
+0 0 4 4 7 7 9 9 10 10 9 9 7 7 4 4 |
+# Back to straight rhythm
+(groove:!!)
+0 0 4 4 7 7 9 9 '0---     . . . . ||`,
+      },
+      {
+        description: 'More complex grooves can be set by using more than two notes.',
+        tune: `(groove:(4)!--!-!)
+0 1 2   5 4 3 |
+2 1\`11 \`7 7 . |
+5 4 5   . . . |
+4 3 4   . . . |
+(4) 3  2 1 0 \`11-
+   \`9 \`8-- \`7-|
+0----- ...... ||`,
+      },
+    ],
+  },
 ]
 </script>
 

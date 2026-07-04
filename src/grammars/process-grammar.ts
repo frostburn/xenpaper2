@@ -21,6 +21,7 @@ import type {
   AccidentalType,
   RatioChordPitchType,
   SetterType,
+  SetGrooveType,
   DelimiterType,
   UpLiftStepType,
   SequenceItemsType,
@@ -327,6 +328,64 @@ const setRoot = (item: SetRootType, context: Context): void => {
   context.rootNominal = rootNominal
 }
 
+const mapGrooveBeat = (time: number, groove: Groove | null): number => {
+  if (groove === null) return time
+  const cycle = Math.floor(time / groove.span)
+  const sourceTime = mmod(time, groove.span)
+  const points = groove.points
+
+  for (let i = 0; i < points.length - 1; i++) {
+    const a = points[i]!
+    const b = points[i + 1]!
+    if (sourceTime >= a.source && sourceTime <= b.source) {
+      const proportion = b.source === a.source ? 0 : (sourceTime - a.source) / (b.source - a.source)
+      return cycle * groove.span + a.target + proportion * (b.target - a.target)
+    }
+  }
+
+  return cycle * groove.span + sourceTime
+}
+
+const setGroove = (setter: SetGrooveType, context: Context): void => {
+  let subdivision = context.subdivision
+  let time = 0
+  const targets: number[] = []
+
+  for (const item of setter.items) {
+    if (item.type === 'SetSubdivision') {
+      assertFinitePositive('SetGroove.SetSubdivision.subdivision', item.subdivision)
+      assertFinitePositive('SetGroove.SetSubdivision.denominator', item.denominator)
+      subdivision = item.denominator / item.subdivision
+      assertFinitePositive('SetGroove.subdivision', subdivision)
+      continue
+    }
+
+    if (item.type === 'SampleRateNote') {
+      targets.push(time)
+      time += (item.tail?.type === 'Hold' ? item.tail.length + 1 : 1) * subdivision
+      continue
+    }
+
+    if (item.type === 'Whitespace') continue
+
+    throw new Error(`Unsupported groove item "${item.type}"`)
+  }
+
+  if (targets.length < 2) {
+    throw new Error('Groove must contain at least two notes')
+  }
+  assertFinitePositive('SetGroove.span', time)
+
+  const sourceStep = time / targets.length
+  context.groove = {
+    span: time,
+    points: [
+      ...targets.map((target, index) => ({ source: index * sourceStep, target })),
+      { source: time, target: time },
+    ],
+  }
+}
+
 const consumeDuration = (units: number, context: Context): { time: number; timeEnd: number } => {
   const time = context.time
   assertFinitePositive('context.subdivision', context.subdivision)
@@ -341,7 +400,10 @@ const consumeDuration = (units: number, context: Context): { time: number; timeE
       context.graceSubdivision = null
       context.graceNotesRemaining = 0
     }
-    return { time, timeEnd: context.time }
+    return {
+      time: mapGrooveBeat(time, context.groove),
+      timeEnd: mapGrooveBeat(context.time, context.groove),
+    }
   }
 
   const duration = units * context.subdivision - context.stolenTime
@@ -351,7 +413,10 @@ const consumeDuration = (units: number, context: Context): { time: number; timeE
 
   context.time += duration
   context.stolenTime = 0
-  return { time, timeEnd: context.time }
+  return {
+    time: mapGrooveBeat(time, context.groove),
+    timeEnd: mapGrooveBeat(context.time, context.groove),
+  }
 }
 
 const tailToTime = (tail: TailType | null, context: Context): { time: number; timeEnd: number } => {
@@ -488,6 +553,12 @@ type Context = {
   graceSubdivision: number | null
   graceNotesRemaining: number
   stolenTime: number
+  groove: Groove | null
+}
+
+type Groove = {
+  span: number
+  points: Array<{ source: number; target: number }>
 }
 
 const EMPTY_KEY_SIGNATURE_ADJUSTMENT: KeySignatureAdjustment = {
@@ -996,7 +1067,8 @@ const pointTime = (
   item: NoteType | SampleRateNoteType | ChordType | RatioChordType,
   context: Context,
 ): [number, number] => {
-  const arr: [number, number] = [context.time, context.time]
+  const mappedTime = mapGrooveBeat(context.time, context.groove)
+  const arr: [number, number] = [mappedTime, mappedTime]
   times.push(arr)
   item.time = arr
   return arr
@@ -1007,6 +1079,7 @@ const playableToMoscAtCurrentTime = (
   context: Context,
 ): MoscBeatPlayableNote[] => {
   const startTime = context.time
+  const mappedStartTime = mapGrooveBeat(startTime, context.groove)
   const originalTail = item.tail
   const graceSubdivision = context.graceSubdivision
   const graceNotesRemaining = context.graceNotesRemaining
@@ -1025,8 +1098,8 @@ const playableToMoscAtCurrentTime = (
   context.stolenTime = stolenTime
   return moscItems.map((moscItem) => ({
     ...moscItem,
-    time: startTime,
-    timeEnd: startTime,
+    time: mappedStartTime,
+    timeEnd: mappedStartTime,
   }))
 }
 
@@ -1205,7 +1278,7 @@ const setterToMosc = (setter: SetterType | DelimiterType, context: Context): Mos
     return [
       {
         type: 'TEMPO',
-        time: context.time,
+        time: mapGrooveBeat(context.time, context.groove),
         bpm,
         lerp: false,
       },
@@ -1218,11 +1291,16 @@ const setterToMosc = (setter: SetterType | DelimiterType, context: Context): Mos
     return [
       {
         type: 'TEMPO',
-        time: context.time,
+        time: mapGrooveBeat(context.time, context.groove),
         bpm: 60000 / bms,
         lerp: false,
       },
     ]
+  }
+
+  if (type === 'SetGroove') {
+    setGroove(setter, context)
+    return []
   }
 
   if (type === 'SetSubdivision') {
@@ -1261,7 +1339,7 @@ const setterToMosc = (setter: SetterType | DelimiterType, context: Context): Mos
     return [
       {
         type: 'PARAM_BEAT_TIME',
-        time: context.time,
+        time: mapGrooveBeat(context.time, context.groove),
         value: {
           type: 'osc',
           osc,
@@ -1275,7 +1353,7 @@ const setterToMosc = (setter: SetterType | DelimiterType, context: Context): Mos
     return [
       {
         type: 'PARAM_BEAT_TIME',
-        time: context.time,
+        time: mapGrooveBeat(context.time, context.groove),
         value: {
           type: 'noise',
           noise,
@@ -1289,7 +1367,7 @@ const setterToMosc = (setter: SetterType | DelimiterType, context: Context): Mos
     return [
       {
         type: 'PARAM_BEAT_TIME',
-        time: context.time,
+        time: mapGrooveBeat(context.time, context.groove),
         value: {
           type: 'env',
           a: ENV_VALUES[a] || 0,
@@ -1307,7 +1385,7 @@ const setterToMosc = (setter: SetterType | DelimiterType, context: Context): Mos
     return [
       {
         type: 'PARAM_BEAT_TIME',
-        time: context.time,
+        time: mapGrooveBeat(context.time, context.groove),
         value: {
           type: 'volume',
           db,
@@ -1322,7 +1400,7 @@ const setterToMosc = (setter: SetterType | DelimiterType, context: Context): Mos
     return [
       {
         type: 'PARAM_BEAT_TIME',
-        time: context.time,
+        time: mapGrooveBeat(context.time, context.groove),
         value: {
           type: 'velocity',
           velocity,
@@ -1450,8 +1528,8 @@ const nominalPlotToMosc = (nominalType: PlotNominalType, context: Context): Mosc
 
     return {
       type: 'NOTE_TIME',
-      time: context.time,
-      timeEnd: context.time,
+      time: mapGrooveBeat(context.time, context.groove),
+      timeEnd: mapGrooveBeat(context.time, context.groove),
       hz: ratio * context.rootHz,
       label: replaceCentsLabel(pitchToLabel(pitch, context), cents),
     }
@@ -1475,8 +1553,8 @@ const setterToRulerState = (
       : context.scale.map(
           (ratio, i): MoscNote => ({
             type: 'NOTE_TIME',
-            time: context.time,
-            timeEnd: context.time,
+            time: mapGrooveBeat(context.time, context.groove),
+            timeEnd: mapGrooveBeat(context.time, context.groove),
             hz: ratio * context.rootHz,
             label: context.scaleLabels[i]!,
           }),
@@ -1587,6 +1665,7 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
     graceSubdivision: null,
     graceNotesRemaining: 0,
     stolenTime: 0,
+    groove: null,
   }
 
   const moscItems: MoscBeatItem[] = []
@@ -1594,10 +1673,10 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
   let activeDroneTimes: [number, number][] = []
   const stopActiveDrone = (): void => {
     activeDroneItems.forEach((droneItem) => {
-      droneItem.timeEnd = context.time
+      droneItem.timeEnd = mapGrooveBeat(context.time, context.groove)
     })
     activeDroneTimes.forEach((time) => {
-      time[1] = context.time
+      time[1] = mapGrooveBeat(context.time, context.groove)
     })
     activeDroneItems = []
     activeDroneTimes = []
@@ -1709,7 +1788,7 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
     ...moscItems,
     {
       type: 'END_BEAT_TIME',
-      time: context.time,
+      time: mapGrooveBeat(context.time, context.groove),
     } as MoscBeatEnd,
   ]
 

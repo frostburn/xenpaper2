@@ -267,6 +267,12 @@ export type SetGraceType = NodeType<'SetGrace'> & {
   count: number
 }
 
+export type GrooveItemType = SetSubdivisionType | SampleRateNoteType | DelimiterType
+
+export type SetGrooveType = NodeType<'SetGroove'> & {
+  items: GrooveItemType[]
+}
+
 // up/down step
 
 export type UpLiftStepType = PitchRatioType | PitchCentsType | PitchOctaveDivisionType
@@ -380,6 +386,7 @@ export type SetterType =
   | SetBmsType
   | SetSubdivisionType
   | SetGraceType
+  | SetGrooveType
   | DroneType
   | SetUpType
   | SetLiftType

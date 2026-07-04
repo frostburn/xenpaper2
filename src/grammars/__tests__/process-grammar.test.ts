@@ -87,6 +87,76 @@ const noteLabels = (input: string): string[] => noteItems(input).map((item) => i
 const noteLabelDurations = (input: string): Array<[string, number]> =>
   noteItems(input).map((item) => [item.label, item.timeEnd - item.time])
 
+describe('groove setter', () => {
+  it('shuffles evenly spaced sample-rate notes to an uneven pattern', () => {
+    const notes = processGrammar(parseSource('(groove:(5)!-- !-)(2)! !')).score.sequence.filter(
+      (item) => item.type === 'SAMPLE_RATE_NOTE_BEAT_TIME',
+    )
+
+    expect(notes[0]!.time).toBe(0)
+    expect(notes[0]!.timeEnd).toBeAround(0.6)
+    expect(notes[1]!.time).toBeAround(0.6)
+    expect(notes[1]!.timeEnd).toBe(1)
+  })
+
+  it('linearly interpolates beats between the original even grid and repeats the groove', () => {
+    const notes = noteItems('(groove:(5)!-- !-)(4)0 1 2 3 | 4 5 6 7 ||')
+
+    const expected: Array<[string, number, number]> = [
+      ['0\\12  0.0c', 0, 0.3],
+      ['1\\12  100.0c', 0.3, 0.6],
+      ['2\\12  200.0c', 0.6, 0.8],
+      ['3\\12  300.0c', 0.8, 1],
+      ['4\\12  400.0c', 1, 1.3],
+      ['5\\12  500.0c', 1.3, 1.6],
+      ['6\\12  600.0c', 1.6, 1.8],
+      ['7\\12  700.0c', 1.8, 2],
+    ]
+
+    expect(notes.map((note) => note.label)).toEqual(expected.map(([label]) => label))
+    notes.forEach((note, index) => {
+      expect(note.time).toBeAround(expected[index]![1])
+      expect(note.timeEnd).toBeAround(expected[index]![2])
+    })
+  })
+
+  it('groove-times drones at their mapped start and end beats', () => {
+    const droneNotes = noteItems('(groove:(5)!-- !-)(drone:0)(4)1 2 (drone:off)').filter(
+      (note) => note.label === '0\\12  0.0c',
+    )
+
+    expect(droneNotes).toHaveLength(1)
+    expect(droneNotes[0]!.time).toBe(0)
+    expect(droneNotes[0]!.timeEnd).toBeAround(0.6)
+  })
+
+  it('groove-times drones that start away from the cycle origin', () => {
+    const droneNotes = noteItems('(groove:(5)!-- !-)(4)1 (drone:0) 2 (drone:off)').filter(
+      (note) => note.label === '0\\12  0.0c',
+    )
+
+    expect(droneNotes).toHaveLength(1)
+    expect(droneNotes[0]!.time).toBeAround(0.3)
+    expect(droneNotes[0]!.timeEnd).toBeAround(0.6)
+  })
+
+  it('repeats longer groove spans across bars', () => {
+    const notes = noteItems('(groove:(4)!--!-!) 0 1 2 | 3 4 5 | 6 7 8 ||')
+
+    expect(notes.map((note) => [note.label, note.time, note.timeEnd])).toEqual([
+      ['0\\12  0.0c', 0, 0.75],
+      ['1\\12  100.0c', 0.75, 1.25],
+      ['2\\12  200.0c', 1.25, 1.5],
+      ['3\\12  300.0c', 1.5, 2.25],
+      ['4\\12  400.0c', 2.25, 2.75],
+      ['5\\12  500.0c', 2.75, 3],
+      ['6\\12  600.0c', 3, 3.75],
+      ['7\\12  700.0c', 3.75, 4.25],
+      ['8\\12  800.0c', 4.25, 4.5],
+    ])
+  })
+})
+
 describe('grace note syntax', () => {
   it('plays a short-form grace note and steals its duration from the following note', () => {
     expect(noteItems('(8?) D C')).toMatchObject([
