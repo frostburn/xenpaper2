@@ -5,6 +5,7 @@ import { isNoiseGeneratorType, type NoiseGeneratorType } from '../sw-seq/noise-w
 import {
   PolySynth,
   type NoiseSynthType,
+  type SynthType,
   WHITE_NOISE_SYNTH_TYPE,
   type SynthParams,
 } from '../sw-seq/polysynth'
@@ -50,6 +51,10 @@ const isVelocityParam = (value: unknown): value is SoundEngineVelocityParam =>
 
 const dbToGain = (db: number): number => Math.pow(10, db / 20)
 
+export type SoundEngineSwSeqOptions = {
+  noteFilter?: (synth: SynthType) => boolean
+}
+
 export class SoundEngineSwSeq extends SoundEngine {
   private endTime = 0
   private activeNoteEvents = new Set<MoscNote>()
@@ -59,11 +64,13 @@ export class SoundEngineSwSeq extends SoundEngine {
   private scoreVolume = 1
   private synth: PolySynth
   private transport: Transport
+  private noteFilter: (synth: SynthType) => boolean
   private transportEventIds = new Map<number, true>()
 
-  constructor(transport: Transport, bank: Bank) {
+  constructor(transport: Transport, bank: Bank, options: SoundEngineSwSeqOptions = {}) {
     super()
     this.transport = transport
+    this.noteFilter = options.noteFilter ?? (() => true)
     this.destination = transport.context.createGain()
     this.destination.gain.setValueAtTime(1, transport.context.currentTime)
     this.destination.connect(transport.context.destination)
@@ -147,6 +154,8 @@ export class SoundEngineSwSeq extends SoundEngine {
             ? { ...item, type: 'NOTE_TIME', hz: this.context.sampleRate }
             : item
         patch.frequency = note.hz
+        if (!this.noteFilter(patch.synth)) return
+
         const noteHandle = this.synth.trigger(patch)
         const noteEventId = this.transport.scheduleParametricNote({
           noteOn: (time) => {

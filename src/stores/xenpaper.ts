@@ -48,6 +48,7 @@ const RENDER_CHANNEL_COUNT = 2
 const WAV_MIME_TYPE = 'audio/wav'
 
 // WebAudioAPI buffering remains opaque but these seem to work
+const OFFLINE_INTERVAL = 0.2
 const OFFLINE_LOOKAHEAD = 0.1
 
 type ScoreEngine = ReturnType<typeof useScoreEngine>
@@ -615,41 +616,78 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     // 100ms pickup time due to look-ahead is intentional until someone complains about it
     const duration = renderLength + OFFLINE_LOOKAHEAD + Math.max(0, tailSeconds)
     const frameCount = Math.max(1, Math.ceil(duration * audioContext.sampleRate))
-    const offlineContext = new OfflineAudioContext(
+    const renderedBuffer = audioContext.createBuffer(
       RENDER_CHANNEL_COUNT,
       frameCount,
       audioContext.sampleRate,
     )
+    const addRenderedChunk = (chunk: AudioBuffer, offsetSeconds: number): void => {
+      const sourceOffset = Math.round(OFFLINE_LOOKAHEAD * chunk.sampleRate)
+      const destinationOffset = Math.round(offsetSeconds * renderedBuffer.sampleRate)
+      const framesToCopy = Math.min(
+        chunk.length - sourceOffset,
+        renderedBuffer.length - destinationOffset,
+      )
+      if (framesToCopy <= 0) return
 
-    try {
-      await registerNoiseGeneratorWorklet(offlineContext)
-    } catch (e) {
-      console.warn(e instanceof Error ? e.message : e)
+      for (let channel = 0; channel < renderedBuffer.numberOfChannels; channel++) {
+        const source = chunk.getChannelData(channel)
+        const destination = renderedBuffer.getChannelData(channel)
+        for (let frame = 0; frame < framesToCopy; frame++) {
+          const destinationFrame = destinationOffset + frame
+          destination[destinationFrame] = destination[destinationFrame]! + source[sourceOffset + frame]!
+        }
+      }
+    }
+    const renderBatch = async (startTime: number, batchDuration: number, noise: boolean) => {
+      const batchRenderDuration = batchDuration + OFFLINE_LOOKAHEAD + Math.max(0, tailSeconds)
+      const batchFrameCount = Math.max(1, Math.ceil(batchRenderDuration * audioContext.sampleRate))
+      const offlineContext = new OfflineAudioContext(
+        RENDER_CHANNEL_COUNT,
+        batchFrameCount,
+        audioContext.sampleRate,
+      )
+
+      if (noise) {
+        try {
+          await registerNoiseGeneratorWorklet(offlineContext)
+        } catch (e) {
+          console.warn(e instanceof Error ? e.message : e)
+        }
+      }
+
+      const transport = new Transport(offlineContext, {
+        interval: batchDuration,
+        lookAhead: OFFLINE_LOOKAHEAD,
+      })
+      const bank = new Bank(offlineContext)
+      const renderEngines = scores.map(({ score, gain }) => {
+        const engine = new SoundEngineSwSeq(transport, bank, {
+          noteFilter: (synth) => (synth.periodicity === 'noise') === noise,
+        })
+        engine.setOutputGain(gain)
+        engine.setScore(score)
+        return engine
+      })
+
+      try {
+        transport.endTime = startTime + batchDuration
+        transport.start(startTime)
+        const chunk = await offlineContext.startRendering()
+        addRenderedChunk(chunk, startTime)
+      } finally {
+        renderEngines.forEach((engine) => engine.dispose())
+        bank.stop()
+      }
     }
 
-    const transport = new Transport(offlineContext, {
-      // OfflineAudioContext rendering does not reliably dispatch timer-ended events while
-      // rendering, so schedule the whole render in the initial transport tick.
-      interval: duration,
-      lookAhead: OFFLINE_LOOKAHEAD,
-    })
-    const bank = new Bank(offlineContext)
-    const renderEngines = scores.map(({ score, gain }) => {
-      const engine = new SoundEngineSwSeq(transport, bank)
-      engine.setOutputGain(gain)
-      engine.setScore(score)
-      return engine
-    })
-
-    try {
-      transport.endTime = duration
-      transport.start(0)
-      const renderedBuffer = await offlineContext.startRendering()
-      return new Blob([audioBufferToWav(renderedBuffer)], { type: WAV_MIME_TYPE })
-    } finally {
-      renderEngines.forEach((engine) => engine.dispose())
-      bank.stop()
+    for (const noise of [false, true]) {
+      for (let startTime = 0; startTime < duration; startTime += OFFLINE_INTERVAL) {
+        await renderBatch(startTime, Math.min(OFFLINE_INTERVAL, duration - startTime), noise)
+      }
     }
+
+    return new Blob([audioBufferToWav(renderedBuffer)], { type: WAV_MIME_TYPE })
   }
 
   const toggleLoop = (): void => {
