@@ -251,6 +251,16 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   const embedUrl = computed(() =>
     new URL(encodeShareHashForUrl(shareHash.value), embedBaseUrl.value).toString(),
   )
+  const renderCacheKey = computed(() =>
+    JSON.stringify(
+      liveScoreEngines.value.map((engine) => ({
+        sourceCode: engine.sourceCode.value,
+        muted: engine.muted.value,
+        soloed: engine.soloed.value,
+      })),
+    ),
+  )
+
   const embedCode = computed(
     () =>
       `<iframe width="560" height="315" src="${escapeHtmlAttribute(
@@ -609,7 +619,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
 
     await registerNoiseGeneratorWorklet(offlineContext)
 
-    const transport = new Transport(offlineContext, { interval: duration + 1, lookAhead: 0 })
+    const transport = new Transport(offlineContext, { interval: 0.2, lookAhead: 0.1 })
     const bank = new Bank(offlineContext)
     const renderEngines = scores.map(({ score, gain }) => {
       const engine = new SoundEngineSwSeq(transport, bank)
@@ -687,6 +697,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     shareUrl,
     embedUrl,
     embedCode,
+    renderCacheKey,
     isPlaying,
     isLooping,
     selectedLine: computed(() => activeScoreEngine.value.selectedLine.value),

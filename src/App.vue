@@ -196,6 +196,7 @@ onUnmounted(() => {
         :embed-code="xenpaper.embedCode"
         :embed-url="xenpaper.embedUrl"
         :source-codes="xenpaper.sourceCodes"
+        :render-cache-key="xenpaper.renderCacheKey"
         :render-song-to-wav-blob="xenpaper.renderSongToWavBlob"
         :initial-ruler-state="xenpaper.initialRulerState"
         @close-sidebar="xenpaper.closeSidebar"

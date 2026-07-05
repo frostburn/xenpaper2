@@ -29,6 +29,7 @@ const props = defineProps<{
   embedCode: string
   embedUrl: string
   sourceCodes: string[]
+  renderCacheKey: string
   renderSongToWavBlob: (tailSeconds: number) => Promise<Blob>
   initialRulerState?: InitialRulerState
 }>()
@@ -46,12 +47,13 @@ const copiedEmbedCode = ref(false)
 const fileInput = useTemplateRef('fileInput')
 const importError = ref('')
 const serializedSourceFile = computed(() => serializeXenpaperScoreFile(props.sourceCodes))
-const renderTailSeconds = ref(5)
+const renderTailSeconds = ref(1)
 const renderedWav = ref<Blob | undefined>()
 const renderError = ref('')
 const isRendering = ref(false)
 let shareLinkResetTimeout: number | undefined
 let embedCodeResetTimeout: number | undefined
+let renderRequestId = 0
 
 const resetCopiedShareLink = (): void => {
   if (shareLinkResetTimeout !== undefined) {
@@ -103,16 +105,23 @@ const selectSourceFile = (): void => {
 }
 
 const renderSong = async (): Promise<void> => {
+  const requestId = ++renderRequestId
+  const renderCacheKey = props.renderCacheKey
   isRendering.value = true
   renderError.value = ''
   renderedWav.value = undefined
 
   try {
-    renderedWav.value = await props.renderSongToWavBlob(renderTailSeconds.value)
+    const wav = await props.renderSongToWavBlob(renderTailSeconds.value)
+    if (requestId !== renderRequestId || renderCacheKey !== props.renderCacheKey) return
+
+    renderedWav.value = wav
   } catch (error) {
+    if (requestId !== renderRequestId || renderCacheKey !== props.renderCacheKey) return
+
     renderError.value = error instanceof Error ? error.message : 'Failed to render WAV.'
   } finally {
-    isRendering.value = false
+    if (requestId === renderRequestId) isRendering.value = false
   }
 }
 
@@ -133,8 +142,10 @@ const importSourceFile = async (event: Event): Promise<void> => {
 
 watch(() => props.shareUrl, resetCopiedShareLink)
 watch(
-  () => props.sourceCodes,
+  () => props.renderCacheKey,
   () => {
+    renderRequestId++
+    isRendering.value = false
     renderedWav.value = undefined
     renderError.value = ''
   },
