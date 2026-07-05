@@ -1,8 +1,25 @@
 import { dot } from 'xen-dev-utils/number-array'
 import { type Monzo, sub, toMonzo } from 'xen-dev-utils/monzo'
 import { PRIMES, PRIME_CENTS } from 'xen-dev-utils/primes'
-import { Fraction, gcd, mmod, geoMod } from 'xen-dev-utils/fraction'
+import { Fraction, mmod, geoMod } from 'xen-dev-utils/fraction'
 import { centsToValue, equaveDivisionToValue, valueToCents } from 'xen-dev-utils/conversion'
+
+import {
+  DEFAULT_LIFT,
+  DEFAULT_UP,
+  DEFAULT_VOLUME_DB,
+  ENV_VALUES,
+  INTEGER_STEP_EPSILON,
+  NUM_COMPONENTS,
+} from './constants'
+import { assertFinitePositive, limit } from './validation'
+import { expandMusicalControlFlowItems, expandRepeatedSequenceItems } from './sequence-expansion'
+import {
+  expandChordPitchGroup,
+  isPitchType,
+  type ChordPitchType,
+  type RatioFraction,
+} from './chord-expansion'
 
 import type {
   XenpaperAST,
@@ -19,17 +36,15 @@ import type {
   PitchAbsoluteType,
   PitchDegreeType,
   AccidentalType,
-  RatioChordPitchType,
   SetterType,
   SetGrooveType,
   DelimiterType,
   UpLiftStepType,
-  SequenceItemsType,
   KeyTonicType,
   MosKeyTonicType,
   PlotNominalType,
   CustomMappingScaleType,
-} from './grammar.generated'
+} from '../grammar.generated'
 
 import {
   nominalToMonzo,
@@ -39,8 +54,8 @@ import {
   keySignatureFromPitches,
   type KeySignature,
   type KeySignatureAdjustment,
-} from './pythagorean'
-import { applyFjsInflections } from './fjs/inflections'
+} from '../pythagorean'
+import { applyFjsInflections } from '../fjs/inflections'
 import {
   createMosConfig,
   mosKeySignatureAccidentals,
@@ -48,7 +63,7 @@ import {
   normalizeMosNominal,
   type MosConfig,
   type MosKeySignatureAdjustment,
-} from './mos'
+} from '../mos'
 
 import type {
   MoscBeatScore,
@@ -59,30 +74,9 @@ import type {
   MoscBeatParam,
   MoscBeatEnd,
   MoscNote,
-} from '../mosc'
+} from '../../mosc'
 
-import { beatToTime } from '../mosc'
-
-const NUM_COMPONENTS = 24
-const DEFAULT_UP = valueToCents(243 / 242) / 2
-const DEFAULT_LIFT = valueToCents(50 / 49) / 2
-const DEFAULT_VOLUME_DB = 0
-
-//
-// utils
-//
-
-const assertFinitePositive = (name: string, value: number): void => {
-  if (!Number.isFinite(value) || value <= 0) {
-    throw new Error(`${name} must be a finite positive number, got ${value}`)
-  }
-}
-
-const limit = (name: string, value: number, min: number, max: number): void => {
-  if (!Number.isFinite(value) || value < min || value > max) {
-    throw new Error(`${name} must be between ${min} and ${max}, got ${value}`)
-  }
-}
+import { beatToTime } from '../../mosc'
 
 //
 // pitch math
@@ -539,8 +533,6 @@ export const pitchToLabel = (pitch: PitchType, context: Context): string => {
   throw new Error(`Unknown pitch type "${type}"`)
 }
 
-const INTEGER_STEP_EPSILON = 1e-8
-
 const edoToLabels = (edoSize: number, ratios: number[], octaveSize: number): string[] => {
   const labels: string[] = []
   for (let i = 0; i < edoSize; i++) {
@@ -553,8 +545,6 @@ const edoToLabels = (edoSize: number, ratios: number[], octaveSize: number): str
 //
 // converters
 //
-
-const ENV_VALUES = [0, 0.003, 0.006, 0.01, 0.033, 0.1, 0.33, 1, 3.3, 10]
 
 type Context = {
   rootHz: number
@@ -614,402 +604,6 @@ const applyKeySignature = (
 }
 
 const times: [number, number][] = []
-
-type RepetitionState = {
-  startIndex: number
-  repeatCount: number
-  repetitionsAdded: number
-  firstEndingIndex?: number
-  firstEndingSegment?: SequenceItemsType[]
-}
-
-const cloneSequenceItem = <T>(item: T): T => {
-  if (Array.isArray(item)) {
-    return item.map(cloneSequenceItem) as T
-  }
-
-  if (item && typeof item === 'object') {
-    return Object.fromEntries(
-      Object.entries(item).map(([key, value]) => [key, cloneSequenceItem(value)]),
-    ) as T
-  }
-
-  return item
-}
-
-type SequenceItemWithTail = Extract<
-  SequenceItemsType,
-  { type: 'Note' | 'SampleRateNote' | 'Chord' | 'RatioChord' }
->
-
-const isSequenceItemWithTail = (item: SequenceItemsType): item is SequenceItemWithTail =>
-  item.type === 'Note' ||
-  item.type === 'SampleRateNote' ||
-  item.type === 'Chord' ||
-  item.type === 'RatioChord'
-
-const addTail = (item: SequenceItemWithTail, tail: TailType): void => {
-  if (!item.tail) {
-    item.tail = cloneSequenceItem(tail)
-    return
-  }
-
-  item.tail = {
-    ...item.tail,
-    length: item.tail.length + tail.length,
-    parts: [...item.tail.parts, ...cloneSequenceItem(tail.parts)],
-  }
-}
-
-const addTailToLastPlayableItem = (items: SequenceItemsType[], tail: TailType | null): void => {
-  if (!tail) return
-
-  for (let index = items.length - 1; index >= 0; index--) {
-    const item = items[index]
-    if (!item) continue
-
-    if (item.type === 'Rest') {
-      throw new Error('Cannot attach a hold to a rest')
-    }
-
-    if (isSequenceItemWithTail(item)) {
-      addTail(item, tail)
-      return
-    }
-  }
-
-  throw new Error('Cannot attach a hold without a previous note, sample-rate note, or chord')
-}
-
-type MusicalControlInstruction = Extract<SequenceItemsType, { type: 'DaCapo' | 'DalSegno' }>
-
-const expandMusicalControlFlowItems = (items: SequenceItemsType[]): SequenceItemsType[] => {
-  const expandedItems: SequenceItemsType[] = []
-
-  const findIndex = (type: SequenceItemsType['type'], startIndex = 0): number =>
-    items.findIndex((item, index) => index >= startIndex && item.type === type)
-
-  const appendClonedRange = (startIndex: number, endIndex: number): void => {
-    expandedItems.push(...items.slice(startIndex, endIndex).map(cloneSequenceItem))
-  }
-
-  const expandInstruction = (item: MusicalControlInstruction): void => {
-    const targetIndex = item.type === 'DaCapo' ? 0 : findIndex('Segno')
-    if (targetIndex < 0) {
-      throw new Error('D.S. requires a Segno marker')
-    }
-
-    if (item.stop === 'fine') {
-      const fineIndex = findIndex('Fine', targetIndex)
-      appendClonedRange(targetIndex, fineIndex < 0 ? items.length : fineIndex)
-      return
-    }
-
-    const alCodaIndex = findIndex('AlCoda', targetIndex)
-    const codaIndex = findIndex('Coda', alCodaIndex < 0 ? targetIndex : alCodaIndex)
-    if (alCodaIndex < 0 || codaIndex < 0) {
-      throw new Error(
-        `${item.type === 'DaCapo' ? 'D.C.' : 'D.S.'} al Coda requires To Coda and Coda markers`,
-      )
-    }
-
-    appendClonedRange(targetIndex, alCodaIndex)
-    appendClonedRange(codaIndex, items.length)
-  }
-
-  for (const item of items) {
-    expandedItems.push(item)
-
-    if (item.type === 'DaCapo' || item.type === 'DalSegno') {
-      expandInstruction(item)
-      break
-    }
-  }
-
-  return expandedItems
-}
-
-const expandRepeatedSequenceItems = (items: SequenceItemsType[]): SequenceItemsType[] => {
-  const expandedItems: SequenceItemsType[] = []
-  const repetitionStack: RepetitionState[] = []
-
-  const openRepeat = (
-    item: Extract<SequenceItemsType, { type: 'RepeatStart' | 'RepeatEndStart' }>,
-  ): void => {
-    limit('Repeat count', item.repeatCount, 1, 1000)
-    expandedItems.push(item)
-    repetitionStack.push({
-      startIndex: expandedItems.length,
-      repeatCount: item.repeatCount,
-      repetitionsAdded: 0,
-    })
-  }
-
-  const closeRepeat = (
-    item: Extract<SequenceItemsType, { type: 'RepeatEnd' | 'RepeatEndStart' }>,
-  ): void => {
-    const repetitionState = repetitionStack.pop() ?? {
-      startIndex: 0,
-      repeatCount: 2,
-      repetitionsAdded: 0,
-    }
-    const hasAlternateEnding = item.type === 'RepeatEnd' && item.alternateEnding !== null
-    const endIndex =
-      hasAlternateEnding && repetitionState.firstEndingIndex !== undefined
-        ? repetitionState.firstEndingIndex
-        : expandedItems.length
-    const repeatCount = hasAlternateEnding
-      ? item.alternateEnding! < repetitionState.repeatCount
-        ? 1
-        : repetitionState.repeatCount - 1 - repetitionState.repetitionsAdded
-      : repetitionState.repeatCount - 1
-    const segment =
-      repetitionState.firstEndingSegment ??
-      expandedItems.slice(repetitionState.startIndex, endIndex)
-    const repeatedItems = Array.from({ length: repeatCount }).flatMap(() =>
-      segment.map(cloneSequenceItem),
-    )
-    addTailToLastPlayableItem(
-      repeatedItems.length ? repeatedItems : expandedItems,
-      item.type === 'RepeatEnd' ? item.tail : null,
-    )
-    expandedItems.push(item, ...repeatedItems)
-
-    if (hasAlternateEnding && item.alternateEnding! < repetitionState.repeatCount) {
-      repetitionStack.push({
-        ...repetitionState,
-        repetitionsAdded: repetitionState.repetitionsAdded + repeatCount,
-      })
-    }
-  }
-
-  items.forEach((item) => {
-    if (item.type === 'RepeatStart') {
-      openRepeat(item)
-      return
-    }
-
-    if (item.type === 'RepeatEndStart') {
-      closeRepeat(item)
-      openRepeat(item)
-      return
-    }
-
-    if (item.type === 'RepeatEndingStart') {
-      const repetitionState = repetitionStack[repetitionStack.length - 1]
-      if (item.alternateEnding === 1 && repetitionState) {
-        repetitionState.firstEndingIndex = expandedItems.length
-        repetitionState.firstEndingSegment = expandedItems
-          .slice(repetitionState.startIndex, repetitionState.firstEndingIndex)
-          .map(cloneSequenceItem)
-      }
-      addTailToLastPlayableItem(expandedItems, item.tail)
-      expandedItems.push(item)
-      return
-    }
-
-    if (item.type === 'RepeatEnd') {
-      closeRepeat(item)
-      return
-    }
-
-    expandedItems.push(item)
-  })
-
-  if (repetitionStack.length > 0) {
-    throw new Error('Unpaired repeat start marker "|:"')
-  }
-
-  return expandedItems
-}
-
-type ChordPitchType = PitchType | SampleRateNoteType | RatioChordPitchType | DelimiterType
-
-const isPitchType = (pitch: ChordPitchType): pitch is PitchType => {
-  return pitch.type === 'Pitch'
-}
-
-const isRatioChordPitchType = (pitch: ChordPitchType): pitch is RatioChordPitchType => {
-  return pitch.type === 'RatioChordPitch'
-}
-
-const isSampleRateNoteType = (pitch: ChordPitchType): pitch is SampleRateNoteType => {
-  return pitch.type === 'SampleRateNote'
-}
-
-const startsRatioChordSegment = (pitches: ChordPitchType[], index: number): boolean => {
-  const pitch = pitches[index]
-  if (isRatioChordPitchType(pitch!)) return true
-  if (pitch?.type === 'InversionPrefix') return isRatioChordPitchType(pitches[index + 1]!)
-  if (pitch?.type === 'TemperedPrefix') return startsRatioChordSegment(pitches, index + 1)
-  return false
-}
-
-type RatioFraction = { numerator: number; denominator: number }
-
-type ExpandedChordPitch =
-  | { type: 'Pitch'; pitch: PitchType; ratio: number; fraction: RatioFraction | null }
-  | { type: 'SampleRateNote'; pitch: SampleRateNoteType }
-  | { type: 'RatioChordPitch'; ratio: number; fraction: RatioFraction | null }
-
-const pitchRatioFraction = (pitch: PitchType): RatioFraction | null =>
-  pitch.value.type === 'PitchRatio'
-    ? { numerator: pitch.value.numerator, denominator: pitch.value.denominator }
-    : null
-
-const expandChordPitchGroup = (
-  chordPitches: ChordPitchType[],
-  getPitchRatio: (pitch: PitchType) => number,
-  temperRatioFraction: (fraction: RatioFraction) => number,
-  preserveLeadingRatioChordLabel: (hasExplicitPreviousPitch: boolean) => boolean,
-): ExpandedChordPitch[] => {
-  const result: ExpandedChordPitch[] = []
-  let previousPitchRatio = 1
-  let previousPitchFraction: RatioFraction | null = {
-    numerator: 1,
-    denominator: 1,
-  }
-  let canStackRatioChord = true
-
-  const addRatioPitchType = (
-    ratio: number,
-    fraction: RatioFraction | null,
-    tempered = false,
-  ): void => {
-    if (tempered && fraction) {
-      ratio = temperRatioFraction(fraction)
-    }
-    result.push({ type: 'RatioChordPitch', ratio, fraction })
-    previousPitchRatio = ratio
-    previousPitchFraction = fraction
-  }
-
-  const addRatioChord = (
-    ratioChordPitches: Array<RatioChordPitchType | DelimiterType>,
-    hasExplicitPreviousPitch: boolean,
-  ): void => {
-    const firstDenominator = ratioChordPitches.find(isRatioChordPitchType)?.pitch
-    const inverted = ratioChordPitches.some(
-      (pitch) => isRatioChordPitchType(pitch) && pitch.inverted,
-    )
-
-    if (firstDenominator === undefined) {
-      return
-    }
-
-    if (hasExplicitPreviousPitch && !canStackRatioChord) {
-      throw new Error('Cannot expand a ratio chord from a sample-rate pitch')
-    }
-
-    assertFinitePositive('Ratio denominator', firstDenominator)
-
-    const basePitchRatio = previousPitchRatio
-    const basePitchFraction = previousPitchFraction
-    const preserveFirstRatioLabel = preserveLeadingRatioChordLabel(hasExplicitPreviousPitch)
-    let colons = 0
-    let lastNumerator = 1
-    let isFirstPitch = true
-
-    const createFraction = (numerator: number): RatioFraction | null => {
-      if (!basePitchFraction) return null
-
-      const nextNumerator = basePitchFraction.numerator * (inverted ? firstDenominator : numerator)
-      const nextDenominator =
-        basePitchFraction.denominator * (inverted ? numerator : firstDenominator)
-      if (preserveFirstRatioLabel) {
-        return {
-          numerator: nextNumerator,
-          denominator: nextDenominator,
-        }
-      }
-      const divisor = gcd(nextNumerator, nextDenominator)
-      return {
-        numerator: nextNumerator / divisor,
-        denominator: nextDenominator / divisor,
-      }
-    }
-
-    ratioChordPitches.forEach((pitch) => {
-      if (isRatioChordPitchType(pitch)) {
-        const numerator = pitch.pitch
-        assertFinitePositive('Ratio numerator', numerator)
-
-        if (colons === 2) {
-          const step = Math.sign(numerator - lastNumerator)
-          while (step !== 0 && lastNumerator + step !== numerator) {
-            lastNumerator += step
-            addRatioPitchType(
-              basePitchRatio *
-                (inverted ? firstDenominator / lastNumerator : lastNumerator / firstDenominator),
-              createFraction(lastNumerator),
-              pitch.tempered,
-            )
-          }
-        }
-
-        if (!isFirstPitch || !hasExplicitPreviousPitch) {
-          addRatioPitchType(
-            basePitchRatio *
-              (inverted ? firstDenominator / numerator : numerator / firstDenominator),
-            createFraction(numerator),
-            pitch.tempered,
-          )
-        }
-
-        lastNumerator = numerator
-        colons = 0
-        isFirstPitch = false
-        return
-      }
-      if (pitch.type === 'Colon') {
-        colons++
-      }
-    })
-  }
-
-  let ratioChordPitches: Array<RatioChordPitchType | DelimiterType> = []
-  chordPitches.forEach((pitch, index) => {
-    if (isPitchType(pitch) || isSampleRateNoteType(pitch)) {
-      addRatioChord(ratioChordPitches, result.length > 0)
-      ratioChordPitches = []
-
-      if (isPitchType(pitch)) {
-        const ratio = getPitchRatio(pitch)
-        result.push({ type: 'Pitch', pitch, ratio, fraction: pitchRatioFraction(pitch) })
-        previousPitchRatio = ratio
-        previousPitchFraction = pitchRatioFraction(pitch)
-        canStackRatioChord = true
-      } else {
-        result.push({ type: 'SampleRateNote', pitch })
-        canStackRatioChord = false
-      }
-      return
-    }
-
-    if (pitch.type === 'Colon') {
-      ratioChordPitches.push(pitch)
-      return
-    }
-    if (pitch.type === 'Whitespace') {
-      const previousPitch = chordPitches[index - 1]
-      if (
-        previousPitch &&
-        isRatioChordPitchType(previousPitch) &&
-        startsRatioChordSegment(chordPitches, index + 1)
-      ) {
-        addRatioChord(ratioChordPitches, result.length > 0)
-        ratioChordPitches = []
-      }
-      return
-    }
-    if (isRatioChordPitchType(pitch)) {
-      ratioChordPitches.push(pitch)
-    }
-  })
-  addRatioChord(ratioChordPitches, result.length > 0)
-
-  return result
-}
 
 type MoscBeatPlayableNote = MoscBeatNote | MoscBeatSampleRateNote
 
