@@ -622,17 +622,11 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
       audioContext.sampleRate,
     )
 
-    try {
-      await registerNoiseGeneratorWorklet(offlineContext)
-    } catch (e) {
-      console.warn(e instanceof Error ? e.message : e)
-    }
-
     const transport = new Transport(offlineContext, {
       interval: OFFLINE_INTERVAL,
       lookAhead: OFFLINE_LOOKAHEAD,
     })
-    const bank = new Bank(offlineContext)
+    const bank = new Bank(offlineContext, undefined, { bufferedNoiseGenerators: true })
     const renderEngines = scores.map(({ score, gain }) => {
       const engine = new SoundEngineSwSeq(transport, bank)
       engine.setOutputGain(gain)

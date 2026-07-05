@@ -159,6 +159,122 @@ export type NoiseGeneratorNode = AudioWorkletNode &
     type: NoiseGeneratorType
   }
 
+const BUFFERED_NOISE_BASE_FREQUENCY = 440
+const BUFFERED_NOISE_SECONDS = 8
+const PINK_OCTAVE_COUNT = 10
+const PINK_GAIN = 1 / Math.sqrt(PINK_OCTAVE_COUNT)
+
+function createNoiseSampleGenerator(noise: NoiseGeneratorType): () => number {
+  let previousWhiteSample = 0
+  let previousPinkSample = 0
+  let brownSample = 0
+  const pinkOctaveSamples = new Float64Array(PINK_OCTAVE_COUNT)
+  const pinkOctaveCountdowns = new Uint32Array(PINK_OCTAVE_COUNT)
+
+  const nextPinkSample = () => {
+    let pinkSample = 0
+
+    for (let octave = 0; octave < PINK_OCTAVE_COUNT; octave++) {
+      if (pinkOctaveCountdowns[octave] === 0) {
+        pinkOctaveSamples[octave] = Math.random() * 2 - 1
+        pinkOctaveCountdowns[octave] = 1 << octave
+      }
+
+      pinkSample += pinkOctaveSamples[octave] ?? 0
+      pinkOctaveCountdowns[octave] = (pinkOctaveCountdowns[octave] ?? 1) - 1
+    }
+
+    return pinkSample * PINK_GAIN
+  }
+
+  return () => {
+    if (noise === 'pink') return nextPinkSample()
+
+    if (noise === 'blue') {
+      const pinkSample = nextPinkSample()
+      const blueSample = pinkSample - previousPinkSample
+      previousPinkSample = pinkSample
+      return blueSample
+    }
+
+    const whiteSample = Math.random() * 2 - 1
+
+    if (noise === 'brown') {
+      brownSample = brownSample * 0.95 + whiteSample * 0.8
+      brownSample = Math.max(-2, Math.min(2, brownSample))
+      return brownSample
+    }
+
+    if (noise === 'violet') {
+      const violetSample = (whiteSample - previousWhiteSample) * 0.66
+      previousWhiteSample = whiteSample
+      return violetSample
+    }
+
+    return whiteSample
+  }
+}
+
+function createNoiseBuffer(context: BaseAudioContext, noise: NoiseGeneratorType): AudioBuffer {
+  const frameCount = Math.max(1, Math.ceil(context.sampleRate * BUFFERED_NOISE_SECONDS))
+  const buffer = context.createBuffer(1, frameCount, context.sampleRate)
+  const channel = buffer.getChannelData(0)
+  const nextSample = createNoiseSampleGenerator(noise)
+
+  for (let index = 0; index < channel.length; index++) channel[index] = nextSample()
+
+  return buffer
+}
+
+export function createBufferedNoiseGeneratorNode(context: BaseAudioContext): NoiseGeneratorNode {
+  let type: NoiseGeneratorType = 'white'
+  let source: AudioBufferSourceNode
+  const frequencySource = context.createConstantSource()
+  const playbackRateScaler = context.createGain()
+  const gainNode = context.createGain()
+
+  frequencySource.offset.setValueAtTime(BUFFERED_NOISE_BASE_FREQUENCY, context.currentTime)
+  playbackRateScaler.gain.setValueAtTime(1 / BUFFERED_NOISE_BASE_FREQUENCY, context.currentTime)
+  frequencySource.connect(playbackRateScaler)
+  frequencySource.start(context.currentTime)
+  gainNode.gain.setValueAtTime(0, context.currentTime)
+
+  const startSource = () => {
+    if (source !== undefined) {
+      playbackRateScaler.disconnect()
+      source.disconnect()
+      source.stop(context.currentTime)
+    }
+
+    source = context.createBufferSource()
+    source.buffer = createNoiseBuffer(context, type)
+    source.loop = true
+    playbackRateScaler.connect(source.playbackRate)
+    source.connect(gainNode)
+    source.start(context.currentTime)
+  }
+
+  startSource()
+
+  Object.defineProperties(gainNode, {
+    detune: { get: () => source.detune },
+    frequency: { value: frequencySource.offset },
+    type: {
+      get: () => type,
+      set: (value: NoiseGeneratorType) => {
+        if (!isNoiseGeneratorType(value)) {
+          throw new Error(`"${value}" is not a valid noise generator.`)
+        }
+        if (value === type) return
+        type = value
+        startSource()
+      },
+    },
+  })
+
+  return gainNode as NoiseGeneratorNode
+}
+
 export function createNoiseGeneratorNode(context: BaseAudioContext): NoiseGeneratorNode {
   const node = new AudioWorkletNode(context, NOISE_GENERATOR_PROCESSOR_NAME, {
     numberOfInputs: 0,

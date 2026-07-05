@@ -1,5 +1,9 @@
 import { EnvelopedAperiodicOscillator, EnvelopedOscillator, EnvelopedUnison } from './nodes'
-import { createNoiseGeneratorNode, type NoiseGeneratorNode } from './noise-worklet'
+import {
+  createBufferedNoiseGeneratorNode,
+  createNoiseGeneratorNode,
+  type NoiseGeneratorNode,
+} from './noise-worklet'
 
 /**
  * Bank of re-usable enveloped oscillator nodes.
@@ -15,14 +19,20 @@ export class Bank {
   private unisons: { node: EnvelopedUnison; age: number }[]
   private aperiodics: { node: EnvelopedAperiodicOscillator; age: number }[]
   private noiseGenerators: { node: NoiseGeneratorNode; age: number }[]
+  private bufferedNoiseGenerators: boolean
 
-  constructor(context: BaseAudioContext, maxPolyphony = 32) {
+  constructor(
+    context: BaseAudioContext,
+    maxPolyphony = 32,
+    opts?: { bufferedNoiseGenerators?: boolean },
+  ) {
     this.context = context
     this.maxPolyphony = maxPolyphony
     this.oscillators = []
     this.unisons = []
     this.aperiodics = []
     this.noiseGenerators = []
+    this.bufferedNoiseGenerators = opts?.bufferedNoiseGenerators ?? false
   }
 
   allocateOscillator() {
@@ -145,11 +155,16 @@ export class Bank {
 
   allocateNoiseGenerator() {
     const audioWorklet = this.context.audioWorklet
-    if (audioWorklet === undefined) {
+    if (audioWorklet === undefined && !this.bufferedNoiseGenerators) {
       return null
     }
     if (this.noiseGenerators.length < this.maxPolyphony) {
-      const osc = { node: createNoiseGeneratorNode(this.context), age: -1 }
+      const osc = {
+        node: this.bufferedNoiseGenerators
+          ? createBufferedNoiseGeneratorNode(this.context)
+          : createNoiseGeneratorNode(this.context),
+        age: -1,
+      }
       this.noiseGenerators.push(osc)
       return osc.node
     }
