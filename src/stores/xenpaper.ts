@@ -1,3 +1,4 @@
+import audioBufferToWav from 'audiobuffer-to-wav'
 import { defineStore } from 'pinia'
 import { computed, reactive, ref, shallowRef, watch } from 'vue'
 
@@ -43,6 +44,8 @@ import {
 const EMPTY_SCORE = Object.freeze({ sequence: [], lengthTime: 0 })
 const TAB_TITLE_LENGTH = 18
 const MAX_DEAD_SOURCE_TABS = 10
+const RENDER_CHANNEL_COUNT = 2
+const WAV_MIME_TYPE = 'audio/wav'
 
 type ScoreEngine = ReturnType<typeof useScoreEngine>
 
@@ -584,6 +587,48 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     await restartPlaybackFromSelectedLine()
   }
 
+  const renderSongToWavBlob = async (tailSeconds: number): Promise<Blob> => {
+    const renderedSources = liveScoreEngines.value.map((engine) => ({
+      sourceCode: engine.sourceCode.value,
+      gain: getScoreEngineGain(engine),
+    }))
+    const scores = renderedSources.flatMap(({ sourceCode, gain }) => {
+      const source = parseAndProcessSourceCode(sourceCode)
+      if (!source.playable) return []
+
+      return [{ score: source.score, gain }]
+    })
+    const renderLength = Math.max(0, ...scores.map(({ score }) => score.lengthTime))
+    const duration = renderLength + Math.max(0, tailSeconds)
+    const frameCount = Math.max(1, Math.ceil(duration * audioContext.sampleRate))
+    const offlineContext = new OfflineAudioContext(
+      RENDER_CHANNEL_COUNT,
+      frameCount,
+      audioContext.sampleRate,
+    )
+
+    await registerNoiseGeneratorWorklet(offlineContext)
+
+    const transport = new Transport(offlineContext, { interval: duration + 1, lookAhead: 0 })
+    const bank = new Bank(offlineContext)
+    const renderEngines = scores.map(({ score, gain }) => {
+      const engine = new SoundEngineSwSeq(transport, bank)
+      engine.setOutputGain(gain)
+      engine.setScore(score)
+      return engine
+    })
+
+    try {
+      transport.endTime = duration
+      transport.start(0)
+      const renderedBuffer = await offlineContext.startRendering()
+      return new Blob([audioBufferToWav(renderedBuffer)], { type: WAV_MIME_TYPE })
+    } finally {
+      renderEngines.forEach((engine) => engine.dispose())
+      bank.stop()
+    }
+  }
+
   const toggleLoop = (): void => {
     isLooping.value = !isLooping.value
   }
@@ -667,6 +712,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     restartPlaybackFromLine,
     restartPlaybackFromStart,
     togglePlayback,
+    renderSongToWavBlob,
     toggleLoop,
     syncPlaybackPosition,
     resetPlaybackPosition,

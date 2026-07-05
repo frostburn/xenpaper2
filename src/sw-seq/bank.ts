@@ -8,7 +8,7 @@ import { createNoiseGeneratorNode, type NoiseGeneratorNode } from './noise-workl
  * but that's not always true unfortunately.
  */
 export class Bank {
-  readonly context: AudioContext
+  readonly context: BaseAudioContext
   private maxPolyphony: number
   // Negative age indicates that the node is reserved
   private oscillators: { node: EnvelopedOscillator; age: number }[]
@@ -16,7 +16,7 @@ export class Bank {
   private aperiodics: { node: EnvelopedAperiodicOscillator; age: number }[]
   private noiseGenerators: { node: NoiseGeneratorNode; age: number }[]
 
-  constructor(context: AudioContext, maxPolyphony = 32) {
+  constructor(context: BaseAudioContext, maxPolyphony = 32) {
     this.context = context
     this.maxPolyphony = maxPolyphony
     this.oscillators = []

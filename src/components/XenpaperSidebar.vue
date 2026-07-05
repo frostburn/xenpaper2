@@ -20,6 +20,8 @@ import PitchRuler from './PitchRuler.vue'
 import TutorialSidebar from './TutorialSidebar.vue'
 
 const COPY_FEEDBACK_MS = 2000
+const RENDER_FILE_NAME = 'xenpaper-render.wav'
+const WAV_MIME_TYPE = 'audio/wav'
 
 const props = defineProps<{
   sidebarMode: SidebarMode
@@ -27,6 +29,7 @@ const props = defineProps<{
   embedCode: string
   embedUrl: string
   sourceCodes: string[]
+  renderSongToWavBlob: (tailSeconds: number) => Promise<Blob>
   initialRulerState?: InitialRulerState
 }>()
 
@@ -43,6 +46,10 @@ const copiedEmbedCode = ref(false)
 const fileInput = useTemplateRef('fileInput')
 const importError = ref('')
 const serializedSourceFile = computed(() => serializeXenpaperScoreFile(props.sourceCodes))
+const renderTailSeconds = ref(5)
+const renderedWav = ref<Blob | undefined>()
+const renderError = ref('')
+const isRendering = ref(false)
 let shareLinkResetTimeout: number | undefined
 let embedCodeResetTimeout: number | undefined
 
@@ -95,6 +102,20 @@ const selectSourceFile = (): void => {
   fileInput.value?.click()
 }
 
+const renderSong = async (): Promise<void> => {
+  isRendering.value = true
+  renderError.value = ''
+  renderedWav.value = undefined
+
+  try {
+    renderedWav.value = await props.renderSongToWavBlob(renderTailSeconds.value)
+  } catch (error) {
+    renderError.value = error instanceof Error ? error.message : 'Failed to render WAV.'
+  } finally {
+    isRendering.value = false
+  }
+}
+
 const importSourceFile = async (event: Event): Promise<void> => {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
@@ -111,6 +132,13 @@ const importSourceFile = async (event: Event): Promise<void> => {
 }
 
 watch(() => props.shareUrl, resetCopiedShareLink)
+watch(
+  () => props.sourceCodes,
+  () => {
+    renderedWav.value = undefined
+    renderError.value = ''
+  },
+)
 watch(() => props.embedCode, resetCopiedEmbedCode)
 
 onMounted(() => {
@@ -195,6 +223,35 @@ onUnmounted(() => {
           @change="importSourceFile"
         />
         <p v-if="importError" class="file-error" role="alert">{{ importError }}</p>
+
+        <h2 class="render-heading">Render</h2>
+        <p>Render the current tune to a WAV file in your browser.</p>
+        <label class="share-field">
+          <span>Tail seconds</span>
+          <input
+            v-model.number="renderTailSeconds"
+            class="share-link-input"
+            type="number"
+            min="0"
+            step="0.5"
+          />
+        </label>
+        <div class="file-actions">
+          <button class="panel-button" type="button" :disabled="isRendering" @click="renderSong">
+            {{ isRendering ? 'Rendering...' : 'Render' }}
+          </button>
+          <BlobDownloadLink
+            v-if="renderedWav"
+            class="panel-button"
+            :filename="RENDER_FILE_NAME"
+            :contents="renderedWav"
+            :mime-type="WAV_MIME_TYPE"
+          >
+            Download
+          </BlobDownloadLink>
+          <button v-else class="panel-button" type="button" disabled>Download</button>
+        </div>
+        <p v-if="renderError" class="file-error" role="alert">{{ renderError }}</p>
 
         <h2 class="embed-heading">Embed</h2>
         <p>Copy this HTML to embed the current tune in another page.</p>
@@ -333,7 +390,8 @@ onUnmounted(() => {
 }
 
 .sidebar-content .embed-heading,
-.sidebar-content .file-heading {
+.sidebar-content .file-heading,
+.sidebar-content .render-heading {
   margin-top: 2.5rem;
 }
 
@@ -379,6 +437,11 @@ onUnmounted(() => {
   outline: none;
   opacity: 0.7;
   transition: opacity 0.2s ease-out;
+}
+
+.panel-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
 }
 
 .panel-button:hover,

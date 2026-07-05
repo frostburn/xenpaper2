@@ -33,7 +33,7 @@ export type TransportOptions = {
  * Transport using look-ahead scheduling.
  */
 export class Transport extends EventTarget {
-  readonly context: AudioContext
+  readonly context: BaseAudioContext
   active: boolean
   loop: boolean
 
@@ -55,7 +55,7 @@ export class Transport extends EventTarget {
   private useSetTimeoutFallback: boolean
   private tickTimeout: TimeoutHandle | undefined
 
-  constructor(context: AudioContext, options: TransportOptions = {}) {
+  constructor(context: BaseAudioContext, options: TransportOptions = {}) {
     super()
 
     const { interval = 0.1, lookAhead = 0.2, useSetTimeoutFallback = false } = options
