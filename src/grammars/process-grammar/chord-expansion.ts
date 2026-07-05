@@ -36,7 +36,7 @@ export type RatioFraction = { numerator: number; denominator: number }
 type ExpandedChordPitch =
   | { type: 'Pitch'; pitch: PitchType; ratio: number; fraction: RatioFraction | null }
   | { type: 'SampleRateNote'; pitch: SampleRateNoteType }
-  | { type: 'RatioChordPitch'; ratio: number; fraction: RatioFraction | null }
+  | { type: 'RatioChordPitch'; ratio: number; fraction: RatioFraction | null; tempered: boolean }
 
 const pitchRatioFraction = (pitch: PitchType): RatioFraction | null =>
   pitch.value.type === 'PitchRatio'
@@ -48,6 +48,7 @@ export const expandChordPitchGroup = (
   getPitchRatio: (pitch: PitchType) => number,
   temperRatioFraction: (fraction: RatioFraction) => number,
   preserveLeadingRatioChordLabel: (hasExplicitPreviousPitch: boolean) => boolean,
+  resetTemperedRatioChordFromPrevious: (hasExplicitPreviousPitch: boolean) => boolean = () => false,
 ): ExpandedChordPitch[] => {
   const result: ExpandedChordPitch[] = []
   let previousPitchRatio = 1
@@ -65,7 +66,7 @@ export const expandChordPitchGroup = (
     if (tempered && fraction) {
       ratio = temperRatioFraction(fraction)
     }
-    result.push({ type: 'RatioChordPitch', ratio, fraction })
+    result.push({ type: 'RatioChordPitch', ratio, fraction, tempered })
     previousPitchRatio = ratio
     previousPitchFraction = fraction
   }
@@ -89,9 +90,15 @@ export const expandChordPitchGroup = (
 
     assertFinitePositive('Ratio denominator', firstDenominator)
 
-    const basePitchRatio = previousPitchRatio
-    const basePitchFraction = previousPitchFraction
-    const preserveFirstRatioLabel = preserveLeadingRatioChordLabel(hasExplicitPreviousPitch)
+    const resetFromPrevious =
+      resetTemperedRatioChordFromPrevious(hasExplicitPreviousPitch) &&
+      ratioChordPitches.some((pitch) => isRatioChordPitchType(pitch) && pitch.tempered)
+    const basePitchRatio = resetFromPrevious ? 1 : previousPitchRatio
+    const basePitchFraction = resetFromPrevious
+      ? { numerator: 1, denominator: 1 }
+      : previousPitchFraction
+    const preserveFirstRatioLabel =
+      resetFromPrevious || preserveLeadingRatioChordLabel(hasExplicitPreviousPitch)
     let colons = 0
     let lastNumerator = 1
     let isFirstPitch = true
@@ -133,7 +140,7 @@ export const expandChordPitchGroup = (
           }
         }
 
-        if (!isFirstPitch || !hasExplicitPreviousPitch) {
+        if (!isFirstPitch || !hasExplicitPreviousPitch || resetFromPrevious) {
           addRatioPitchType(
             basePitchRatio *
               (inverted ? firstDenominator / numerator : numerator / firstDenominator),
