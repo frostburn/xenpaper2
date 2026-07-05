@@ -817,7 +817,6 @@ const setScale = (setScale: SetScaleType, context: Context): void => {
         (pitch) => pitchToRatio(pitch, context),
         (fraction) => temperedRatioFractionToRatio(fraction, context),
         (hasExplicitPreviousPitch) => !hasExplicitPreviousPitch,
-        (hasExplicitPreviousPitch) => hasExplicitPreviousPitch,
       )
 
       context.scale = []

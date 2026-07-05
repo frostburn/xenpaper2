@@ -288,6 +288,17 @@ describe('ratio chord syntax inside chords', () => {
     expect(noteLabels('{12edo} [4/3 ~3/2]')).toEqual(['4/3  498.0c', '~3/2  700.0c'])
     expect(noteLabels('{12edo} [4:5 ~6:7]')).toEqual(['4/4  0.0c', '5/4  386.3c', '~35/24  700.0c'])
     expect(noteLabels('{12edo} ~101/1')).toEqual(['~101/1  800.0c'])
+    expect(noteLabels('{11edo} ~3/2 ~7:8:11')).toEqual([
+      '~3/2  654.5c',
+      '~7/7  0.0c',
+      '~8/7  218.2c',
+      '~11/7  763.6c',
+    ])
+    expect(noteLabels('{12edo}{1/1 ~4:5:6} 0 1 2')).toEqual([
+      '1/1  0.0c',
+      '~5/4  400.0c',
+      '~3/2  700.0c',
+    ])
   })
 })
 
@@ -1706,18 +1717,6 @@ describe('grammar to ruler state', () => {
       String.raw`9\12  900.0c`,
       String.raw`10\12  1000.0c`,
       String.raw`11\12  1100.0c`,
-    ])
-  })
-
-  it('keeps tilde prefixes on tempered ratio labels in ruler plots', () => {
-    const plot = processGrammar(parseSource('{11edo}{~3/2 ~7:8:11}(plot)')).initialRulerState
-      .plots[0]!
-
-    expect(plot.map((note) => note.label)).toEqual([
-      '~3/2  654.5c',
-      '~7/7  0.0c',
-      '~8/7  218.2c',
-      '~11/7  763.6c',
     ])
   })
 
