@@ -22,6 +22,7 @@ import {
 } from '../share-link'
 import { SoundEngineSwSeq } from '../sound-engine-sw-seq'
 import { Bank } from '../sw-seq/bank'
+import { renderOfflineNoiseEvents, stripOfflineNoiseEvents } from '../sw-seq/offline-noise-renderer'
 import { registerNoiseGeneratorWorklet } from '../sw-seq/noise-worklet'
 import { Transport } from '../sw-seq/transport'
 import { createSourceDisplayTokens } from '../source-display'
@@ -606,12 +607,17 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
       sourceCode: engine.sourceCode.value,
       gain: getScoreEngineGain(engine),
     }))
-    const scores = renderedSources.flatMap(({ sourceCode, gain }) => {
+    const renderSources = renderedSources.flatMap(({ sourceCode, gain }) => {
       const source = parseAndProcessSourceCode(sourceCode)
       if (!source.playable) return []
 
       return [{ score: source.score, gain }]
     })
+    const { scores, noiseEvents } = stripOfflineNoiseEvents(
+      renderSources,
+      OFFLINE_LOOKAHEAD,
+      audioContext.sampleRate,
+    )
     const renderLength = Math.max(0, ...scores.map(({ score }) => score.lengthTime))
     // 100ms pickup time due to look-ahead is intentional until someone complains about it
     const duration = renderLength + OFFLINE_LOOKAHEAD + Math.max(0, tailSeconds)
@@ -626,7 +632,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
       interval: OFFLINE_INTERVAL,
       lookAhead: OFFLINE_LOOKAHEAD,
     })
-    const bank = new Bank(offlineContext, undefined, { bufferedNoiseGenerators: true })
+    const bank = new Bank(offlineContext)
     const renderEngines = scores.map(({ score, gain }) => {
       const engine = new SoundEngineSwSeq(transport, bank)
       engine.setOutputGain(gain)
@@ -638,6 +644,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
       transport.endTime = duration
       transport.start(0)
       const renderedBuffer = await offlineContext.startRendering()
+      renderOfflineNoiseEvents(renderedBuffer, noiseEvents)
       return new Blob([audioBufferToWav(renderedBuffer)], { type: WAV_MIME_TYPE })
     } finally {
       renderEngines.forEach((engine) => engine.dispose())
