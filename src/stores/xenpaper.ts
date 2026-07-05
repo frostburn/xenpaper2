@@ -48,7 +48,6 @@ const RENDER_CHANNEL_COUNT = 2
 const WAV_MIME_TYPE = 'audio/wav'
 
 // WebAudioAPI buffering remains opaque but these seem to work
-const OFFLINE_INTERVAL = 0.2
 const OFFLINE_LOOKAHEAD = 0.1
 
 type ScoreEngine = ReturnType<typeof useScoreEngine>
@@ -629,7 +628,9 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     }
 
     const transport = new Transport(offlineContext, {
-      interval: OFFLINE_INTERVAL,
+      // OfflineAudioContext rendering does not reliably dispatch timer-ended events while
+      // rendering, so schedule the whole render in the initial transport tick.
+      interval: duration,
       lookAhead: OFFLINE_LOOKAHEAD,
     })
     const bank = new Bank(offlineContext)
