@@ -102,7 +102,6 @@ class SWSeqNoiseGenerator extends AudioWorkletProcessor {
     return [
       { name: 'frequency', defaultValue: 440, automationRate: 'a-rate' },
       { name: 'detune', defaultValue: 0, automationRate: 'a-rate' },
-      { name: 'gain', defaultValue: 0, automationRate: 'a-rate' },
     ]
   }
 
@@ -110,7 +109,6 @@ class SWSeqNoiseGenerator extends AudioWorkletProcessor {
     const output = outputs[0]
     const frequencies = parameters.frequency
     const detunes = parameters.detune
-    const gains = parameters.gain
     const frameCount = output[0]?.length ?? 0
 
     for (let sampleIndex = 0; sampleIndex < frameCount; sampleIndex++) {
@@ -124,10 +122,8 @@ class SWSeqNoiseGenerator extends AudioWorkletProcessor {
         this.phase -= Math.floor(this.phase)
       }
 
-      const gain = gains.length === 1 ? gains[0] : gains[sampleIndex]
-      const value = this.currentSample * gain
       for (let channelIndex = 0; channelIndex < output.length; channelIndex++) {
-        output[channelIndex][sampleIndex] = value
+        output[channelIndex][sampleIndex] = this.currentSample
       }
     }
 
@@ -160,25 +156,27 @@ export function registerNoiseGeneratorWorklet(context: BaseAudioContext): Promis
   return promise
 }
 
-export type NoiseGeneratorNode = AudioWorkletNode &
-  GainNode &
+export type NoiseGeneratorNode = GainNode &
   Pick<OscillatorNode, 'detune' | 'frequency'> & {
     type: NoiseGeneratorType
   }
 
 export function createNoiseGeneratorNode(context: BaseAudioContext): NoiseGeneratorNode {
-  const node = new AudioWorkletNode(context, NOISE_GENERATOR_PROCESSOR_NAME, {
+  const worklet = new AudioWorkletNode(context, NOISE_GENERATOR_PROCESSOR_NAME, {
     numberOfInputs: 0,
     numberOfOutputs: 1,
     outputChannelCount: [1],
-  }) as NoiseGeneratorNode
+  })
+  const output = context.createGain() as NoiseGeneratorNode
+  output.gain.setValueAtTime(0, context.currentTime)
+  worklet.connect(output)
 
   let type: NoiseGeneratorType = 'white'
 
-  Object.defineProperties(node, {
-    detune: { value: node.parameters.get('detune') },
-    frequency: { value: node.parameters.get('frequency') },
-    gain: { value: node.parameters.get('gain') },
+  Object.defineProperties(output, {
+    detune: { value: worklet.parameters.get('detune') },
+    frequency: { value: worklet.parameters.get('frequency') },
+    source: { value: worklet },
     type: {
       get: () => type,
       set: (value: NoiseGeneratorType) => {
@@ -186,10 +184,10 @@ export function createNoiseGeneratorNode(context: BaseAudioContext): NoiseGenera
           throw new Error(`"${value}" is not a valid noise generator.`)
         }
         type = value
-        node.port.postMessage({ type: 'noise', noise: value })
+        worklet.port.postMessage({ type: 'noise', noise: value })
       },
     },
   })
 
-  return node
+  return output
 }
