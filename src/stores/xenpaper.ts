@@ -47,6 +47,10 @@ const MAX_DEAD_SOURCE_TABS = 10
 const RENDER_CHANNEL_COUNT = 2
 const WAV_MIME_TYPE = 'audio/wav'
 
+// WebAudioAPI buffering remains opaque but these seem to work
+const OFFLINE_INTERVAL = 0.2
+const OFFLINE_LOOKAHEAD = 0.1
+
 type ScoreEngine = ReturnType<typeof useScoreEngine>
 
 // Coupling of a sound engine to a source code with history
@@ -609,7 +613,8 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
       return [{ score: source.score, gain }]
     })
     const renderLength = Math.max(0, ...scores.map(({ score }) => score.lengthTime))
-    const duration = renderLength + Math.max(0, tailSeconds)
+    // 100ms pickup time due to look-ahead is intentional until someone complains about it
+    const duration = renderLength + OFFLINE_LOOKAHEAD + Math.max(0, tailSeconds)
     const frameCount = Math.max(1, Math.ceil(duration * audioContext.sampleRate))
     const offlineContext = new OfflineAudioContext(
       RENDER_CHANNEL_COUNT,
@@ -617,9 +622,16 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
       audioContext.sampleRate,
     )
 
-    await registerNoiseGeneratorWorklet(offlineContext)
+    try {
+      await registerNoiseGeneratorWorklet(offlineContext)
+    } catch (e) {
+      console.warn(e instanceof Error ? e.message : e)
+    }
 
-    const transport = new Transport(offlineContext, { interval: 0.2, lookAhead: 0.1 })
+    const transport = new Transport(offlineContext, {
+      interval: OFFLINE_INTERVAL,
+      lookAhead: OFFLINE_LOOKAHEAD,
+    })
     const bank = new Bank(offlineContext)
     const renderEngines = scores.map(({ score, gain }) => {
       const engine = new SoundEngineSwSeq(transport, bank)

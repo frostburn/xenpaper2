@@ -48,6 +48,7 @@ const fileInput = useTemplateRef('fileInput')
 const importError = ref('')
 const serializedSourceFile = computed(() => serializeXenpaperScoreFile(props.sourceCodes))
 const renderTailSeconds = ref(1)
+const cacheTailSeconds = ref(1)
 const renderedWav = ref<Blob | undefined>()
 const renderError = ref('')
 const isRendering = ref(false)
@@ -107,17 +108,28 @@ const selectSourceFile = (): void => {
 const renderSong = async (): Promise<void> => {
   const requestId = ++renderRequestId
   const renderCacheKey = props.renderCacheKey
+  cacheTailSeconds.value = renderTailSeconds.value
   isRendering.value = true
   renderError.value = ''
   renderedWav.value = undefined
 
   try {
     const wav = await props.renderSongToWavBlob(renderTailSeconds.value)
-    if (requestId !== renderRequestId || renderCacheKey !== props.renderCacheKey) return
+    if (
+      requestId !== renderRequestId ||
+      renderCacheKey !== props.renderCacheKey ||
+      renderTailSeconds.value !== cacheTailSeconds.value
+    )
+      return
 
     renderedWav.value = wav
   } catch (error) {
-    if (requestId !== renderRequestId || renderCacheKey !== props.renderCacheKey) return
+    if (
+      requestId !== renderRequestId ||
+      renderCacheKey !== props.renderCacheKey ||
+      renderTailSeconds.value !== cacheTailSeconds.value
+    )
+      return
 
     renderError.value = error instanceof Error ? error.message : 'Failed to render WAV.'
   } finally {
@@ -142,7 +154,7 @@ const importSourceFile = async (event: Event): Promise<void> => {
 
 watch(() => props.shareUrl, resetCopiedShareLink)
 watch(
-  () => props.renderCacheKey,
+  () => [props.renderCacheKey, renderTailSeconds.value],
   () => {
     renderRequestId++
     isRendering.value = false
