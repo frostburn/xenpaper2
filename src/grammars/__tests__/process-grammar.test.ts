@@ -275,6 +275,23 @@ describe('ratio chord syntax inside chords', () => {
     expect(noteLabels('{8edo}[4/3 ~5:6:7]')).toEqual(['4/3  498.0c', '798.0c', '948.0c'])
   })
 
+  it('keeps cents-only labels across longer mixed-temperament runs until a real pitch resets the base', () => {
+    expect(noteLabels('{12edo}[4/3 ~5:6:7 ~7:8]')).toEqual([
+      '4/3  498.0c',
+      '798.0c',
+      '1098.0c',
+      '98.0c',
+    ])
+    expect(noteLabels('{12edo}[4/3 ~5:6:7 ~7:8 ~3/2 ~5:6]')).toEqual([
+      '4/3  498.0c',
+      '798.0c',
+      '1098.0c',
+      '98.0c',
+      '~3/2  700.0c',
+      '~9/5  1000.0c',
+    ])
+  })
+
   it('throws when expanding a ratio chord from a sample-rate pitch', () => {
     expect(() => noteItems('[! 3:4]')).toThrow(
       'Cannot expand a ratio chord from a sample-rate pitch',

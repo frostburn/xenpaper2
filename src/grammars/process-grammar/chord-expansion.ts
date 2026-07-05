@@ -56,6 +56,7 @@ export const expandChordPitchGroup = (
     denominator: 1,
   }
   let previousPitchTempered = false
+  let previousPitchCanLabelFraction = true
   let canStackRatioChord = true
 
   const addRatioPitchType = (
@@ -73,6 +74,7 @@ export const expandChordPitchGroup = (
     previousPitchRatio = ratio
     previousPitchFraction = fraction
     previousPitchTempered = tempered
+    previousPitchCanLabelFraction = labelFraction !== null
   }
 
   const addRatioChord = (
@@ -97,6 +99,7 @@ export const expandChordPitchGroup = (
     const basePitchRatio = previousPitchRatio
     const basePitchFraction = previousPitchFraction
     const basePitchTempered = previousPitchTempered
+    const basePitchCanLabelFraction = previousPitchCanLabelFraction
     const preserveFirstRatioLabel = preserveLeadingRatioChordLabel(hasExplicitPreviousPitch)
     let colons = 0
     let lastNumerator = 1
@@ -145,7 +148,8 @@ export const expandChordPitchGroup = (
               basePitchRatio * createIntervalRatio(lastNumerator, pitchTempered),
               createFraction(lastNumerator),
               pitchTempered,
-              !hasExplicitPreviousPitch || basePitchTempered === pitchTempered
+              !hasExplicitPreviousPitch ||
+                (basePitchCanLabelFraction && basePitchTempered === pitchTempered)
                 ? createFraction(lastNumerator)
                 : null,
             )
@@ -157,7 +161,8 @@ export const expandChordPitchGroup = (
             basePitchRatio * createIntervalRatio(numerator, pitchTempered),
             createFraction(numerator),
             pitchTempered,
-            !hasExplicitPreviousPitch || basePitchTempered === pitchTempered
+            !hasExplicitPreviousPitch ||
+              (basePitchCanLabelFraction && basePitchTempered === pitchTempered)
               ? createFraction(numerator)
               : null,
           )
@@ -186,10 +191,12 @@ export const expandChordPitchGroup = (
         previousPitchRatio = ratio
         previousPitchFraction = pitchRatioFraction(pitch)
         previousPitchTempered = pitch.value.type === 'PitchRatio' && !!pitch.value.tempered
+        previousPitchCanLabelFraction = pitchRatioFraction(pitch) !== null
         canStackRatioChord = true
       } else {
         result.push({ type: 'SampleRateNote', pitch })
         previousPitchTempered = false
+        previousPitchCanLabelFraction = false
         canStackRatioChord = false
       }
       return
