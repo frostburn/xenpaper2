@@ -270,6 +270,28 @@ describe('ratio chord syntax inside chords', () => {
     ])
   })
 
+  it('uses cents-only labels for ratio chord segments mixed with a differently tempered ratio base', () => {
+    expect(noteLabels('{8edo}[~4/3 5:6:7]')).toEqual(['~4/3  450.0c', '765.6c', '1032.5c'])
+    expect(noteLabels('{8edo}[4/3 ~5:6:7]')).toEqual(['4/3  498.0c', '798.0c', '948.0c'])
+  })
+
+  it('keeps cents-only labels across longer mixed-temperament runs until a real pitch resets the base', () => {
+    expect(noteLabels('{12edo}[4/3 ~5:6:7 ~7:8]')).toEqual([
+      '4/3  498.0c',
+      '798.0c',
+      '1098.0c',
+      '98.0c',
+    ])
+    expect(noteLabels('{12edo}[4/3 ~5:6:7 ~7:8 ~3/2 ~5:6]')).toEqual([
+      '4/3  498.0c',
+      '798.0c',
+      '1098.0c',
+      '98.0c',
+      '~3/2  700.0c',
+      '~9/5  1000.0c',
+    ])
+  })
+
   it('throws when expanding a ratio chord from a sample-rate pitch', () => {
     expect(() => noteItems('[! 3:4]')).toThrow(
       'Cannot expand a ratio chord from a sample-rate pitch',
@@ -286,7 +308,7 @@ describe('ratio chord syntax inside chords', () => {
       '~2/1  1200.0c',
     ])
     expect(noteLabels('{12edo} [4/3 ~3/2]')).toEqual(['4/3  498.0c', '~3/2  700.0c'])
-    expect(noteLabels('{12edo} [4:5 ~6:7]')).toEqual(['4/4  0.0c', '5/4  386.3c', '~35/24  700.0c'])
+    expect(noteLabels('{12edo} [4:5 ~6:7]')).toEqual(['4/4  0.0c', '5/4  386.3c', '686.3c'])
     expect(noteLabels('{12edo} ~101/1')).toEqual(['~101/1  800.0c'])
     expect(noteLabels('{11edo} ~3/2 ~7:8:11')).toEqual([
       '~3/2  654.5c',
@@ -294,11 +316,7 @@ describe('ratio chord syntax inside chords', () => {
       '~8/7  218.2c',
       '~11/7  763.6c',
     ])
-    expect(noteLabels('{12edo}{1/1 ~4:5:6} 0 1 2')).toEqual([
-      '1/1  0.0c',
-      '~5/4  400.0c',
-      '~3/2  700.0c',
-    ])
+    expect(noteLabels('{12edo}{1/1 ~4:5:6} 0 1 2')).toEqual(['1/1  0.0c', '400.0c', '700.0c'])
   })
 })
 

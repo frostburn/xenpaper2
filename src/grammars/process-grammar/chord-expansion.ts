@@ -55,19 +55,26 @@ export const expandChordPitchGroup = (
     numerator: 1,
     denominator: 1,
   }
+  let previousPitchTempered = false
+  let previousPitchCanLabelFraction = true
   let canStackRatioChord = true
 
   const addRatioPitchType = (
     ratio: number,
     fraction: RatioFraction | null,
     tempered = false,
+    labelFraction = fraction,
   ): void => {
-    if (tempered && fraction) {
-      ratio = temperRatioFraction(fraction)
-    }
-    result.push({ type: 'RatioChordPitch', ratio, fraction, tempered })
+    result.push({
+      type: 'RatioChordPitch',
+      ratio,
+      fraction: labelFraction,
+      tempered,
+    })
     previousPitchRatio = ratio
     previousPitchFraction = fraction
+    previousPitchTempered = tempered
+    previousPitchCanLabelFraction = labelFraction !== null
   }
 
   const addRatioChord = (
@@ -91,10 +98,22 @@ export const expandChordPitchGroup = (
 
     const basePitchRatio = previousPitchRatio
     const basePitchFraction = previousPitchFraction
+    const basePitchTempered = previousPitchTempered
+    const basePitchCanLabelFraction = previousPitchCanLabelFraction
     const preserveFirstRatioLabel = preserveLeadingRatioChordLabel(hasExplicitPreviousPitch)
     let colons = 0
     let lastNumerator = 1
     let isFirstPitch = true
+
+    const createIntervalRatio = (numerator: number, tempered: boolean): number => {
+      const intervalFraction = {
+        numerator: inverted ? firstDenominator : numerator,
+        denominator: inverted ? numerator : firstDenominator,
+      }
+      return tempered
+        ? temperRatioFraction(intervalFraction)
+        : intervalFraction.numerator / intervalFraction.denominator
+    }
 
     const createFraction = (numerator: number): RatioFraction | null => {
       if (!basePitchFraction) return null
@@ -118,6 +137,7 @@ export const expandChordPitchGroup = (
     ratioChordPitches.forEach((pitch) => {
       if (isRatioChordPitchType(pitch)) {
         const numerator = pitch.pitch
+        const pitchTempered = !!pitch.tempered
         assertFinitePositive('Ratio numerator', numerator)
 
         if (colons === 2) {
@@ -125,20 +145,26 @@ export const expandChordPitchGroup = (
           while (step !== 0 && lastNumerator + step !== numerator) {
             lastNumerator += step
             addRatioPitchType(
-              basePitchRatio *
-                (inverted ? firstDenominator / lastNumerator : lastNumerator / firstDenominator),
+              basePitchRatio * createIntervalRatio(lastNumerator, pitchTempered),
               createFraction(lastNumerator),
-              pitch.tempered,
+              pitchTempered,
+              !hasExplicitPreviousPitch ||
+                (basePitchCanLabelFraction && basePitchTempered === pitchTempered)
+                ? createFraction(lastNumerator)
+                : null,
             )
           }
         }
 
         if (!isFirstPitch || !hasExplicitPreviousPitch) {
           addRatioPitchType(
-            basePitchRatio *
-              (inverted ? firstDenominator / numerator : numerator / firstDenominator),
+            basePitchRatio * createIntervalRatio(numerator, pitchTempered),
             createFraction(numerator),
-            pitch.tempered,
+            pitchTempered,
+            !hasExplicitPreviousPitch ||
+              (basePitchCanLabelFraction && basePitchTempered === pitchTempered)
+              ? createFraction(numerator)
+              : null,
           )
         }
 
@@ -164,9 +190,13 @@ export const expandChordPitchGroup = (
         result.push({ type: 'Pitch', pitch, ratio, fraction: pitchRatioFraction(pitch) })
         previousPitchRatio = ratio
         previousPitchFraction = pitchRatioFraction(pitch)
+        previousPitchTempered = pitch.value.type === 'PitchRatio' && !!pitch.value.tempered
+        previousPitchCanLabelFraction = pitchRatioFraction(pitch) !== null
         canStackRatioChord = true
       } else {
         result.push({ type: 'SampleRateNote', pitch })
+        previousPitchTempered = false
+        previousPitchCanLabelFraction = false
         canStackRatioChord = false
       }
       return
