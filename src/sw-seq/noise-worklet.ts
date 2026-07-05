@@ -8,6 +8,13 @@ export function isNoiseGeneratorType(noise: string): noise is NoiseGeneratorType
   return NOISE_GENERATOR_TYPES.has(noise)
 }
 
+export function isOfflineAudioContext(context: BaseAudioContext): context is OfflineAudioContext {
+  return (
+    (typeof OfflineAudioContext !== 'undefined' && context instanceof OfflineAudioContext) ||
+    context.constructor.name === 'OfflineAudioContext'
+  )
+}
+
 const NOISE_GENERATOR_WORKLET_JS = `
 const PINK_OCTAVE_COUNT = 10
 const PINK_GAIN = 1 / Math.sqrt(PINK_OCTAVE_COUNT)

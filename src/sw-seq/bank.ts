@@ -1,5 +1,5 @@
 import { EnvelopedAperiodicOscillator, EnvelopedOscillator, EnvelopedUnison } from './nodes'
-import { createNoiseGeneratorNode, type NoiseGeneratorNode } from './noise-worklet'
+import { createNoiseGeneratorNode, isOfflineAudioContext, type NoiseGeneratorNode } from './noise-worklet'
 
 /**
  * Bank of re-usable enveloped oscillator nodes.
@@ -148,7 +148,7 @@ export class Bank {
     if (audioWorklet === undefined) {
       return null
     }
-    if (this.noiseGenerators.length < this.maxPolyphony) {
+    if (isOfflineAudioContext(this.context) || this.noiseGenerators.length < this.maxPolyphony) {
       const osc = { node: createNoiseGeneratorNode(this.context), age: -1 }
       this.noiseGenerators.push(osc)
       return osc.node
