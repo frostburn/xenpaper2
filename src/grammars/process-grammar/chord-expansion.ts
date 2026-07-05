@@ -1,6 +1,11 @@
 import { gcd } from 'xen-dev-utils/fraction'
 
-import type { DelimiterType, PitchType, RatioChordPitchType, SampleRateNoteType } from '../grammar.generated'
+import type {
+  DelimiterType,
+  PitchType,
+  RatioChordPitchType,
+  SampleRateNoteType,
+} from '../grammar.generated'
 
 import { assertFinitePositive } from './validation'
 
@@ -191,4 +196,3 @@ export const expandChordPitchGroup = (
 
   return result
 }
-

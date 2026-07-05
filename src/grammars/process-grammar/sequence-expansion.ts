@@ -209,4 +209,3 @@ export const expandRepeatedSequenceItems = (items: SequenceItemsType[]): Sequenc
 
   return expandedItems
 }
-

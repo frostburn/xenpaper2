@@ -13,10 +13,7 @@ import {
   NUM_COMPONENTS,
 } from './constants'
 import { assertFinitePositive, limit } from './validation'
-import {
-  expandMusicalControlFlowItems,
-  expandRepeatedSequenceItems,
-} from './sequence-expansion'
+import { expandMusicalControlFlowItems, expandRepeatedSequenceItems } from './sequence-expansion'
 import {
   expandChordPitchGroup,
   isPitchType,

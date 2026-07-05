@@ -105,12 +105,7 @@ describe('grammarToChars', () => {
   })
 
   it('highlights tempered prefixes as delimiters', () => {
-    expect(colors(grammarToChars(parse('~3/2')))).toEqual([
-      'delimiter',
-      'pitch',
-      'pitch',
-      'pitch',
-    ])
+    expect(colors(grammarToChars(parse('~3/2')))).toEqual(['delimiter', 'pitch', 'pitch', 'pitch'])
     expect(colors(grammarToChars(parse('~4:5:6')))).toEqual([
       'delimiter',
       'pitch',

@@ -47,6 +47,7 @@ export const decodeSharedSource = (encodedSource: string): string => {
     .replace(/ /g, underscorePlaceholder) // Say hi to Vue Router
     .replace(/%20/g, underscorePlaceholder)
     .replace(/%1E/gi, tildePlaceholder)
+    /*eslint-disable-next-line: no-control-regex*/
     .replace(/\x1e/g, tildePlaceholder)
 
   try {
