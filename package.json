@@ -30,6 +30,7 @@
   },
   "devDependencies": {
     "@tsconfig/node24": "^24.0.4",
+    "@types/audiobuffer-to-wav": "^1.0.4",
     "@types/jsdom": "^28.0.3",
     "@types/node": "^24.13.0",
     "@vitejs/plugin-vue": "^6.0.7",
