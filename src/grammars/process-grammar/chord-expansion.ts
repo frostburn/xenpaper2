@@ -36,7 +36,7 @@ export type RatioFraction = { numerator: number; denominator: number }
 type ExpandedChordPitch =
   | { type: 'Pitch'; pitch: PitchType; ratio: number; fraction: RatioFraction | null }
   | { type: 'SampleRateNote'; pitch: SampleRateNoteType }
-  | { type: 'RatioChordPitch'; ratio: number; fraction: RatioFraction | null }
+  | { type: 'RatioChordPitch'; ratio: number; fraction: RatioFraction | null; tempered: boolean }
 
 const pitchRatioFraction = (pitch: PitchType): RatioFraction | null =>
   pitch.value.type === 'PitchRatio'
@@ -65,7 +65,7 @@ export const expandChordPitchGroup = (
     if (tempered && fraction) {
       ratio = temperRatioFraction(fraction)
     }
-    result.push({ type: 'RatioChordPitch', ratio, fraction })
+    result.push({ type: 'RatioChordPitch', ratio, fraction, tempered })
     previousPitchRatio = ratio
     previousPitchFraction = fraction
   }

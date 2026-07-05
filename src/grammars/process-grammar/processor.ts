@@ -477,7 +477,7 @@ export const pitchToLabel = (pitch: PitchType, context: Context): string => {
 
   if (type === 'PitchRatio') {
     const { numerator, denominator } = pitch.value
-    return `${numerator}/${denominator}  ${centsLabel}`
+    return `${pitch.value.tempered ? '~' : ''}${numerator}/${denominator}  ${centsLabel}`
   }
 
   if (type === 'PitchOctaveDivision') {
@@ -686,7 +686,7 @@ const chordToMosc = (
 
     const centsLabel = ratioToCentsLabel(pitch.ratio, context.octaveSize)
     const label = pitch.fraction
-      ? `${pitch.fraction.numerator}/${pitch.fraction.denominator}  ${centsLabel}`
+      ? `${pitch.tempered ? '~' : ''}${pitch.fraction.numerator}/${pitch.fraction.denominator}  ${centsLabel}`
       : centsLabel
     return {
       type: 'NOTE_BEAT_TIME',
@@ -833,7 +833,7 @@ const setScale = (setScale: SetScaleType, context: Context): void => {
         const centsLabel = ratioToCentsLabel(pitch.ratio, context.octaveSize)
         context.scaleLabels.push(
           pitch.fraction
-            ? `${pitch.fraction.numerator}/${pitch.fraction.denominator}  ${centsLabel}`
+            ? `${pitch.tempered ? '~' : ''}${pitch.fraction.numerator}/${pitch.fraction.denominator}  ${centsLabel}`
             : centsLabel,
         )
       })
