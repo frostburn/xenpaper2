@@ -1144,6 +1144,14 @@ describe('grammar', () => {
         ])
       })
 
+      it('should parse holds with spaces between dashes', () => {
+        expect(strip(parser('C- -C')).sequence.items).toEqual(strip(parser('C-- C')).sequence.items)
+      })
+
+      it('should parse holds that start after whitespace', () => {
+        expect(strip(parser('.C -C')).sequence.items).toEqual(strip(parser('.C- C')).sequence.items)
+      })
+
       it('should error if chord is empty or not delimited properly', () => {
         expectParserErrorMessage(
           '[]',
