@@ -21,7 +21,7 @@ import {
   saveSourceCodes,
 } from '../share-link'
 import { SoundEngineSwSeq } from '../sound-engine-sw-seq'
-import { Bank } from '../sw-seq/bank'
+import { Bank, OfflineBank } from '../sw-seq/bank'
 import { registerNoiseGeneratorWorklet } from '../sw-seq/noise-worklet'
 import { Transport } from '../sw-seq/transport'
 import { createSourceDisplayTokens } from '../source-display'
@@ -628,7 +628,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
       interval: renderDuration,
       lookAhead: 0,
     })
-    const bank = new Bank(offlineContext)
+    const bank = new OfflineBank(offlineContext)
     const renderEngines = scores.map(({ score, gain }) => {
       const engine = new SoundEngineSwSeq(transport, bank)
       engine.setOutputGain(gain)

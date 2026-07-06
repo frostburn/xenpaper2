@@ -93,7 +93,7 @@ export class PolySynth {
       | NoiseGeneratorNode,
   >(
     params: SynthParams,
-    allocate: (time?: number) => T | null,
+    allocate: (time?: number, synth?: SynthType) => T | null,
     release: (oscillator: T, freeAt?: number) => void,
   ) {
     let oscillator: T | null = null
@@ -113,7 +113,7 @@ export class PolySynth {
       // Loops can cause note-ons to unpair from note-offs. Release previous resources.
       if (oscillator !== null) void release(oscillator, time)
 
-      oscillator = allocate(time)
+      oscillator = allocate(time, synth)
       if (oscillator === null) return
 
       startTime = time

@@ -1,5 +1,6 @@
 import { EnvelopedAperiodicOscillator, EnvelopedOscillator, EnvelopedUnison } from './nodes'
 import { createNoiseGeneratorNode, type NoiseGeneratorNode } from './noise-worklet'
+import type { SynthType } from './polysynth'
 
 type BankedNode<T> = { node: T; age: number; freeAt: number }
 type ReusableNode =
@@ -81,7 +82,7 @@ export class Bank {
     })
   }
 
-  allocateOscillator(time = this.context.currentTime) {
+  allocateOscillator(time = this.context.currentTime, _synth?: SynthType) {
     if (this.oscillators.length < this.maxPolyphony) {
       const osc = { node: new EnvelopedOscillator(this.context), age: -1, freeAt: Infinity }
       osc.node.start(this.context.currentTime)
@@ -95,7 +96,7 @@ export class Bank {
     this.freeNode(this.oscillators, node, freeAt, 'Attempting to free unallocated oscillator.')
   }
 
-  allocateUnison(time = this.context.currentTime) {
+  allocateUnison(time = this.context.currentTime, _synth?: SynthType) {
     if (this.unisons.length < this.maxPolyphony) {
       const osc = {
         node: new EnvelopedUnison(this.context, { spread: 5, numberOfVoices: 3 }, 'detune'),
@@ -113,9 +114,13 @@ export class Bank {
     this.freeNode(this.unisons, node, freeAt, 'Attempting to free unallocated unison oscillator.')
   }
 
-  allocateAperiodicOscillator(time = this.context.currentTime) {
+  allocateAperiodicOscillator(time = this.context.currentTime, _synth?: SynthType) {
     if (this.aperiodics.length < this.maxPolyphony) {
-      const osc = { node: new EnvelopedAperiodicOscillator(this.context), age: -1, freeAt: Infinity }
+      const osc = {
+        node: new EnvelopedAperiodicOscillator(this.context),
+        age: -1,
+        freeAt: Infinity,
+      }
       osc.node.start(this.context.currentTime)
       this.aperiodics.push(osc)
       return osc.node
@@ -132,7 +137,7 @@ export class Bank {
     )
   }
 
-  allocateNoiseGenerator(time = this.context.currentTime) {
+  allocateNoiseGenerator(time = this.context.currentTime, _synth?: SynthType) {
     const audioWorklet = this.context.audioWorklet
     if (audioWorklet === undefined) {
       return null
@@ -191,5 +196,126 @@ export class Bank {
       o.node.disconnect()
       o.age = 1
     })
+  }
+}
+
+const objectKeyIds = new WeakMap<object, number>()
+let nextObjectKeyId = 1
+
+function objectKey(value: object | null) {
+  if (value === null) return 'none'
+
+  const existing = objectKeyIds.get(value)
+  if (existing !== undefined) return existing
+
+  const id = nextObjectKeyId++
+  objectKeyIds.set(value, id)
+  return id
+}
+
+function synthQuotaKey(synth: SynthType | undefined, family: string) {
+  if (synth === undefined) return family
+
+  if (synth.type === 'noise') return `${family}:${synth.noise}`
+  if (synth.periodicity === 'aperiodic') {
+    return `${family}:aperiodic:${objectKey(synth.aperiodicWave)}`
+  }
+  if (synth.type === 'custom') return `${family}:custom:${objectKey(synth.periodicWave)}`
+
+  return `${family}:${synth.type}`
+}
+
+/**
+ * Offline bank that keeps a separate reusable-node quota for each synth type.
+ *
+ * OscillatorNode.type and custom/aperiodic wave assignments are immediate Web Audio properties rather
+ * than schedulable AudioParams. During OfflineAudioContext rendering, reusing one node for notes with
+ * different timbres can therefore overwrite the timbre of notes that were scheduled earlier. Keeping a
+ * per-timbre sub-bank preserves reuse within the same timbre while preventing cross-timbre overwrites.
+ */
+export class OfflineBank extends Bank {
+  private readonly maxPolyphonyPerSynth: number
+  private readonly banks = new Map<string, Bank>()
+  private readonly owners = new WeakMap<ReusableNode, Bank>()
+
+  constructor(context: BaseAudioContext, maxPolyphonyPerSynth = 32) {
+    super(context, 0)
+    this.maxPolyphonyPerSynth = maxPolyphonyPerSynth
+  }
+
+  private bankFor(synth: SynthType | undefined, family: string) {
+    const key = synthQuotaKey(synth, family)
+    let bank = this.banks.get(key)
+    if (bank === undefined) {
+      bank = new Bank(this.context, this.maxPolyphonyPerSynth)
+      this.banks.set(key, bank)
+    }
+    return bank
+  }
+
+  private remember<T extends ReusableNode>(node: T | null, bank: Bank) {
+    if (node !== null) this.owners.set(node, bank)
+    return node
+  }
+
+  private ownerFor<T extends ReusableNode>(node: T, error: string) {
+    const bank = this.owners.get(node)
+    if (bank === undefined) throw new Error(error)
+    return bank
+  }
+
+  override allocateOscillator(time = this.context.currentTime, synth?: SynthType) {
+    const bank = this.bankFor(synth, 'oscillator')
+    return this.remember(bank.allocateOscillator(time, synth), bank)
+  }
+
+  override freeOscillator(node: EnvelopedOscillator, freeAt = this.context.currentTime) {
+    this.ownerFor(node, 'Attempting to free unallocated offline oscillator.').freeOscillator(
+      node,
+      freeAt,
+    )
+  }
+
+  override allocateUnison(time = this.context.currentTime, synth?: SynthType) {
+    const bank = this.bankFor(synth, 'unison')
+    return this.remember(bank.allocateUnison(time, synth), bank)
+  }
+
+  override freeUnison(node: EnvelopedUnison, freeAt = this.context.currentTime) {
+    this.ownerFor(node, 'Attempting to free unallocated offline unison oscillator.').freeUnison(
+      node,
+      freeAt,
+    )
+  }
+
+  override allocateAperiodicOscillator(time = this.context.currentTime, synth?: SynthType) {
+    const bank = this.bankFor(synth, 'aperiodic')
+    return this.remember(bank.allocateAperiodicOscillator(time, synth), bank)
+  }
+
+  override freeAperiodicOscillator(
+    node: EnvelopedAperiodicOscillator,
+    freeAt = this.context.currentTime,
+  ) {
+    this.ownerFor(
+      node,
+      'Attempting to free unallocated offline aperiodic oscillator.',
+    ).freeAperiodicOscillator(node, freeAt)
+  }
+
+  override allocateNoiseGenerator(time = this.context.currentTime, synth?: SynthType) {
+    const bank = this.bankFor(synth, 'noise')
+    return this.remember(bank.allocateNoiseGenerator(time, synth), bank)
+  }
+
+  override freeNoiseGenerator(node: NoiseGeneratorNode, freeAt = this.context.currentTime) {
+    this.ownerFor(
+      node,
+      'Attempting to free unallocated offline noise generator.',
+    ).freeNoiseGenerator(node, freeAt)
+  }
+
+  override stop() {
+    for (const bank of this.banks.values()) bank.stop()
   }
 }

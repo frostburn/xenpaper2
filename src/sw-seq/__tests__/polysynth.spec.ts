@@ -169,7 +169,12 @@ describe('PolySynth', () => {
     note.noteOn(1)
     note.noteOff(2)
 
-    expect(bank.allocateOscillator).toHaveBeenCalledWith(1)
+    expect(bank.allocateOscillator).toHaveBeenCalledWith(1, {
+      type: 'sine',
+      periodicity: 'harmonic',
+      periodicWave: null,
+      aperiodicWave: null,
+    })
     expect(bank.freeOscillator).toHaveBeenCalledWith(oscillator, 2.5)
   })
 })
