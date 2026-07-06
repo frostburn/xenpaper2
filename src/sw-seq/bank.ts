@@ -47,6 +47,7 @@ export class Bank {
     node.frequency.cancelScheduledValues(time)
     node.gain.cancelScheduledValues(time)
     node.gain.setValueAtTime(0, time)
+    node.disconnect()
   }
 
   private allocateExistingNode<T extends ReusableNode>(nodes: BankedNode<T>[], time: number) {

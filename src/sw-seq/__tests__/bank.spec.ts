@@ -66,6 +66,7 @@ describe('Bank', () => {
 
     expect(reusedGain.cancelScheduledValues).toHaveBeenCalledWith(context.currentTime)
     expect(reusedGain.setValueAtTime).toHaveBeenCalledWith(0, context.currentTime)
+    expect(context.gains[0]!.disconnect).toHaveBeenCalledTimes(1)
   })
 
   it('does not recycle an oscillator before its scheduled free time', () => {
