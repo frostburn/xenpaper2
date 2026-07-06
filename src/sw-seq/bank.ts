@@ -1,6 +1,13 @@
 import { EnvelopedAperiodicOscillator, EnvelopedOscillator, EnvelopedUnison } from './nodes'
 import { createNoiseGeneratorNode, type NoiseGeneratorNode } from './noise-worklet'
 
+type BankedNode<T> = { node: T; age: number; freeAt: number }
+type ReusableNode =
+  | EnvelopedOscillator
+  | EnvelopedUnison
+  | EnvelopedAperiodicOscillator
+  | NoiseGeneratorNode
+
 /**
  * Bank of re-usable enveloped oscillator nodes.
  *
@@ -11,10 +18,10 @@ export class Bank {
   readonly context: BaseAudioContext
   private maxPolyphony: number
   // Negative age indicates that the node is reserved
-  private oscillators: { node: EnvelopedOscillator; age: number }[]
-  private unisons: { node: EnvelopedUnison; age: number }[]
-  private aperiodics: { node: EnvelopedAperiodicOscillator; age: number }[]
-  private noiseGenerators: { node: NoiseGeneratorNode; age: number }[]
+  private oscillators: BankedNode<EnvelopedOscillator>[]
+  private unisons: BankedNode<EnvelopedUnison>[]
+  private aperiodics: BankedNode<EnvelopedAperiodicOscillator>[]
+  private noiseGenerators: BankedNode<NoiseGeneratorNode>[]
 
   constructor(context: BaseAudioContext, maxPolyphony = 32) {
     this.context = context
@@ -25,163 +32,126 @@ export class Bank {
     this.noiseGenerators = []
   }
 
-  allocateOscillator() {
-    if (this.oscillators.length < this.maxPolyphony) {
-      const osc = { node: new EnvelopedOscillator(this.context), age: -1 }
-      osc.node.start(this.context.currentTime)
-      this.oscillators.push(osc)
-      return osc.node
+  private activateDueNodes<T>(nodes: BankedNode<T>[], time: number) {
+    for (const node of nodes) {
+      if (node.age < 0 && node.freeAt <= time) {
+        node.age = 0
+        node.freeAt = -Infinity
+      }
     }
-    const maxAge = this.oscillators.reduce((a, b) => Math.max(a, b.age), -1)
+  }
+
+  private resetNode(node: ReusableNode, time: number) {
+    if ('spread' in node) node.spread.cancelScheduledValues(time)
+    node.detune.cancelScheduledValues(time)
+    node.frequency.cancelScheduledValues(time)
+    node.gain.cancelScheduledValues(time)
+    node.gain.setValueAtTime(0, time)
+    node.disconnect()
+  }
+
+  private allocateExistingNode<T extends ReusableNode>(nodes: BankedNode<T>[], time: number) {
+    this.activateDueNodes(nodes, time)
+    const maxAge = nodes.reduce((a, b) => Math.max(a, b.age), -1)
     if (maxAge < 0) {
       console.warn('Maximum polyphony reached.')
       return null
     }
-    const osc = this.oscillators.find((o) => o.age === maxAge)
+    const osc = nodes.find((o) => o.age === maxAge)
     if (!osc) {
       return null
     }
     osc.age = -1
-    osc.node.detune.cancelScheduledValues(this.context.currentTime)
-    osc.node.frequency.cancelScheduledValues(this.context.currentTime)
-    osc.node.gain.cancelScheduledValues(this.context.currentTime)
-    osc.node.gain.setValueAtTime(0, this.context.currentTime)
-    osc.node.disconnect()
+    osc.freeAt = Infinity
+    this.resetNode(osc.node, time)
     return osc.node
   }
 
-  freeOscillator(node: EnvelopedOscillator) {
-    const osc = this.oscillators.find((o) => o.node === node)
+  private freeNode<T>(nodes: BankedNode<T>[], node: T, freeAt: number, error: string) {
+    const osc = nodes.find((o) => o.node === node)
     if (osc === undefined) {
-      throw new Error('Attempting to free unallocated oscillator.')
+      throw new Error(error)
     }
-    osc.age = 0
-    this.oscillators.forEach((o) => {
+    osc.freeAt = freeAt
+    osc.age = -1
+    nodes.forEach((o) => {
       if (o.age >= 0) {
         o.age++
       }
     })
   }
 
-  allocateUnison() {
+  allocateOscillator(time = this.context.currentTime) {
+    if (this.oscillators.length < this.maxPolyphony) {
+      const osc = { node: new EnvelopedOscillator(this.context), age: -1, freeAt: Infinity }
+      osc.node.start(this.context.currentTime)
+      this.oscillators.push(osc)
+      return osc.node
+    }
+    return this.allocateExistingNode(this.oscillators, time)
+  }
+
+  freeOscillator(node: EnvelopedOscillator, freeAt = this.context.currentTime) {
+    this.freeNode(this.oscillators, node, freeAt, 'Attempting to free unallocated oscillator.')
+  }
+
+  allocateUnison(time = this.context.currentTime) {
     if (this.unisons.length < this.maxPolyphony) {
       const osc = {
         node: new EnvelopedUnison(this.context, { spread: 5, numberOfVoices: 3 }, 'detune'),
         age: -1,
+        freeAt: Infinity,
       }
       osc.node.start(this.context.currentTime)
       this.unisons.push(osc)
       return osc.node
     }
-    const maxAge = this.unisons.reduce((a, b) => Math.max(a, b.age), -1)
-    if (maxAge < 0) {
-      console.warn('Maximum polyphony reached.')
-      return null
-    }
-    const osc = this.unisons.find((o) => o.age === maxAge)
-    if (!osc) {
-      return null
-    }
-    osc.age = -1
-    osc.node.spread.cancelScheduledValues(this.context.currentTime)
-    osc.node.detune.cancelScheduledValues(this.context.currentTime)
-    osc.node.frequency.cancelScheduledValues(this.context.currentTime)
-    osc.node.gain.cancelScheduledValues(this.context.currentTime)
-    osc.node.gain.setValueAtTime(0, this.context.currentTime)
-    osc.node.disconnect()
-    return osc.node
+    return this.allocateExistingNode(this.unisons, time)
   }
 
-  freeUnison(node: EnvelopedUnison) {
-    const osc = this.unisons.find((o) => o.node === node)
-    if (osc === undefined) {
-      throw new Error('Attempting to free unallocated unison oscillator.')
-    }
-    osc.age = 0
-    this.unisons.forEach((o) => {
-      if (o.age >= 0) {
-        o.age++
-      }
-    })
+  freeUnison(node: EnvelopedUnison, freeAt = this.context.currentTime) {
+    this.freeNode(this.unisons, node, freeAt, 'Attempting to free unallocated unison oscillator.')
   }
 
-  allocateAperiodicOscillator() {
+  allocateAperiodicOscillator(time = this.context.currentTime) {
     if (this.aperiodics.length < this.maxPolyphony) {
-      const osc = { node: new EnvelopedAperiodicOscillator(this.context), age: -1 }
+      const osc = { node: new EnvelopedAperiodicOscillator(this.context), age: -1, freeAt: Infinity }
       osc.node.start(this.context.currentTime)
       this.aperiodics.push(osc)
       return osc.node
     }
-    const maxAge = this.aperiodics.reduce((a, b) => Math.max(a, b.age), -1)
-    if (maxAge < 0) {
-      console.warn('Maximum polyphony reached.')
-      return null
-    }
-    const osc = this.aperiodics.find((o) => o.age === maxAge)
-    if (!osc) {
-      return null
-    }
-    osc.age = -1
-    osc.node.detune.cancelScheduledValues(this.context.currentTime)
-    osc.node.frequency.cancelScheduledValues(this.context.currentTime)
-    osc.node.gain.cancelScheduledValues(this.context.currentTime)
-    osc.node.gain.setValueAtTime(0, this.context.currentTime)
-    osc.node.disconnect()
-    return osc.node
+    return this.allocateExistingNode(this.aperiodics, time)
   }
 
-  freeAperiodicOscillator(node: EnvelopedAperiodicOscillator) {
-    const osc = this.aperiodics.find((o) => o.node === node)
-    if (osc === undefined) {
-      throw new Error('Attempting to free unallocated aperiodic oscillator.')
-    }
-    osc.age = 0
-    this.aperiodics.forEach((o) => {
-      if (o.age >= 0) {
-        o.age++
-      }
-    })
+  freeAperiodicOscillator(node: EnvelopedAperiodicOscillator, freeAt = this.context.currentTime) {
+    this.freeNode(
+      this.aperiodics,
+      node,
+      freeAt,
+      'Attempting to free unallocated aperiodic oscillator.',
+    )
   }
 
-  allocateNoiseGenerator() {
+  allocateNoiseGenerator(time = this.context.currentTime) {
     const audioWorklet = this.context.audioWorklet
     if (audioWorklet === undefined) {
       return null
     }
     if (this.noiseGenerators.length < this.maxPolyphony) {
-      const osc = { node: createNoiseGeneratorNode(this.context), age: -1 }
+      const osc = { node: createNoiseGeneratorNode(this.context), age: -1, freeAt: Infinity }
       this.noiseGenerators.push(osc)
       return osc.node
     }
-    const maxAge = this.noiseGenerators.reduce((a, b) => Math.max(a, b.age), -1)
-    if (maxAge < 0) {
-      console.warn('Maximum polyphony reached.')
-      return null
-    }
-    const osc = this.noiseGenerators.find((o) => o.age === maxAge)
-    if (!osc) {
-      return null
-    }
-    osc.age = -1
-    osc.node.detune.cancelScheduledValues(this.context.currentTime)
-    osc.node.frequency.cancelScheduledValues(this.context.currentTime)
-    osc.node.gain.cancelScheduledValues(this.context.currentTime)
-    osc.node.gain.setValueAtTime(0, this.context.currentTime)
-    osc.node.disconnect()
-    return osc.node
+    return this.allocateExistingNode(this.noiseGenerators, time)
   }
 
-  freeNoiseGenerator(node: NoiseGeneratorNode) {
-    const osc = this.noiseGenerators.find((o) => o.node === node)
-    if (osc === undefined) {
-      throw new Error('Attempting to free unallocated noise generator.')
-    }
-    osc.age = 0
-    this.noiseGenerators.forEach((o) => {
-      if (o.age >= 0) {
-        o.age++
-      }
-    })
+  freeNoiseGenerator(node: NoiseGeneratorNode, freeAt = this.context.currentTime) {
+    this.freeNode(
+      this.noiseGenerators,
+      node,
+      freeAt,
+      'Attempting to free unallocated noise generator.',
+    )
   }
 
   stop() {

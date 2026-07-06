@@ -91,7 +91,11 @@ export class PolySynth {
       | EnvelopedUnison
       | EnvelopedAperiodicOscillator
       | NoiseGeneratorNode,
-  >(params: SynthParams, allocate: () => T | null, release: (oscillator: T) => void) {
+  >(
+    params: SynthParams,
+    allocate: (time?: number) => T | null,
+    release: (oscillator: T, freeAt?: number) => void,
+  ) {
     let oscillator: T | null = null
     let startTime = NaN
 
@@ -107,9 +111,9 @@ export class PolySynth {
 
     const noteOn = (time: number) => {
       // Loops can cause note-ons to unpair from note-offs. Release previous resources.
-      if (oscillator !== null) void release(oscillator)
+      if (oscillator !== null) void release(oscillator, time)
 
-      oscillator = allocate()
+      oscillator = allocate(time)
       if (oscillator === null) return
 
       startTime = time
@@ -156,7 +160,7 @@ export class PolySynth {
       if (releaseTime <= 0) oscillator.gain.setValueAtTime(0, endTime)
       else oscillator.gain.setTargetAtTime(0, endTime, releaseTime * TIME_CONSTANT)
 
-      void release(oscillator)
+      void release(oscillator, endTime + releaseTime)
 
       // Loops can cause note-offs to unpair from note-ons. Prevent double release.
       oscillator = null

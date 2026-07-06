@@ -66,5 +66,39 @@ describe('Bank', () => {
 
     expect(reusedGain.cancelScheduledValues).toHaveBeenCalledWith(context.currentTime)
     expect(reusedGain.setValueAtTime).toHaveBeenCalledWith(0, context.currentTime)
+    expect(context.gains[0]!.disconnect).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not recycle an oscillator before its scheduled free time', () => {
+    const context = new MockAudioContext()
+    const bank = new Bank(context as unknown as AudioContext, 1)
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+
+    const oscillator = bank.allocateOscillator(1)
+    expect(oscillator).not.toBeNull()
+    bank.freeOscillator(oscillator!, 3)
+
+    expect(bank.allocateOscillator(2)).toBeNull()
+    expect(bank.allocateOscillator(3)).toBe(oscillator)
+    expect(warn).toHaveBeenCalledTimes(1)
+
+    warn.mockRestore()
+  })
+
+  it('resets recycled oscillator automation at the scheduled reuse time', () => {
+    const context = new MockAudioContext()
+    const bank = new Bank(context as unknown as AudioContext, 1)
+
+    const oscillator = bank.allocateOscillator(1)
+    expect(oscillator).not.toBeNull()
+    bank.freeOscillator(oscillator!, 2)
+
+    const reusedGain = context.gains[0]!.gain
+    reusedGain.setValueAtTime.mockClear()
+
+    expect(bank.allocateOscillator(2.5)).toBe(oscillator)
+
+    expect(reusedGain.cancelScheduledValues).toHaveBeenCalledWith(2.5)
+    expect(reusedGain.setValueAtTime).toHaveBeenCalledWith(0, 2.5)
   })
 })
