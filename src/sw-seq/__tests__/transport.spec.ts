@@ -147,4 +147,28 @@ describe('Sample-accurate look-ahead transport', () => {
     expect(calls[3]!.which).toBe('off')
     expect(calls[3]!.time).toBeCloseTo(3.5 + transport.lookAhead)
   })
+
+  it('schedules notes chronologically within a look-ahead interval', () => {
+    const calls: string[] = []
+    const transport = new Transport(new MockAudioContext() as unknown as AudioContext, {
+      interval: 2,
+    })
+
+    transport.scheduleParametricNote({
+      noteOn: () => calls.push('late on'),
+      noteOff: () => calls.push('late off'),
+      when: 1,
+      duration: 0.1,
+    })
+    transport.scheduleParametricNote({
+      noteOn: () => calls.push('early on'),
+      noteOff: () => calls.push('early off'),
+      when: 0,
+      duration: 0.1,
+    })
+
+    transport.start(0)
+
+    expect(calls).toEqual(['early on', 'early off', 'late on', 'late off'])
+  })
 })

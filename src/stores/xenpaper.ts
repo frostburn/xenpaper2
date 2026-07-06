@@ -628,7 +628,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
       interval: renderDuration,
       lookAhead: 0,
     })
-    const bank = new Bank(offlineContext, Infinity)
+    const bank = new Bank(offlineContext)
     const renderEngines = scores.map(({ score, gain }) => {
       const engine = new SoundEngineSwSeq(transport, bank)
       engine.setOutputGain(gain)

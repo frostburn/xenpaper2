@@ -195,19 +195,18 @@ export class Transport extends EventTarget {
       }
     }
 
-    for (const event of this.parametricNotesById.values()) {
-      if (event.when >= startPos && event.when < endPos) {
-        event.noteOn(
-          (event.when - startPos + startTime + this._lookAhead) / this.context.sampleRate,
-        )
+    const notes = Array.from(this.parametricNotesById.values())
+      .filter((event) => event.when >= startPos && event.when < endPos)
+      .sort((a, b) => a.when - b.when || a.id - b.id)
+    for (const event of notes) {
+      event.noteOn((event.when - startPos + startTime + this._lookAhead) / this.context.sampleRate)
 
-        // XXX: Commiting to a note off this early is not the best or most accurate scheduling model
-        // However it's important to commit somehow. Unpaired events are hard to debug and can lead to bad UX.
-        event.noteOff(
-          (event.when + event.duration - startPos + startTime + this._lookAhead) /
-            this.context.sampleRate,
-        )
-      }
+      // XXX: Commiting to a note off this early is not the best or most accurate scheduling model
+      // However it's important to commit somehow. Unpaired events are hard to debug and can lead to bad UX.
+      event.noteOff(
+        (event.when + event.duration - startPos + startTime + this._lookAhead) /
+          this.context.sampleRate,
+      )
     }
 
     for (const event of this.eventsById.values()) {
