@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { Bank } from '../bank'
+import { Bank, OfflineBank } from '../bank'
 
 const createAudioParam = () => ({
   cancelScheduledValues: vi.fn<(time: number) => void>(),
@@ -100,5 +100,34 @@ describe('Bank', () => {
 
     expect(reusedGain.cancelScheduledValues).toHaveBeenCalledWith(2.5)
     expect(reusedGain.setValueAtTime).toHaveBeenCalledWith(0, 2.5)
+  })
+})
+
+describe('OfflineBank', () => {
+  it('keeps separate oscillator quotas for different synth types', () => {
+    const context = new MockAudioContext()
+    const bank = new OfflineBank(context as unknown as AudioContext, 1)
+    const sine = {
+      type: 'sine',
+      periodicity: 'harmonic',
+      periodicWave: null,
+      aperiodicWave: null,
+    } as const
+    const square = {
+      type: 'square',
+      periodicity: 'harmonic',
+      periodicWave: null,
+      aperiodicWave: null,
+    } as const
+
+    const sineOscillator = bank.allocateOscillator(1, sine)
+    expect(sineOscillator).not.toBeNull()
+    bank.freeOscillator(sineOscillator!, 2)
+
+    const squareOscillator = bank.allocateOscillator(2, square)
+    expect(squareOscillator).not.toBeNull()
+    expect(squareOscillator).not.toBe(sineOscillator)
+
+    expect(bank.allocateOscillator(2, sine)).toBe(sineOscillator)
   })
 })
