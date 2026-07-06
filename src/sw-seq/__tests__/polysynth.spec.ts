@@ -37,12 +37,12 @@ describe('PolySynth', () => {
     const oscillators = [createOscillator(), createOscillator()]
     const bank = {
       context: {},
-      allocateOscillator: vi.fn<() => MockOscillator | null>(() => {
+      allocateOscillator: vi.fn<(_time?: number) => MockOscillator | null>(() => {
         const oscillator = oscillators.shift() ?? null
         if (oscillator !== null) allocated.push(oscillator)
         return oscillator
       }),
-      freeOscillator: vi.fn<(oscillator: MockOscillator) => void>(),
+      freeOscillator: vi.fn<(oscillator: MockOscillator, freeAt?: number) => void>(),
     } as unknown as Bank
     const synth = new PolySynth(bank, {} as AudioNode)
     const patch: SynthParams = {
@@ -79,8 +79,8 @@ describe('PolySynth', () => {
     const noise = createOscillator()
     const bank = {
       context: {},
-      allocateNoiseGenerator: vi.fn<() => MockOscillator | null>(() => noise),
-      freeNoiseGenerator: vi.fn<(oscillator: MockOscillator) => void>(),
+      allocateNoiseGenerator: vi.fn<(_time?: number) => MockOscillator | null>(() => noise),
+      freeNoiseGenerator: vi.fn<(oscillator: MockOscillator, freeAt?: number) => void>(),
     } as unknown as Bank
     const synth = new PolySynth(bank, {} as AudioNode)
 
@@ -112,8 +112,8 @@ describe('PolySynth', () => {
     const noise = createOscillator()
     const bank = {
       context: {},
-      allocateNoiseGenerator: vi.fn<() => MockOscillator | null>(() => noise),
-      freeNoiseGenerator: vi.fn<(oscillator: MockOscillator) => void>(),
+      allocateNoiseGenerator: vi.fn<(_time?: number) => MockOscillator | null>(() => noise),
+      freeNoiseGenerator: vi.fn<(oscillator: MockOscillator, freeAt?: number) => void>(),
     } as unknown as Bank
     const synth = new PolySynth(bank, {} as AudioNode)
 
@@ -138,5 +138,38 @@ describe('PolySynth', () => {
     note.noteOn(1)
 
     expect(noise.type).toBe('violet')
+  })
+
+  it('reserves synth voices until their release tails finish', () => {
+    const oscillator = createOscillator()
+    const bank = {
+      context: {},
+      allocateOscillator: vi.fn<(_time?: number) => MockOscillator | null>(() => oscillator),
+      freeOscillator: vi.fn<(oscillator: MockOscillator, freeAt?: number) => void>(),
+    } as unknown as Bank
+    const synth = new PolySynth(bank, {} as AudioNode)
+
+    const note = synth.trigger({
+      frequency: 440,
+      velocity: 0.5,
+      synth: {
+        type: 'sine',
+        periodicity: 'harmonic',
+        periodicWave: null,
+        aperiodicWave: null,
+      },
+      envelope: {
+        attack: 0.01,
+        decay: 0.25,
+        sustain: 0.5,
+        release: 0.5,
+      },
+    })
+
+    note.noteOn(1)
+    note.noteOff(2)
+
+    expect(bank.allocateOscillator).toHaveBeenCalledWith(1)
+    expect(bank.freeOscillator).toHaveBeenCalledWith(oscillator, 2.5)
   })
 })
