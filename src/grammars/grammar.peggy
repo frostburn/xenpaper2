@@ -8,10 +8,10 @@ Start = seq:Sequence _ {
 Sequence = items:ItemList { return node('Sequence', { items }); }
 ItemList = head:Item tail:(_ Item)* { return [head, ...tail.map(([,i]) => i)]; } / '' { return []; }
 Item = Comment / MusicalControlFlow / SetterGroup / SetRoot / SetScale / SetMos / RatioChordItem / SampleRateNote / Note / Rest / Chord / RepeatEndStart / RepeatStart / RepeatEnd / RepeatEndingStart / BarLine / Whitespace
-Note = pitch:Pitch tail:Hold? {
+Note = pitch:Pitch tail:Tail? {
   return node('Note', { pitch, tail });
 }
-SampleRateNote = "!" tail:Hold? {
+SampleRateNote = "!" tail:Tail? {
   return node('SampleRateNote', { tail });
 }
 SampleRatePitch = "!" { return node('SampleRateNote', { tail: null }); }
@@ -73,11 +73,14 @@ TemperedPitchRatio = prefix:TemperedPrefix fraction:SlashFraction { return node(
 PitchDegree = updowns:UpsAndDowns degree:Int {
   return node('PitchDegree',{...updowns, degree});
 }
-Hold = parts:(HoldDash / BarLineInHold)+ {
+Tail = _? hold:Hold { return hold; }
+Hold = first:HoldPart rest:(_ HoldPart)* {
+  const parts = [first, ...rest.map(([, part]) => part)];
   const length = parts.filter((part) => part.type === 'HoldDash').length;
   return node('Hold', { length, parts });
 }
-BarLineInHold = bar:BarLine &("|"* "-") { return bar; }
+HoldPart = HoldDash / BarLineInHold
+BarLineInHold = bar:BarLine &("|"* _ "-") { return bar; }
 HoldDash = "-" { return node('HoldDash'); }
 Rest = "." { return node('Rest', { length: 1 }); }
 PitchGroup = first:Pitch rest:(Whitespace Pitch)* {
@@ -116,7 +119,7 @@ RatioChordPitches = first:RatioChordPitch rest:((_ Colon _)+ RatioChordPitch)* {
   }
   return result;
 }
-RatioChord = temperedPrefix:TemperedPrefix? inversionPrefix:InversionPrefix? pitches:RatioChordPitches tail:Hold? {
+RatioChord = temperedPrefix:TemperedPrefix? inversionPrefix:InversionPrefix? pitches:RatioChordPitches tail:Tail? {
   return node('RatioChord', {
     ...(temperedPrefix ? { tempered: true, temperedPrefix } : {}),
     ...(inversionPrefix ? { inverted: true, inversionPrefix } : {}),
@@ -125,17 +128,17 @@ RatioChord = temperedPrefix:TemperedPrefix? inversionPrefix:InversionPrefix? pit
   });
 }
 RatioChordItem = &('~'? "/"? Int _ ":" !"|") rc:RatioChord { return rc; }
-Chord = temperedPrefix:TemperedPrefix? "[" _ pitches:ChordPitchGroup _ "]" tail:Hold? {
+Chord = temperedPrefix:TemperedPrefix? "[" _ pitches:ChordPitchGroup _ "]" tail:Tail? {
   return node('Chord', { pitches: temperedPrefix ? pitches.map((pitch) => pitch.type === 'Pitch' && pitch.value.type === 'PitchRatio' ? { ...pitch, value: { ...pitch.value, tempered: true } } : pitch.type === 'RatioChordPitch' ? { ...pitch, tempered: true } : pitch) : pitches, tail, ...(temperedPrefix ? { tempered: true, temperedPrefix } : {}) });
 }
 RepeatEndStart = ":|:" count:RepeatCount? {
   return node('RepeatEndStart',{delimiter:true, repeatCount: count ?? 2});
 }
 RepeatStart = "|:" count:RepeatCount? { return node('RepeatStart',{delimiter:true, repeatCount: count ?? 2}); }
-RepeatEnd = ":|" alternateEnding:RepeatEndingNumber? tail:Hold? {
+RepeatEnd = ":|" alternateEnding:RepeatEndingNumber? tail:Tail? {
   return node('RepeatEnd',{delimiter:true, alternateEnding, tail});
 }
-RepeatEndingStart = "|" ending:RepeatEndingNumber tail:Hold? {
+RepeatEndingStart = "|" ending:RepeatEndingNumber tail:Tail? {
   return node('RepeatEndingStart',{delimiter:true, alternateEnding: ending, tail});
 }
 RepeatCount = "ˣ" count:SuperScriptInt { return count; } / "(" "x"i count:Int ")" { return count; }
