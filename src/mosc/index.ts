@@ -112,15 +112,23 @@ type TempoChange = {
 }
 
 const findTempoRangeForTime = (tempoChanges: TempoChange[], time: number): TempoChange => {
-  for (let i = tempoChanges.length - 1; i >= 0; i--) {
-    if (time >= tempoChanges[i]!.time) {
-      return tempoChanges[i]!
+  if (!tempoChanges.length) throw new Error('No tempo changes found.')
+
+  let low = 0
+  let high = tempoChanges.length - 1
+
+  while (low <= high) {
+    const middle = Math.floor((low + high) / 2)
+    const tempoChange = tempoChanges[middle]!
+
+    if (time < tempoChange.time) {
+      high = middle - 1
+    } else {
+      low = middle + 1
     }
   }
-  if (tempoChanges.length) {
-    return tempoChanges[0]!
-  }
-  throw new Error('No tempo changes found.')
+
+  return tempoChanges[Math.max(0, high)]!
 }
 
 export const beatToTime = (items: MoscBeatItem[]): ((time: number) => number) => {

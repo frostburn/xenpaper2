@@ -62,6 +62,7 @@ function useScoreEngine(id: number, transport: Transport, bank: Bank) {
   const alive = ref(true)
   const deadOrder = ref(0)
   let parseVersion = 0
+  let loadedSourceCode: string | undefined
 
   const parsedSource = computed(() => parseAndProcessSourceCode(sourceCode.value))
   const chars = computed(() => parsedSource.value.chars)
@@ -76,10 +77,15 @@ function useScoreEngine(id: number, transport: Transport, bank: Bank) {
   const getSelectedLineStartTime = (): number =>
     getTimeAtLine(sourceCode.value, chars.value, selectedLine.value)
 
-  const updateParsedSourceCode = (): void => {
+  const updateParsedSourceCode = (force = false): void => {
+    if (!force && scoreLoaded.value && loadedSourceCode === sourceCode.value) return
+
     const version = ++parseVersion
     const source = parsedSource.value
     scoreLoaded.value = false
+    loadedSourceCode = undefined
+
+    soundEngine.cutActiveNotes()
 
     if (!source.playable) {
       soundEngine.clearScheduledEvents()
@@ -96,6 +102,7 @@ function useScoreEngine(id: number, transport: Transport, bank: Bank) {
     }
     if (version !== parseVersion) return
 
+    loadedSourceCode = sourceCode.value
     scoreLoaded.value = true
   }
 
@@ -125,9 +132,7 @@ function useScoreEngine(id: number, transport: Transport, bank: Bank) {
   }
 
   const preparePlayableScore = (): boolean => {
-    if (!scoreLoaded.value || transport.position >= soundEngine.endPosition()) {
-      updateParsedSourceCode()
-    }
+    updateParsedSourceCode(transport.position >= soundEngine.endPosition())
 
     return scoreLoaded.value
   }
@@ -137,6 +142,7 @@ function useScoreEngine(id: number, transport: Transport, bank: Bank) {
     deadOrder.value = order
     soundEngine.cutActiveNotes()
     soundEngine.setScore(EMPTY_SCORE)
+    loadedSourceCode = undefined
     scoreLoaded.value = false
   }
 
@@ -313,6 +319,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
 
   const pauseAllSoundEngines = (): void => {
     swSeqTransport.stop()
+    liveScoreEngines.value.forEach((engine) => engine.soundEngine.cutActiveNotes())
   }
 
   const clearScoreEngine = (engine: ScoreEngine): void => {
@@ -402,7 +409,6 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
   }
 
   const updateParsedSourceCode = (): void => {
-    liveScoreEngines.value.forEach((engine) => engine.soundEngine.cutActiveNotes())
     const engine = activeScoreEngine.value
     engine.updateParsedSourceCode()
     const source = engine.parsedSource.value

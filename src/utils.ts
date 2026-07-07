@@ -147,10 +147,9 @@ export const getTimeAtLine = (
   let currentLine = 0
   let latestPreviousEnd = 0
   let earliestLineStart = Infinity
-  const sourceCharacters = source.split('')
 
-  for (let i = 0; i < sourceCharacters.length; i++) {
-    const character = sourceCharacters[i]
+  for (let i = 0; i < source.length; i++) {
+    const character = source[i]
     const characterPlayTimes = getCharacterPlayTimes(charData?.[i])
 
     if (currentLine < line) {
