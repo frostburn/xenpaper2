@@ -30,7 +30,10 @@ MosNominal = nominal:$([j-z]i+) { return { nominal, nominalType: 'mos' } }
 GreekNominal "Greek nominal" = ([α-ω]i / "alp"i / "bet"i / "gam"i / "del"i / "eps"i / "zet"i / "eta"i / "the"i / "iot"i / "kap"i / "muu"i / "nuu"i / "xii"i / "omi"i / "pii"i / "rho"i / "fsi"i / "sig"i / "tau"i / "ups"i / "phi"i / "chi"i / "psi"i / "ome"i) {
   return { nominal: text(), nominalType: 'greek' };
 }
-Accidental "accidental" = '𝄪' / '𝄫' / '𝄲' / '𝄳' / '𝄬' / '𝄭' / '𝄮' / '𝄯' / '𝄰' / '𝄱' / [x♯#‡t♮_d♭bpq]
+Accidental "accidental" = ReservedAccidental / '𝄪' / '𝄫' / '𝄲' / '𝄳' / '𝄬' / '𝄭' / '𝄮' / '𝄯' / '𝄰' / '𝄱' / [x♯#‡t♮_d♭bpq]
+ReservedAccidental = accidental:[acefg] {
+  error(`Lower-case Latin letter '${accidental}' is reserved for future accidental use.`);
+}
 UpsAndDowns "Ups and Downs" = ('^' / 'v' / '/' / '\\')* {
   let ups = 0;
   let lifts = 0;
@@ -53,11 +56,13 @@ Inflection "inflection" = type: ('^' / 'v') value: Int flavor: InflectionFlavor 
   };
 }
 PitchAbsolute
- = updowns: UpsAndDowns nominal: (GreekNominal / LatinNominal) accidentals: Accidental* inflections: Inflection* { return node('PitchAbsolute', {...updowns, ...nominal, accidentals, inflections}) }
+ = PitchAbsoluteReservedAccidental
+ / updowns: UpsAndDowns nominal: (GreekNominal / LatinNominal) accidentals: Accidental* inflections: Inflection* { return node('PitchAbsolute', {...updowns, ...nominal, accidentals, inflections}) }
  / PitchAbsoluteMos
+PitchAbsoluteReservedAccidental = UpsAndDowns (GreekNominal / LatinNominal / MosNominal) ReservedAccidental
 PitchAbsoluteMos
  = updowns: UpsAndDowns nominal:MosNominal accidentals:MosAccidental* { return node('PitchAbsolute', {...updowns, ...nominal, accidentals, inflections: []}) }
-MosAccidental = [\&@ea♮_]
+MosAccidental = ReservedAccidental / [\&@♮_]
 PitchCents = cents:Number "c"i { return node('PitchCents',{cents}); }
 PitchHz = hz:Number _ "hz"i { return node('PitchHz',{hz}); }
 PitchOctaveDivision = numerator:Int [\\/] denominator:Int octaveSize:PitchOctaveDivisionSuffix {

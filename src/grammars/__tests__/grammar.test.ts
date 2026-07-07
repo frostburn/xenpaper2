@@ -99,6 +99,17 @@ describe('grammar', () => {
         })
       })
 
+      it('rejects reserved lower-case Latin accidentals', () => {
+        for (const accidental of ['a', 'c', 'e', 'f', 'g']) {
+          expect(() => parser(`A${accidental}`)).toThrow(
+            `Lower-case Latin letter '${accidental}' is reserved for future accidental use.`,
+          )
+          expect(() => parser(`MOS{5L 2s} J${accidental}`)).toThrow(
+            `Lower-case Latin letter '${accidental}' is reserved for future accidental use.`,
+          )
+        }
+      })
+
       it('should parse up/down and lift/drop scale degrees', () => {
         expect(strip(parser(String.raw`^0 v1 /2 \3`).sequence.items)).toMatchObject([
           { type: 'Note', pitch: { value: { type: 'PitchDegree', degree: 0, ups: 1 } } },

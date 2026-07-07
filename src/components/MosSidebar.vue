@@ -100,17 +100,6 @@ J J& K L M N@ N O P j-`,
     ],
   },
   {
-    title: 'Half-accidentals',
-    demos: [
-      {
-        description:
-          'The e and a accidentals (read "semi-am" and "semi-at") raise or lower by half a chroma.',
-        tune: `MOS{2L 5s 3:1}
-J Je J& K L M N@ Na N O P j-`,
-      },
-    ],
-  },
-  {
     title: 'Ups and downs',
     demos: [
       {
@@ -120,11 +109,10 @@ J Je J& K L M N@ Na N O P j-`,
 # L = 7\17
 # s = 3\17
 # & = L-s = 4\17
-# e = &/2 = 2\17
 # ^ = 1\17 (always one step)
 # / = 5\17 (always five steps)
 MOS{2L 1s 7:3}
-J ^J Je ^Je J& /J vK K`,
+J ^J J& /J vK K`,
       },
       {
         description:
