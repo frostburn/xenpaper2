@@ -32,7 +32,7 @@ GreekNominal "Greek nominal" = ([α-ω]i / "alp"i / "bet"i / "gam"i / "del"i / "
 }
 Accidental "accidental" = ReservedAccidental / '𝄪' / '𝄫' / '𝄲' / '𝄳' / '𝄬' / '𝄭' / '𝄮' / '𝄯' / '𝄰' / '𝄱' / [x♯#‡t♮_d♭bpq]
 ReservedAccidental = accidental:[acefg] {
-  error(`Lower-case Latin letter '${accidental}' is reserved for future accidental use.`);
+  error(`Accidental '${accidental}' is reserved for future use.`);
 }
 UpsAndDowns "Ups and Downs" = ('^' / 'v' / '/' / '\\')* {
   let ups = 0;

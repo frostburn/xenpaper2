@@ -102,7 +102,7 @@ describe('grammar', () => {
       it('rejects reserved lower-case Latin accidentals', () => {
         for (const accidental of ['a', 'c', 'e', 'f', 'g']) {
           expect(() => parser(`A${accidental}`)).toThrow(
-            `Lower-case Latin letter '${accidental}' is reserved for future accidental use.`,
+            `Accidental '${accidental}' is reserved for future use.`,
           )
         }
       })
