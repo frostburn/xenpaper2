@@ -59,10 +59,10 @@ PitchAbsolute
  = PitchAbsoluteReservedAccidental
  / updowns: UpsAndDowns nominal: (GreekNominal / LatinNominal) accidentals: Accidental* inflections: Inflection* { return node('PitchAbsolute', {...updowns, ...nominal, accidentals, inflections}) }
  / PitchAbsoluteMos
-PitchAbsoluteReservedAccidental = UpsAndDowns (GreekNominal / LatinNominal / MosNominal) ReservedAccidental
+PitchAbsoluteReservedAccidental = UpsAndDowns (GreekNominal / LatinNominal) ReservedAccidental
 PitchAbsoluteMos
  = updowns: UpsAndDowns nominal:MosNominal accidentals:MosAccidental* { return node('PitchAbsolute', {...updowns, ...nominal, accidentals, inflections: []}) }
-MosAccidental = ReservedAccidental / [\&@♮_]
+MosAccidental = [\&@ea♮_]
 PitchCents = cents:Number "c"i { return node('PitchCents',{cents}); }
 PitchHz = hz:Number _ "hz"i { return node('PitchHz',{hz}); }
 PitchOctaveDivision = numerator:Int [\\/] denominator:Int octaveSize:PitchOctaveDivisionSuffix {

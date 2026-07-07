@@ -104,10 +104,11 @@ describe('grammar', () => {
           expect(() => parser(`A${accidental}`)).toThrow(
             `Lower-case Latin letter '${accidental}' is reserved for future accidental use.`,
           )
-          expect(() => parser(`MOS{5L 2s} J${accidental}`)).toThrow(
-            `Lower-case Latin letter '${accidental}' is reserved for future accidental use.`,
-          )
         }
+      })
+
+      it('continues to parse existing MOS a/e accidentals', () => {
+        expect(() => parser('MOS{5L 2s} Ja Je')).not.toThrow()
       })
 
       it('should parse up/down and lift/drop scale degrees', () => {
