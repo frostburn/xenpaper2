@@ -58,12 +58,14 @@ export const createSourceDisplayTokens = (
   if (hasPlayStartMarkers) addPlayStart()
 
   sourceCharacters.forEach((character, index) => {
+    const charDataIndex = getCharDataIndex(index)
+
     tokens.push({
       type: 'character',
-      key: `character-${index}`,
+      key: `character-${charDataIndex ?? `pending-${index}`}`,
       character,
       index,
-      charDataIndex: getCharDataIndex(index),
+      charDataIndex,
     })
 
     if (hasPlayStartMarkers && character === '\n') addPlayStart()
