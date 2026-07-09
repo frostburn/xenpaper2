@@ -29,6 +29,7 @@ import type {
   DemoTune,
   OpenSidebarMode,
   SidebarMode,
+  ParsedSource,
   SourceDisplayToken,
   SourceTab,
 } from '../types'
@@ -64,7 +65,7 @@ function useScoreEngine(id: number, transport: Transport, bank: Bank) {
   let parseVersion = 0
   let loadedSourceCode: string | undefined
 
-  const parsedSource = computed(() => parseAndProcessSourceCode(sourceCode.value))
+  const parsedSource = shallowRef<ParsedSource>(parseAndProcessSourceCode(''))
   const chars = computed(() => parsedSource.value.chars)
   const lastError = computed(() => parsedSource.value.error || engineError.value)
   const initialRulerState = computed(() =>
@@ -81,7 +82,8 @@ function useScoreEngine(id: number, transport: Transport, bank: Bank) {
     if (!force && scoreLoaded.value && loadedSourceCode === sourceCode.value) return
 
     const version = ++parseVersion
-    const source = parsedSource.value
+    const source = parseAndProcessSourceCode(sourceCode.value)
+    parsedSource.value = source
     scoreLoaded.value = false
     loadedSourceCode = undefined
 
