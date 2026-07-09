@@ -9,9 +9,15 @@ describe('source-display', () => {
     expect(tokens).toMatchObject([
       { type: 'character', character: 'a', index: 0, charDataIndex: 0 },
       { type: 'character', character: 'b', index: 1, charDataIndex: 1 },
-      { type: 'character', character: 'X', index: 2, charDataIndex: undefined },
-      { type: 'character', character: 'c', index: 3, charDataIndex: 2 },
-      { type: 'character', character: 'd', index: 4, charDataIndex: 3 },
+      {
+        type: 'character',
+        key: 'character-pending-2',
+        character: 'X',
+        index: 2,
+        charDataIndex: undefined,
+      },
+      { type: 'character', key: 'character-2', character: 'c', index: 3, charDataIndex: 2 },
+      { type: 'character', key: 'character-3', character: 'd', index: 4, charDataIndex: 3 },
     ])
   })
 
@@ -23,8 +29,20 @@ describe('source-display', () => {
       { type: 'character', character: 'b', charDataIndex: 1 },
       { type: 'character', character: 'X', charDataIndex: undefined },
       { type: 'character', character: 'Y', charDataIndex: undefined },
-      { type: 'character', character: 'e', charDataIndex: 4 },
-      { type: 'character', character: 'f', charDataIndex: 5 },
+      { type: 'character', key: 'character-4', character: 'e', charDataIndex: 4 },
+      { type: 'character', key: 'character-5', character: 'f', charDataIndex: 5 },
+    ])
+  })
+
+  it('keys shifted suffix characters by mapped highlight positions', () => {
+    const tokens = createSourceDisplayTokens('abXcd', 'abcd')
+
+    expect(tokens.map((token) => token.key)).toEqual([
+      'character-0',
+      'character-1',
+      'character-pending-2',
+      'character-2',
+      'character-3',
     ])
   })
 })
