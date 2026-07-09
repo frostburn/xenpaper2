@@ -14,6 +14,7 @@ export type SourceDisplayToken =
       key: string
       character: string
       index: number
+      charDataIndex?: number
     }
 
 export type SourceTab = {
