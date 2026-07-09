@@ -20,6 +20,9 @@ let stopShareRouteWatcher: WatchStopHandle | undefined
 let stopLoopStartWatcher: WatchStopHandle | undefined
 let stopRouteHashWatcher: WatchStopHandle | undefined
 let stopPlaybackWatcher: WatchStopHandle | undefined
+let sourceUpdateDebounceTimeout: number | undefined
+
+const SOURCE_UPDATE_DEBOUNCE_MS = 100
 
 const decodeBrowserHash = (hash: string): string => {
   try {
@@ -49,6 +52,21 @@ const replaceBrowserAddressHash = (hash: string): void => {
     '',
     `${window.location.pathname}${window.location.search}${encodedHash}`,
   )
+}
+
+const clearSourceUpdateDebounce = (): void => {
+  if (sourceUpdateDebounceTimeout === undefined) return
+
+  window.clearTimeout(sourceUpdateDebounceTimeout)
+  sourceUpdateDebounceTimeout = undefined
+}
+
+const scheduleSourceUpdate = (): void => {
+  clearSourceUpdateDebounce()
+  sourceUpdateDebounceTimeout = window.setTimeout(() => {
+    sourceUpdateDebounceTimeout = undefined
+    void xenpaper.updateParsedSourceCode()
+  }, SOURCE_UPDATE_DEBOUNCE_MS)
 }
 
 const replaceShareRoute = async (): Promise<void> => {
@@ -97,12 +115,7 @@ const stopPlaybackAnimation = (): void => {
 const startWatchers = (): void => {
   stopTitleWatcher = watch(() => xenpaper.htmlTitle, syncDocumentTitle, { immediate: true })
 
-  stopSourceWatcher = watch(
-    () => xenpaper.sourceCodes,
-    () => {
-      void xenpaper.updateParsedSourceCode()
-    },
-  )
+  stopSourceWatcher = watch(() => xenpaper.sourceCodes, scheduleSourceUpdate)
 
   stopShareRouteWatcher = watch(
     () => xenpaper.routeHash,
@@ -148,6 +161,7 @@ const stopWatchers = (): void => {
   stopLoopStartWatcher = undefined
   stopRouteHashWatcher = undefined
   stopPlaybackWatcher = undefined
+  clearSourceUpdateDebounce()
 }
 
 onMounted(() => {
