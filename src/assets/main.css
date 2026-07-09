@@ -165,13 +165,8 @@ a {
   font-style: italic;
 }
 
-.source-character {
-  transition: color 0.2s ease-out;
-}
-
 .source-character.active {
   color: var(--xenpaper-text);
-  transition: color 0s linear;
 }
 
 .highlight-delimiter {
