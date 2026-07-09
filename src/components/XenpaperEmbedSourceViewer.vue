@@ -90,10 +90,13 @@ const isCharacterActive = (charData?: CharData): boolean =>
         class="source-character"
         aria-hidden="true"
         :class="[
-          chars[token.index]?.color
-            ? `highlight-${chars[token.index]?.color}`
+          token.charDataIndex !== undefined && chars[token.charDataIndex]?.color
+            ? `highlight-${chars[token.charDataIndex]?.color}`
             : 'highlight-unknown',
-          { active: isCharacterActive(chars[token.index]) },
+          {
+            active:
+              token.charDataIndex !== undefined && isCharacterActive(chars[token.charDataIndex]),
+          },
         ]"
       >{{ token.character }}</span></template></template><br><br></pre>
     </div>

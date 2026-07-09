@@ -66,13 +66,14 @@ function useScoreEngine(id: number, transport: Transport, bank: Bank) {
   let loadedSourceCode: string | undefined
 
   const parsedSource = shallowRef<ParsedSource>(parseAndProcessSourceCode(''))
+  const highlightedSourceCode = ref('')
   const chars = computed(() => parsedSource.value.chars)
   const lastError = computed(() => parsedSource.value.error || engineError.value)
   const initialRulerState = computed(() =>
     'initialRulerState' in parsedSource.value ? parsedSource.value.initialRulerState : undefined,
   )
   const sourceDisplayTokens = computed<SourceDisplayToken[]>(() =>
-    createSourceDisplayTokens(sourceCode.value),
+    createSourceDisplayTokens(sourceCode.value, highlightedSourceCode.value),
   )
 
   const getSelectedLineStartTime = (): number =>
@@ -84,6 +85,7 @@ function useScoreEngine(id: number, transport: Transport, bank: Bank) {
     const version = ++parseVersion
     const source = parseAndProcessSourceCode(sourceCode.value)
     parsedSource.value = source
+    highlightedSourceCode.value = sourceCode.value
     scoreLoaded.value = false
     loadedSourceCode = undefined
 
