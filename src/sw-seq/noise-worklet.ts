@@ -106,12 +106,22 @@ class SWSeqNoiseGenerator extends AudioWorkletProcessor {
     const gains = parameters.gain
     const frameCount = output[0]?.length ?? 0
 
-    for (let sampleIndex = 0; sampleIndex < frameCount; sampleIndex++) {
-      const frequency = frequencies.length === 1 ? frequencies[0] : frequencies[sampleIndex]
-      const detune = detunes.length === 1 ? detunes[0] : detunes[sampleIndex]
-      const effectiveFrequency = Math.max(0, frequency * Math.pow(2, detune / 1200))
+    const constantPitch = frequencies.length === 1 && detunes.length === 1
+    const effectiveFrequency = constantPitch
+      ? Math.max(0, frequencies[0] * Math.pow(2, detunes[0] / 1200))
+      : 0
+    const phaseIncrement = effectiveFrequency / sampleRate
 
-      this.phase += effectiveFrequency / sampleRate
+    for (let sampleIndex = 0; sampleIndex < frameCount; sampleIndex++) {
+      if (constantPitch) {
+        this.phase += phaseIncrement
+      } else {
+        const frequency = frequencies.length === 1 ? frequencies[0] : frequencies[sampleIndex]
+        const detune = detunes.length === 1 ? detunes[0] : detunes[sampleIndex]
+        const effectiveFrequency = Math.max(0, frequency * Math.pow(2, detune / 1200))
+        this.phase += effectiveFrequency / sampleRate
+      }
+
       if (this.phase >= 1) {
         this.currentSample = this.nextSample()
         this.phase -= Math.floor(this.phase)
