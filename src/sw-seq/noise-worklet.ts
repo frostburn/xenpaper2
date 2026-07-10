@@ -19,6 +19,12 @@ export function isNoiseInterpolationType(
 const NOISE_GENERATOR_WORKLET_JS = `
 const PINK_OCTAVE_COUNT = 10
 const PINK_GAIN = 1 / Math.sqrt(PINK_OCTAVE_COUNT)
+const PINK_DRIVE = 0.9
+const PINK_OUTPUT_GAIN = 0.9 / Math.tanh(PINK_DRIVE)
+const BROWN_FEEDBACK = 0.98
+const BROWN_INPUT_GAIN = 0.35
+const BROWN_DRIVE = 1.25
+const BROWN_OUTPUT_GAIN = 0.95 / Math.tanh(BROWN_DRIVE)
 
 class SWSeqNoiseGenerator extends AudioWorkletProcessor {
   constructor() {
@@ -68,6 +74,10 @@ class SWSeqNoiseGenerator extends AudioWorkletProcessor {
     }
   }
 
+  shapeSample(sample, drive, outputGain) {
+    return Math.tanh(sample * drive) * outputGain
+  }
+
   nextPinkSample() {
     let pinkSample = 0
 
@@ -81,7 +91,7 @@ class SWSeqNoiseGenerator extends AudioWorkletProcessor {
       this.pinkOctaveCountdowns[octave]--
     }
 
-    return pinkSample * PINK_GAIN
+    return this.shapeSample(pinkSample * PINK_GAIN, PINK_DRIVE, PINK_OUTPUT_GAIN)
   }
 
   nextSample() {
@@ -99,8 +109,11 @@ class SWSeqNoiseGenerator extends AudioWorkletProcessor {
     const whiteSample = Math.random() * 2 - 1
 
     if (this.noise === 'brown') {
-      this.brownSample = this.brownSample * 0.95 + whiteSample * 0.8
-      this.brownSample = Math.max(-2, Math.min(2, this.brownSample))
+      this.brownSample = this.shapeSample(
+        this.brownSample * BROWN_FEEDBACK + whiteSample * BROWN_INPUT_GAIN,
+        BROWN_DRIVE,
+        BROWN_OUTPUT_GAIN,
+      )
       return this.brownSample
     }
 
