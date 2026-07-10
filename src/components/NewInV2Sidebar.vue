@@ -239,6 +239,18 @@ MOS{5L2s}(plot:MOS)`,
 [0!] ! ["0!] !    [0!] !    ["0! ] ! |
 [0!] ! ["0!] [0!] !    [0!] [0"0!] . ||`,
       },
+      {
+        description: 'For softer noise, specify the interpolation type.',
+        tune: `(mp)(noise: white constant)
+ '0---
+ "0---
+'"0---
+....
+(f)(noise: white linear)
+ '0---
+ "0---
+'"0---`,
+      },
     ],
   },
   {

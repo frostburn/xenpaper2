@@ -984,7 +984,7 @@ const setterToMosc = (setter: SetterType | DelimiterType, context: Context): Mos
   }
 
   if (type === 'SetNoise') {
-    const { noise } = setter
+    const { noise, interpolation } = setter
     return [
       {
         type: 'PARAM_BEAT_TIME',
@@ -992,6 +992,7 @@ const setterToMosc = (setter: SetterType | DelimiterType, context: Context): Mos
         value: {
           type: 'noise',
           noise,
+          interpolation: interpolation ?? 'constant',
         },
       },
     ]

@@ -216,7 +216,7 @@ function objectKey(value: object | null) {
 function synthQuotaKey(synth: SynthType | undefined, family: string) {
   if (synth === undefined) return family
 
-  if (synth.type === 'noise') return `${family}:${synth.noise}`
+  if (synth.type === 'noise') return `${family}:${synth.noise}:${synth.interpolation}`
   if (synth.periodicity === 'aperiodic') {
     return `${family}:aperiodic:${objectKey(synth.aperiodicWave)}`
   }

@@ -1,7 +1,12 @@
 import type { MoscNote, MoscScore } from '../mosc'
 import { SoundEngine } from '../mosc'
 import type { Bank } from '../sw-seq/bank'
-import { isNoiseGeneratorType, type NoiseGeneratorType } from '../sw-seq/noise-worklet'
+import {
+  isNoiseGeneratorType,
+  isNoiseInterpolationType,
+  type NoiseGeneratorType,
+  type NoiseInterpolationType,
+} from '../sw-seq/noise-worklet'
 import {
   PolySynth,
   type NoiseSynthType,
@@ -15,7 +20,7 @@ const OSC_VOLUME = 0.275
 const VOLUME_TIME_CONSTANT = 0.001
 
 type SoundEngineOscParam = { type: 'osc'; osc: SWOscillatorType }
-type SoundEngineNoiseParam = { type: 'noise'; noise: string }
+type SoundEngineNoiseParam = { type: 'noise'; noise: string; interpolation: string }
 type SoundEngineEnvParam = { type: 'env'; a: number; d: number; s: number; r: number }
 type SoundEngineVolumeParam = { type: 'volume'; db: number }
 type SoundEngineVelocityParam = { type: 'velocity'; velocity: number }
@@ -27,11 +32,18 @@ const isOscParam = (value: unknown): value is SoundEngineOscParam =>
   isRecord(value) && value.type === 'osc'
 
 const isNoiseParam = (value: unknown): value is SoundEngineNoiseParam =>
-  isRecord(value) && value.type === 'noise' && typeof value.noise === 'string'
+  isRecord(value) &&
+  value.type === 'noise' &&
+  typeof value.noise === 'string' &&
+  typeof value.interpolation === 'string'
 
-const createNoiseSynthType = (noise: NoiseGeneratorType): NoiseSynthType => ({
+const createNoiseSynthType = (
+  noise: NoiseGeneratorType,
+  interpolation: NoiseInterpolationType,
+): NoiseSynthType => ({
   ...WHITE_NOISE_SYNTH_TYPE,
   noise,
+  interpolation,
 })
 
 const isEnvParam = (value: unknown): value is SoundEngineEnvParam =>
@@ -174,7 +186,11 @@ export class SoundEngineSwSeq extends SoundEngine {
         if (isNoiseParam(item.value)) {
           if (!isNoiseGeneratorType(item.value.noise))
             throw new Error(`"${item.value.noise}" is not a valid noise generator.`)
-          patch.synth = createNoiseSynthType(item.value.noise)
+          if (!isNoiseInterpolationType(item.value.interpolation))
+            throw new Error(
+              `"${item.value.interpolation}" is not a valid noise interpolation type.`,
+            )
+          patch.synth = createNoiseSynthType(item.value.noise, item.value.interpolation)
         }
         if (isEnvParam(item.value)) {
           patch.envelope = {

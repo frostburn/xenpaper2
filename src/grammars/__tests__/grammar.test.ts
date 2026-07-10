@@ -2258,13 +2258,14 @@ describe('grammar', () => {
       })
 
       it('should parse sequence with noise setter', () => {
-        expect(strip(parser('(noise:white; noise: WHITE)')).sequence.items).toEqual([
+        expect(strip(parser('(noise:white; noise: WHITE linear)')).sequence.items).toEqual([
           {
             type: 'SetterGroup',
             setters: [
               {
                 type: 'SetNoise',
                 noise: 'white',
+                interpolation: null,
               },
               {
                 type: 'Semicolon',
@@ -2272,6 +2273,7 @@ describe('grammar', () => {
               {
                 type: 'SetNoise',
                 noise: 'white',
+                interpolation: 'linear',
               },
             ],
           },

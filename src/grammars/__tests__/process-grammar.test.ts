@@ -880,6 +880,7 @@ describe('grammar to mosc score', () => {
       value: {
         type: 'noise',
         noise: 'white',
+        interpolation: 'constant',
       },
     })
   })
