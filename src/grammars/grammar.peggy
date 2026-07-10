@@ -193,8 +193,9 @@ SetLift = "/" _ ":" _ value:SetterStep { return node('SetLift', { value }); }
 SetterStep = PitchCents / PitchOctaveDivision / PitchRatio
 SetOsc = "osc"i _ ":" _ osc:OscName { return node('SetOsc', { osc }); }
 OscName "oscillator name" = [a-zA-Z0-9\-]+ { return text().toLowerCase(); }
-SetNoise = "noise"i _ ":" _ noise:NoiseName { return node('SetNoise', { noise }); }
+SetNoise = "noise"i _ ":" _ noise:NoiseName interpolation: (_ @InterpolationName)? { return node('SetNoise', { noise, interpolation }); }
 NoiseName "noise generator name" = [a-zA-Z0-9\-]+ { return text().toLowerCase(); }
+InterpolationName "noise interpolation type" = [a-zA-Z0-9\-]+ { return text().toLowerCase(); }
 SetEnv = "env"i _ ":" _ vals:EnvValues {
   return node('SetEnv', vals);
 }

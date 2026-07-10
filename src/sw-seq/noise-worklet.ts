@@ -1,11 +1,19 @@
 const NOISE_GENERATOR_PROCESSOR_NAME = 'sw-seq-noise-generator'
 
 export type NoiseGeneratorType = 'white' | 'pink' | 'brown' | 'blue' | 'violet'
+export type NoiseInterpolationType = 'constant' | 'linear'
 
 const NOISE_GENERATOR_TYPES = new Set<string>(['white', 'pink', 'brown', 'blue', 'violet'])
+const NOISE_INTERPOLATION_TYPES = new Set<string>(['constant', 'linear'])
 
 export function isNoiseGeneratorType(noise: string): noise is NoiseGeneratorType {
   return NOISE_GENERATOR_TYPES.has(noise)
+}
+
+export function isNoiseInterpolationType(
+  interpolation: string,
+): interpolation is NoiseInterpolationType {
+  return NOISE_INTERPOLATION_TYPES.has(interpolation)
 }
 
 const NOISE_GENERATOR_WORKLET_JS = `
@@ -17,6 +25,8 @@ class SWSeqNoiseGenerator extends AudioWorkletProcessor {
     super()
     this.phase = 1
     this.noise = 'white'
+    this.interpolation = 'constant'
+    this.previousSample = 0
     this.currentSample = 0
     this.previousWhiteSample = 0
     this.previousPinkSample = 0
@@ -25,17 +35,29 @@ class SWSeqNoiseGenerator extends AudioWorkletProcessor {
     this.pinkOctaveCountdowns = new Uint32Array(PINK_OCTAVE_COUNT)
 
     this.port.onmessage = (event) => {
-      if (event.data?.type !== 'noise') return
-      if (
-        event.data.noise !== 'white' &&
-        event.data.noise !== 'pink' &&
-        event.data.noise !== 'brown' &&
-        event.data.noise !== 'blue' &&
-        event.data.noise !== 'violet'
-      ) {
+      if (event.data?.type === 'noise') {
+        if (
+          event.data.noise !== 'white' &&
+          event.data.noise !== 'pink' &&
+          event.data.noise !== 'brown' &&
+          event.data.noise !== 'blue' &&
+          event.data.noise !== 'violet'
+        ) {
+          return
+        }
+        this.noise = event.data.noise
+      } else if (event.data?.type === 'interpolation') {
+        if (
+          event.data.interpolation !== 'constant' &&
+          event.data.interpolation !== 'linear'
+        ) {
+          return
+        }
+        this.interpolation = event.data.interpolation
+      } else {
         return
       }
-      this.noise = event.data.noise
+      this.previousSample = 0
       this.currentSample = 0
       this.previousWhiteSample = 0
       this.previousPinkSample = 0
@@ -123,12 +145,15 @@ class SWSeqNoiseGenerator extends AudioWorkletProcessor {
       }
 
       if (this.phase >= 1) {
+        this.previousSample = this.currentSample
         this.currentSample = this.nextSample()
         this.phase -= Math.floor(this.phase)
       }
 
       const gain = gains.length === 1 ? gains[0] : gains[sampleIndex]
-      const value = this.currentSample * gain
+      const value = (
+        this.interpolation === 'constant' ? this.currentSample : this.previousSample + (this.currentSample - this.previousSample) * this.phase
+      ) * gain
       for (let channelIndex = 0; channelIndex < output.length; channelIndex++) {
         output[channelIndex][sampleIndex] = value
       }
@@ -167,6 +192,7 @@ export type NoiseGeneratorNode = AudioWorkletNode &
   GainNode &
   Pick<OscillatorNode, 'detune' | 'frequency'> & {
     type: NoiseGeneratorType
+    interpolation: NoiseInterpolationType
   }
 
 export function createNoiseGeneratorNode(context: BaseAudioContext): NoiseGeneratorNode {
@@ -177,6 +203,7 @@ export function createNoiseGeneratorNode(context: BaseAudioContext): NoiseGenera
   }) as NoiseGeneratorNode
 
   let type: NoiseGeneratorType = 'white'
+  let interpolation: NoiseInterpolationType = 'constant'
 
   Object.defineProperties(node, {
     detune: { value: node.parameters.get('detune') },
@@ -190,6 +217,16 @@ export function createNoiseGeneratorNode(context: BaseAudioContext): NoiseGenera
         }
         type = value
         node.port.postMessage({ type: 'noise', noise: value })
+      },
+    },
+    interpolation: {
+      get: () => interpolation,
+      set: (value: NoiseInterpolationType) => {
+        if (!isNoiseInterpolationType(value)) {
+          throw new Error(`"${value}" is not a valid interpolation type.`)
+        }
+        interpolation = value
+        node.port.postMessage({ type: 'interpolation', interpolation: value })
       },
     },
   })

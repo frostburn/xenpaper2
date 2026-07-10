@@ -90,6 +90,7 @@ describe('PolySynth', () => {
       synth: {
         type: 'noise',
         noise: 'white',
+        interpolation: 'constant',
         periodicity: 'noise',
         periodicWave: null,
         aperiodicWave: null,
@@ -123,6 +124,7 @@ describe('PolySynth', () => {
       synth: {
         type: 'noise',
         noise: 'violet',
+        interpolation: 'linear',
         periodicity: 'noise',
         periodicWave: null,
         aperiodicWave: null,

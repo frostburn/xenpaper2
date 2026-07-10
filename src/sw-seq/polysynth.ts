@@ -1,6 +1,10 @@
 import type { Bank } from './bank'
 import type { EnvelopedAperiodicOscillator, EnvelopedOscillator, EnvelopedUnison } from './nodes'
-import type { NoiseGeneratorNode, NoiseGeneratorType } from './noise-worklet'
+import type {
+  NoiseGeneratorNode,
+  NoiseGeneratorType,
+  NoiseInterpolationType,
+} from './noise-worklet'
 import type { SynthType as TimbreSynthType } from './timbre'
 
 const TIME_CONSTANT = 0.2
@@ -8,6 +12,7 @@ const TIME_CONSTANT = 0.2
 export type NoiseSynthType = {
   type: 'noise'
   noise: NoiseGeneratorType
+  interpolation: NoiseInterpolationType
   periodicity: 'noise'
   periodicWave: null
   aperiodicWave: null
@@ -18,6 +23,7 @@ export type SynthType = TimbreSynthType | NoiseSynthType
 export const WHITE_NOISE_SYNTH_TYPE: NoiseSynthType = {
   type: 'noise',
   noise: 'white',
+  interpolation: 'constant',
   periodicity: 'noise',
   periodicWave: null,
   aperiodicWave: null,
@@ -124,6 +130,7 @@ export class PolySynth {
       } else if (type === 'noise' && 'type' in oscillator) {
         const noiseGenerator = oscillator as NoiseGeneratorNode
         noiseGenerator.type = synth.noise
+        noiseGenerator.interpolation = synth.interpolation
       } else if (type !== 'custom' && type !== 'noise' && 'type' in oscillator) {
         oscillator.type = type
       }

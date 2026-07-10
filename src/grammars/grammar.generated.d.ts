@@ -305,6 +305,7 @@ export type SetOscType = NodeType<'SetOsc'> & {
 
 export type SetNoiseType = NodeType<'SetNoise'> & {
   noise: string
+  interpolation: string | null
 }
 
 // env
