@@ -2512,6 +2512,9 @@ describe('grammar', () => {
       expect(strip(parser('(gliss? ease-in-out)').sequence.items[0])).toMatchObject({
         setters: [{ type: 'SetGliss', holdTarget: false, easing: 'ease-in-out' }],
       })
+      expect(strip(parser('(gliss? EASE-IN)').sequence.items[0])).toMatchObject({
+        setters: [{ type: 'SetGliss', holdTarget: false, easing: 'ease-in' }],
+      })
     })
   })
 })

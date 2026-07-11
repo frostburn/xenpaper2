@@ -182,7 +182,7 @@ SetGroove = "groove"i _ ":" _ items:GrooveItem* { return node('SetGroove', { ite
 GrooveItem = GrooveSubdivision / SetSubdivision / SampleRateNote / Whitespace
 GrooveSubdivision = "(" _ setter:SetSubdivision _ ")" { return setter; }
 SetGliss = "gliss"i holdTarget:("?" { return false; } / "" { return true; }) easing:(_ @GlissEasing)? {
-  return node('SetGliss', { holdTarget, easing: easing ?? 'linear' });
+  return node('SetGliss', { holdTarget, easing: (easing ?? 'linear').toLowerCase() });
 }
 GlissEasing = "ease-in-out"i / "ease-in"i / "ease-out"i / "linear"i / "ease"i
 SetGrace = data:(("grace"i _ ":" _ fraction:Fraction count:(_ @Int)? { return { fraction, count: count ?? 1 }; }) / (fraction:Fraction _ questionMarks:$("?"+) { return { fraction, count: questionMarks.length }; })) {

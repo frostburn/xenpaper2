@@ -137,6 +137,12 @@ describe('glissando setter', () => {
       'Glissando target lookup was stopped by a rest.',
     )
   })
+
+  it('throws when a context-changing setter appears before the target', () => {
+    expect(() => processGrammar(parseSource('(gliss)0--- {r2/1} 0'))).toThrow(
+      'Glissando target lookup cannot skip SetRoot before the target.',
+    )
+  })
 })
 
 describe('groove setter', () => {

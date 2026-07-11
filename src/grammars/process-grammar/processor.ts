@@ -630,6 +630,17 @@ const glissandoTargetHzs = (item: GlissandoPlayableItem, context: Context): numb
 
 type GlissandoTarget = { item: GlissandoPlayableItem; index: number }
 
+type GlissandoSetterGroupItem = {
+  type: 'SetterGroup'
+  setters: Array<{ type: string; delimiter?: boolean }>
+}
+
+const isGlissandoOnlySetterGroup = (item: { type: string }): item is GlissandoSetterGroupItem =>
+  item.type === 'SetterGroup' &&
+  'setters' in item &&
+  Array.isArray(item.setters) &&
+  item.setters.every((setter) => setter.type === 'SetGliss' || setter.delimiter)
+
 const findGlissandoTarget = (
   items: Array<{ type: string }>,
   sourceIndex: number,
@@ -638,6 +649,15 @@ const findGlissandoTarget = (
     const item = items[index]!
     if (item.type === 'Rest') throw new Error('Glissando target lookup was stopped by a rest.')
     if (isGlissandoPlayableItem(item)) return { item, index }
+    if (
+      item.type === 'Whitespace' ||
+      item.type === 'BarLine' ||
+      item.type === 'Comment' ||
+      isGlissandoOnlySetterGroup(item)
+    ) {
+      continue
+    }
+    throw new Error(`Glissando target lookup cannot skip ${item.type} before the target.`)
   }
 
   throw new Error('Glissando has no compatible following target before the end of the sequence.')
@@ -648,10 +668,7 @@ const hasOwnGlissandoSetter = (items: Array<{ type: string }>, targetIndex: numb
     const item = items[index]!
     if (item.type === 'Whitespace' || item.type === 'BarLine') continue
     return (
-      item.type === 'SetterGroup' &&
-      'setters' in item &&
-      Array.isArray(item.setters) &&
-      item.setters.some((setter) => setter.type === 'SetGliss')
+      isGlissandoOnlySetterGroup(item) && item.setters.some((setter) => setter.type === 'SetGliss')
     )
   }
 
