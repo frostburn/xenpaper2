@@ -275,6 +275,13 @@ export type SetGraceType = NodeType<'SetGrace'> & {
   count: number
 }
 
+export type GlissEasingType = 'linear' | 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out'
+
+export type SetGlissType = NodeType<'SetGliss'> & {
+  holdTarget: boolean
+  easing: GlissEasingType
+}
+
 export type GrooveItemType = SetSubdivisionType | SampleRateNoteType | DelimiterType
 
 export type SetGrooveType = NodeType<'SetGroove'> & {
@@ -395,6 +402,7 @@ export type SetterType =
   | SetBmsType
   | SetSubdivisionType
   | SetGraceType
+  | SetGlissType
   | SetGrooveType
   | DroneType
   | SetUpType

@@ -311,6 +311,38 @@ describe('grammarToChars', () => {
     ])
   })
 
+  it('highlights glissando setters', () => {
+    expect(colors(grammarToChars(parse('(gliss) (gliss? ease-in-out)')))).toEqual([
+      'setterGroup',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setterGroup',
+      undefined,
+      'setterGroup',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setterGroup',
+    ])
+  })
   it('highlights grace setters', () => {
     expect(colors(grammarToChars(parse('(8?) (grace:16)')))).toEqual([
       'setterGroup',
