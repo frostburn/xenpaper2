@@ -749,7 +749,7 @@ const applyGlissandoChain = (
 
     const targetOwnGlissando = ownGlissandoSetter(items, target.index)
     if (!targetOwnGlissando) {
-      if (!target.item.zeroDuration) {
+      if (target.item.tail?.length !== -1) {
         const consumedTargetItems = consumeGlissandoTarget(target.item, context)
         segmentEnd = Math.max(...consumedTargetItems.map((item) => item.timeEnd))
       }
@@ -772,12 +772,7 @@ const applyGlissandoChain = (
 }
 
 const noteToMosc = (note: NoteType, context: Context): MoscBeatNote[] => {
-  const timeProps = note.zeroDuration
-    ? {
-        time: mapGrooveBeat(context.time, context.groove),
-        timeEnd: mapGrooveBeat(context.time, context.groove),
-      }
-    : tailToTime(note.tail, context)
+  const timeProps = tailToTime(note.tail, context)
 
   // mutate ast node to add time
   const arr: [number, number] = [timeProps.time, timeProps.timeEnd]
@@ -823,12 +818,7 @@ const chordToMosc = (
 ): MoscBeatPlayableNote[] => {
   const { tail, pitches } = chord
   const chordPitches: ChordPitchType[] = pitches
-  const timeProps = chord.zeroDuration
-    ? {
-        time: mapGrooveBeat(context.time, context.groove),
-        timeEnd: mapGrooveBeat(context.time, context.groove),
-      }
-    : tailToTime(tail, context)
+  const timeProps = tailToTime(tail, context)
 
   // mutate ast node to add time
   const arr: [number, number] = [timeProps.time, timeProps.timeEnd]

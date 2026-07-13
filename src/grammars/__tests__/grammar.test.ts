@@ -53,7 +53,6 @@ const strip = <T>(data: T): T => {
           key !== 'delimiter' &&
           key !== 'parts' &&
           !(key === 'octave' && record[key] === null) &&
-          !(key === 'zeroDuration' && record[key] === false) &&
           !(
             (key === 'ups' || key === 'lifts') &&
             record.type === 'PitchDegree' &&
@@ -2515,7 +2514,7 @@ describe('grammar', () => {
       })
       expect(strip(parser('7?').sequence.items[0])).toMatchObject({
         type: 'Note',
-        zeroDuration: true,
+        tail: { type: 'Hold', length: -1 },
       })
       expectParserErrorMessage('7-?', 'Expected')
     })
