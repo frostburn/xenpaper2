@@ -88,12 +88,14 @@ const noteLabelDurations = (input: string): Array<[string, number]> =>
   noteItems(input).map((item) => [item.label, item.timeEnd - item.time])
 
 describe('glissando setter', () => {
-  it('defaults to a linear glissando and holds the target', () => {
+  it('defaults to a linear legato glissando and holds the target without re-attacking', () => {
     const processed = processGrammar(parseSource('(gliss)0--- 7'))
     const notes = processed.score.sequence.filter((item) => item.type === 'NOTE_BEAT_TIME')
-    expect(notes[0]).toMatchObject({ hzEnd: notes[1]!.hz, pitchInterpolation: 'linear' })
-    expect(notes[0]!.timeEnd - notes[0]!.time).toBe(2)
-    expect(notes[1]!.timeEnd - notes[1]!.time).toBe(0.5)
+    expect(notes).toHaveLength(1)
+    expect(notes[0]).toMatchObject({ pitchInterpolation: 'linear' })
+    expect(notes[0]!.pitchAutomation).toHaveLength(1)
+    expect(notes[0]!.pitchAutomation![0]).toMatchObject({ time: 2, pitchInterpolation: 'linear' })
+    expect(notes[0]!.timeEnd - notes[0]!.time).toBe(2.5)
     expect(processed.score.lengthTime).toBe(2.5)
   })
 
@@ -102,28 +104,35 @@ describe('glissando setter', () => {
     const notes = processed.score.sequence.filter((item) => item.type === 'NOTE_BEAT_TIME')
     expect(notes).toHaveLength(1)
     expect(notes[0]).toMatchObject({ pitchInterpolation: 'linear' })
+    expect(notes[0]!.pitchAutomation).toHaveLength(1)
+    expect(notes[0]!.timeEnd - notes[0]!.time).toBe(2)
     expect(processed.score.lengthTime).toBe(2)
   })
 
-  it('allows a consumed target to start its own glissando', () => {
+  it('chains glissandi as one sustained note', () => {
     const notes = noteItems('(gliss)0---(gliss)7-- 5-')
-    expect(notes).toHaveLength(3)
-    expect(notes[0]).toMatchObject({ hzEnd: notes[1]!.hz, pitchInterpolation: 'linear' })
-    expect(notes[1]).toMatchObject({ hzEnd: notes[2]!.hz, pitchInterpolation: 'linear' })
-    expect(notes[2]!.hzEnd).toBeUndefined()
-    expect(notes.map((note) => note.timeEnd - note.time)).toEqual([2, 1.5, 1])
+    expect(notes).toHaveLength(1)
+    expect(notes[0]!.pitchAutomation).toMatchObject([
+      { time: 2, pitchInterpolation: 'linear' },
+      { time: 3.5, pitchInterpolation: 'linear' },
+    ])
+    expect(notes[0]!.timeEnd - notes[0]!.time).toBe(4.5)
   })
 
   it('supports CSS easing names', () => {
     const notes = noteItems('(gliss? ease-in-out)11 12')
     expect(notes).toHaveLength(1)
     expect(notes[0]).toMatchObject({ pitchInterpolation: 'ease-in-out' })
+    expect(notes[0]!.pitchAutomation![0]).toMatchObject({ pitchInterpolation: 'ease-in-out' })
   })
 
   it('pairs chord voices by index', () => {
     const notes = noteItems('(gliss) [0 4]--- [7 11]')
-    expect(notes[0]).toMatchObject({ hzEnd: notes[2]!.hz, pitchInterpolation: 'linear' })
-    expect(notes[1]).toMatchObject({ hzEnd: notes[3]!.hz, pitchInterpolation: 'linear' })
+    expect(notes).toHaveLength(2)
+    expect(notes[0]).toMatchObject({ pitchInterpolation: 'linear' })
+    expect(notes[1]).toMatchObject({ pitchInterpolation: 'linear' })
+    expect(notes[0]!.pitchAutomation).toHaveLength(1)
+    expect(notes[1]!.pitchAutomation).toHaveLength(1)
   })
 
   it('throws on mismatched chord sizes', () => {

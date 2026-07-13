@@ -663,37 +663,84 @@ const findGlissandoTarget = (
   throw new Error('Glissando has no compatible following target before the end of the sequence.')
 }
 
-const hasOwnGlissandoSetter = (items: Array<{ type: string }>, targetIndex: number): boolean => {
+const ownGlissandoSetter = (
+  items: Array<{ type: string }>,
+  targetIndex: number,
+): GlissandoState | null => {
   for (let index = targetIndex - 1; index >= 0; index -= 1) {
     const item = items[index]!
     if (item.type === 'Whitespace' || item.type === 'BarLine') continue
-    return (
-      isGlissandoOnlySetterGroup(item) && item.setters.some((setter) => setter.type === 'SetGliss')
-    )
+    if (!isGlissandoOnlySetterGroup(item)) return null
+    const setter = item.setters.find((setter) => setter.type === 'SetGliss') as
+      | (GlissandoState & { type: 'SetGliss' })
+      | undefined
+    return setter ? { holdTarget: setter.holdTarget, easing: setter.easing } : null
   }
 
-  return false
+  return null
 }
 
-const applyGlissando = (
-  moscItems: MoscBeatPlayableNote[],
-  targetItem: GlissandoPlayableItem,
+const consumeGlissandoTarget = (
+  item: GlissandoPlayableItem,
   context: Context,
+): MoscBeatPlayableNote[] =>
+  item.type === 'Note' ? noteToMosc(item, context) : chordToMosc(item, context)
+
+const applyGlissandoChain = (
+  sourceItems: MoscBeatPlayableNote[],
+  items: Array<{ type: string }>,
+  sourceIndex: number,
+  context: Context,
+  skippedGlissandoTargetIndices: Set<number>,
 ): void => {
-  const sourceNotes = moscItems.filter(
+  const sourceNotes = sourceItems.filter(
     (moscItem): moscItem is MoscBeatNote => moscItem.type === 'NOTE_BEAT_TIME',
   )
-  const targetHzs = glissandoTargetHzs(targetItem, context)
+  if (!context.glissando) return
 
-  if (sourceNotes.length !== targetHzs.length) {
-    throw new Error(
-      `Glissando chord voice count mismatch: source has ${sourceNotes.length}, target has ${targetHzs.length}.`,
-    )
+  let target = findGlissandoTarget(items, sourceIndex)
+  let segmentEnd = Math.max(...sourceNotes.map((note) => note.timeEnd))
+  let holdFinalTarget = context.glissando.holdTarget
+  let easing = context.glissando.easing
+  context.glissando = null
+
+  while (true) {
+    const targetHzs = glissandoTargetHzs(target.item, context)
+    if (sourceNotes.length !== targetHzs.length) {
+      throw new Error(
+        `Glissando chord voice count mismatch: source has ${sourceNotes.length}, target has ${targetHzs.length}.`,
+      )
+    }
+
+    sourceNotes.forEach((note, index) => {
+      note.hzEnd = targetHzs[index]!
+      note.pitchInterpolation = easing
+      note.pitchAutomation = [
+        ...(note.pitchAutomation ?? []),
+        { time: segmentEnd, hz: targetHzs[index]!, pitchInterpolation: easing },
+      ]
+    })
+
+    const targetOwnGlissando = ownGlissandoSetter(items, target.index)
+    if (!targetOwnGlissando) {
+      if (holdFinalTarget) {
+        const consumedTargetItems = consumeGlissandoTarget(target.item, context)
+        segmentEnd = Math.max(...consumedTargetItems.map((item) => item.timeEnd))
+      }
+      skippedGlissandoTargetIndices.add(target.index)
+      break
+    }
+
+    const consumedTargetItems = consumeGlissandoTarget(target.item, context)
+    segmentEnd = Math.max(...consumedTargetItems.map((item) => item.timeEnd))
+    skippedGlissandoTargetIndices.add(target.index)
+    holdFinalTarget = targetOwnGlissando.holdTarget
+    easing = targetOwnGlissando.easing
+    target = findGlissandoTarget(items, target.index)
   }
 
-  sourceNotes.forEach((note, index) => {
-    note.hzEnd = targetHzs[index]!
-    note.pitchInterpolation = context.glissando?.easing ?? 'linear'
+  sourceNotes.forEach((note) => {
+    note.timeEnd = segmentEnd
   })
 }
 
@@ -1460,15 +1507,13 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
     if (type === 'Note') {
       const items = noteToMosc(item, context)
       if (context.glissando) {
-        const target = findGlissandoTarget(grammarSequence.items, index)
-        applyGlissando(items, target.item, context)
-        if (
-          !context.glissando.holdTarget &&
-          !hasOwnGlissandoSetter(grammarSequence.items, target.index)
-        ) {
-          skippedGlissandoTargetIndices.add(target.index)
-        }
-        context.glissando = null
+        applyGlissandoChain(
+          items,
+          grammarSequence.items,
+          index,
+          context,
+          skippedGlissandoTargetIndices,
+        )
       }
       moscItems.push(...items)
       initialRulerState = rulerStateCaptureRootHz(initialRulerState, context)
@@ -1493,15 +1538,13 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
     if (type === 'Chord') {
       const items = chordToMosc(item, context)
       if (context.glissando) {
-        const target = findGlissandoTarget(grammarSequence.items, index)
-        applyGlissando(items, target.item, context)
-        if (
-          !context.glissando.holdTarget &&
-          !hasOwnGlissandoSetter(grammarSequence.items, target.index)
-        ) {
-          skippedGlissandoTargetIndices.add(target.index)
-        }
-        context.glissando = null
+        applyGlissandoChain(
+          items,
+          grammarSequence.items,
+          index,
+          context,
+          skippedGlissandoTargetIndices,
+        )
       }
       moscItems.push(...items)
       return
@@ -1510,15 +1553,13 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
     if (type === 'RatioChord') {
       const items = chordToMosc(item, context)
       if (context.glissando) {
-        const target = findGlissandoTarget(grammarSequence.items, index)
-        applyGlissando(items, target.item, context)
-        if (
-          !context.glissando.holdTarget &&
-          !hasOwnGlissandoSetter(grammarSequence.items, target.index)
-        ) {
-          skippedGlissandoTargetIndices.add(target.index)
-        }
-        context.glissando = null
+        applyGlissandoChain(
+          items,
+          grammarSequence.items,
+          index,
+          context,
+          skippedGlissandoTargetIndices,
+        )
       }
       moscItems.push(...items)
       initialRulerState = rulerStateCaptureRootHz(initialRulerState, context)

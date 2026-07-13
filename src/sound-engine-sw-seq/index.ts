@@ -162,6 +162,7 @@ export class SoundEngineSwSeq extends SoundEngine {
         patch.frequencyEnd = note.hzEnd
         patch.pitchInterpolation = note.pitchInterpolation
         patch.duration = item.timeEnd - item.time
+        patch.pitchAutomation = note.pitchAutomation
         const noteHandle = this.synth.trigger(patch)
         const noteEventId = this.transport.scheduleParametricNote({
           noteOn: (time) => {

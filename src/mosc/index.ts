@@ -2,6 +2,12 @@
 // types
 //
 
+export type MoscPitchAutomationPoint = {
+  time: number
+  hz: number
+  pitchInterpolation?: 'linear' | 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out'
+}
+
 export type MoscBeatNote = {
   type: 'NOTE_BEAT_TIME'
   time: number
@@ -9,6 +15,7 @@ export type MoscBeatNote = {
   hz: number
   hzEnd?: number
   pitchInterpolation?: 'linear' | 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out'
+  pitchAutomation?: MoscPitchAutomationPoint[]
   label: string
 }
 
@@ -26,6 +33,7 @@ export type MoscNote = {
   hz: number
   hzEnd?: number
   pitchInterpolation?: 'linear' | 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out'
+  pitchAutomation?: MoscPitchAutomationPoint[]
   label: string
 }
 
@@ -185,6 +193,10 @@ export const scoreToTime = (score: MoscBeatScore): MoscScore => {
           hz: item.hz,
           hzEnd: item.hzEnd,
           pitchInterpolation: item.pitchInterpolation,
+          pitchAutomation: item.pitchAutomation?.map((point) => ({
+            ...point,
+            time: thisBeatToTime(point.time),
+          })),
           label: item.label,
           time: thisBeatToTime(item.time),
           timeEnd: thisBeatToTime(item.timeEnd),

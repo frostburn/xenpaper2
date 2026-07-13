@@ -37,13 +37,14 @@ const cubicBezier = (x1: number, y1: number, x2: number, y2: number, x: number):
 
 const easingCurve = (
   easing: 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out',
+  centsStart: number,
   centsEnd: number,
 ): Float32Array => {
   const [x1, y1, x2, y2] = EASING_BEZIERS[easing]
   const values = new Float32Array(128)
   for (let index = 0; index < values.length; index += 1) {
     const x = index / (values.length - 1)
-    values[index] = cubicBezier(x1, y1, x2, y2, x) * centsEnd
+    values[index] = centsStart + cubicBezier(x1, y1, x2, y2, x) * (centsEnd - centsStart)
   }
   return values
 }
@@ -80,6 +81,11 @@ export type SynthParams = {
   frequencyEnd?: number
   pitchInterpolation?: 'linear' | 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out'
   duration?: number
+  pitchAutomation?: Array<{
+    time: number
+    hz: number
+    pitchInterpolation?: 'linear' | 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out'
+  }>
   velocity: number
   synth: SynthType
   envelope: Envelope
@@ -147,7 +153,15 @@ export class PolySynth {
     let oscillator: T | null = null
     let startTime = NaN
 
-    const { frequency, frequencyEnd, pitchInterpolation, duration, velocity, synth } = params
+    const {
+      frequency,
+      frequencyEnd,
+      pitchInterpolation,
+      pitchAutomation,
+      duration,
+      velocity,
+      synth,
+    } = params
     const { type, periodicWave, aperiodicWave } = synth
 
     const {
@@ -176,30 +190,43 @@ export class PolySynth {
       } else if (type !== 'custom' && type !== 'noise' && 'type' in oscillator) {
         oscillator.type = type
       }
-      oscillator.frequency.setValueAtTime(frequency, time)
-      oscillator.detune.setValueAtTime(0, time)
-      if (frequencyEnd !== undefined && duration !== undefined && duration > 0) {
-        const centsEnd = 1200 * Math.log2(frequencyEnd / frequency)
-        if (pitchInterpolation === undefined || pitchInterpolation === 'linear') {
-          oscillator.detune.linearRampToValueAtTime(centsEnd, time + duration)
+      const activeOscillator = oscillator
+      activeOscillator.frequency.setValueAtTime(frequency, time)
+      activeOscillator.detune.setValueAtTime(0, time)
+      const automationPoints =
+        pitchAutomation ??
+        (frequencyEnd !== undefined && duration !== undefined
+          ? [{ time: time + duration, hz: frequencyEnd, pitchInterpolation }]
+          : [])
+      let segmentStartTime = time
+      let segmentStartCents = 0
+      automationPoints.forEach((point) => {
+        const segmentDuration = point.time - segmentStartTime
+        if (segmentDuration <= 0) return
+        const centsEnd = 1200 * Math.log2(point.hz / frequency)
+        const interpolation = point.pitchInterpolation ?? 'linear'
+        if (interpolation === 'linear') {
+          activeOscillator.detune.linearRampToValueAtTime(centsEnd, point.time)
         } else {
-          oscillator.detune.setValueCurveAtTime(
-            easingCurve(pitchInterpolation, centsEnd),
-            time,
-            duration,
+          activeOscillator.detune.setValueCurveAtTime(
+            easingCurve(interpolation, segmentStartCents, centsEnd),
+            segmentStartTime,
+            segmentDuration,
           )
         }
-      }
-      oscillator.connect(this.destination)
-      oscillator.gain.setValueAtTime(0, startTime)
+        segmentStartTime = point.time
+        segmentStartCents = centsEnd
+      })
+      activeOscillator.connect(this.destination)
+      activeOscillator.gain.setValueAtTime(0, startTime)
 
-      if (attackTime <= 0) oscillator.gain.setValueAtTime(velocity, startTime)
-      else oscillator.gain.linearRampToValueAtTime(velocity, startTime + attackTime)
+      if (attackTime <= 0) activeOscillator.gain.setValueAtTime(velocity, startTime)
+      else activeOscillator.gain.linearRampToValueAtTime(velocity, startTime + attackTime)
 
       if (decayTime <= 0)
-        oscillator.gain.setValueAtTime(sustainLevel * velocity, startTime + attackTime)
+        activeOscillator.gain.setValueAtTime(sustainLevel * velocity, startTime + attackTime)
       else
-        oscillator.gain.setTargetAtTime(
+        activeOscillator.gain.setTargetAtTime(
           sustainLevel * velocity,
           startTime + attackTime,
           decayTime * TIME_CONSTANT,
