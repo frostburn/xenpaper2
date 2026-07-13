@@ -125,14 +125,18 @@ const tutorialSections: SidebarSection[] = [
         description:
           'Setters configure parameters as a tune progresses, such as (bpm:100) or (osc:sine). Multiple setters can be combined with semicolons.',
       },
+    ],
+  },
+  {
+    title: 'Glissando',
+    demos: [
       {
         description: 'Use (gliss) to slide legato into the next note and hold the target.',
         tune: '(gliss)0--- 7',
       },
       {
-        description:
-          'Use (gliss?) to consume the target, or add an easing name for a shaped slide.',
-        tune: '(gliss? ease-in-out)11 12\n(gliss)0---(gliss)7-- 5-',
+        description: 'Use ? on the target to consume it, or add an easing name for a shaped slide.',
+        tune: '(gliss ease-in-out)11 12?\n(gliss)0---(gliss)7-- 5-',
       },
     ],
   },

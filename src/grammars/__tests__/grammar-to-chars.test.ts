@@ -312,7 +312,7 @@ describe('grammarToChars', () => {
   })
 
   it('highlights glissando setters', () => {
-    expect(colors(grammarToChars(parse('(gliss) (gliss? ease-in-out)')))).toEqual([
+    expect(colors(grammarToChars(parse('(gliss) (gliss ease-in-out)')))).toEqual([
       'setterGroup',
       'setter',
       'setter',
@@ -322,7 +322,6 @@ describe('grammarToChars', () => {
       'setterGroup',
       undefined,
       'setterGroup',
-      'setter',
       'setter',
       'setter',
       'setter',

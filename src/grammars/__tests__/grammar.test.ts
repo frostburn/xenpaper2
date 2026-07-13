@@ -53,6 +53,7 @@ const strip = <T>(data: T): T => {
           key !== 'delimiter' &&
           key !== 'parts' &&
           !(key === 'octave' && record[key] === null) &&
+          !(key === 'zeroDuration' && record[key] === false) &&
           !(
             (key === 'ups' || key === 'lifts') &&
             record.type === 'PitchDegree' &&
@@ -2501,19 +2502,20 @@ describe('grammar', () => {
       })
     })
 
-    it('should parse glissando setters', () => {
+    it('should parse glissando setters and zero-duration targets', () => {
       expect(strip(parser('(gliss)').sequence.items[0])).toMatchObject({
         type: 'SetterGroup',
-        setters: [{ type: 'SetGliss', holdTarget: true, easing: 'linear' }],
+        setters: [{ type: 'SetGliss', easing: 'linear' }],
       })
-      expect(strip(parser('(gliss?)').sequence.items[0])).toMatchObject({
-        setters: [{ type: 'SetGliss', holdTarget: false, easing: 'linear' }],
+      expect(strip(parser('(gliss ease-in-out)').sequence.items[0])).toMatchObject({
+        setters: [{ type: 'SetGliss', easing: 'ease-in-out' }],
       })
-      expect(strip(parser('(gliss? ease-in-out)').sequence.items[0])).toMatchObject({
-        setters: [{ type: 'SetGliss', holdTarget: false, easing: 'ease-in-out' }],
+      expect(strip(parser('(gliss EASE-IN)').sequence.items[0])).toMatchObject({
+        setters: [{ type: 'SetGliss', easing: 'ease-in' }],
       })
-      expect(strip(parser('(gliss? EASE-IN)').sequence.items[0])).toMatchObject({
-        setters: [{ type: 'SetGliss', holdTarget: false, easing: 'ease-in' }],
+      expect(strip(parser('7?').sequence.items[0])).toMatchObject({
+        type: 'Note',
+        zeroDuration: true,
       })
     })
   })

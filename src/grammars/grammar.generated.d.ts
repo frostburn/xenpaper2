@@ -130,6 +130,7 @@ export type RestType = NodeType<'Rest'> & {
 export type NoteType = NodeType<'Note'> & {
   pitch: PitchType
   tail: TailType | null
+  zeroDuration: boolean
 }
 
 export type SampleRateNoteType = NodeType<'SampleRateNote'> & {
@@ -151,6 +152,7 @@ export type ChordType = NodeType<'Chord'> & {
   temperedPrefix?: DelimiterType
   pitches: Array<RatioChordPitchType | PitchType | SampleRateNoteType | DelimiterType>
   tail: TailType | null
+  zeroDuration: boolean
 }
 
 export type RatioChordType = NodeType<'RatioChord'> & {
@@ -160,6 +162,7 @@ export type RatioChordType = NodeType<'RatioChord'> & {
   inversionPrefix?: DelimiterType
   pitches: Array<RatioChordPitchType | DelimiterType>
   tail: TailType | null
+  zeroDuration: boolean
 }
 
 export type DroneType = NodeType<'Drone'> & {
@@ -278,7 +281,6 @@ export type SetGraceType = NodeType<'SetGrace'> & {
 export type GlissEasingType = 'linear' | 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out'
 
 export type SetGlissType = NodeType<'SetGliss'> & {
-  holdTarget: boolean
   easing: GlissEasingType
 }
 

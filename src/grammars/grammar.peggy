@@ -8,8 +8,8 @@ Start = seq:Sequence _ {
 Sequence = items:ItemList { return node('Sequence', { items }); }
 ItemList = head:Item tail:(_ Item)* { return [head, ...tail.map(([,i]) => i)]; } / '' { return []; }
 Item = Comment / MusicalControlFlow / SetterGroup / SetRoot / SetScale / SetMos / RatioChordItem / SampleRateNote / Note / Rest / Chord / RepeatEndStart / RepeatStart / RepeatEnd / RepeatEndingStart / BarLine / Whitespace
-Note = pitch:Pitch tail:Tail? {
-  return node('Note', { pitch, tail });
+Note = pitch:Pitch tail:Tail? zeroDuration:ZeroDuration? {
+  return node('Note', { pitch, tail, zeroDuration: !!zeroDuration });
 }
 SampleRateNote = "!" tail:Tail? {
   return node('SampleRateNote', { tail });
@@ -124,17 +124,18 @@ RatioChordPitches = first:RatioChordPitch rest:((_ Colon _)+ RatioChordPitch)* {
   }
   return result;
 }
-RatioChord = temperedPrefix:TemperedPrefix? inversionPrefix:InversionPrefix? pitches:RatioChordPitches tail:Tail? {
+RatioChord = temperedPrefix:TemperedPrefix? inversionPrefix:InversionPrefix? pitches:RatioChordPitches tail:Tail? zeroDuration:ZeroDuration? {
   return node('RatioChord', {
     ...(temperedPrefix ? { tempered: true, temperedPrefix } : {}),
     ...(inversionPrefix ? { inverted: true, inversionPrefix } : {}),
     pitches: pitches.map((pitch) => pitch.type === 'RatioChordPitch' ? { ...pitch, ...(inversionPrefix ? { inverted: true } : {}), ...(temperedPrefix ? { tempered: true } : {}) } : pitch),
     tail,
+    zeroDuration: !!zeroDuration,
   });
 }
 RatioChordItem = &('~'? "/"? Int _ ":" !"|") rc:RatioChord { return rc; }
-Chord = temperedPrefix:TemperedPrefix? "[" _ pitches:ChordPitchGroup _ "]" tail:Tail? {
-  return node('Chord', { pitches: temperedPrefix ? pitches.map((pitch) => pitch.type === 'Pitch' && pitch.value.type === 'PitchRatio' ? { ...pitch, value: { ...pitch.value, tempered: true } } : pitch.type === 'RatioChordPitch' ? { ...pitch, tempered: true } : pitch) : pitches, tail, ...(temperedPrefix ? { tempered: true, temperedPrefix } : {}) });
+Chord = temperedPrefix:TemperedPrefix? "[" _ pitches:ChordPitchGroup _ "]" tail:Tail? zeroDuration:ZeroDuration? {
+  return node('Chord', { zeroDuration: !!zeroDuration, pitches: temperedPrefix ? pitches.map((pitch) => pitch.type === 'Pitch' && pitch.value.type === 'PitchRatio' ? { ...pitch, value: { ...pitch.value, tempered: true } } : pitch.type === 'RatioChordPitch' ? { ...pitch, tempered: true } : pitch) : pitches, tail, ...(temperedPrefix ? { tempered: true, temperedPrefix } : {}) });
 }
 RepeatEndStart = ":|:" count:RepeatCount? {
   return node('RepeatEndStart',{delimiter:true, repeatCount: count ?? 2});
@@ -181,10 +182,11 @@ SetSubdivision = ("div"i _ ":" _)? fraction:Fraction {
 SetGroove = "groove"i _ ":" _ items:GrooveItem* { return node('SetGroove', { items }); }
 GrooveItem = GrooveSubdivision / SetSubdivision / SampleRateNote / Whitespace
 GrooveSubdivision = "(" _ setter:SetSubdivision _ ")" { return setter; }
-SetGliss = "gliss"i holdTarget:("?" { return false; } / "" { return true; }) easing:(_ @GlissEasing)? {
-  return node('SetGliss', { holdTarget, easing: (easing ?? 'linear').toLowerCase() });
+SetGliss = "gliss"i easing:(_ @GlissEasing)? {
+  return node('SetGliss', { easing: (easing ?? 'linear').toLowerCase() });
 }
 GlissEasing = "ease-in-out"i / "ease-in"i / "ease-out"i / "linear"i / "ease"i
+ZeroDuration = "?" { return node('ZeroDuration', { delimiter: true }); }
 SetGrace = data:(("grace"i _ ":" _ fraction:Fraction count:(_ @Int)? { return { fraction, count: count ?? 1 }; }) / (fraction:Fraction _ questionMarks:$("?"+) { return { fraction, count: questionMarks.length }; })) {
   return node('SetGrace', {
     subdivision: data.fraction.numerator,

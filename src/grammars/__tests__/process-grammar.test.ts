@@ -99,7 +99,7 @@ describe('glissando setter', () => {
   })
 
   it('can consume the target without holding it', () => {
-    const processed = processGrammar(parseSource('(gliss?)0--- 7'))
+    const processed = processGrammar(parseSource('(gliss)0--- 7?'))
     const notes = processed.score.sequence.filter((item) => item.type === 'NOTE_BEAT_TIME')
     expect(notes).toHaveLength(1)
     expect(notes[0]!.pitchAutomation).toHaveLength(1)
@@ -118,7 +118,7 @@ describe('glissando setter', () => {
   })
 
   it('supports CSS easing names', () => {
-    const notes = noteItems('(gliss? ease-in-out)11 12')
+    const notes = noteItems('(gliss ease-in-out)11 12?')
     expect(notes).toHaveLength(1)
     expect(notes[0]!.pitchAutomation![0]).toMatchObject({ pitchInterpolation: 'ease-in-out' })
   })
