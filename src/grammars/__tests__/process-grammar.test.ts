@@ -92,7 +92,6 @@ describe('glissando setter', () => {
     const processed = processGrammar(parseSource('(gliss)0--- 7'))
     const notes = processed.score.sequence.filter((item) => item.type === 'NOTE_BEAT_TIME')
     expect(notes).toHaveLength(1)
-    expect(notes[0]).toMatchObject({ pitchInterpolation: 'linear' })
     expect(notes[0]!.pitchAutomation).toHaveLength(1)
     expect(notes[0]!.pitchAutomation![0]).toMatchObject({ time: 2, pitchInterpolation: 'linear' })
     expect(notes[0]!.timeEnd - notes[0]!.time).toBe(2.5)
@@ -103,7 +102,6 @@ describe('glissando setter', () => {
     const processed = processGrammar(parseSource('(gliss?)0--- 7'))
     const notes = processed.score.sequence.filter((item) => item.type === 'NOTE_BEAT_TIME')
     expect(notes).toHaveLength(1)
-    expect(notes[0]).toMatchObject({ pitchInterpolation: 'linear' })
     expect(notes[0]!.pitchAutomation).toHaveLength(1)
     expect(notes[0]!.timeEnd - notes[0]!.time).toBe(2)
     expect(processed.score.lengthTime).toBe(2)
@@ -122,15 +120,12 @@ describe('glissando setter', () => {
   it('supports CSS easing names', () => {
     const notes = noteItems('(gliss? ease-in-out)11 12')
     expect(notes).toHaveLength(1)
-    expect(notes[0]).toMatchObject({ pitchInterpolation: 'ease-in-out' })
     expect(notes[0]!.pitchAutomation![0]).toMatchObject({ pitchInterpolation: 'ease-in-out' })
   })
 
   it('pairs chord voices by index', () => {
     const notes = noteItems('(gliss) [0 4]--- [7 11]')
     expect(notes).toHaveLength(2)
-    expect(notes[0]).toMatchObject({ pitchInterpolation: 'linear' })
-    expect(notes[1]).toMatchObject({ pitchInterpolation: 'linear' })
     expect(notes[0]!.pitchAutomation).toHaveLength(1)
     expect(notes[1]!.pitchAutomation).toHaveLength(1)
   })

@@ -713,8 +713,6 @@ const applyGlissandoChain = (
     }
 
     sourceNotes.forEach((note, index) => {
-      note.hzEnd = targetHzs[index]!
-      note.pitchInterpolation = easing
       note.pitchAutomation = [
         ...(note.pitchAutomation ?? []),
         { time: segmentEnd, hz: targetHzs[index]!, pitchInterpolation: easing },

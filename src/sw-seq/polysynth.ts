@@ -78,8 +78,6 @@ type Envelope = {
 
 export type SynthParams = {
   frequency: number
-  frequencyEnd?: number
-  pitchInterpolation?: 'linear' | 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out'
   duration?: number
   pitchAutomation?: Array<{
     time: number
@@ -153,15 +151,7 @@ export class PolySynth {
     let oscillator: T | null = null
     let startTime = NaN
 
-    const {
-      frequency,
-      frequencyEnd,
-      pitchInterpolation,
-      pitchAutomation,
-      duration,
-      velocity,
-      synth,
-    } = params
+    const { frequency, pitchAutomation, velocity, synth } = params
     const { type, periodicWave, aperiodicWave } = synth
 
     const {
@@ -193,20 +183,17 @@ export class PolySynth {
       const activeOscillator = oscillator
       activeOscillator.frequency.setValueAtTime(frequency, time)
       activeOscillator.detune.setValueAtTime(0, time)
-      const automationPoints =
-        pitchAutomation ??
-        (frequencyEnd !== undefined && duration !== undefined
-          ? [{ time: time + duration, hz: frequencyEnd, pitchInterpolation }]
-          : [])
+      const automationPoints = pitchAutomation ?? []
       let segmentStartTime = time
       let segmentStartCents = 0
       automationPoints.forEach((point) => {
-        const segmentDuration = point.time - segmentStartTime
+        const pointTime = time + point.time
+        const segmentDuration = pointTime - segmentStartTime
         if (segmentDuration <= 0) return
         const centsEnd = 1200 * Math.log2(point.hz / frequency)
         const interpolation = point.pitchInterpolation ?? 'linear'
         if (interpolation === 'linear') {
-          activeOscillator.detune.linearRampToValueAtTime(centsEnd, point.time)
+          activeOscillator.detune.linearRampToValueAtTime(centsEnd, pointTime)
         } else {
           activeOscillator.detune.setValueCurveAtTime(
             easingCurve(interpolation, segmentStartCents, centsEnd),
@@ -214,7 +201,7 @@ export class PolySynth {
             segmentDuration,
           )
         }
-        segmentStartTime = point.time
+        segmentStartTime = pointTime
         segmentStartCents = centsEnd
       })
       activeOscillator.connect(this.destination)

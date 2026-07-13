@@ -155,9 +155,8 @@ describe('PolySynth', () => {
 
     const note = synth.trigger({
       frequency: 220,
-      frequencyEnd: 440,
-      pitchInterpolation: 'linear',
       duration: 3,
+      pitchAutomation: [{ time: 3, hz: 440, pitchInterpolation: 'linear' }],
       velocity: 0.5,
       synth: {
         type: 'sine',
@@ -192,9 +191,8 @@ describe('PolySynth', () => {
 
     const note = synth.trigger({
       frequency: 220,
-      frequencyEnd: 440,
-      pitchInterpolation: 'ease-in-out',
       duration: 3,
+      pitchAutomation: [{ time: 3, hz: 440, pitchInterpolation: 'ease-in-out' }],
       velocity: 0.5,
       synth: {
         type: 'sine',
