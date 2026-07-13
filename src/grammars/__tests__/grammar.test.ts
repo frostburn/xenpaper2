@@ -2517,6 +2517,7 @@ describe('grammar', () => {
         type: 'Note',
         zeroDuration: true,
       })
+      expectParserErrorMessage('7-?', 'Expected')
     })
   })
 })

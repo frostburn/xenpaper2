@@ -1,3 +1,4 @@
+import { valueToCents } from 'xen-dev-utils/conversion'
 import type { Bank } from './bank'
 import type { EnvelopedAperiodicOscillator, EnvelopedOscillator, EnvelopedUnison } from './nodes'
 import type {
@@ -150,7 +151,7 @@ export class PolySynth {
         const pointTime = time + point.time
         const segmentDuration = pointTime - segmentStartTime
         if (segmentDuration <= 0) continue
-        const centsEnd = 1200 * Math.log2(point.hz / frequency)
+        const centsEnd = valueToCents(point.hz / frequency)
         const interpolation = point.pitchInterpolation ?? 'linear'
         if (interpolation === 'linear') {
           oscillator.detune.linearRampToValueAtTime(centsEnd, pointTime)

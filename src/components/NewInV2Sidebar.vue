@@ -107,6 +107,25 @@ MOS{5L2s}(plot:MOS)`,
     ],
   },
   {
+    title: 'Glissando',
+    demos: [
+      {
+        description:
+          'Use (gliss) to slide legato into the next note and hold the target. Linear glissando is the default.',
+        tune: '(gliss)0--- 7',
+      },
+      {
+        description:
+          'Use ? on the target to make it zero-duration. Easing modes are linear, ease, ease-in, ease-out, and ease-in-out.',
+        tune: '(gliss ease-in-out)11 12?\n(gliss ease-in)0-- 7? (gliss ease-out)7-- 5',
+      },
+      {
+        description: 'Chord glissandi pair voices by index, so each chord tone slides legato.',
+        tune: '(gliss)[0 4 7]--- [7 11 14]',
+      },
+    ],
+  },
+  {
     title: 'Grace notes',
     demos: [
       {

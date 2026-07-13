@@ -130,6 +130,27 @@ describe('glissando setter', () => {
     expect(notes[1]!.pitchAutomation).toHaveLength(1)
   })
 
+  it('allows subdivision changes before the glissando target', () => {
+    const processed = processGrammar(parseSource('(gliss)0-- (8)7'))
+    const notes = processed.score.sequence.filter((item) => item.type === 'NOTE_BEAT_TIME')
+    expect(notes).toHaveLength(1)
+    expect(notes[0]!.pitchAutomation![0]).toMatchObject({ time: 1.5 })
+    expect(notes[0]!.timeEnd - notes[0]!.time).toBe(1.625)
+    expect(processed.score.lengthTime).toBe(1.625)
+  })
+
+  it('throws for dangling or repeated glissando setters without targets', () => {
+    expect(() => processGrammar(parseSource('(gliss)'))).toThrow(
+      'Glissando has no compatible following target before the end of the sequence.',
+    )
+    expect(() => processGrammar(parseSource('(gliss)(gliss)0'))).toThrow(
+      'Glissando setter used before the previous glissando found a target.',
+    )
+  })
+
+  it('throws when a glissando setter is followed by a rest', () => {
+    expect(() => processGrammar(parseSource('(gliss).'))).toThrow('Glissando cannot target a rest.')
+  })
   it('throws on mismatched chord sizes', () => {
     expect(() => processGrammar(parseSource('(gliss) [0 4]--- [7]'))).toThrow(
       'Glissando chord voice count mismatch',

@@ -631,14 +631,22 @@ type GlissandoTarget = { item: GlissandoPlayableItem; index: number }
 
 type GlissandoSetterGroupItem = {
   type: 'SetterGroup'
-  setters: Array<{ type: string; delimiter?: boolean }>
+  setters: Array<{
+    type: string
+    delimiter?: boolean
+    subdivision?: number
+    denominator?: number
+    easing?: GlissandoState['easing']
+  }>
 }
 
-const isGlissandoOnlySetterGroup = (item: { type: string }): item is GlissandoSetterGroupItem =>
+const isGlissandoAllowedSetterGroup = (item: { type: string }): item is GlissandoSetterGroupItem =>
   item.type === 'SetterGroup' &&
   'setters' in item &&
   Array.isArray(item.setters) &&
-  item.setters.every((setter) => setter.type === 'SetGliss' || setter.delimiter)
+  item.setters.every(
+    (setter) => setter.type === 'SetGliss' || setter.type === 'SetSubdivision' || setter.delimiter,
+  )
 
 const findGlissandoTarget = (
   items: Array<{ type: string }>,
@@ -652,7 +660,7 @@ const findGlissandoTarget = (
       item.type === 'Whitespace' ||
       item.type === 'BarLine' ||
       item.type === 'Comment' ||
-      isGlissandoOnlySetterGroup(item)
+      isGlissandoAllowedSetterGroup(item)
     ) {
       continue
     }
@@ -665,18 +673,39 @@ const findGlissandoTarget = (
 const ownGlissandoSetter = (
   items: Array<{ type: string }>,
   targetIndex: number,
-): GlissandoState | null => {
+): { state: GlissandoState; index: number } | null => {
   for (let index = targetIndex - 1; index >= 0; index -= 1) {
     const item = items[index]!
     if (item.type === 'Whitespace' || item.type === 'BarLine') continue
-    if (!isGlissandoOnlySetterGroup(item)) return null
+    if (!isGlissandoAllowedSetterGroup(item)) return null
     const setter = item.setters.find((setter) => setter.type === 'SetGliss') as
       | (GlissandoState & { type: 'SetGliss' })
       | undefined
-    return setter ? { easing: setter.easing } : null
+    return setter ? { state: { easing: setter.easing }, index } : null
   }
 
   return null
+}
+
+const applyInterveningGlissandoSetters = (
+  items: Array<{ type: string }>,
+  sourceIndex: number,
+  targetIndex: number,
+  context: Context,
+): void => {
+  for (let index = sourceIndex + 1; index < targetIndex; index += 1) {
+    const item = items[index]!
+    if (!isGlissandoAllowedSetterGroup(item)) continue
+    item.setters.forEach((setter) => {
+      if (setter.type !== 'SetSubdivision' || setter.delimiter) return
+      const subdivision = setter.subdivision ?? 0
+      assertFinitePositive('SetSubdivision.subdivision', subdivision)
+      const normalizedDenominator = setter.denominator ?? 1
+      assertFinitePositive('SetSubdivision.denominator', normalizedDenominator)
+      context.subdivision = normalizedDenominator / subdivision
+      assertFinitePositive('context.subdivision', context.subdivision)
+    })
+  }
 }
 
 const consumeGlissandoTarget = (
@@ -703,6 +732,7 @@ const applyGlissandoChain = (
   context.glissando = null
 
   while (true) {
+    applyInterveningGlissandoSetters(items, sourceIndex, target.index, context)
     const targetHzs = glissandoTargetHzs(target.item, context)
     if (sourceNotes.length !== targetHzs.length) {
       throw new Error(
@@ -730,7 +760,9 @@ const applyGlissandoChain = (
     const consumedTargetItems = consumeGlissandoTarget(target.item, context)
     segmentEnd = Math.max(...consumedTargetItems.map((item) => item.timeEnd))
     skippedGlissandoTargetIndices.add(target.index)
-    easing = targetOwnGlissando.easing
+    skippedGlissandoTargetIndices.add(targetOwnGlissando.index)
+    easing = targetOwnGlissando.state.easing
+    sourceIndex = target.index
     target = findGlissandoTarget(items, target.index)
   }
 
@@ -1091,6 +1123,9 @@ const setterToMosc = (setter: SetterType | DelimiterType, context: Context): Mos
   }
 
   if (type === 'SetGliss') {
+    if (context.glissando) {
+      throw new Error('Glissando setter used before the previous glissando found a target.')
+    }
     const { easing } = setter
     context.glissando = { easing }
     return []
@@ -1531,6 +1566,7 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
     }
 
     if (type === 'Rest') {
+      if (context.glissando) throw new Error('Glissando cannot target a rest.')
       const rest = item
       const timeProps = consumeDuration(rest.length, context)
       // mutate ast node to add time
@@ -1592,6 +1628,10 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
 
     throw new Error(`Unknown sequence item "${type}"`)
   })
+
+  if (context.glissando) {
+    throw new Error('Glissando has no compatible following target before the end of the sequence.')
+  }
 
   stopActiveDrone()
 
