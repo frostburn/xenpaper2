@@ -107,6 +107,13 @@ describe('glissando setter', () => {
     expect(processed.score.lengthTime).toBe(2)
   })
 
+  it('keeps zero-duration glissando sources in the score', () => {
+    const notes = noteItems('(gliss)0? 7')
+    expect(notes).toHaveLength(1)
+    expect(notes[0]!.pitchAutomation).toMatchObject([{ time: 0, pitchInterpolation: 'linear' }])
+    expect(notes[0]!.timeEnd - notes[0]!.time).toBe(0.5)
+  })
+
   it('chains glissandi as one sustained note', () => {
     const notes = noteItems('(gliss)0---(gliss)7-- 5-')
     expect(notes).toHaveLength(1)
@@ -163,10 +170,10 @@ describe('glissando setter', () => {
     )
   })
 
-  it('throws when a context-changing setter appears before the target', () => {
-    expect(() => processGrammar(parseSource('(gliss)0--- {r2/1} 0'))).toThrow(
-      'Glissando target lookup cannot skip SetRoot before the target.',
-    )
+  it('allows context-changing setters before the glissando target', () => {
+    const notes = noteItems('(gliss)0--- {r2/1} 0')
+    expect(notes).toHaveLength(1)
+    expect(notes[0]!.pitchAutomation).toHaveLength(1)
   })
 })
 
