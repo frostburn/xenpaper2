@@ -163,10 +163,10 @@ describe('glissando setter', () => {
     )
   })
 
-  it('throws when a context-changing setter appears before the target', () => {
-    expect(() => processGrammar(parseSource('(gliss)0--- {r2/1} 0'))).toThrow(
-      'Glissando target lookup cannot skip SetRoot before the target.',
-    )
+  it('allows context-changing setters before the glissando target', () => {
+    const notes = noteItems('(gliss)0--- {r2/1} 0')
+    expect(notes).toHaveLength(1)
+    expect(notes[0]!.pitchAutomation).toHaveLength(1)
   })
 })
 

@@ -613,162 +613,64 @@ const times: [number, number][] = []
 type MoscBeatPlayableNote = MoscBeatNote | MoscBeatSampleRateNote
 type GlissandoPlayableItem = NoteType | ChordType | RatioChordType
 
-const isGlissandoPlayableItem = (item: { type: string }): item is GlissandoPlayableItem =>
-  item.type === 'Note' || item.type === 'Chord' || item.type === 'RatioChord'
-
-const glissandoTargetHzs = (item: GlissandoPlayableItem, context: Context): number[] => {
-  const originalTime = item.time
-  const originalTimesLength = times.length
-  const targetItems = playableToMoscAtCurrentTime(item, context)
-  times.length = originalTimesLength
-  item.time = originalTime
-  return targetItems
-    .filter((moscItem): moscItem is MoscBeatNote => moscItem.type === 'NOTE_BEAT_TIME')
-    .map((moscItem) => moscItem.hz)
+type GlissandoGroup = {
+  notes: MoscBeatNote[]
+  easing: GlissandoState['easing'] | null
+  remove: boolean
 }
 
-type GlissandoTarget = { item: GlissandoPlayableItem; index: number }
+const isReleasedGlissandoTarget = (item: GlissandoPlayableItem): boolean => item.tail?.length === -1
 
-type GlissandoSetterGroupItem = {
-  type: 'SetterGroup'
-  setters: Array<{
-    type: string
-    delimiter?: boolean
-    subdivision?: number
-    denominator?: number
-    easing?: GlissandoState['easing']
-  }>
-}
+const tieLegatoGlissandi = (groups: GlissandoGroup[]): void => {
+  groups.forEach((group, index) => {
+    if (!group.easing) return
 
-const isGlissandoAllowedSetterGroup = (item: { type: string }): item is GlissandoSetterGroupItem =>
-  item.type === 'SetterGroup' &&
-  'setters' in item &&
-  Array.isArray(item.setters) &&
-  item.setters.every(
-    (setter) => setter.type === 'SetGliss' || setter.type === 'SetSubdivision' || setter.delimiter,
-  )
-
-const findGlissandoTarget = (
-  items: Array<{ type: string }>,
-  sourceIndex: number,
-): GlissandoTarget => {
-  for (let index = sourceIndex + 1; index < items.length; index += 1) {
-    const item = items[index]!
-    if (item.type === 'Rest') throw new Error('Glissando target lookup was stopped by a rest.')
-    if (isGlissandoPlayableItem(item)) return { item, index }
-    if (
-      item.type === 'Whitespace' ||
-      item.type === 'BarLine' ||
-      item.type === 'Comment' ||
-      isGlissandoAllowedSetterGroup(item)
-    ) {
-      continue
-    }
-    throw new Error(`Glissando target lookup cannot skip ${item.type} before the target.`)
-  }
-
-  throw new Error('Glissando has no compatible following target before the end of the sequence.')
-}
-
-const ownGlissandoSetter = (
-  items: Array<{ type: string }>,
-  targetIndex: number,
-): { state: GlissandoState; index: number } | null => {
-  for (let index = targetIndex - 1; index >= 0; index -= 1) {
-    const item = items[index]!
-    if (item.type === 'Whitespace' || item.type === 'BarLine') continue
-    if (!isGlissandoAllowedSetterGroup(item)) return null
-    const setter = item.setters.find((setter) => setter.type === 'SetGliss') as
-      | (GlissandoState & { type: 'SetGliss' })
-      | undefined
-    return setter ? { state: { easing: setter.easing }, index } : null
-  }
-
-  return null
-}
-
-const applyInterveningGlissandoSetters = (
-  items: Array<{ type: string }>,
-  sourceIndex: number,
-  targetIndex: number,
-  context: Context,
-): void => {
-  for (let index = sourceIndex + 1; index < targetIndex; index += 1) {
-    const item = items[index]!
-    if (!isGlissandoAllowedSetterGroup(item)) continue
-    item.setters.forEach((setter) => {
-      if (setter.type !== 'SetSubdivision' || setter.delimiter) return
-      const subdivision = setter.subdivision ?? 0
-      assertFinitePositive('SetSubdivision.subdivision', subdivision)
-      const normalizedDenominator = setter.denominator ?? 1
-      assertFinitePositive('SetSubdivision.denominator', normalizedDenominator)
-      context.subdivision = normalizedDenominator / subdivision
-      assertFinitePositive('context.subdivision', context.subdivision)
-    })
-  }
-}
-
-const consumeGlissandoTarget = (
-  item: GlissandoPlayableItem,
-  context: Context,
-): MoscBeatPlayableNote[] =>
-  item.type === 'Note' ? noteToMosc(item, context) : chordToMosc(item, context)
-
-const applyGlissandoChain = (
-  sourceItems: MoscBeatPlayableNote[],
-  items: Array<{ type: string }>,
-  sourceIndex: number,
-  context: Context,
-  skippedGlissandoTargetIndices: Set<number>,
-): void => {
-  const sourceNotes = sourceItems.filter(
-    (moscItem): moscItem is MoscBeatNote => moscItem.type === 'NOTE_BEAT_TIME',
-  )
-  if (!context.glissando) return
-
-  let target = findGlissandoTarget(items, sourceIndex)
-  let segmentEnd = Math.max(...sourceNotes.map((note) => note.timeEnd))
-  let easing = context.glissando.easing
-  context.glissando = null
-
-  while (true) {
-    applyInterveningGlissandoSetters(items, sourceIndex, target.index, context)
-    const targetHzs = glissandoTargetHzs(target.item, context)
-    if (sourceNotes.length !== targetHzs.length) {
+    const target = groups[index + 1]
+    if (!target) {
       throw new Error(
-        `Glissando chord voice count mismatch: source has ${sourceNotes.length}, target has ${targetHzs.length}.`,
+        'Glissando has no compatible following target before the end of the sequence.',
       )
     }
 
-    sourceNotes.forEach((note, index) => {
+    if (group.notes.length !== target.notes.length) {
+      throw new Error(
+        `Glissando chord voice count mismatch: source has ${group.notes.length}, target has ${target.notes.length}.`,
+      )
+    }
+
+    group.notes.forEach((note, voiceIndex) => {
+      const targetNote = target.notes[voiceIndex]!
       note.pitchAutomation = [
         ...(note.pitchAutomation ?? []),
-        { time: segmentEnd, hz: targetHzs[index]!, pitchInterpolation: easing },
+        { time: note.timeEnd, hz: targetNote.hz, pitchInterpolation: group.easing! },
       ]
     })
 
-    const targetOwnGlissando = ownGlissandoSetter(items, target.index)
-    if (!targetOwnGlissando) {
-      if (target.item.tail?.length !== -1) {
-        const consumedTargetItems = consumeGlissandoTarget(target.item, context)
-        segmentEnd = Math.max(...consumedTargetItems.map((item) => item.timeEnd))
-      }
-      skippedGlissandoTargetIndices.add(target.index)
-      break
-    }
-
-    const consumedTargetItems = consumeGlissandoTarget(target.item, context)
-    segmentEnd = Math.max(...consumedTargetItems.map((item) => item.timeEnd))
-    skippedGlissandoTargetIndices.add(target.index)
-    skippedGlissandoTargetIndices.add(targetOwnGlissando.index)
-    easing = targetOwnGlissando.state.easing
-    sourceIndex = target.index
-    target = findGlissandoTarget(items, target.index)
-  }
-
-  sourceNotes.forEach((note) => {
-    note.timeEnd = segmentEnd
+    target.remove = true
   })
+
+  for (let index = groups.length - 1; index >= 0; index -= 1) {
+    const group = groups[index]!
+    if (!group.remove) continue
+
+    const source = groups[index - 1]
+    if (!source) continue
+
+    source.notes.forEach((note, voiceIndex) => {
+      const targetNote = group.notes[voiceIndex]!
+      if (targetNote.pitchAutomation?.length) {
+        note.pitchAutomation = [...(note.pitchAutomation ?? []), ...targetNote.pitchAutomation]
+      }
+    })
+
+    const sourceEnd = Math.max(...source.notes.map((note) => note.timeEnd))
+    const targetEnd = Math.max(...group.notes.map((note) => note.timeEnd))
+    if (targetEnd <= sourceEnd) continue
+
+    source.notes.forEach((note) => {
+      note.timeEnd = targetEnd
+    })
+  }
 }
 
 const noteToMosc = (note: NoteType, context: Context): MoscBeatNote[] => {
@@ -1479,6 +1381,7 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
   }
 
   const moscItems: MoscBeatItem[] = []
+  const glissandoGroups: GlissandoGroup[] = []
   let activeDroneItems: MoscBeatPlayableNote[] = []
   let activeDroneTimes: [number, number][] = []
   const stopActiveDrone = (): void => {
@@ -1494,11 +1397,23 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
   let initialRulerState: BuildingInitialRulerState = {
     plots: [],
   }
-  const skippedGlissandoTargetIndices = new Set<number>()
+  const registerGlissandoGroup = (
+    sourceItems: MoscBeatPlayableNote[],
+    astItem: GlissandoPlayableItem,
+  ): void => {
+    const notes = sourceItems.filter(
+      (moscItem): moscItem is MoscBeatNote => moscItem.type === 'NOTE_BEAT_TIME',
+    )
+    if (!notes.length) return
+    glissandoGroups.push({
+      notes,
+      easing: context.glissando?.easing ?? null,
+      remove: context.glissando ? isReleasedGlissandoTarget(astItem) : false,
+    })
+    context.glissando = null
+  }
 
   grammarSequence.items.forEach((item, index): void => {
-    if (skippedGlissandoTargetIndices.has(index)) return
-
     const { type } = item
     if (
       type === 'Comment' ||
@@ -1536,15 +1451,7 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
 
     if (type === 'Note') {
       const items = noteToMosc(item, context)
-      if (context.glissando) {
-        applyGlissandoChain(
-          items,
-          grammarSequence.items,
-          index,
-          context,
-          skippedGlissandoTargetIndices,
-        )
-      }
+      registerGlissandoGroup(items, item)
       moscItems.push(...items)
       initialRulerState = rulerStateCaptureRootHz(initialRulerState, context)
       return
@@ -1557,6 +1464,10 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
 
     if (type === 'Rest') {
       if (context.glissando) throw new Error('Glissando cannot target a rest.')
+      const previousGlissandoSource = glissandoGroups[glissandoGroups.length - 1]
+      if (previousGlissandoSource?.easing) {
+        throw new Error('Glissando target lookup was stopped by a rest.')
+      }
       const rest = item
       const timeProps = consumeDuration(rest.length, context)
       // mutate ast node to add time
@@ -1568,30 +1479,14 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
 
     if (type === 'Chord') {
       const items = chordToMosc(item, context)
-      if (context.glissando) {
-        applyGlissandoChain(
-          items,
-          grammarSequence.items,
-          index,
-          context,
-          skippedGlissandoTargetIndices,
-        )
-      }
+      registerGlissandoGroup(items, item)
       moscItems.push(...items)
       return
     }
 
     if (type === 'RatioChord') {
       const items = chordToMosc(item, context)
-      if (context.glissando) {
-        applyGlissandoChain(
-          items,
-          grammarSequence.items,
-          index,
-          context,
-          skippedGlissandoTargetIndices,
-        )
-      }
+      registerGlissandoGroup(items, item)
       moscItems.push(...items)
       initialRulerState = rulerStateCaptureRootHz(initialRulerState, context)
       return
@@ -1622,6 +1517,15 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
   if (context.glissando) {
     throw new Error('Glissando has no compatible following target before the end of the sequence.')
   }
+
+  tieLegatoGlissandi(glissandoGroups)
+  glissandoGroups.forEach((group) => {
+    if (!group.remove) return
+    group.notes.forEach((note) => {
+      const index = moscItems.indexOf(note)
+      if (index >= 0) moscItems.splice(index, 1)
+    })
+  })
 
   stopActiveDrone()
 
