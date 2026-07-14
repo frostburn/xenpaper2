@@ -8,7 +8,7 @@ Start = seq:Sequence _ {
 Sequence = items:ItemList { return node('Sequence', { items }); }
 ItemList = head:Item tail:(_ Item)* { return [head, ...tail.map(([,i]) => i)]; } / '' { return []; }
 Item = Comment / MusicalControlFlow / SetterGroup / SetRoot / SetScale / SetMos / RatioChordItem / SampleRateNote / Note / Rest / Chord / RepeatEndStart / RepeatStart / RepeatEnd / RepeatEndingStart / BarLine / Whitespace
-Note = pitch:Pitch tail:Tail? {
+Note = pitch:Pitch tail:PlayableTail? {
   return node('Note', { pitch, tail });
 }
 SampleRateNote = "!" tail:Tail? {
@@ -124,7 +124,7 @@ RatioChordPitches = first:RatioChordPitch rest:((_ Colon _)+ RatioChordPitch)* {
   }
   return result;
 }
-RatioChord = temperedPrefix:TemperedPrefix? inversionPrefix:InversionPrefix? pitches:RatioChordPitches tail:Tail? {
+RatioChord = temperedPrefix:TemperedPrefix? inversionPrefix:InversionPrefix? pitches:RatioChordPitches tail:PlayableTail? {
   return node('RatioChord', {
     ...(temperedPrefix ? { tempered: true, temperedPrefix } : {}),
     ...(inversionPrefix ? { inverted: true, inversionPrefix } : {}),
@@ -133,7 +133,7 @@ RatioChord = temperedPrefix:TemperedPrefix? inversionPrefix:InversionPrefix? pit
   });
 }
 RatioChordItem = &('~'? "/"? Int _ ":" !"|") rc:RatioChord { return rc; }
-Chord = temperedPrefix:TemperedPrefix? "[" _ pitches:ChordPitchGroup _ "]" tail:Tail? {
+Chord = temperedPrefix:TemperedPrefix? "[" _ pitches:ChordPitchGroup _ "]" tail:PlayableTail? {
   return node('Chord', { pitches: temperedPrefix ? pitches.map((pitch) => pitch.type === 'Pitch' && pitch.value.type === 'PitchRatio' ? { ...pitch, value: { ...pitch.value, tempered: true } } : pitch.type === 'RatioChordPitch' ? { ...pitch, tempered: true } : pitch) : pitches, tail, ...(temperedPrefix ? { tempered: true, temperedPrefix } : {}) });
 }
 RepeatEndStart = ":|:" count:RepeatCount? {
@@ -169,7 +169,7 @@ SetterGroup = "(" _ first:Setter rest:(Semicolon Setter)* _ ")" {
   for (const part of rest) setters.push(part[0], part[1]);
   return node('SetterGroup', { setters });
 }
-Setter = SetBpm / SetBms / SetGrace / SetGroove / SetSubdivision / Drone / SetUp / SetLift / SetOsc / SetNoise / SetEnv / SetVolume / SetVelocity / SetKey / SetSignature / SetRulerRange / SetRulerPlot / SetVelocityShorthand
+Setter = SetBpm / SetBms / SetGrace / SetGliss / SetGroove / SetSubdivision / Drone / SetUp / SetLift / SetOsc / SetNoise / SetEnv / SetVolume / SetVelocity / SetKey / SetSignature / SetRulerRange / SetRulerPlot / SetVelocityShorthand
 SetBpm = "bpm"i _ ":" _ bpm:Number { return node('SetBpm', { bpm }); }
 SetBms = "bms"i _ ":" _ bms:Number { return node('SetBms', { bms }); }
 SetSubdivision = ("div"i _ ":" _)? fraction:Fraction {
@@ -181,6 +181,12 @@ SetSubdivision = ("div"i _ ":" _)? fraction:Fraction {
 SetGroove = "groove"i _ ":" _ items:GrooveItem* { return node('SetGroove', { items }); }
 GrooveItem = GrooveSubdivision / SetSubdivision / SampleRateNote / Whitespace
 GrooveSubdivision = "(" _ setter:SetSubdivision _ ")" { return setter; }
+SetGliss = "gliss"i easing:(_ @GlissEasing)? {
+  return node('SetGliss', { easing: (easing ?? 'linear').toLowerCase() });
+}
+GlissEasing = "ease-in-out"i / "ease-in"i / "ease-out"i / "linear"i / "ease"i
+PlayableTail = Tail / ZeroDuration
+ZeroDuration = "?" { return node('Hold', { length: -1, parts: [] }); }
 SetGrace = data:(("grace"i _ ":" _ fraction:Fraction count:(_ @Int)? { return { fraction, count: count ?? 1 }; }) / (fraction:Fraction _ questionMarks:$("?"+) { return { fraction, count: questionMarks.length }; })) {
   return node('SetGrace', {
     subdivision: data.fraction.numerator,

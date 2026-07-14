@@ -6,7 +6,9 @@ import { PolySynth, type SynthParams } from '../polysynth'
 
 const createAudioParam = () => ({
   cancelScheduledValues: vi.fn<(time: number) => void>(),
+  exponentialRampToValueAtTime: vi.fn<(value: number, endTime: number) => void>(),
   linearRampToValueAtTime: vi.fn<(value: number, endTime: number) => void>(),
+  setValueCurveAtTime: vi.fn<(values: Float32Array, startTime: number, duration: number) => void>(),
   setTargetAtTime: vi.fn<(target: number, startTime: number, timeConstant: number) => void>(),
   setValueAtTime: vi.fn<(value: number, startTime: number) => void>(),
 })
@@ -142,6 +144,81 @@ describe('PolySynth', () => {
     expect(noise.type).toBe('violet')
   })
 
+  it('ramps frequency linearly when requested', () => {
+    const oscillator = createOscillator()
+    const bank = {
+      context: {},
+      allocateOscillator: vi.fn<(_time?: number) => MockOscillator | null>(() => oscillator),
+      freeOscillator: vi.fn<(oscillator: MockOscillator, freeAt?: number) => void>(),
+    } as unknown as Bank
+    const synth = new PolySynth(bank, {} as AudioNode)
+
+    const note = synth.trigger({
+      frequency: 220,
+      duration: 3,
+      pitchAutomation: [{ time: 3, hz: 440, pitchInterpolation: 'linear' }],
+      velocity: 0.5,
+      synth: {
+        type: 'sine',
+        periodicity: 'harmonic',
+        periodicWave: null,
+        aperiodicWave: null,
+      },
+      envelope: {
+        attack: 0.01,
+        decay: 0.25,
+        sustain: 0.5,
+        release: 0.5,
+      },
+    })
+
+    note.noteOn(1)
+
+    expect(oscillator.frequency.setValueAtTime).toHaveBeenCalledWith(220, 1)
+    expect(oscillator.detune.setValueAtTime).toHaveBeenCalledWith(0, 1)
+    expect(oscillator.detune.linearRampToValueAtTime).toHaveBeenCalledWith(1200, 4)
+    expect(oscillator.frequency.linearRampToValueAtTime).not.toHaveBeenCalled()
+  })
+
+  it('uses CSS easing curves for detune automation', () => {
+    const oscillator = createOscillator()
+    const bank = {
+      context: {},
+      allocateOscillator: vi.fn<(_time?: number) => MockOscillator | null>(() => oscillator),
+      freeOscillator: vi.fn<(oscillator: MockOscillator, freeAt?: number) => void>(),
+    } as unknown as Bank
+    const synth = new PolySynth(bank, {} as AudioNode)
+
+    const note = synth.trigger({
+      frequency: 220,
+      duration: 3,
+      pitchAutomation: [{ time: 3, hz: 440, pitchInterpolation: 'ease-in-out' }],
+      velocity: 0.5,
+      synth: {
+        type: 'sine',
+        periodicity: 'harmonic',
+        periodicWave: null,
+        aperiodicWave: null,
+      },
+      envelope: {
+        attack: 0.01,
+        decay: 0.25,
+        sustain: 0.5,
+        release: 0.5,
+      },
+    })
+
+    note.noteOn(1)
+
+    expect(oscillator.frequency.setValueAtTime).toHaveBeenCalledWith(220, 1)
+    expect(oscillator.detune.setValueCurveAtTime).toHaveBeenCalledOnce()
+    const [curve, startTime, duration] = oscillator.detune.setValueCurveAtTime.mock.calls[0]!
+    expect(curve[0]).toBeCloseTo(0)
+    expect(curve[curve.length - 1]).toBeCloseTo(1200)
+    expect(startTime).toBe(1)
+    expect(duration).toBe(3)
+    expect(oscillator.frequency.linearRampToValueAtTime).not.toHaveBeenCalled()
+  })
   it('reserves synth voices until their release tails finish', () => {
     const oscillator = createOscillator()
     const bank = {

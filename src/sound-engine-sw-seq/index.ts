@@ -159,6 +159,11 @@ export class SoundEngineSwSeq extends SoundEngine {
             ? { ...item, type: 'NOTE_TIME', hz: this.context.sampleRate }
             : item
         patch.frequency = note.hz
+        patch.duration = item.timeEnd - item.time
+        patch.pitchAutomation = note.pitchAutomation?.map((point) => ({
+          ...point,
+          time: point.time - note.time,
+        }))
         const noteHandle = this.synth.trigger(patch)
         const noteEventId = this.transport.scheduleParametricNote({
           noteOn: (time) => {

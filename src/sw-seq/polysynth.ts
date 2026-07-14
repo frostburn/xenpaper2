@@ -1,3 +1,4 @@
+import { valueToCents } from 'xen-dev-utils/conversion'
 import type { Bank } from './bank'
 import type { EnvelopedAperiodicOscillator, EnvelopedOscillator, EnvelopedUnison } from './nodes'
 import type {
@@ -5,6 +6,7 @@ import type {
   NoiseGeneratorType,
   NoiseInterpolationType,
 } from './noise-worklet'
+import { easingCurve, type EasingName } from './easing'
 import type { SynthType as TimbreSynthType } from './timbre'
 
 const TIME_CONSTANT = 0.2
@@ -38,6 +40,12 @@ type Envelope = {
 
 export type SynthParams = {
   frequency: number
+  duration?: number
+  pitchAutomation?: Array<{
+    time: number
+    hz: number
+    pitchInterpolation?: EasingName
+  }>
   velocity: number
   synth: SynthType
   envelope: Envelope
@@ -105,7 +113,7 @@ export class PolySynth {
     let oscillator: T | null = null
     let startTime = NaN
 
-    const { frequency, velocity, synth } = params
+    const { frequency, pitchAutomation, velocity, synth } = params
     const { type, periodicWave, aperiodicWave } = synth
 
     const {
@@ -135,6 +143,28 @@ export class PolySynth {
         oscillator.type = type
       }
       oscillator.frequency.setValueAtTime(frequency, time)
+      oscillator.detune.setValueAtTime(0, time)
+      const automationPoints = pitchAutomation ?? []
+      let segmentStartTime = time
+      let segmentStartCents = 0
+      for (const point of automationPoints) {
+        const pointTime = time + point.time
+        const segmentDuration = pointTime - segmentStartTime
+        if (segmentDuration <= 0) continue
+        const centsEnd = valueToCents(point.hz / frequency)
+        const interpolation = point.pitchInterpolation ?? 'linear'
+        if (interpolation === 'linear') {
+          oscillator.detune.linearRampToValueAtTime(centsEnd, pointTime)
+        } else {
+          oscillator.detune.setValueCurveAtTime(
+            easingCurve(interpolation, segmentStartCents, centsEnd),
+            segmentStartTime,
+            segmentDuration,
+          )
+        }
+        segmentStartTime = pointTime
+        segmentStartCents = centsEnd
+      }
       oscillator.connect(this.destination)
       oscillator.gain.setValueAtTime(0, startTime)
 

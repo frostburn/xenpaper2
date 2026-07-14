@@ -101,6 +101,7 @@ const colorMap = new Map<string, HighlightColor>([
   ['SetBms', 'setter'],
   ['SetSubdivision', 'setter'],
   ['SetGrace', 'setter'],
+  ['SetGliss', 'setter'],
   ['SetGroove', 'setter'],
   ['SetUp', 'setter'],
   ['SetLift', 'setter'],

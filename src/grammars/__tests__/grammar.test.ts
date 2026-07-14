@@ -2493,12 +2493,30 @@ describe('grammar', () => {
       it('should error if setter is empty or not delimited properly', () => {
         expectParserErrorMessage(
           '()',
-          'Expected "/", "^", "al", "bms", "bpm", "coda", "d", "da", "dal", "div", "drone", "env", "f", "ff", "fff", "fine", "grace", "groove", "key", "mf", "mp", "noise", "osc", "p", "plot", "pp", "ppp", "rl", "segno", "sig", "to", "vel", "vol", or integer but ")" found.',
+          'Expected "/", "^", "al", "bms", "bpm", "coda", "d", "da", "dal", "div", "drone", "env", "f", "ff", "fff", "fine", "gliss", "grace", "groove", "key", "mf", "mp", "noise", "osc", "p", "plot", "pp", "ppp", "rl", "segno", "sig", "to", "vel", "vol", or integer but ")" found.',
         )
         expectParserErrorMessage('(div:16;)', 'but ")" found.')
         expectParserErrorMessage('(div:16;;div:16)', 'but ";" found.')
         expectParserErrorMessage('(env:123)', 'Expected four digits but "1" found.')
       })
+    })
+
+    it('should parse glissando setters and zero-duration targets', () => {
+      expect(strip(parser('(gliss)').sequence.items[0])).toMatchObject({
+        type: 'SetterGroup',
+        setters: [{ type: 'SetGliss', easing: 'linear' }],
+      })
+      expect(strip(parser('(gliss ease-in-out)').sequence.items[0])).toMatchObject({
+        setters: [{ type: 'SetGliss', easing: 'ease-in-out' }],
+      })
+      expect(strip(parser('(gliss EASE-IN)').sequence.items[0])).toMatchObject({
+        setters: [{ type: 'SetGliss', easing: 'ease-in' }],
+      })
+      expect(strip(parser('7?').sequence.items[0])).toMatchObject({
+        type: 'Note',
+        tail: { type: 'Hold', length: -1 },
+      })
+      expectParserErrorMessage('7-?', 'Expected')
     })
   })
 })

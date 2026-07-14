@@ -87,6 +87,89 @@ const noteLabels = (input: string): string[] => noteItems(input).map((item) => i
 const noteLabelDurations = (input: string): Array<[string, number]> =>
   noteItems(input).map((item) => [item.label, item.timeEnd - item.time])
 
+describe('glissando setter', () => {
+  it('defaults to a linear legato glissando and holds the target without re-attacking', () => {
+    const processed = processGrammar(parseSource('(gliss)0--- 7'))
+    const notes = processed.score.sequence.filter((item) => item.type === 'NOTE_BEAT_TIME')
+    expect(notes).toHaveLength(1)
+    expect(notes[0]!.pitchAutomation).toHaveLength(1)
+    expect(notes[0]!.pitchAutomation![0]).toMatchObject({ time: 2, pitchInterpolation: 'linear' })
+    expect(notes[0]!.timeEnd - notes[0]!.time).toBe(2.5)
+    expect(processed.score.lengthTime).toBe(2.5)
+  })
+
+  it('can consume the target without holding it', () => {
+    const processed = processGrammar(parseSource('(gliss)0--- 7?'))
+    const notes = processed.score.sequence.filter((item) => item.type === 'NOTE_BEAT_TIME')
+    expect(notes).toHaveLength(1)
+    expect(notes[0]!.pitchAutomation).toHaveLength(1)
+    expect(notes[0]!.timeEnd - notes[0]!.time).toBe(2)
+    expect(processed.score.lengthTime).toBe(2)
+  })
+
+  it('chains glissandi as one sustained note', () => {
+    const notes = noteItems('(gliss)0---(gliss)7-- 5-')
+    expect(notes).toHaveLength(1)
+    expect(notes[0]!.pitchAutomation).toMatchObject([
+      { time: 2, pitchInterpolation: 'linear' },
+      { time: 3.5, pitchInterpolation: 'linear' },
+    ])
+    expect(notes[0]!.timeEnd - notes[0]!.time).toBe(4.5)
+  })
+
+  it('supports CSS easing names', () => {
+    const notes = noteItems('(gliss ease-in-out)11 12?')
+    expect(notes).toHaveLength(1)
+    expect(notes[0]!.pitchAutomation![0]).toMatchObject({ pitchInterpolation: 'ease-in-out' })
+  })
+
+  it('pairs chord voices by index', () => {
+    const notes = noteItems('(gliss) [0 4]--- [7 11]')
+    expect(notes).toHaveLength(2)
+    expect(notes[0]!.pitchAutomation).toHaveLength(1)
+    expect(notes[1]!.pitchAutomation).toHaveLength(1)
+  })
+
+  it('allows subdivision changes before the glissando target', () => {
+    const processed = processGrammar(parseSource('(gliss)0-- (8)7'))
+    const notes = processed.score.sequence.filter((item) => item.type === 'NOTE_BEAT_TIME')
+    expect(notes).toHaveLength(1)
+    expect(notes[0]!.pitchAutomation![0]).toMatchObject({ time: 1.5 })
+    expect(notes[0]!.timeEnd - notes[0]!.time).toBe(1.625)
+    expect(processed.score.lengthTime).toBe(1.625)
+  })
+
+  it('throws for dangling or repeated glissando setters without targets', () => {
+    expect(() => processGrammar(parseSource('(gliss)'))).toThrow(
+      'Glissando has no compatible following target before the end of the sequence.',
+    )
+    expect(() => processGrammar(parseSource('(gliss)(gliss)0'))).toThrow(
+      'Glissando setter used before the previous glissando found a target.',
+    )
+  })
+
+  it('throws when a glissando setter is followed by a rest', () => {
+    expect(() => processGrammar(parseSource('(gliss).'))).toThrow('Glissando cannot target a rest.')
+  })
+  it('throws on mismatched chord sizes', () => {
+    expect(() => processGrammar(parseSource('(gliss) [0 4]--- [7]'))).toThrow(
+      'Glissando chord voice count mismatch',
+    )
+  })
+
+  it('throws when a rest breaks target lookup', () => {
+    expect(() => processGrammar(parseSource('(gliss) 0--- . 7'))).toThrow(
+      'Glissando target lookup was stopped by a rest.',
+    )
+  })
+
+  it('throws when a context-changing setter appears before the target', () => {
+    expect(() => processGrammar(parseSource('(gliss)0--- {r2/1} 0'))).toThrow(
+      'Glissando target lookup cannot skip SetRoot before the target.',
+    )
+  })
+})
+
 describe('groove setter', () => {
   it('shuffles evenly spaced sample-rate notes to an uneven pattern', () => {
     const notes = processGrammar(parseSource('(groove:(5)!-- !-)(2)! !')).score.sequence.filter(
