@@ -117,11 +117,17 @@ MOS{5L2s}(plot:MOS)`,
       {
         description:
           'Use ? on the target to make it zero-duration. Easing modes are linear, ease, ease-in, ease-out, and ease-in-out.',
-        tune: '(gliss ease-in-out)11 12?\n(gliss ease-in)0-- 7? (gliss ease-out)7-- 5',
+        tune: `(gliss ease-in-out)11--- 12--
+..
+(gliss ease-in)0--- 7?
+..
+(gliss ease-out)9--- 5-`,
       },
       {
         description: 'Chord glissandi pair voices by index, so each chord tone slides legato.',
-        tune: '(gliss)[0 4 7]--- [7 11 14]',
+        tune: `(gliss)[0 3 7]--(gliss)[0 3 7]
+(gliss)[0 3 9]--(gliss)[0 3 9]
+[2 7 10]---`,
       },
     ],
   },
