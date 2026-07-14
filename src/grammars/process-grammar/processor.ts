@@ -611,15 +611,11 @@ const applyKeySignature = (
 const times: [number, number][] = []
 
 type MoscBeatPlayableNote = MoscBeatNote | MoscBeatSampleRateNote
-type GlissandoPlayableItem = NoteType | ChordType | RatioChordType
-
 type GlissandoGroup = {
   notes: MoscBeatNote[]
   easing: GlissandoState['easing'] | null
   remove: boolean
 }
-
-const isReleasedGlissandoTarget = (item: GlissandoPlayableItem): boolean => item.tail?.length === -1
 
 const tieLegatoGlissandi = (groups: GlissandoGroup[]): void => {
   groups.forEach((group, index) => {
@@ -1397,10 +1393,7 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
   let initialRulerState: BuildingInitialRulerState = {
     plots: [],
   }
-  const registerGlissandoGroup = (
-    sourceItems: MoscBeatPlayableNote[],
-    astItem: GlissandoPlayableItem,
-  ): void => {
+  const registerGlissandoGroup = (sourceItems: MoscBeatPlayableNote[]): void => {
     const notes = sourceItems.filter(
       (moscItem): moscItem is MoscBeatNote => moscItem.type === 'NOTE_BEAT_TIME',
     )
@@ -1408,7 +1401,7 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
     glissandoGroups.push({
       notes,
       easing: context.glissando?.easing ?? null,
-      remove: context.glissando ? isReleasedGlissandoTarget(astItem) : false,
+      remove: false,
     })
     context.glissando = null
   }
@@ -1451,7 +1444,7 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
 
     if (type === 'Note') {
       const items = noteToMosc(item, context)
-      registerGlissandoGroup(items, item)
+      registerGlissandoGroup(items)
       moscItems.push(...items)
       initialRulerState = rulerStateCaptureRootHz(initialRulerState, context)
       return
@@ -1479,14 +1472,14 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
 
     if (type === 'Chord') {
       const items = chordToMosc(item, context)
-      registerGlissandoGroup(items, item)
+      registerGlissandoGroup(items)
       moscItems.push(...items)
       return
     }
 
     if (type === 'RatioChord') {
       const items = chordToMosc(item, context)
-      registerGlissandoGroup(items, item)
+      registerGlissandoGroup(items)
       moscItems.push(...items)
       initialRulerState = rulerStateCaptureRootHz(initialRulerState, context)
       return

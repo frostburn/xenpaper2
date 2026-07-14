@@ -107,6 +107,13 @@ describe('glissando setter', () => {
     expect(processed.score.lengthTime).toBe(2)
   })
 
+  it('keeps zero-duration glissando sources in the score', () => {
+    const notes = noteItems('(gliss)0? 7')
+    expect(notes).toHaveLength(1)
+    expect(notes[0]!.pitchAutomation).toMatchObject([{ time: 0, pitchInterpolation: 'linear' }])
+    expect(notes[0]!.timeEnd - notes[0]!.time).toBe(0.5)
+  })
+
   it('chains glissandi as one sustained note', () => {
     const notes = noteItems('(gliss)0---(gliss)7-- 5-')
     expect(notes).toHaveLength(1)
