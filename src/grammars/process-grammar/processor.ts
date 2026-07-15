@@ -578,10 +578,28 @@ type Context = {
   stolenTime: number
   groove: Groove | null
   glissando: GlissandoState | null
+  volumeRamp: VolumeRampState | null
 }
 
 type GlissandoState = {
   easing: EasingName
+}
+
+type VolumeRampSourceValue = {
+  type: 'volume'
+  db: number
+  volumeAutomation?: Array<{ time: number; db: number; volumeInterpolation: EasingName }>
+}
+
+type VolumeRampSource = {
+  time: number
+  value: VolumeRampSourceValue
+}
+
+type VolumeRampState = {
+  kind: 'cresc' | 'dim'
+  easing: EasingName
+  source: VolumeRampSource | null
 }
 
 type Groove = {
@@ -951,6 +969,42 @@ const setScale = (setScale: SetScaleType, context: Context): void => {
   throw new Error(`Unknown scale type "${type}"`)
 }
 
+const volumeParam = (time: number, db: number): MoscBeatParam & VolumeRampSource => ({
+  type: 'PARAM_BEAT_TIME',
+  time,
+  value: {
+    type: 'volume',
+    db,
+  },
+})
+
+const volumeRampToMosc = (db: number, context: Context): MoscBeatParam[] => {
+  const ramp = context.volumeRamp
+  const time = mapGrooveBeat(context.time, context.groove)
+  const item = volumeParam(time, db)
+  if (!ramp) return [item]
+
+  if (!ramp.source) {
+    ramp.source = item
+    return [item]
+  }
+
+  const sourceDb = ramp.source.value.db
+  if (ramp.kind === 'cresc' && db < sourceDb) {
+    throw new Error('Crescendo target volume must be greater than or equal to its starting volume.')
+  }
+  if (ramp.kind === 'dim' && db > sourceDb) {
+    throw new Error('Diminuendo target volume must be less than or equal to its starting volume.')
+  }
+
+  context.volumeRamp = null
+  ramp.source.value.volumeAutomation = [
+    ...(ramp.source.value.volumeAutomation ?? []),
+    { time, db, volumeInterpolation: ramp.easing },
+  ]
+  return []
+}
+
 const setterToMosc = (setter: SetterType | DelimiterType, context: Context): MoscBeatItem[] => {
   const { type, delimiter } = setter
 
@@ -994,6 +1048,24 @@ const setterToMosc = (setter: SetterType | DelimiterType, context: Context): Mos
     assertFinitePositive('SetSubdivision.denominator', normalizedDenominator)
     context.subdivision = normalizedDenominator / subdivision
     assertFinitePositive('context.subdivision', context.subdivision)
+    return []
+  }
+
+  if (type === 'SetVolumeRamp') {
+    if (context.volumeRamp) {
+      throw new Error(
+        'Volume ramp setter used before the previous volume ramp found a target volume.',
+      )
+    }
+    const easing = setter.easing.toLowerCase()
+    if (!isEasingName(easing)) {
+      throw new Error(`Unknown volume ramp easing: ${setter.easing}.`)
+    }
+    context.volumeRamp = {
+      kind: setter.kind,
+      easing,
+      source: null,
+    }
     return []
   }
 
@@ -1079,16 +1151,7 @@ const setterToMosc = (setter: SetterType | DelimiterType, context: Context): Mos
   if (type === 'SetVolume') {
     const { db } = setter
     limit('SetVolume.db', db, -100, 20)
-    return [
-      {
-        type: 'PARAM_BEAT_TIME',
-        time: mapGrooveBeat(context.time, context.groove),
-        value: {
-          type: 'volume',
-          db,
-        },
-      },
-    ]
+    return volumeRampToMosc(db, context)
   }
 
   if (type === 'SetVelocity') {
@@ -1364,6 +1427,7 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
     stolenTime: 0,
     groove: null,
     glissando: null,
+    volumeRamp: null,
   }
 
   const moscItems: MoscBeatItem[] = []
@@ -1499,6 +1563,14 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
 
   if (context.glissando) {
     throw new Error('Glissando has no compatible following target before the end of the sequence.')
+  }
+
+  if (context.volumeRamp) {
+    throw new Error(
+      context.volumeRamp.source
+        ? 'Volume ramp has no target volume before the end of the sequence.'
+        : 'Volume ramp has no source volume before the end of the sequence.',
+    )
   }
 
   tieLegatoGlissandi(glissandoGroups)
