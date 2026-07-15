@@ -479,6 +479,15 @@ describe('grammar to mosc score', () => {
     expect(divisionLift?.label).toBe('/A♮  100.0c')
   })
 
+  it('applies tempered ratio up and lift setters through the current mapping', () => {
+    const [up, lift] = noteItems('{12edo} (^:~81/80) ^A (/:~81/80) /A')
+
+    expect(up?.hz).toBeAround(440, 6)
+    expect(up?.label).toBe('^A♮  1200.0c')
+    expect(lift?.hz).toBeAround(440, 6)
+    expect(lift?.label).toBe('/A♮  1200.0c')
+  })
+
   it('applies up and lift setters to scale degrees and their labels', () => {
     const [upDegree, liftDegree] = noteItems('(^:100c) ^0 (/:50c) /0')
 

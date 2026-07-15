@@ -943,11 +943,13 @@ const setScale = (setScale: SetScaleType, context: Context): void => {
   throw new Error(`Unknown scale type "${type}"`)
 }
 
-const upLiftStepToCents = (name: string, value: UpLiftStepType): number => {
+const upLiftStepToCents = (name: string, value: UpLiftStepType, context: Context): number => {
   if (value.type === 'PitchRatio') {
     const { numerator, denominator } = value
     assertFinitePositive(`${name}.denominator`, denominator)
-    const ratio = numerator / denominator
+    const ratio = value.tempered
+      ? temperedRatioFractionToRatio({ numerator, denominator }, context)
+      : numerator / denominator
     limit(name, ratio, 0, 100)
     return valueToCents(ratio)
   }
@@ -1031,12 +1033,12 @@ const setterToMosc = (setter: SetterType | DelimiterType, context: Context): Mos
   }
 
   if (type === 'SetUp') {
-    context.up = upLiftStepToCents('SetUp', setter.value)
+    context.up = upLiftStepToCents('SetUp', setter.value, context)
     return []
   }
 
   if (type === 'SetLift') {
-    context.lift = upLiftStepToCents('SetLift', setter.value)
+    context.lift = upLiftStepToCents('SetLift', setter.value, context)
     return []
   }
 
