@@ -119,6 +119,7 @@ export class SoundEngineSwSeq extends SoundEngine {
   }
 
   clearScheduledEvents(): void {
+    this.cancelScheduledOutputGain()
     this.transportEventIds.forEach((_, id) => this.transport.clear(id))
     this.transportEventIds.clear()
     for (const callback of this.noteOffs) {
@@ -138,12 +139,18 @@ export class SoundEngineSwSeq extends SoundEngine {
   }
 
   cutActiveNotes(_time?: number): void {
+    this.cancelScheduledOutputGain()
     this.activeNoteEvents.forEach((note) => this._triggerEvent('note', note, false))
     this.activeNoteEvents.clear()
     for (const callback of this.noteOffs) {
       // Just release, scheduling be damned
       callback(this.context.currentTime)
     }
+  }
+
+  private cancelScheduledOutputGain(time = this.context.currentTime): void {
+    this.destination.gain.cancelScheduledValues(time)
+    this.destination.gain.setValueAtTime(this.outputGain * this.scoreVolume, time)
   }
 
   private applyOutputGain(time = this.context.currentTime): void {
