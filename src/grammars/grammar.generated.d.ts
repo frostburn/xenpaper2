@@ -289,16 +289,14 @@ export type SetGrooveType = NodeType<'SetGroove'> & {
 
 // up/down step
 
-export type UpLiftStepType = PitchRatioType | PitchCentsType | PitchOctaveDivisionType
-
 export type SetUpType = NodeType<'SetUp'> & {
-  value: UpLiftStepType
+  value: PitchType
 }
 
 // lift/drop step
 
 export type SetLiftType = NodeType<'SetLift'> & {
-  value: UpLiftStepType
+  value: PitchType
 }
 
 // osc

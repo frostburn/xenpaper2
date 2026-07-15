@@ -1937,9 +1937,9 @@ describe('grammar numeric validation', () => {
   it.each([
     ['(div:0) 0', 'SetSubdivision.subdivision must be a finite positive number, got 0'],
     ['(bms:0) 0', 'SetBms.bms must be a finite positive number, got 0'],
-    ['(^:1/0) ^A', 'SetUp.denominator must be a finite positive number, got 0'],
-    ['(/:1/0) /A', 'SetLift.denominator must be a finite positive number, got 0'],
-    ['(^:12001c) ^A', 'SetUp must be between -12000 and 12000, got 12001'],
+    ['(^:1/0) ^A', 'PitchRatio.denominator must be a finite positive number, got 0'],
+    ['(/:1/0) /A', 'PitchRatio.denominator must be a finite positive number, got 0'],
+    ['(^:12001c) ^A', 'Cents must be between -12000 and 12000, got 12001'],
     ['{0edo} 0', 'EdoScale.divisions must be between 1 and 10000, got 0'],
     [
       '{<1200c 1896.5784c 2786.3137c]@3} 0',
