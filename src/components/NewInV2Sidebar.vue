@@ -116,7 +116,7 @@ MOS{5L2s}(plot:MOS)`,
       },
       {
         description:
-          'Use ? on the target to make it zero-duration. Easing modes are linear, ease, ease-in, ease-out, and ease-in-out.',
+          'Use ? on the target to make it zero-duration. Easing modes include linear, ease, ease-in/out/in-out, plus sine, quad, cubic, quart, quint, expo, and circ variants.',
         tune: `(gliss ease-in-out)11--- 12--
 ..
 (gliss ease-in)0--- 7?
