@@ -950,7 +950,6 @@ const setScale = (setScale: SetScaleType, context: Context): void => {
   throw new Error(`Unknown scale type "${type}"`)
 }
 
-const upLiftStepToRatio = (value: PitchType, context: Context): number => pitchToRatio(value, context)
 const setterToMosc = (setter: SetterType | DelimiterType, context: Context): MoscBeatItem[] => {
   const { type, delimiter } = setter
 
@@ -1018,12 +1017,12 @@ const setterToMosc = (setter: SetterType | DelimiterType, context: Context): Mos
   }
 
   if (type === 'SetUp') {
-    context.up = upLiftStepToRatio(setter.value, context)
+    context.up = pitchToRatio(setter.value, context)
     return []
   }
 
   if (type === 'SetLift') {
-    context.lift = upLiftStepToRatio(setter.value, context)
+    context.lift = pitchToRatio(setter.value, context)
     return []
   }
 
