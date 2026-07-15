@@ -275,7 +275,7 @@ export type SetGraceType = NodeType<'SetGrace'> & {
   count: number
 }
 
-export type GlissEasingType = 'linear' | 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out'
+export type GlissEasingType = string
 
 export type SetGlissType = NodeType<'SetGliss'> & {
   easing: GlissEasingType
