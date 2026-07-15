@@ -45,6 +45,7 @@ import type {
   PlotNominalType,
   CustomMappingScaleType,
 } from '../grammar.generated'
+import { isEasingName, type EasingName } from '../../mosc'
 
 import {
   nominalToMonzo,
@@ -573,33 +574,7 @@ type Context = {
 }
 
 type GlissandoState = {
-  easing:
-    | 'linear'
-    | 'ease'
-    | 'ease-in'
-    | 'ease-out'
-    | 'ease-in-out'
-    | 'ease-in-sine'
-    | 'ease-out-sine'
-    | 'ease-in-out-sine'
-    | 'ease-in-quad'
-    | 'ease-out-quad'
-    | 'ease-in-out-quad'
-    | 'ease-in-cubic'
-    | 'ease-out-cubic'
-    | 'ease-in-out-cubic'
-    | 'ease-in-quart'
-    | 'ease-out-quart'
-    | 'ease-in-out-quart'
-    | 'ease-in-quint'
-    | 'ease-out-quint'
-    | 'ease-in-out-quint'
-    | 'ease-in-expo'
-    | 'ease-out-expo'
-    | 'ease-in-out-expo'
-    | 'ease-in-circ'
-    | 'ease-out-circ'
-    | 'ease-in-out-circ'
+  easing: EasingName
 }
 
 type Groove = {
@@ -1040,7 +1015,10 @@ const setterToMosc = (setter: SetterType | DelimiterType, context: Context): Mos
     if (context.glissando) {
       throw new Error('Glissando setter used before the previous glissando found a target.')
     }
-    const { easing } = setter
+    const easing = setter.easing.toLowerCase()
+    if (!isEasingName(easing)) {
+      throw new Error(`Unknown glissando easing: ${setter.easing}.`)
+    }
     context.glissando = { easing }
     return []
   }

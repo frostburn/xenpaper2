@@ -2515,6 +2515,9 @@ describe('grammar', () => {
       expect(strip(parser('(gliss ease-in-out-cubic)').sequence.items[0])).toMatchObject({
         setters: [{ type: 'SetGliss', easing: 'ease-in-out-cubic' }],
       })
+      expect(strip(parser('(gliss future-easing-2)').sequence.items[0])).toMatchObject({
+        setters: [{ type: 'SetGliss', easing: 'future-easing-2' }],
+      })
       expect(strip(parser('7?').sequence.items[0])).toMatchObject({
         type: 'Note',
         tail: { type: 'Hold', length: -1 },

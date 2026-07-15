@@ -1,33 +1,29 @@
-export type EasingName =
-  | 'linear'
-  | 'ease'
-  | 'ease-in'
-  | 'ease-out'
-  | 'ease-in-out'
-  | 'ease-in-sine'
-  | 'ease-out-sine'
-  | 'ease-in-out-sine'
-  | 'ease-in-quad'
-  | 'ease-out-quad'
-  | 'ease-in-out-quad'
-  | 'ease-in-cubic'
-  | 'ease-out-cubic'
-  | 'ease-in-out-cubic'
-  | 'ease-in-quart'
-  | 'ease-out-quart'
-  | 'ease-in-out-quart'
-  | 'ease-in-quint'
-  | 'ease-out-quint'
-  | 'ease-in-out-quint'
-  | 'ease-in-expo'
-  | 'ease-out-expo'
-  | 'ease-in-out-expo'
-  | 'ease-in-circ'
-  | 'ease-out-circ'
-  | 'ease-in-out-circ'
+import type { EasingName } from '../mosc'
 
 const easeInOutPower = (t: number, power: number): number =>
   t < 0.5 ? 2 ** (power - 1) * t ** power : 1 - (-2 * t + 2) ** power / 2
+
+const easeOutBounce = (t: number): number => {
+  const n1 = 7.5625
+  const d1 = 2.75
+
+  if (t < 1 / d1) return n1 * t ** 2
+  if (t < 2 / d1) return n1 * (t - 1.5 / d1) ** 2 + 0.75
+  if (t < 2.5 / d1) return n1 * (t - 2.25 / d1) ** 2 + 0.9375
+  return n1 * (t - 2.625 / d1) ** 2 + 0.984375
+}
+
+const easeInBack = (t: number): number => {
+  const c1 = 1.70158
+  const c3 = c1 + 1
+  return c3 * t ** 3 - c1 * t ** 2
+}
+
+const easeOutBack = (t: number): number => {
+  const c1 = 1.70158
+  const c3 = c1 + 1
+  return 1 + c3 * (t - 1) ** 3 + c1 * (t - 1) ** 2
+}
 
 const easingProgress = (easing: Exclude<EasingName, 'linear'>, t: number): number => {
   switch (easing) {
@@ -38,8 +34,9 @@ const easingProgress = (easing: Exclude<EasingName, 'linear'>, t: number): numbe
     case 'ease-out-quad':
       return 1 - (1 - t) ** 2
     case 'ease-in-out':
-    case 'ease-in-out-quad':
       return (3 - 2 * t) * t ** 2
+    case 'ease-in-out-quad':
+      return easeInOutPower(t, 2)
     case 'ease':
       return 0.25 * t * (3 + 6 * t - 5 * t * t)
     case 'ease-in-sine':
@@ -81,6 +78,21 @@ const easingProgress = (easing: Exclude<EasingName, 'linear'>, t: number): numbe
       return t < 0.5
         ? (1 - Math.sqrt(1 - (2 * t) ** 2)) / 2
         : (Math.sqrt(1 - (-2 * t + 2) ** 2) + 1) / 2
+    case 'ease-in-back':
+    case 'ease-in-overshoot':
+      return easeInBack(t)
+    case 'ease-out-back':
+    case 'ease-out-overshoot':
+      return easeOutBack(t)
+    case 'ease-in-out-back':
+    case 'ease-in-out-overshoot':
+      return t < 0.5 ? (1 - easeOutBack(1 - 2 * t)) / 2 : (1 + easeOutBack(2 * t - 1)) / 2
+    case 'ease-in-bounce':
+      return 1 - easeOutBounce(1 - t)
+    case 'ease-out-bounce':
+      return easeOutBounce(t)
+    case 'ease-in-out-bounce':
+      return t < 0.5 ? (1 - easeOutBounce(1 - 2 * t)) / 2 : (1 + easeOutBounce(2 * t - 1)) / 2
   }
 }
 

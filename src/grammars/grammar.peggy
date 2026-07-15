@@ -184,7 +184,7 @@ GrooveSubdivision = "(" _ setter:SetSubdivision _ ")" { return setter; }
 SetGliss = "gliss"i easing:(_ @GlissEasing)? {
   return node('SetGliss', { easing: (easing ?? 'linear').toLowerCase() });
 }
-GlissEasing = "ease-in-out-sine"i / "ease-in-out-quad"i / "ease-in-out-cubic"i / "ease-in-out-quart"i / "ease-in-out-quint"i / "ease-in-out-expo"i / "ease-in-out-circ"i / "ease-in-out"i / "ease-in-sine"i / "ease-out-sine"i / "ease-in-quad"i / "ease-out-quad"i / "ease-in-cubic"i / "ease-out-cubic"i / "ease-in-quart"i / "ease-out-quart"i / "ease-in-quint"i / "ease-out-quint"i / "ease-in-expo"i / "ease-out-expo"i / "ease-in-circ"i / "ease-out-circ"i / "ease-in"i / "ease-out"i / "linear"i / "ease"i
+GlissEasing = $([a-zA-Z0-9-]+)
 PlayableTail = Tail / ZeroDuration
 ZeroDuration = "?" { return node('Hold', { length: -1, parts: [] }); }
 SetGrace = data:(("grace"i _ ":" _ fraction:Fraction count:(_ @Int)? { return { fraction, count: count ?? 1 }; }) / (fraction:Fraction _ questionMarks:$("?"+) { return { fraction, count: questionMarks.length }; })) {

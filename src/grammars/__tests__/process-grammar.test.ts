@@ -124,10 +124,16 @@ describe('glissando setter', () => {
     expect(notes[0]!.timeEnd - notes[0]!.time).toBe(4.5)
   })
 
-  it('supports CSS easing names', () => {
-    const notes = noteItems('(gliss ease-in-out)11 12?')
+  it('supports easing names', () => {
+    const notes = noteItems('(gliss ease-out-bounce)11 12?')
     expect(notes).toHaveLength(1)
-    expect(notes[0]!.pitchAutomation![0]).toMatchObject({ pitchInterpolation: 'ease-in-out' })
+    expect(notes[0]!.pitchAutomation![0]).toMatchObject({ pitchInterpolation: 'ease-out-bounce' })
+  })
+
+  it('validates parsed glissando easing names during processing', () => {
+    expect(() => processGrammar(parseSource('(gliss wiggle)11 12?'))).toThrow(
+      'Unknown glissando easing: wiggle.',
+    )
   })
 
   it('pairs chord voices by index', () => {

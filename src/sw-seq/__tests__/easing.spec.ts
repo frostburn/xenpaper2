@@ -1,38 +1,17 @@
 import { describe, expect, it } from 'vitest'
 
-import { easingCurve, type EasingName } from '../easing'
+import { EASING_NAMES } from '../../mosc'
+import { easingCurve } from '../easing'
 
-const easingNames = [
-  'ease',
-  'ease-in',
-  'ease-out',
-  'ease-in-out',
-  'ease-in-sine',
-  'ease-out-sine',
-  'ease-in-out-sine',
-  'ease-in-quad',
-  'ease-out-quad',
-  'ease-in-out-quad',
-  'ease-in-cubic',
-  'ease-out-cubic',
-  'ease-in-out-cubic',
-  'ease-in-quart',
-  'ease-out-quart',
-  'ease-in-out-quart',
-  'ease-in-quint',
-  'ease-out-quint',
-  'ease-in-out-quint',
-  'ease-in-expo',
-  'ease-out-expo',
-  'ease-in-out-expo',
-  'ease-in-circ',
-  'ease-out-circ',
-  'ease-in-out-circ',
-] as const satisfies readonly Exclude<EasingName, 'linear'>[]
+const nonLinearEasingNames = EASING_NAMES.filter((easing) => easing !== 'linear')
+const monotonicEasingNames = nonLinearEasingNames.filter(
+  (easing) =>
+    !easing.includes('back') && !easing.includes('overshoot') && !easing.includes('bounce'),
+)
 
 describe('easingCurve', () => {
-  it('supports every non-linear easing from the glissando grammar', () => {
-    for (const easing of easingNames) {
+  it('supports every non-linear easing from the shared easing list', () => {
+    for (const easing of nonLinearEasingNames) {
       const curve = easingCurve(easing, 20, 80)
 
       expect(curve).toHaveLength(64)
@@ -42,13 +21,25 @@ describe('easingCurve', () => {
     }
   })
 
-  it('keeps increasing glissando curves monotonic', () => {
-    for (const easing of easingNames) {
+  it('keeps non-overshooting increasing glissando curves monotonic', () => {
+    for (const easing of monotonicEasingNames) {
       const curve = easingCurve(easing, -10, 10)
 
       for (let index = 1; index < curve.length; index += 1) {
         expect(curve[index]).toBeGreaterThanOrEqual(curve[index - 1]!)
       }
     }
+  })
+
+  it('supports overshoot and bounce curves that can move beyond direct interpolation', () => {
+    expect(Math.min(...easingCurve('ease-in-back', 0, 1))).toBeLessThan(0)
+    expect(Math.max(...easingCurve('ease-out-back', 0, 1))).toBeGreaterThan(1)
+    expect(Math.min(...easingCurve('ease-in-overshoot', 0, 1))).toBeLessThan(0)
+    expect(Math.max(...easingCurve('ease-out-overshoot', 0, 1))).toBeGreaterThan(1)
+
+    const bounceCurve = [...easingCurve('ease-out-bounce', 0, 1)]
+    expect(bounceCurve.some((value, index) => index > 0 && value < bounceCurve[index - 1]!)).toBe(
+      true,
+    )
   })
 })
