@@ -479,6 +479,15 @@ describe('grammar to mosc score', () => {
     expect(divisionLift?.label).toBe('/A♮  100.0c')
   })
 
+  it('applies tempered ratio up and lift setters through the current mapping', () => {
+    const [up, lift] = noteItems('{12edo} (^:~81/80) ^A (/:~49/48) /A')
+
+    expect(up?.hz).toBeAround(440, 6)
+    expect(up?.label).toBe('^A♮  1200.0c')
+    expect(lift?.hz).toBeAround(440 * 2 ** (1 / 12), 6)
+    expect(lift?.label).toBe('/A♮  100.0c')
+  })
+
   it('applies up and lift setters to scale degrees and their labels', () => {
     const [upDegree, liftDegree] = noteItems('(^:100c) ^0 (/:50c) /0')
 
@@ -1928,9 +1937,9 @@ describe('grammar numeric validation', () => {
   it.each([
     ['(div:0) 0', 'SetSubdivision.subdivision must be a finite positive number, got 0'],
     ['(bms:0) 0', 'SetBms.bms must be a finite positive number, got 0'],
-    ['(^:1/0) ^A', 'SetUp.denominator must be a finite positive number, got 0'],
-    ['(/:1/0) /A', 'SetLift.denominator must be a finite positive number, got 0'],
-    ['(^:12001c) ^A', 'SetUp must be between -12000 and 12000, got 12001'],
+    ['(^:1/0) ^A', 'PitchRatio.denominator must be a finite positive number, got 0'],
+    ['(/:1/0) /A', 'PitchRatio.denominator must be a finite positive number, got 0'],
+    ['(^:12001c) ^A', 'Cents must be between -12000 and 12000, got 12001'],
     ['{0edo} 0', 'EdoScale.divisions must be between 1 and 10000, got 0'],
     [
       '{<1200c 1896.5784c 2786.3137c]@3} 0',

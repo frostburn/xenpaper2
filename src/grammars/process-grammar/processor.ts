@@ -39,7 +39,6 @@ import type {
   SetterType,
   SetGrooveType,
   DelimiterType,
-  UpLiftStepType,
   KeyTonicType,
   MosKeyTonicType,
   PlotNominalType,
@@ -190,6 +189,14 @@ export const pitchToRatio = (pitch: PitchType, context: Context): number => {
   const { type } = pitch.value
   const octaveMulti = Math.pow(octaveSize, pitch.octave?.octave ?? 0)
 
+  if (type === 'PitchHz') {
+    const { hz } = pitch.value
+    assertFinitePositive('PitchHz.hz', hz)
+    assertFinitePositive('context.rootHz', context.rootHz)
+    limit('Hz', hz, 0, 20000)
+    return (hz / context.rootHz) * octaveMulti
+  }
+
   if (type === 'PitchRatio') {
     const { numerator, denominator } = pitch.value
     assertFinitePositive('PitchRatio.denominator', denominator)
@@ -216,7 +223,7 @@ export const pitchToRatio = (pitch: PitchType, context: Context): number => {
   if (type === 'PitchDegree') {
     const { degree, ups, lifts } = pitch.value
     const degreeRatio = pitchDegreeToRatio(degree, scale, octaveSize)
-    return degreeRatio * centsToValue(ups * up + lifts * lift) * octaveMulti
+    return degreeRatio * Math.pow(up, ups) * Math.pow(lift, lifts) * octaveMulti
   }
 
   if (type === 'PitchAbsolute') {
@@ -236,11 +243,11 @@ export const pitchToRatio = (pitch: PitchType, context: Context): number => {
     annotatedPitch.outOfIntegerSteps =
       context.mappingIsIntegerSteps && Math.abs(steps - Math.round(steps)) > INTEGER_STEP_EPSILON
 
-    const cents =
-      steps * stepSize +
-      (absolutePitch.ups - rootNominal.ups) * up +
-      (absolutePitch.lifts - rootNominal.lifts) * lift
-    return centsToValue(cents)
+    return (
+      centsToValue(steps * stepSize) *
+      Math.pow(up, absolutePitch.ups - rootNominal.ups) *
+      Math.pow(lift, absolutePitch.lifts - rootNominal.lifts)
+    )
   }
 
   throw new Error(`Unknown pitch type "${type}"`)
@@ -283,8 +290,8 @@ const customMappingToContext = (scale: CustomMappingScaleType, context: Context)
   }
   assertFinitePositive('CustomMappingScale.anchorEntry', anchor.value)
   context.stepSize = PRIME_CENTS[anchorIndex]! / anchor.value
-  context.up = context.stepSize
-  context.lift = 5 * context.stepSize
+  context.up = centsToValue(context.stepSize)
+  context.lift = centsToValue(5 * context.stepSize)
   context.mapping = PRIME_CENTS.slice(0, NUM_COMPONENTS).map((c) =>
     Math.round(c / context.stepSize),
   )
@@ -917,8 +924,8 @@ const setScale = (setScale: SetScaleType, context: Context): void => {
     context.scaleLabels = edoToLabels(divisions, context.scale, octaveSize)
     context.octaveSize = octaveSize
     context.stepSize = valueToCents(octaveSize) / divisions
-    context.up = context.stepSize
-    context.lift = 5 * context.stepSize
+    context.up = centsToValue(context.stepSize)
+    context.lift = centsToValue(5 * context.stepSize)
     context.mapping = PRIME_CENTS.slice(0, NUM_COMPONENTS).map((c) =>
       Math.round(c / context.stepSize),
     )
@@ -941,27 +948,6 @@ const setScale = (setScale: SetScaleType, context: Context): void => {
   }
 
   throw new Error(`Unknown scale type "${type}"`)
-}
-
-const upLiftStepToCents = (name: string, value: UpLiftStepType): number => {
-  if (value.type === 'PitchRatio') {
-    const { numerator, denominator } = value
-    assertFinitePositive(`${name}.denominator`, denominator)
-    const ratio = numerator / denominator
-    limit(name, ratio, 0, 100)
-    return valueToCents(ratio)
-  }
-
-  if (value.type === 'PitchCents') {
-    const { cents } = value
-    limit(name, cents, -12000, 12000)
-    return cents
-  }
-
-  const { numerator, denominator, octaveSize } = value
-  assertFinitePositive(`${name}.denominator`, denominator)
-  assertFinitePositive(`${name}.octaveSize`, octaveSize)
-  return valueToCents(equaveDivisionToValue(numerator, denominator, octaveSize))
 }
 
 const setterToMosc = (setter: SetterType | DelimiterType, context: Context): MoscBeatItem[] => {
@@ -1031,12 +1017,12 @@ const setterToMosc = (setter: SetterType | DelimiterType, context: Context): Mos
   }
 
   if (type === 'SetUp') {
-    context.up = upLiftStepToCents('SetUp', setter.value)
+    context.up = pitchToRatio(setter.value, context)
     return []
   }
 
   if (type === 'SetLift') {
-    context.lift = upLiftStepToCents('SetLift', setter.value)
+    context.lift = pitchToRatio(setter.value, context)
     return []
   }
 

@@ -194,9 +194,8 @@ SetGrace = data:(("grace"i _ ":" _ fraction:Fraction count:(_ @Int)? { return { 
     count: data.count,
   });
 }
-SetUp = "^" _ ":" _ value:SetterStep { return node('SetUp', { value }); }
-SetLift = "/" _ ":" _ value:SetterStep { return node('SetLift', { value }); }
-SetterStep = PitchCents / PitchOctaveDivision / PitchRatio
+SetUp = "^" _ ":" _ value:Pitch { return node('SetUp', { value }); }
+SetLift = "/" _ ":" _ value:Pitch { return node('SetLift', { value }); }
 SetOsc = "osc"i _ ":" _ osc:OscName { return node('SetOsc', { osc }); }
 OscName "oscillator name" = [a-zA-Z0-9\-]+ { return text().toLowerCase(); }
 SetNoise = "noise"i _ ":" _ noise:NoiseName interpolation: (_ @InterpolationName)? { return node('SetNoise', { noise, interpolation }); }

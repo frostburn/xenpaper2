@@ -1900,9 +1900,12 @@ describe('grammar', () => {
               {
                 type: 'SetUp',
                 value: {
-                  type: 'PitchRatio',
-                  numerator: 81,
-                  denominator: 80,
+                  type: 'Pitch',
+                  value: {
+                    type: 'PitchRatio',
+                    numerator: 81,
+                    denominator: 80,
+                  },
                 },
               },
               {
@@ -1911,9 +1914,55 @@ describe('grammar', () => {
               {
                 type: 'SetLift',
                 value: {
-                  type: 'PitchRatio',
-                  numerator: 64,
-                  denominator: 63,
+                  type: 'Pitch',
+                  value: {
+                    type: 'PitchRatio',
+                    numerator: 64,
+                    denominator: 63,
+                  },
+                },
+              },
+            ],
+          },
+        ])
+      })
+
+      it('should parse sequence with tempered ratio up and lift setters', () => {
+        expect(strip(parser('(^:~81/80; /: ~64/63)')).sequence.items).toEqual([
+          {
+            type: 'SetterGroup',
+            setters: [
+              {
+                type: 'SetUp',
+                value: {
+                  type: 'Pitch',
+                  value: {
+                    type: 'PitchRatio',
+                    numerator: 81,
+                    denominator: 80,
+                    tempered: true,
+                    temperedPrefix: {
+                      type: 'TemperedPrefix',
+                    },
+                  },
+                },
+              },
+              {
+                type: 'Semicolon',
+              },
+              {
+                type: 'SetLift',
+                value: {
+                  type: 'Pitch',
+                  value: {
+                    type: 'PitchRatio',
+                    numerator: 64,
+                    denominator: 63,
+                    tempered: true,
+                    temperedPrefix: {
+                      type: 'TemperedPrefix',
+                    },
+                  },
                 },
               },
             ],
@@ -1929,8 +1978,11 @@ describe('grammar', () => {
               {
                 type: 'SetUp',
                 value: {
-                  type: 'PitchCents',
-                  cents: 25,
+                  type: 'Pitch',
+                  value: {
+                    type: 'PitchCents',
+                    cents: 25,
+                  },
                 },
               },
               {
@@ -1939,10 +1991,13 @@ describe('grammar', () => {
               {
                 type: 'SetLift',
                 value: {
-                  type: 'PitchOctaveDivision',
-                  numerator: 1,
-                  denominator: 12,
-                  octaveSize: 2,
+                  type: 'Pitch',
+                  value: {
+                    type: 'PitchOctaveDivision',
+                    numerator: 1,
+                    denominator: 12,
+                    octaveSize: 2,
+                  },
                 },
               },
             ],
