@@ -1396,7 +1396,7 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
     context.glissando = null
   }
 
-  grammarSequence.items.forEach((item, index): void => {
+  grammarSequence.items.forEach((item): void => {
     const { type } = item
     if (
       type === 'Comment' ||
