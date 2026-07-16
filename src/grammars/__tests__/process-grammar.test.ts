@@ -434,15 +434,15 @@ describe('grammar to mosc score', () => {
 
   it('interpolates accelerando and rallentando tempo ramps', () => {
     const sequence = processGrammar(
-      parseSource('(accel)(bpm:100) 0-- (rall)(bpm:160) 1-- (bpm:80)'),
+      parseSource('(accel ease-in)(bpm:100) 0-- (rall ease-out)(bpm:160) 1-- (bpm:80)'),
     ).score.sequence
     const tempoEvents = sequence.filter((item): item is MoscTempo => item.type === 'TEMPO')
 
     expect(tempoEvents).toMatchObject([
       { time: 0, bpm: 120, lerp: false },
       { time: 0, bpm: 100, lerp: false },
-      { time: 1.5, bpm: 160, lerp: true },
-      { time: 3, bpm: 80, lerp: true },
+      { time: 1.5, bpm: 160, lerp: true, tempoInterpolation: 'ease-in' },
+      { time: 3, bpm: 80, lerp: true, tempoInterpolation: 'ease-out' },
     ])
   })
 
@@ -466,6 +466,9 @@ describe('grammar to mosc score', () => {
     )
     expect(() => processGrammar(parseSource('(accel)(bpm:120) 0'))).toThrow(
       'Tempo ramp has no target tempo before the end of the sequence.',
+    )
+    expect(() => processGrammar(parseSource('(accel boing)(bpm:120) 0 (bpm:180)'))).toThrow(
+      'Unknown tempo ramp easing: boing.',
     )
     expect(() => processGrammar(parseSource('(accel)(bpm:120) 0 (bpm:90)'))).toThrow(
       'Accelerando target tempo must be greater than or equal to its starting tempo.',

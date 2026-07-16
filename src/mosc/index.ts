@@ -1,3 +1,5 @@
+import { easingValue } from '../sw-seq/easing'
+
 //
 // types
 //
@@ -99,6 +101,7 @@ export type MoscTempo = {
   time: number
   bpm: number
   lerp: boolean
+  tempoInterpolation?: EasingName
 }
 
 export type MoscBeatEnd = {
@@ -151,13 +154,29 @@ const tempoTimeToTime = (
   bpm2: number,
   duration: number,
   totalDuration = duration,
+  interpolation: EasingName = 'linear',
 ): number => {
   const u = bpm1 / 60
   const v = bpm2 / 60
   if (u === v || totalDuration === 0) return duration / u
 
-  const rateAtDuration = u + ((v - u) * duration) / totalDuration
-  return (totalDuration / (v - u)) * Math.log(rateAtDuration / u)
+  if (interpolation === 'linear') {
+    const rateAtDuration = u + ((v - u) * duration) / totalDuration
+    return (totalDuration / (v - u)) * Math.log(rateAtDuration / u)
+  }
+
+  const progress = duration / totalDuration
+  const steps = Math.max(1, Math.ceil(256 * progress))
+  let area = 0
+  for (let index = 0; index < steps; index += 1) {
+    const start = (progress * index) / steps
+    const end = (progress * (index + 1)) / steps
+    const startRate = u + (v - u) * easingValue(interpolation, start)
+    const endRate = u + (v - u) * easingValue(interpolation, end)
+    area += ((1 / startRate + 1 / endRate) * (end - start)) / 2
+  }
+
+  return totalDuration * area
 }
 
 type TempoChange = {
@@ -166,6 +185,7 @@ type TempoChange = {
   time: number
   timeEnd: number
   timeValue: number
+  tempoInterpolation: EasingName
 }
 
 const findTempoRangeForTime = (tempoChanges: TempoChange[], time: number): TempoChange => {
@@ -196,6 +216,7 @@ export const beatToTime = (items: MoscBeatItem[]): ((time: number) => number) =>
     time: 0,
     timeEnd: 0,
     timeValue: 0,
+    tempoInterpolation: 'linear',
   })
 
   const tempoItems: MoscTempo[] = items.filter(
@@ -212,9 +233,11 @@ export const beatToTime = (items: MoscBeatItem[]): ((time: number) => number) =>
         lastChange.bpmEnd,
         tempo.time - lastChange.time,
         lastChange.timeEnd - lastChange.time,
+        lastChange.tempoInterpolation,
       ) + lastChange.timeValue
     const isRamping = !!nextTempo?.lerp
     const bpmEnd = isRamping ? nextTempo.bpm : tempo.bpm
+    const tempoInterpolation = isRamping ? (nextTempo.tempoInterpolation ?? 'linear') : 'linear'
 
     tempoChanges.push({
       bpm: tempo.bpm,
@@ -222,6 +245,7 @@ export const beatToTime = (items: MoscBeatItem[]): ((time: number) => number) =>
       time: tempo.time,
       timeEnd: isRamping ? nextTempo.time : tempo.time,
       timeValue,
+      tempoInterpolation,
     })
   })
 
@@ -233,8 +257,8 @@ export const beatToTime = (items: MoscBeatItem[]): ((time: number) => number) =>
         tempoChange.bpmEnd,
         time - tempoChange.time,
         tempoChange.timeEnd - tempoChange.time,
-      ) +
-      tempoChange.timeValue
+        tempoChange.tempoInterpolation,
+      ) + tempoChange.timeValue
     )
   }
 }

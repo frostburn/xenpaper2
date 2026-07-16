@@ -607,6 +607,7 @@ type VolumeRampState = {
 
 type TempoRampState = {
   kind: 'accel' | 'rall' | 'tramp'
+  easing: EasingName
   source: MoscTempo | null
 }
 
@@ -1014,6 +1015,7 @@ const tempoRampToMosc = (bpm: number, context: Context): MoscTempo[] => {
   context.tempoRamp = context.queuedTempoRamp
   context.queuedTempoRamp = null
   item.lerp = true
+  item.tempoInterpolation = ramp.easing
 
   if (context.tempoRamp) {
     context.tempoRamp.source = item
@@ -1089,8 +1091,13 @@ const setterToMosc = (setter: SetterType | DelimiterType, context: Context): Mos
   }
 
   if (type === 'SetTempoRamp') {
+    const easing = setter.easing.toLowerCase()
+    if (!isEasingName(easing)) {
+      throw new Error(`Unknown tempo ramp easing: ${setter.easing}.`)
+    }
     const ramp = {
       kind: setter.kind,
+      easing,
       source: null,
     }
 
@@ -1104,9 +1111,7 @@ const setterToMosc = (setter: SetterType | DelimiterType, context: Context): Mos
       return []
     }
 
-    throw new Error(
-      'Tempo ramp setter used before the previous tempo ramp found a target tempo.',
-    )
+    throw new Error('Tempo ramp setter used before the previous tempo ramp found a target tempo.')
   }
 
   if (type === 'SetVolumeRamp') {

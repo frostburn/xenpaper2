@@ -188,8 +188,8 @@ GlissEasing = $([a-zA-Z0-9-]+)
 SetVolumeRamp = kind:('cresc'i / 'dim'i / 'vramp'i) easing:(_ @GlissEasing)? {
   return node('SetVolumeRamp', { kind: kind.toLowerCase(), easing: (easing ?? 'linear').toLowerCase() });
 }
-SetTempoRamp = kind:('accel'i / 'rall'i / 'tramp'i) {
-  return node('SetTempoRamp', { kind: kind.toLowerCase() });
+SetTempoRamp = kind:('accel'i / 'rall'i / 'tramp'i) easing:(_ @GlissEasing)? {
+  return node('SetTempoRamp', { kind: kind.toLowerCase(), easing: (easing ?? 'linear').toLowerCase() });
 }
 PlayableTail = Tail / ZeroDuration
 ZeroDuration = "?" { return node('Hold', { length: -1, parts: [] }); }

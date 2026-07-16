@@ -2574,7 +2574,11 @@ describe('grammar', () => {
         setters: [{ type: 'SetGliss', easing: 'future-easing-2' }],
       })
       expect(
-        strip(parser('(cresc ease-in-out; dim EASE-OUT; vramp ease-in; accel; rall; tramp)').sequence.items[0]),
+        strip(
+          parser(
+            '(cresc ease-in-out; dim EASE-OUT; vramp ease-in; accel ease-in; rall EASE-OUT; tramp)',
+          ).sequence.items[0],
+        ),
       ).toMatchObject({
         type: 'SetterGroup',
         setters: [
@@ -2584,11 +2588,11 @@ describe('grammar', () => {
           { type: 'Semicolon' },
           { type: 'SetVolumeRamp', kind: 'vramp', easing: 'ease-in' },
           { type: 'Semicolon' },
-          { type: 'SetTempoRamp', kind: 'accel' },
+          { type: 'SetTempoRamp', kind: 'accel', easing: 'ease-in' },
           { type: 'Semicolon' },
-          { type: 'SetTempoRamp', kind: 'rall' },
+          { type: 'SetTempoRamp', kind: 'rall', easing: 'ease-out' },
           { type: 'Semicolon' },
-          { type: 'SetTempoRamp', kind: 'tramp' },
+          { type: 'SetTempoRamp', kind: 'tramp', easing: 'linear' },
         ],
       })
       expect(strip(parser('7?').sequence.items[0])).toMatchObject({

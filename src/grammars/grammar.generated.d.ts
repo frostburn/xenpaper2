@@ -288,6 +288,7 @@ export type SetVolumeRampType = NodeType<'SetVolumeRamp'> & {
 
 export type SetTempoRampType = NodeType<'SetTempoRamp'> & {
   kind: 'accel' | 'rall' | 'tramp'
+  easing: GlissEasingType
 }
 
 export type GrooveItemType = SetSubdivisionType | SampleRateNoteType | DelimiterType

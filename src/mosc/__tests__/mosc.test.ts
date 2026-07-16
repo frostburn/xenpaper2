@@ -136,6 +136,55 @@ describe('scoreToTime', () => {
     })
   })
 
+  it('should convert mosc items from beat time to real time with eased tempo interpolation', () => {
+    expect(
+      scoreToTime({
+        sequence: [
+          { type: 'TEMPO', lerp: false, time: 0, bpm: 120 },
+          { type: 'TEMPO', lerp: false, time: 1, bpm: 120 },
+          { type: 'TEMPO', lerp: true, tempoInterpolation: 'ease-in', time: 4, bpm: 60 },
+          { type: 'NOTE_BEAT_TIME', time: 2, timeEnd: 2, hz: 550, label: '550' },
+          { type: 'NOTE_BEAT_TIME', time: 3, timeEnd: 3, hz: 660, label: '660' },
+          { type: 'NOTE_BEAT_TIME', time: 4, timeEnd: 4, hz: 770, label: '770' },
+          { type: 'NOTE_BEAT_TIME', time: 5, timeEnd: 5, hz: 880, label: '880' },
+        ],
+        lengthTime: 5,
+      }),
+    ).toEqual({
+      sequence: [
+        {
+          type: 'NOTE_TIME',
+          time: expect.closeTo(1.0095814051686116),
+          timeEnd: expect.closeTo(1.0095814051686116),
+          hz: 550,
+          label: '550',
+        },
+        {
+          type: 'NOTE_TIME',
+          time: expect.closeTo(1.5858521281327351),
+          timeEnd: expect.closeTo(1.5858521281327351),
+          hz: 660,
+          label: '660',
+        },
+        {
+          type: 'NOTE_TIME',
+          time: expect.closeTo(2.3696833497453778),
+          timeEnd: expect.closeTo(2.3696833497453778),
+          hz: 770,
+          label: '770',
+        },
+        {
+          type: 'NOTE_TIME',
+          time: expect.closeTo(3.3696833497453778),
+          timeEnd: expect.closeTo(3.3696833497453778),
+          hz: 880,
+          label: '880',
+        },
+      ],
+      lengthTime: expect.closeTo(3.3696833497453778),
+    })
+  })
+
   it('should convert mosc items from beat time to real time with interpolation', () => {
     expect(
       scoreToTime({
