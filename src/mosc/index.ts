@@ -220,6 +220,27 @@ export const beatToTime = (items: MoscBeatItem[]): ((time: number) => number) =>
   }
 }
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null
+
+const paramBeatValueToTime = (
+  value: unknown,
+  beatToTimeValue: (time: number) => number,
+): unknown => {
+  if (!isRecord(value) || value.type !== 'volume' || !Array.isArray(value.volumeAutomation)) {
+    return value
+  }
+
+  return {
+    ...value,
+    volumeAutomation: value.volumeAutomation.map((point) =>
+      isRecord(point) && typeof point.time === 'number'
+        ? { ...point, time: beatToTimeValue(point.time) }
+        : point,
+    ),
+  }
+}
+
 export const scoreToTime = (score: MoscBeatScore): MoscScore => {
   const thisBeatToTime = beatToTime(score.sequence)
 
@@ -249,7 +270,7 @@ export const scoreToTime = (score: MoscBeatScore): MoscScore => {
       if (item.type === 'PARAM_BEAT_TIME') {
         return {
           type: 'PARAM_TIME',
-          value: item.value,
+          value: paramBeatValueToTime(item.value, thisBeatToTime),
           time: thisBeatToTime(item.time),
         }
       }

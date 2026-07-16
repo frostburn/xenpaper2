@@ -25,7 +25,7 @@ const easeOutBack = (t: number): number => {
   return 1 + c3 * (t - 1) ** 3 + c1 * (t - 1) ** 2
 }
 
-const easingProgress = (easing: Exclude<EasingName, 'linear'>, t: number): number => {
+export const easingValue = (easing: Exclude<EasingName, 'linear'>, t: number): number => {
   switch (easing) {
     case 'ease-in':
     case 'ease-in-quad':
@@ -104,7 +104,7 @@ export const easingCurve = (
   const values = new Float32Array(64)
   for (let i = 0; i < values.length; ++i) {
     const t = i / (values.length - 1)
-    values[i] = y0 + (y1 - y0) * easingProgress(easing, t)
+    values[i] = y0 + (y1 - y0) * easingValue(easing, t)
   }
   return values
 }

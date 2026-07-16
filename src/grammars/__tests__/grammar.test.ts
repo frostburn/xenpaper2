@@ -2548,7 +2548,7 @@ describe('grammar', () => {
       it('should error if setter is empty or not delimited properly', () => {
         expectParserErrorMessage(
           '()',
-          'Expected "/", "^", "al", "bms", "bpm", "coda", "d", "da", "dal", "div", "drone", "env", "f", "ff", "fff", "fine", "gliss", "grace", "groove", "key", "mf", "mp", "noise", "osc", "p", "plot", "pp", "ppp", "rl", "segno", "sig", "to", "vel", "vol", or integer but ")" found.',
+          'Expected "/", "^", "al", "bms", "bpm", "coda", "cresc", "d", "da", "dal", "dim", "div", "drone", "env", "f", "ff", "fff", "fine", "gliss", "grace", "groove", "key", "mf", "mp", "noise", "osc", "p", "plot", "pp", "ppp", "rl", "segno", "sig", "to", "vel", "vol", "vramp", or integer but ")" found.',
         )
         expectParserErrorMessage('(div:16;)', 'but ")" found.')
         expectParserErrorMessage('(div:16;;div:16)', 'but ";" found.')
@@ -2572,6 +2572,18 @@ describe('grammar', () => {
       })
       expect(strip(parser('(gliss future-easing-2)').sequence.items[0])).toMatchObject({
         setters: [{ type: 'SetGliss', easing: 'future-easing-2' }],
+      })
+      expect(
+        strip(parser('(cresc ease-in-out; dim EASE-OUT; vramp ease-in)').sequence.items[0]),
+      ).toMatchObject({
+        type: 'SetterGroup',
+        setters: [
+          { type: 'SetVolumeRamp', kind: 'cresc', easing: 'ease-in-out' },
+          { type: 'Semicolon' },
+          { type: 'SetVolumeRamp', kind: 'dim', easing: 'ease-out' },
+          { type: 'Semicolon' },
+          { type: 'SetVolumeRamp', kind: 'vramp', easing: 'ease-in' },
+        ],
       })
       expect(strip(parser('7?').sequence.items[0])).toMatchObject({
         type: 'Note',

@@ -11,6 +11,7 @@ import { parse } from '../grammar.generated.js'
 import { processGrammar } from '../process-grammar'
 import { keySignatureAccidentals, keySignatureFromPitches } from '../pythagorean'
 import type { KeyTonicType } from '../grammar.generated'
+import type { MoscBeatParam } from '../../mosc'
 
 expect.extend({
   toBeAround(actual, expected, precision = 2) {
@@ -429,6 +430,111 @@ describe('grammar to mosc score', () => {
       { type: 'PARAM_BEAT_TIME', time: 0, value: { type: 'velocity', velocity: 0.8 } },
       { type: 'END_BEAT_TIME', time: 0 },
     ])
+  })
+
+  it('interpolates crescendo and diminuendo volume ramps in decibel space', () => {
+    const sequence = processGrammar(
+      parseSource('(dim)(vol:+5dB)0-- 1-- 2--(vol:-5dB) (cresc ease-in) (vol:-12dB) 3-- (vol:0dB)'),
+    ).score.sequence
+    const volumeEvents = sequence.filter(
+      (item): item is MoscBeatParam & { value: { type: 'volume'; db: number } } =>
+        item.type === 'PARAM_BEAT_TIME' &&
+        typeof item.value === 'object' &&
+        item.value !== null &&
+        'type' in item.value &&
+        item.value.type === 'volume',
+    )
+
+    expect(volumeEvents[1]).toMatchObject({
+      time: 0,
+      value: {
+        db: 5,
+        volumeAutomation: [{ time: 4.5, db: -5, volumeInterpolation: 'linear' }],
+      },
+    })
+    expect(volumeEvents[2]).toMatchObject({
+      time: 4.5,
+      value: {
+        db: -12,
+        volumeAutomation: [{ time: 6, db: 0, volumeInterpolation: 'ease-in' }],
+      },
+    })
+  })
+
+  it('chains volume ramps through shared volume setters', () => {
+    const sequence = processGrammar(
+      parseSource(`(1)
+(vramp ease-in-out;vol:-10db)[0 2 7 11]---
+(vramp ease-out;vol:+5db)[0 5 7 10]---
+(vol:0db)[0 4 7 12]---`),
+    ).score.sequence
+    const volumeEvents = sequence.filter(
+      (item): item is MoscBeatParam & { value: { type: 'volume'; db: number } } =>
+        item.type === 'PARAM_BEAT_TIME' &&
+        typeof item.value === 'object' &&
+        item.value !== null &&
+        'type' in item.value &&
+        item.value.type === 'volume',
+    )
+
+    expect(volumeEvents[1]).toMatchObject({
+      time: 0,
+      value: {
+        db: -10,
+        volumeAutomation: [{ time: 4, db: 5, volumeInterpolation: 'ease-in-out' }],
+      },
+    })
+    expect(volumeEvents[2]).toMatchObject({
+      time: 4,
+      value: {
+        db: 5,
+        volumeAutomation: [{ time: 8, db: 0, volumeInterpolation: 'ease-out' }],
+      },
+    })
+  })
+
+  it('supports bidirectional vramp volume ramps', () => {
+    const upward = processGrammar(parseSource('(vramp)(vol:-8dB) 0-- (vol:+2dB)')).score.sequence
+    const downward = processGrammar(parseSource('(vramp ease-out)(vol:+2dB) 0-- (vol:-8dB)')).score
+      .sequence
+
+    expect(upward).toMatchObject([
+      ...INITIAL,
+      {
+        type: 'PARAM_BEAT_TIME',
+        time: 0,
+        value: {
+          type: 'volume',
+          db: -8,
+          volumeAutomation: [{ time: 1.5, db: 2, volumeInterpolation: 'linear' }],
+        },
+      },
+      { type: 'NOTE_BEAT_TIME' },
+      { type: 'END_BEAT_TIME' },
+    ])
+    expect(downward).toMatchObject([
+      ...INITIAL,
+      {
+        type: 'PARAM_BEAT_TIME',
+        time: 0,
+        value: {
+          type: 'volume',
+          db: 2,
+          volumeAutomation: [{ time: 1.5, db: -8, volumeInterpolation: 'ease-out' }],
+        },
+      },
+      { type: 'NOTE_BEAT_TIME' },
+      { type: 'END_BEAT_TIME' },
+    ])
+  })
+
+  it('requires volume ramps to consume a later volume setter', () => {
+    expect(() => processGrammar(parseSource('(cresc) 0'))).toThrow(
+      'Volume ramp has no source volume before the end of the sequence.',
+    )
+    expect(() => processGrammar(parseSource('(cresc)(vol:-5dB) 0'))).toThrow(
+      'Volume ramp has no target volume before the end of the sequence.',
+    )
   })
 
   it('applies FJS inflections to absolute pitch ratios', () => {

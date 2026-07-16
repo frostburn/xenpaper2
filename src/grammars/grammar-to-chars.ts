@@ -102,6 +102,7 @@ const colorMap = new Map<string, HighlightColor>([
   ['SetSubdivision', 'setter'],
   ['SetGrace', 'setter'],
   ['SetGliss', 'setter'],
+  ['SetVolumeRamp', 'setter'],
   ['SetGroove', 'setter'],
   ['SetUp', 'setter'],
   ['SetLift', 'setter'],
