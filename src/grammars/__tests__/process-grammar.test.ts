@@ -461,6 +461,38 @@ describe('grammar to mosc score', () => {
     })
   })
 
+  it('chains volume ramps through shared volume setters', () => {
+    const sequence = processGrammar(
+      parseSource(`(1)
+(vramp ease-in-out;vol:-10db)[0 2 7 11]---
+(vramp ease-out;vol:+5db)[0 5 7 10]---
+(vol:0db)[0 4 7 12]---`),
+    ).score.sequence
+    const volumeEvents = sequence.filter(
+      (item): item is MoscBeatParam & { value: { type: 'volume'; db: number } } =>
+        item.type === 'PARAM_BEAT_TIME' &&
+        typeof item.value === 'object' &&
+        item.value !== null &&
+        'type' in item.value &&
+        item.value.type === 'volume',
+    )
+
+    expect(volumeEvents[1]).toMatchObject({
+      time: 0,
+      value: {
+        db: -10,
+        volumeAutomation: [{ time: 4, db: 5, volumeInterpolation: 'ease-in-out' }],
+      },
+    })
+    expect(volumeEvents[2]).toMatchObject({
+      time: 4,
+      value: {
+        db: 5,
+        volumeAutomation: [{ time: 8, db: 0, volumeInterpolation: 'ease-out' }],
+      },
+    })
+  })
+
   it('supports bidirectional vramp volume ramps', () => {
     const upward = processGrammar(parseSource('(vramp)(vol:-8dB) 0-- (vol:+2dB)')).score.sequence
     const downward = processGrammar(parseSource('(vramp ease-out)(vol:+2dB) 0-- (vol:-8dB)')).score

@@ -579,6 +579,7 @@ type Context = {
   groove: Groove | null
   glissando: GlissandoState | null
   volumeRamp: VolumeRampState | null
+  queuedVolumeRamp: VolumeRampState | null
 }
 
 type GlissandoState = {
@@ -997,11 +998,18 @@ const volumeRampToMosc = (db: number, context: Context): MoscBeatParam[] => {
     throw new Error('Diminuendo target volume must be less than or equal to its starting volume.')
   }
 
-  context.volumeRamp = null
+  context.volumeRamp = context.queuedVolumeRamp
+  context.queuedVolumeRamp = null
   ramp.source.value.volumeAutomation = [
     ...(ramp.source.value.volumeAutomation ?? []),
     { time, db, volumeInterpolation: ramp.easing },
   ]
+
+  if (context.volumeRamp) {
+    context.volumeRamp.source = item
+    return [item]
+  }
+
   return []
 }
 
@@ -1052,21 +1060,29 @@ const setterToMosc = (setter: SetterType | DelimiterType, context: Context): Mos
   }
 
   if (type === 'SetVolumeRamp') {
-    if (context.volumeRamp) {
-      throw new Error(
-        'Volume ramp setter used before the previous volume ramp found a target volume.',
-      )
-    }
     const easing = setter.easing.toLowerCase()
     if (!isEasingName(easing)) {
       throw new Error(`Unknown volume ramp easing: ${setter.easing}.`)
     }
-    context.volumeRamp = {
+    const ramp = {
       kind: setter.kind,
       easing,
       source: null,
     }
-    return []
+
+    if (!context.volumeRamp) {
+      context.volumeRamp = ramp
+      return []
+    }
+
+    if (context.volumeRamp.source && !context.queuedVolumeRamp) {
+      context.queuedVolumeRamp = ramp
+      return []
+    }
+
+    throw new Error(
+      'Volume ramp setter used before the previous volume ramp found a target volume.',
+    )
   }
 
   if (type === 'SetGliss') {
@@ -1428,6 +1444,7 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
     groove: null,
     glissando: null,
     volumeRamp: null,
+    queuedVolumeRamp: null,
   }
 
   const moscItems: MoscBeatItem[] = []
@@ -1565,9 +1582,10 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
     throw new Error('Glissando has no compatible following target before the end of the sequence.')
   }
 
-  if (context.volumeRamp) {
+  const incompleteVolumeRamp = context.volumeRamp ?? context.queuedVolumeRamp
+  if (incompleteVolumeRamp) {
     throw new Error(
-      context.volumeRamp.source
+      incompleteVolumeRamp.source
         ? 'Volume ramp has no target volume before the end of the sequence.'
         : 'Volume ramp has no source volume before the end of the sequence.',
     )
