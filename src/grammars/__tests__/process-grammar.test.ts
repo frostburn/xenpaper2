@@ -34,7 +34,7 @@ const INITIAL_TEMPO = {
   type: 'TEMPO',
   time: 0,
   bpm: 120,
-  lerp: false,
+  tempoInterpolation: 'constant',
 }
 
 const INITIAL_OSC = {
@@ -439,10 +439,10 @@ describe('grammar to mosc score', () => {
     const tempoEvents = sequence.filter((item): item is MoscTempo => item.type === 'TEMPO')
 
     expect(tempoEvents).toMatchObject([
-      { time: 0, bpm: 120, lerp: false },
-      { time: 0, bpm: 100, lerp: false },
-      { time: 1.5, bpm: 160, lerp: true, tempoInterpolation: 'ease-in' },
-      { time: 3, bpm: 80, lerp: true, tempoInterpolation: 'ease-out' },
+      { time: 0, bpm: 120, tempoInterpolation: 'constant' },
+      { time: 0, bpm: 100, tempoInterpolation: 'constant' },
+      { time: 1.5, bpm: 160, tempoInterpolation: 'ease-in' },
+      { time: 3, bpm: 80, tempoInterpolation: 'ease-out' },
     ])
   })
 
@@ -453,10 +453,10 @@ describe('grammar to mosc score', () => {
     const tempoEvents = sequence.filter((item): item is MoscTempo => item.type === 'TEMPO')
 
     expect(tempoEvents).toMatchObject([
-      { time: 0, bpm: 120, lerp: false },
-      { time: 0, bpm: 160, lerp: false },
-      { time: 1.5, bpm: 90, lerp: true },
-      { time: 3, bpm: 140, lerp: true },
+      { time: 0, bpm: 120, tempoInterpolation: 'constant' },
+      { time: 0, bpm: 160, tempoInterpolation: 'constant' },
+      { time: 1.5, bpm: 90, tempoInterpolation: 'linear' },
+      { time: 3, bpm: 140, tempoInterpolation: 'linear' },
     ])
   })
 
@@ -1631,7 +1631,7 @@ describe('grammar to mosc score', () => {
           type: 'TEMPO',
           time: 1,
           bpm: 200,
-          lerp: false,
+          tempoInterpolation: 'constant',
         },
         {
           type: 'NOTE_BEAT_TIME',
@@ -1690,7 +1690,7 @@ describe('grammar to mosc score', () => {
           type: 'TEMPO',
           time: 1,
           bpm: 200,
-          lerp: false,
+          tempoInterpolation: 'constant',
         },
         {
           type: 'NOTE_BEAT_TIME',

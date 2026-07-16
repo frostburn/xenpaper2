@@ -991,7 +991,7 @@ const tempoParam = (time: number, bpm: number): MoscTempo => ({
   type: 'TEMPO',
   time,
   bpm,
-  lerp: false,
+  tempoInterpolation: 'constant',
 })
 
 const tempoRampToMosc = (bpm: number, context: Context): MoscTempo[] => {
@@ -1014,7 +1014,6 @@ const tempoRampToMosc = (bpm: number, context: Context): MoscTempo[] => {
 
   context.tempoRamp = context.queuedTempoRamp
   context.queuedTempoRamp = null
-  item.lerp = true
   item.tempoInterpolation = ramp.easing
 
   if (context.tempoRamp) {
@@ -1430,7 +1429,7 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
     type: 'TEMPO',
     time: 0,
     bpm: 120,
-    lerp: false,
+    tempoInterpolation: 'constant',
   }
 
   const INITIAL_OSC: MoscBeatParam = {

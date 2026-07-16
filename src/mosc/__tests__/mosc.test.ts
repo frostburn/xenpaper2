@@ -21,7 +21,7 @@ describe('sortByTime', () => {
         },
         {
           type: 'TEMPO',
-          lerp: false,
+          tempoInterpolation: 'constant',
           time: 0,
           bpm: 120,
         },
@@ -36,7 +36,7 @@ describe('sortByTime', () => {
       },
       {
         type: 'TEMPO',
-        lerp: false,
+        tempoInterpolation: 'constant',
         time: 0,
         bpm: 120,
       },
@@ -58,7 +58,7 @@ describe('scoreToTime', () => {
         sequence: [
           {
             type: 'TEMPO',
-            lerp: false,
+            tempoInterpolation: 'constant',
             time: 0,
             bpm: 120,
           },
@@ -78,7 +78,7 @@ describe('scoreToTime', () => {
           },
           {
             type: 'TEMPO',
-            lerp: false,
+            tempoInterpolation: 'constant',
             time: 2,
             bpm: 90,
           },
@@ -96,7 +96,7 @@ describe('scoreToTime', () => {
           },
           {
             type: 'TEMPO',
-            lerp: false,
+            tempoInterpolation: 'constant',
             time: 5,
             bpm: 1,
           },
@@ -140,9 +140,9 @@ describe('scoreToTime', () => {
     expect(
       scoreToTime({
         sequence: [
-          { type: 'TEMPO', lerp: false, time: 0, bpm: 120 },
-          { type: 'TEMPO', lerp: false, time: 1, bpm: 120 },
-          { type: 'TEMPO', lerp: true, tempoInterpolation: 'ease-in', time: 4, bpm: 60 },
+          { type: 'TEMPO', tempoInterpolation: 'constant', time: 0, bpm: 120 },
+          { type: 'TEMPO', tempoInterpolation: 'constant', time: 1, bpm: 120 },
+          { type: 'TEMPO', tempoInterpolation: 'ease-in', time: 4, bpm: 60 },
           { type: 'NOTE_BEAT_TIME', time: 2, timeEnd: 2, hz: 550, label: '550' },
           { type: 'NOTE_BEAT_TIME', time: 3, timeEnd: 3, hz: 660, label: '660' },
           { type: 'NOTE_BEAT_TIME', time: 4, timeEnd: 4, hz: 770, label: '770' },
@@ -191,19 +191,19 @@ describe('scoreToTime', () => {
         sequence: [
           {
             type: 'TEMPO',
-            lerp: false,
+            tempoInterpolation: 'constant',
             time: 0,
             bpm: 120,
           },
           {
             type: 'TEMPO',
-            lerp: false,
+            tempoInterpolation: 'constant',
             time: 1,
             bpm: 120,
           },
           {
             type: 'TEMPO',
-            lerp: true,
+            tempoInterpolation: 'linear',
             time: 4,
             bpm: 60,
           },
