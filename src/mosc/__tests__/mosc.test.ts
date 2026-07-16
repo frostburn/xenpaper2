@@ -207,34 +207,34 @@ describe('scoreToTime', () => {
         },
         {
           type: 'NOTE_TIME',
-          time: 1.1666666666666665,
-          timeEnd: 1.1666666666666665,
+          time: expect.closeTo(1.0469646703818638),
+          timeEnd: expect.closeTo(1.0469646703818638),
           hz: 550,
           label: '550',
         },
         {
           type: 'NOTE_TIME',
-          time: 1.8333333333333333,
-          timeEnd: 1.8333333333333333,
+          time: expect.closeTo(1.716395324324493),
+          timeEnd: expect.closeTo(1.716395324324493),
           hz: 660,
           label: '660',
         },
         {
           type: 'NOTE_TIME',
-          time: 2.5,
-          timeEnd: 2.5,
+          time: expect.closeTo(2.5794415416798357),
+          timeEnd: expect.closeTo(2.5794415416798357),
           hz: 770,
           label: '770',
         },
         {
           type: 'NOTE_TIME',
-          time: 3.5,
-          timeEnd: 3.5,
+          time: expect.closeTo(3.5794415416798357),
+          timeEnd: expect.closeTo(3.5794415416798357),
           hz: 880,
           label: '880',
         },
       ],
-      lengthTime: 3.5,
+      lengthTime: expect.closeTo(3.5794415416798357),
     })
   })
 })

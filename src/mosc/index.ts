@@ -146,18 +146,25 @@ export const sortByTimeValue = (items: Array<MoscNote>): Array<MoscNote> => {
 // beat-time to real-time conversion
 //
 
-const tempoTimeToTime = (bpm1: number, bpm2: number, duration: number): number => {
+const tempoTimeToTime = (
+  bpm1: number,
+  bpm2: number,
+  duration: number,
+  totalDuration = duration,
+): number => {
   const u = bpm1 / 60
   const v = bpm2 / 60
-  const s = duration
-  if (u === v) return s / v
-  return (2 * s * (v - u)) / (v * v - u * u)
+  if (u === v || totalDuration === 0) return duration / u
+
+  const rateAtDuration = u + ((v - u) * duration) / totalDuration
+  return (totalDuration / (v - u)) * Math.log(rateAtDuration / u)
 }
 
 type TempoChange = {
   bpm: number
   bpmEnd: number
   time: number
+  timeEnd: number
   timeValue: number
 }
 
@@ -187,6 +194,7 @@ export const beatToTime = (items: MoscBeatItem[]): ((time: number) => number) =>
     bpm: 60,
     bpmEnd: 60,
     time: 0,
+    timeEnd: 0,
     timeValue: 0,
   })
 
@@ -199,14 +207,20 @@ export const beatToTime = (items: MoscBeatItem[]): ((time: number) => number) =>
     const nextTempo: MoscTempo | undefined = all[index + 1]
 
     const timeValue =
-      tempoTimeToTime(lastChange.bpm, lastChange.bpmEnd, tempo.time - lastChange.time) +
-      lastChange.timeValue
-    const bpmEnd = nextTempo && nextTempo.lerp ? nextTempo.bpm : tempo.bpm
+      tempoTimeToTime(
+        lastChange.bpm,
+        lastChange.bpmEnd,
+        tempo.time - lastChange.time,
+        lastChange.timeEnd - lastChange.time,
+      ) + lastChange.timeValue
+    const isRamping = !!nextTempo?.lerp
+    const bpmEnd = isRamping ? nextTempo.bpm : tempo.bpm
 
     tempoChanges.push({
       bpm: tempo.bpm,
       bpmEnd,
       time: tempo.time,
+      timeEnd: isRamping ? nextTempo.time : tempo.time,
       timeValue,
     })
   })
@@ -214,7 +228,12 @@ export const beatToTime = (items: MoscBeatItem[]): ((time: number) => number) =>
   return (time: number): number => {
     const tempoChange: TempoChange = findTempoRangeForTime(tempoChanges, time)
     return (
-      tempoTimeToTime(tempoChange.bpm, tempoChange.bpmEnd, time - tempoChange.time) +
+      tempoTimeToTime(
+        tempoChange.bpm,
+        tempoChange.bpmEnd,
+        time - tempoChange.time,
+        tempoChange.timeEnd - tempoChange.time,
+      ) +
       tempoChange.timeValue
     )
   }

@@ -41,6 +41,29 @@ describe('grammarToChars', () => {
     ])
   })
 
+  it('syntax-highlights tempo ramp setters', () => {
+    expect(colors(grammarToChars(parse('(accel;rall;tramp)')))).toEqual([
+      'setterGroup',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setterGroup',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setterGroup',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setterGroup',
+    ])
+  })
+
   it('syntax-highlights custom key signature setters', () => {
     expect(colors(grammarToChars(parse('(sig: C# F#)')))).toEqual([
       'setterGroup',
