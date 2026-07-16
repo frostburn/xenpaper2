@@ -222,6 +222,19 @@ MOS{5L2s}(plot:MOS)`,
 (vol:-10db).(vol:+5db).
 ...`,
       },
+      {
+        description: 'Volume can swell or shrink.',
+        tune: `(1)
+(cresc;vol:-10db)[1 5 9 '1]---(vol:+5db)[0 3 7 '2]...
+(dim;vol:+5db)[\`11 2 5 8]---(vol:-10db)[0 3 7 '0]---`,
+      },
+      {
+        description: 'Use vramp for either direction. Easing is supported.',
+        tune: `(1)
+(vramp ease-in-out;vol:-10db)[0 2 7 11]---
+(vramp ease-out;vol:+5db)[0 5 7 10]---
+(vol:0db)[0 4 7 12]---`,
+      },
     ],
   },
   {
