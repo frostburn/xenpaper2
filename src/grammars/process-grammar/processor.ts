@@ -580,6 +580,8 @@ type Context = {
   glissando: GlissandoState | null
   volumeRamp: VolumeRampState | null
   queuedVolumeRamp: VolumeRampState | null
+  tempoRamp: TempoRampState | null
+  queuedTempoRamp: TempoRampState | null
 }
 
 type GlissandoState = {
@@ -601,6 +603,11 @@ type VolumeRampState = {
   kind: 'cresc' | 'dim' | 'vramp'
   easing: EasingName
   source: VolumeRampSource | null
+}
+
+type TempoRampState = {
+  kind: 'accel' | 'rall' | 'tramp'
+  source: MoscTempo | null
 }
 
 type Groove = {
@@ -979,6 +986,42 @@ const volumeParam = (time: number, db: number): MoscBeatParam & VolumeRampSource
   },
 })
 
+const tempoParam = (time: number, bpm: number): MoscTempo => ({
+  type: 'TEMPO',
+  time,
+  bpm,
+  lerp: false,
+})
+
+const tempoRampToMosc = (bpm: number, context: Context): MoscTempo[] => {
+  const ramp = context.tempoRamp
+  const item = tempoParam(mapGrooveBeat(context.time, context.groove), bpm)
+  if (!ramp) return [item]
+
+  if (!ramp.source) {
+    ramp.source = item
+    return [item]
+  }
+
+  const sourceBpm = ramp.source.bpm
+  if (ramp.kind === 'accel' && bpm < sourceBpm) {
+    throw new Error('Accelerando target tempo must be greater than or equal to its starting tempo.')
+  }
+  if (ramp.kind === 'rall' && bpm > sourceBpm) {
+    throw new Error('Rallentando target tempo must be less than or equal to its starting tempo.')
+  }
+
+  context.tempoRamp = context.queuedTempoRamp
+  context.queuedTempoRamp = null
+  item.lerp = true
+
+  if (context.tempoRamp) {
+    context.tempoRamp.source = item
+  }
+
+  return [item]
+}
+
 const volumeRampToMosc = (db: number, context: Context): MoscBeatParam[] => {
   const ramp = context.volumeRamp
   const time = mapGrooveBeat(context.time, context.groove)
@@ -1021,27 +1064,13 @@ const setterToMosc = (setter: SetterType | DelimiterType, context: Context): Mos
   if (type === 'SetBpm') {
     const { bpm } = setter
     assertFinitePositive('SetBpm.bpm', bpm)
-    return [
-      {
-        type: 'TEMPO',
-        time: mapGrooveBeat(context.time, context.groove),
-        bpm,
-        lerp: false,
-      },
-    ]
+    return tempoRampToMosc(bpm, context)
   }
 
   if (type === 'SetBms') {
     const { bms } = setter
     assertFinitePositive('SetBms.bms', bms)
-    return [
-      {
-        type: 'TEMPO',
-        time: mapGrooveBeat(context.time, context.groove),
-        bpm: 60000 / bms,
-        lerp: false,
-      },
-    ]
+    return tempoRampToMosc(60000 / bms, context)
   }
 
   if (type === 'SetGroove') {
@@ -1057,6 +1086,27 @@ const setterToMosc = (setter: SetterType | DelimiterType, context: Context): Mos
     context.subdivision = normalizedDenominator / subdivision
     assertFinitePositive('context.subdivision', context.subdivision)
     return []
+  }
+
+  if (type === 'SetTempoRamp') {
+    const ramp = {
+      kind: setter.kind,
+      source: null,
+    }
+
+    if (!context.tempoRamp) {
+      context.tempoRamp = ramp
+      return []
+    }
+
+    if (context.tempoRamp.source && !context.queuedTempoRamp) {
+      context.queuedTempoRamp = ramp
+      return []
+    }
+
+    throw new Error(
+      'Tempo ramp setter used before the previous tempo ramp found a target tempo.',
+    )
   }
 
   if (type === 'SetVolumeRamp') {
@@ -1445,6 +1495,8 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
     glissando: null,
     volumeRamp: null,
     queuedVolumeRamp: null,
+    tempoRamp: null,
+    queuedTempoRamp: null,
   }
 
   const moscItems: MoscBeatItem[] = []
@@ -1580,6 +1632,15 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
 
   if (context.glissando) {
     throw new Error('Glissando has no compatible following target before the end of the sequence.')
+  }
+
+  const incompleteTempoRamp = context.tempoRamp ?? context.queuedTempoRamp
+  if (incompleteTempoRamp) {
+    throw new Error(
+      incompleteTempoRamp.source
+        ? 'Tempo ramp has no target tempo before the end of the sequence.'
+        : 'Tempo ramp has no source tempo before the end of the sequence.',
+    )
   }
 
   const incompleteVolumeRamp = context.volumeRamp ?? context.queuedVolumeRamp

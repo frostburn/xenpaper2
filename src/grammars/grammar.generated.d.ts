@@ -286,6 +286,10 @@ export type SetVolumeRampType = NodeType<'SetVolumeRamp'> & {
   easing: GlissEasingType
 }
 
+export type SetTempoRampType = NodeType<'SetTempoRamp'> & {
+  kind: 'accel' | 'rall' | 'tramp'
+}
+
 export type GrooveItemType = SetSubdivisionType | SampleRateNoteType | DelimiterType
 
 export type SetGrooveType = NodeType<'SetGroove'> & {
@@ -405,6 +409,7 @@ export type SetterType =
   | SetSubdivisionType
   | SetGraceType
   | SetGlissType
+  | SetTempoRampType
   | SetVolumeRampType
   | SetGrooveType
   | DroneType
