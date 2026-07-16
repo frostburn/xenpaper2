@@ -461,6 +461,41 @@ describe('grammar to mosc score', () => {
     })
   })
 
+  it('supports bidirectional vramp volume ramps', () => {
+    const upward = processGrammar(parseSource('(vramp)(vol:-8dB) 0-- (vol:+2dB)')).score.sequence
+    const downward = processGrammar(parseSource('(vramp ease-out)(vol:+2dB) 0-- (vol:-8dB)')).score
+      .sequence
+
+    expect(upward).toMatchObject([
+      ...INITIAL,
+      {
+        type: 'PARAM_BEAT_TIME',
+        time: 0,
+        value: {
+          type: 'volume',
+          db: -8,
+          volumeAutomation: [{ time: 1.5, db: 2, volumeInterpolation: 'linear' }],
+        },
+      },
+      { type: 'NOTE_BEAT_TIME' },
+      { type: 'END_BEAT_TIME' },
+    ])
+    expect(downward).toMatchObject([
+      ...INITIAL,
+      {
+        type: 'PARAM_BEAT_TIME',
+        time: 0,
+        value: {
+          type: 'volume',
+          db: 2,
+          volumeAutomation: [{ time: 1.5, db: -8, volumeInterpolation: 'ease-out' }],
+        },
+      },
+      { type: 'NOTE_BEAT_TIME' },
+      { type: 'END_BEAT_TIME' },
+    ])
+  })
+
   it('requires volume ramps to consume a later volume setter', () => {
     expect(() => processGrammar(parseSource('(cresc) 0'))).toThrow(
       'Volume ramp has no source volume before the end of the sequence.',

@@ -282,7 +282,7 @@ export type SetGlissType = NodeType<'SetGliss'> & {
 }
 
 export type SetVolumeRampType = NodeType<'SetVolumeRamp'> & {
-  kind: 'cresc' | 'dim'
+  kind: 'cresc' | 'dim' | 'vramp'
   easing: GlissEasingType
 }
 

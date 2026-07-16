@@ -597,7 +597,7 @@ type VolumeRampSource = {
 }
 
 type VolumeRampState = {
-  kind: 'cresc' | 'dim'
+  kind: 'cresc' | 'dim' | 'vramp'
   easing: EasingName
   source: VolumeRampSource | null
 }

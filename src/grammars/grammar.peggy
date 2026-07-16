@@ -185,7 +185,7 @@ SetGliss = "gliss"i easing:(_ @GlissEasing)? {
   return node('SetGliss', { easing: (easing ?? 'linear').toLowerCase() });
 }
 GlissEasing = $([a-zA-Z0-9-]+)
-SetVolumeRamp = kind:('cresc'i / 'dim'i) easing:(_ @GlissEasing)? {
+SetVolumeRamp = kind:('cresc'i / 'dim'i / 'vramp'i) easing:(_ @GlissEasing)? {
   return node('SetVolumeRamp', { kind: kind.toLowerCase(), easing: (easing ?? 'linear').toLowerCase() });
 }
 PlayableTail = Tail / ZeroDuration
