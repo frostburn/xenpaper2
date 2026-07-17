@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { EASING_NAMES } from '../../mosc'
-import { easingCurve } from '../easing'
+import { EASING_NAMES, easingCurve } from '../../mosc/easing'
 
 const nonLinearEasingNames = EASING_NAMES.filter((easing) => easing !== 'linear')
 const monotonicEasingNames = nonLinearEasingNames.filter(

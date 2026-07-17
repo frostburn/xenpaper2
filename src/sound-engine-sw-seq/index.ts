@@ -14,7 +14,7 @@ import {
   type SynthParams,
 } from '../sw-seq/polysynth'
 import { isSWOscillatorType, parseSWOscillatorType, type SWOscillatorType } from '../sw-seq/timbre'
-import { easingCurve } from '../sw-seq/easing'
+import { easingCurve } from '../mosc/easing'
 import type { Transport } from '../sw-seq/transport'
 
 const OSC_VOLUME = 0.275
