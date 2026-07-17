@@ -1,52 +1,11 @@
-import { easingValue } from '../sw-seq/easing'
+import { easingValue } from './easing'
+import type { EasingName, TempoInterpolationName } from './easing'
+export { EASING_NAMES, easingCurve, easingValue, isEasingName } from './easing'
+export type { EasingName, TempoInterpolationName } from './easing'
 
 //
 // types
 //
-
-export const EASING_NAMES = [
-  'linear',
-  'ease',
-  'ease-in',
-  'ease-out',
-  'ease-in-out',
-  'ease-in-sine',
-  'ease-out-sine',
-  'ease-in-out-sine',
-  'ease-in-quad',
-  'ease-out-quad',
-  'ease-in-out-quad',
-  'ease-in-cubic',
-  'ease-out-cubic',
-  'ease-in-out-cubic',
-  'ease-in-quart',
-  'ease-out-quart',
-  'ease-in-out-quart',
-  'ease-in-quint',
-  'ease-out-quint',
-  'ease-in-out-quint',
-  'ease-in-expo',
-  'ease-out-expo',
-  'ease-in-out-expo',
-  'ease-in-circ',
-  'ease-out-circ',
-  'ease-in-out-circ',
-  'ease-in-back',
-  'ease-out-back',
-  'ease-in-out-back',
-  'ease-in-overshoot',
-  'ease-out-overshoot',
-  'ease-in-out-overshoot',
-  'ease-in-bounce',
-  'ease-out-bounce',
-  'ease-in-out-bounce',
-] as const
-
-export type EasingName = (typeof EASING_NAMES)[number]
-export type TempoInterpolationName = EasingName | 'constant'
-
-export const isEasingName = (value: string): value is EasingName =>
-  EASING_NAMES.some((easing) => easing === value)
 
 export type MoscPitchAutomationPoint = {
   time: number
