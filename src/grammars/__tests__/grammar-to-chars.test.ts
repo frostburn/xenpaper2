@@ -365,6 +365,36 @@ describe('grammarToChars', () => {
       'setterGroup',
     ])
   })
+
+  it('highlights articulation setters and shorthands', () => {
+    expect(colors(grammarToChars(parse('(art:50%) (staccato) (:)')))).toEqual([
+      'setterGroup',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setterGroup',
+      undefined,
+      'setterGroup',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setterGroup',
+      undefined,
+      'setterGroup',
+      'setter',
+      'setterGroup',
+    ])
+  })
+
   it('highlights grace setters', () => {
     expect(colors(grammarToChars(parse('(8?) (grace:16)')))).toEqual([
       'setterGroup',
