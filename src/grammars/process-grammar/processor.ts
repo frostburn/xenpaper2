@@ -357,7 +357,7 @@ const setRoot = (item: SetRootType, context: Context): void => {
 
 const mapGrooveBeat = (time: number, groove: Groove | null): number => {
   if (groove === null) return time
-  const relativeTime = time - groove.origin
+  const relativeTime = time - groove.sourceOrigin
   const cycle = Math.floor(relativeTime / groove.span)
   const sourceTime = mmod(relativeTime, groove.span)
   const points = groove.points
@@ -367,11 +367,11 @@ const mapGrooveBeat = (time: number, groove: Groove | null): number => {
     const b = points[i + 1]!
     if (sourceTime >= a.source && sourceTime <= b.source) {
       const proportion = b.source === a.source ? 0 : (sourceTime - a.source) / (b.source - a.source)
-      return groove.origin + cycle * groove.span + a.target + proportion * (b.target - a.target)
+      return groove.targetOrigin + cycle * groove.span + a.target + proportion * (b.target - a.target)
     }
   }
 
-  return groove.origin + cycle * groove.span + sourceTime
+  return groove.targetOrigin + cycle * groove.span + sourceTime
 }
 
 const setGroove = (setter: SetGrooveType, context: Context): void => {
@@ -405,8 +405,10 @@ const setGroove = (setter: SetGrooveType, context: Context): void => {
   assertFinitePositive('SetGroove.span', time)
 
   const sourceStep = time / targets.length
+  const targetOrigin = mapGrooveBeat(context.time, context.groove)
   context.groove = {
-    origin: context.time,
+    sourceOrigin: context.time,
+    targetOrigin,
     span: time,
     points: [
       ...targets.map((target, index) => ({ source: index * sourceStep, target })),
@@ -614,7 +616,8 @@ type TempoRampState = {
 }
 
 type Groove = {
-  origin: number
+  sourceOrigin: number
+  targetOrigin: number
   span: number
   points: Array<{ source: number; target: number }>
 }

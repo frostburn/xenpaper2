@@ -196,6 +196,23 @@ describe('groove setter', () => {
     expect(notes[1]!.timeEnd).toBe(1)
   })
 
+  it('starts replacement grooves at the current mapped time', () => {
+    const notes = noteItems('(groove:(5)!-- !-)(4)0 1 (groove:(5)!-- !-)2 3')
+
+    const expected: Array<[string, number, number]> = [
+      ['0\\12  0.0c', 0, 0.3],
+      ['1\\12  100.0c', 0.3, 0.6],
+      ['2\\12  200.0c', 0.6, 0.9],
+      ['3\\12  300.0c', 0.9, 1.2],
+    ]
+
+    expect(notes.map((note) => note.label)).toEqual(expected.map(([label]) => label))
+    notes.forEach((note, index) => {
+      expect(note.time).toBeAround(expected[index]![1])
+      expect(note.timeEnd).toBeAround(expected[index]![2])
+    })
+  })
+
   it('starts the groove cycle at the setter time', () => {
     const notes = noteItems('(4)0 1 (groove:(5)!-- !-)2 3 4 5')
 
