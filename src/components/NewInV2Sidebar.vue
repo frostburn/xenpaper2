@@ -238,6 +238,22 @@ MOS{5L2s}(plot:MOS)`,
     ],
   },
   {
+    title: 'Tempo ramping',
+    demos: [
+      {
+        description:
+          'You can ramp the tempo up with accelerando, down with rallentando or in general with TRamp.',
+        tune: `(accel;bpm:100)
+0 1 2 3 4 5 6 7 8 9 10 11 12
+(rall ease-out;bpm:300)
+11 10 9 8 7 6 5 4 3 2 1 0
+(TRamp; bms:400)
+\`11 \`10 \`9 \`8 \`7--
+(bms:300)`,
+      },
+    ],
+  },
+  {
     title: 'New harmonic oscillators',
     demos: [
       {

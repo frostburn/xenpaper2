@@ -169,7 +169,7 @@ SetterGroup = "(" _ first:Setter rest:(Semicolon Setter)* _ ")" {
   for (const part of rest) setters.push(part[0], part[1]);
   return node('SetterGroup', { setters });
 }
-Setter = SetBpm / SetBms / SetGrace / SetGliss / SetVolumeRamp / SetGroove / SetSubdivision / Drone / SetUp / SetLift / SetOsc / SetNoise / SetEnv / SetVolume / SetVelocity / SetKey / SetSignature / SetRulerRange / SetRulerPlot / SetVelocityShorthand
+Setter = SetBpm / SetBms / SetGrace / SetGliss / SetTempoRamp / SetVolumeRamp / SetGroove / SetSubdivision / Drone / SetUp / SetLift / SetOsc / SetNoise / SetEnv / SetVolume / SetVelocity / SetKey / SetSignature / SetRulerRange / SetRulerPlot / SetVelocityShorthand
 SetBpm = "bpm"i _ ":" _ bpm:Number { return node('SetBpm', { bpm }); }
 SetBms = "bms"i _ ":" _ bms:Number { return node('SetBms', { bms }); }
 SetSubdivision = ("div"i _ ":" _)? fraction:Fraction {
@@ -187,6 +187,9 @@ SetGliss = "gliss"i easing:(_ @GlissEasing)? {
 GlissEasing = $([a-zA-Z0-9-]+)
 SetVolumeRamp = kind:('cresc'i / 'dim'i / 'vramp'i) easing:(_ @GlissEasing)? {
   return node('SetVolumeRamp', { kind: kind.toLowerCase(), easing: (easing ?? 'linear').toLowerCase() });
+}
+SetTempoRamp = kind:('accel'i / 'rall'i / 'tramp'i) easing:(_ @GlissEasing)? {
+  return node('SetTempoRamp', { kind: kind.toLowerCase(), easing: (easing ?? 'linear').toLowerCase() });
 }
 PlayableTail = Tail / ZeroDuration
 ZeroDuration = "?" { return node('Hold', { length: -1, parts: [] }); }

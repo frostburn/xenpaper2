@@ -11,7 +11,7 @@ import { parse } from '../grammar.generated.js'
 import { processGrammar } from '../process-grammar'
 import { keySignatureAccidentals, keySignatureFromPitches } from '../pythagorean'
 import type { KeyTonicType } from '../grammar.generated'
-import type { MoscBeatParam } from '../../mosc'
+import type { MoscBeatParam, MoscTempo } from '../../mosc'
 
 expect.extend({
   toBeAround(actual, expected, precision = 2) {
@@ -34,7 +34,7 @@ const INITIAL_TEMPO = {
   type: 'TEMPO',
   time: 0,
   bpm: 120,
-  lerp: false,
+  tempoInterpolation: 'constant',
 }
 
 const INITIAL_OSC = {
@@ -430,6 +430,52 @@ describe('grammar to mosc score', () => {
       { type: 'PARAM_BEAT_TIME', time: 0, value: { type: 'velocity', velocity: 0.8 } },
       { type: 'END_BEAT_TIME', time: 0 },
     ])
+  })
+
+  it('interpolates accelerando and rallentando tempo ramps', () => {
+    const sequence = processGrammar(
+      parseSource('(accel ease-in)(bpm:100) 0-- (rall ease-out)(bpm:160) 1-- (bpm:80)'),
+    ).score.sequence
+    const tempoEvents = sequence.filter((item): item is MoscTempo => item.type === 'TEMPO')
+
+    expect(tempoEvents).toMatchObject([
+      { time: 0, bpm: 120, tempoInterpolation: 'constant' },
+      { time: 0, bpm: 100, tempoInterpolation: 'constant' },
+      { time: 1.5, bpm: 160, tempoInterpolation: 'ease-in' },
+      { time: 3, bpm: 80, tempoInterpolation: 'ease-out' },
+    ])
+  })
+
+  it('supports bidirectional tramp tempo ramps and chains through shared tempo setters', () => {
+    const sequence = processGrammar(
+      parseSource('(tramp)(bpm:160) 0-- (tramp)(bpm:90) 1-- (bpm:140)'),
+    ).score.sequence
+    const tempoEvents = sequence.filter((item): item is MoscTempo => item.type === 'TEMPO')
+
+    expect(tempoEvents).toMatchObject([
+      { time: 0, bpm: 120, tempoInterpolation: 'constant' },
+      { time: 0, bpm: 160, tempoInterpolation: 'constant' },
+      { time: 1.5, bpm: 90, tempoInterpolation: 'linear' },
+      { time: 3, bpm: 140, tempoInterpolation: 'linear' },
+    ])
+  })
+
+  it('requires tempo ramps to consume a later tempo setter', () => {
+    expect(() => processGrammar(parseSource('(accel) 0'))).toThrow(
+      'Tempo ramp has no source tempo before the end of the sequence.',
+    )
+    expect(() => processGrammar(parseSource('(accel)(bpm:120) 0'))).toThrow(
+      'Tempo ramp has no target tempo before the end of the sequence.',
+    )
+    expect(() => processGrammar(parseSource('(accel boing)(bpm:120) 0 (bpm:180)'))).toThrow(
+      'Unknown tempo ramp easing: boing.',
+    )
+    expect(() => processGrammar(parseSource('(accel)(bpm:120) 0 (bpm:90)'))).toThrow(
+      'Accelerando target tempo must be greater than or equal to its starting tempo.',
+    )
+    expect(() => processGrammar(parseSource('(rall)(bpm:90) 0 (bpm:120)'))).toThrow(
+      'Rallentando target tempo must be less than or equal to its starting tempo.',
+    )
   })
 
   it('interpolates crescendo and diminuendo volume ramps in decibel space', () => {
@@ -1585,7 +1631,7 @@ describe('grammar to mosc score', () => {
           type: 'TEMPO',
           time: 1,
           bpm: 200,
-          lerp: false,
+          tempoInterpolation: 'constant',
         },
         {
           type: 'NOTE_BEAT_TIME',
@@ -1644,7 +1690,7 @@ describe('grammar to mosc score', () => {
           type: 'TEMPO',
           time: 1,
           bpm: 200,
-          lerp: false,
+          tempoInterpolation: 'constant',
         },
         {
           type: 'NOTE_BEAT_TIME',

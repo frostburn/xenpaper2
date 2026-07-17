@@ -1,49 +1,11 @@
+import { integrateTempo } from './easing'
+import type { EasingName, TempoInterpolationName } from './easing'
+export { EASING_NAMES, easingCurve, easingValue, integrateTempo, isEasingName } from './easing'
+export type { EasingName, TempoInterpolationName } from './easing'
+
 //
 // types
 //
-
-export const EASING_NAMES = [
-  'linear',
-  'ease',
-  'ease-in',
-  'ease-out',
-  'ease-in-out',
-  'ease-in-sine',
-  'ease-out-sine',
-  'ease-in-out-sine',
-  'ease-in-quad',
-  'ease-out-quad',
-  'ease-in-out-quad',
-  'ease-in-cubic',
-  'ease-out-cubic',
-  'ease-in-out-cubic',
-  'ease-in-quart',
-  'ease-out-quart',
-  'ease-in-out-quart',
-  'ease-in-quint',
-  'ease-out-quint',
-  'ease-in-out-quint',
-  'ease-in-expo',
-  'ease-out-expo',
-  'ease-in-out-expo',
-  'ease-in-circ',
-  'ease-out-circ',
-  'ease-in-out-circ',
-  'ease-in-back',
-  'ease-out-back',
-  'ease-in-out-back',
-  'ease-in-overshoot',
-  'ease-out-overshoot',
-  'ease-in-out-overshoot',
-  'ease-in-bounce',
-  'ease-out-bounce',
-  'ease-in-out-bounce',
-] as const
-
-export type EasingName = (typeof EASING_NAMES)[number]
-
-export const isEasingName = (value: string): value is EasingName =>
-  EASING_NAMES.some((easing) => easing === value)
 
 export type MoscPitchAutomationPoint = {
   time: number
@@ -98,7 +60,7 @@ export type MoscTempo = {
   type: 'TEMPO'
   time: number
   bpm: number
-  lerp: boolean
+  tempoInterpolation: TempoInterpolationName
 }
 
 export type MoscBeatEnd = {
@@ -146,19 +108,15 @@ export const sortByTimeValue = (items: Array<MoscNote>): Array<MoscNote> => {
 // beat-time to real-time conversion
 //
 
-const tempoTimeToTime = (bpm1: number, bpm2: number, duration: number): number => {
-  const u = bpm1 / 60
-  const v = bpm2 / 60
-  const s = duration
-  if (u === v) return s / v
-  return (2 * s * (v - u)) / (v * v - u * u)
-}
+const tempoTimeToTime = integrateTempo
 
 type TempoChange = {
   bpm: number
   bpmEnd: number
   time: number
+  timeEnd: number
   timeValue: number
+  tempoInterpolation: EasingName
 }
 
 const findTempoRangeForTime = (tempoChanges: TempoChange[], time: number): TempoChange => {
@@ -187,7 +145,9 @@ export const beatToTime = (items: MoscBeatItem[]): ((time: number) => number) =>
     bpm: 60,
     bpmEnd: 60,
     time: 0,
+    timeEnd: 0,
     timeValue: 0,
+    tempoInterpolation: 'linear',
   })
 
   const tempoItems: MoscTempo[] = items.filter(
@@ -199,23 +159,37 @@ export const beatToTime = (items: MoscBeatItem[]): ((time: number) => number) =>
     const nextTempo: MoscTempo | undefined = all[index + 1]
 
     const timeValue =
-      tempoTimeToTime(lastChange.bpm, lastChange.bpmEnd, tempo.time - lastChange.time) +
-      lastChange.timeValue
-    const bpmEnd = nextTempo && nextTempo.lerp ? nextTempo.bpm : tempo.bpm
+      tempoTimeToTime(
+        lastChange.bpm,
+        lastChange.bpmEnd,
+        tempo.time - lastChange.time,
+        lastChange.timeEnd - lastChange.time,
+        lastChange.tempoInterpolation,
+      ) + lastChange.timeValue
+    const tempoInterpolation = nextTempo?.tempoInterpolation ?? 'constant'
+    const isRamping = tempoInterpolation !== 'constant'
+    const bpmEnd = isRamping && nextTempo ? nextTempo.bpm : tempo.bpm
 
     tempoChanges.push({
       bpm: tempo.bpm,
       bpmEnd,
       time: tempo.time,
+      timeEnd: isRamping && nextTempo ? nextTempo.time : tempo.time,
       timeValue,
+      tempoInterpolation: isRamping ? tempoInterpolation : 'linear',
     })
   })
 
   return (time: number): number => {
     const tempoChange: TempoChange = findTempoRangeForTime(tempoChanges, time)
     return (
-      tempoTimeToTime(tempoChange.bpm, tempoChange.bpmEnd, time - tempoChange.time) +
-      tempoChange.timeValue
+      tempoTimeToTime(
+        tempoChange.bpm,
+        tempoChange.bpmEnd,
+        time - tempoChange.time,
+        tempoChange.timeEnd - tempoChange.time,
+        tempoChange.tempoInterpolation,
+      ) + tempoChange.timeValue
     )
   }
 }

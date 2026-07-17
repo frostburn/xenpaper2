@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { EASING_NAMES } from '../../mosc'
-import { easingCurve } from '../easing'
+import { approximateTempoTime, EASING_NAMES, easingCurve, integrateLinearTempo } from '../easing'
 
 const nonLinearEasingNames = EASING_NAMES.filter((easing) => easing !== 'linear')
 const monotonicEasingNames = nonLinearEasingNames.filter(
@@ -9,7 +8,7 @@ const monotonicEasingNames = nonLinearEasingNames.filter(
     !easing.includes('back') && !easing.includes('overshoot') && !easing.includes('bounce'),
 )
 
-describe('easingCurve', () => {
+describe('easing utilities', () => {
   it('supports every non-linear easing from the shared easing list', () => {
     for (const easing of nonLinearEasingNames) {
       const curve = easingCurve(easing, 20, 80)
@@ -41,5 +40,20 @@ describe('easingCurve', () => {
     expect(bounceCurve.some((value, index) => index > 0 && value < bounceCurve[index - 1]!)).toBe(
       true,
     )
+  })
+
+  it('keeps the linear tempo analytic solution close to the area approximation', () => {
+    const cases = [
+      { bpm1: 120, bpm2: 60, duration: 3, totalDuration: 3 },
+      { bpm1: 90, bpm2: 180, duration: 2, totalDuration: 4 },
+      { bpm1: 300, bpm2: 100, duration: 1.5, totalDuration: 2.5 },
+    ]
+
+    for (const { bpm1, bpm2, duration, totalDuration } of cases) {
+      expect(integrateLinearTempo(bpm1, bpm2, duration, totalDuration)).toBeCloseTo(
+        approximateTempoTime(bpm1, bpm2, duration, totalDuration, 'linear'),
+        4,
+      )
+    }
   })
 })

@@ -7,7 +7,7 @@ import type {
   NoiseInterpolationType,
 } from './noise-worklet'
 import type { EasingName } from '../mosc'
-import { easingCurve } from './easing'
+import { easingCurve } from '../mosc/easing'
 import type { SynthType as TimbreSynthType } from './timbre'
 
 const TIME_CONSTANT = 0.2
