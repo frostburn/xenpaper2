@@ -131,6 +131,21 @@ MOS{5L2s}(plot:MOS)`,
       },
     ],
   },
+
+  {
+    title: 'Articulation',
+    demos: [
+      {
+        description:
+          `Articulation setters change how long notes sound without changing the duration they occupy. Use percentages, named setters, or compact shorthands: (') staccatissimo, (.) staccato, (-) tenuto, and (_) legato.`,
+        tune: `(bpm:100)(env:1633)
+(.) 0 2 4 7 .
+(-) 0 2 4 7 .
+(_) 0 2 4 7 .
+(art:75%) 0 2 4 7`,
+      },
+    ],
+  },
   {
     title: 'Grace notes',
     demos: [

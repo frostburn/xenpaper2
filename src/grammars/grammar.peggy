@@ -186,10 +186,10 @@ SetGliss = "gliss"i easing:(_ @GlissEasing)? {
 }
 SetArticulation
   = ("articulation"i / "art"i) _ ":" _ percent:Number _ "%" { return node('SetArticulation', { articulation: percent / 100 }); }
-  / "staccatissimo"i { return node('SetArticulation', { articulation: 0.25 }); }
-  / "staccato"i { return node('SetArticulation', { articulation: 0.5 }); }
-  / "tenuto"i { return node('SetArticulation', { articulation: 1 }); }
-  / "legato"i { return node('SetArticulation', { articulation: 1.1 }); }
+  / ("staccatissimo"i / "'") { return node('SetArticulation', { articulation: 0.25 }); }
+  / ("staccato"i / ".") { return node('SetArticulation', { articulation: 0.5 }); }
+  / ("tenuto"i / "-") { return node('SetArticulation', { articulation: 1 }); }
+  / ("legato"i / "_") { return node('SetArticulation', { articulation: 1.1 }); }
 GlissEasing = $([a-zA-Z0-9-]+)
 SetVolumeRamp = kind:('cresc'i / 'dim'i / 'vramp'i) easing:(_ @GlissEasing)? {
   return node('SetVolumeRamp', { kind: kind.toLowerCase(), easing: (easing ?? 'linear').toLowerCase() });

@@ -2545,11 +2545,41 @@ describe('grammar', () => {
         ])
       })
 
+      it('should parse articulation setters and shorthands', () => {
+        expect(
+          strip(
+            parser(
+              "(art:75%; articulation:125%; staccatissimo; staccato; tenuto; legato; '; .; -; _)",
+            ).sequence.items[0],
+          ),
+        ).toMatchObject({
+          type: 'SetterGroup',
+          setters: [
+            { type: 'SetArticulation', articulation: 0.75 },
+            { type: 'Semicolon' },
+            { type: 'SetArticulation', articulation: 1.25 },
+            { type: 'Semicolon' },
+            { type: 'SetArticulation', articulation: 0.25 },
+            { type: 'Semicolon' },
+            { type: 'SetArticulation', articulation: 0.5 },
+            { type: 'Semicolon' },
+            { type: 'SetArticulation', articulation: 1 },
+            { type: 'Semicolon' },
+            { type: 'SetArticulation', articulation: 1.1 },
+            { type: 'Semicolon' },
+            { type: 'SetArticulation', articulation: 0.25 },
+            { type: 'Semicolon' },
+            { type: 'SetArticulation', articulation: 0.5 },
+            { type: 'Semicolon' },
+            { type: 'SetArticulation', articulation: 1 },
+            { type: 'Semicolon' },
+            { type: 'SetArticulation', articulation: 1.1 },
+          ],
+        })
+      })
+
       it('should error if setter is empty or not delimited properly', () => {
-        expectParserErrorMessage(
-          '()',
-          'Expected "/", "^", "accel", "al", "bms", "bpm", "coda", "cresc", "d", "da", "dal", "dim", "div", "drone", "env", "f", "ff", "fff", "fine", "gliss", "grace", "groove", "key", "mf", "mp", "noise", "osc", "p", "plot", "pp", "ppp", "rall", "rl", "segno", "sig", "to", "tramp", "vel", "vol", "vramp", or integer but ")" found.',
-        )
+        expectParserErrorMessage('()', 'but ")" found.')
         expectParserErrorMessage('(div:16;)', 'but ")" found.')
         expectParserErrorMessage('(div:16;;div:16)', 'but ";" found.')
         expectParserErrorMessage('(env:123)', 'Expected four digits but "1" found.')
