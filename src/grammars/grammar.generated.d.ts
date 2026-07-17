@@ -281,6 +281,10 @@ export type SetGlissType = NodeType<'SetGliss'> & {
   easing: GlissEasingType
 }
 
+export type SetArticulationType = NodeType<'SetArticulation'> & {
+  articulation: number
+}
+
 export type SetVolumeRampType = NodeType<'SetVolumeRamp'> & {
   kind: 'cresc' | 'dim' | 'vramp'
   easing: GlissEasingType
@@ -410,6 +414,7 @@ export type SetterType =
   | SetSubdivisionType
   | SetGraceType
   | SetGlissType
+  | SetArticulationType
   | SetTempoRampType
   | SetVolumeRampType
   | SetGrooveType

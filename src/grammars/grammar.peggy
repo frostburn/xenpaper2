@@ -169,7 +169,7 @@ SetterGroup = "(" _ first:Setter rest:(Semicolon Setter)* _ ")" {
   for (const part of rest) setters.push(part[0], part[1]);
   return node('SetterGroup', { setters });
 }
-Setter = SetBpm / SetBms / SetGrace / SetGliss / SetTempoRamp / SetVolumeRamp / SetGroove / SetSubdivision / Drone / SetUp / SetLift / SetOsc / SetNoise / SetEnv / SetVolume / SetVelocity / SetKey / SetSignature / SetRulerRange / SetRulerPlot / SetVelocityShorthand
+Setter = SetBpm / SetBms / SetGrace / SetGliss / SetArticulation / SetTempoRamp / SetVolumeRamp / SetGroove / SetSubdivision / Drone / SetUp / SetLift / SetOsc / SetNoise / SetEnv / SetVolume / SetVelocity / SetKey / SetSignature / SetRulerRange / SetRulerPlot / SetVelocityShorthand
 SetBpm = "bpm"i _ ":" _ bpm:Number { return node('SetBpm', { bpm }); }
 SetBms = "bms"i _ ":" _ bms:Number { return node('SetBms', { bms }); }
 SetSubdivision = ("div"i _ ":" _)? fraction:Fraction {
@@ -184,6 +184,12 @@ GrooveSubdivision = "(" _ setter:SetSubdivision _ ")" { return setter; }
 SetGliss = "gliss"i easing:(_ @GlissEasing)? {
   return node('SetGliss', { easing: (easing ?? 'linear').toLowerCase() });
 }
+SetArticulation
+  = ("articulation"i / "art"i) _ ":" _ percent:Number _ "%" { return node('SetArticulation', { articulation: percent / 100 }); }
+  / "staccatissimo"i { return node('SetArticulation', { articulation: 0.25 }); }
+  / "staccato"i { return node('SetArticulation', { articulation: 0.5 }); }
+  / "tenuto"i { return node('SetArticulation', { articulation: 1 }); }
+  / "legato"i { return node('SetArticulation', { articulation: 1.1 }); }
 GlissEasing = $([a-zA-Z0-9-]+)
 SetVolumeRamp = kind:('cresc'i / 'dim'i / 'vramp'i) easing:(_ @GlissEasing)? {
   return node('SetVolumeRamp', { kind: kind.toLowerCase(), easing: (easing ?? 'linear').toLowerCase() });

@@ -88,6 +88,30 @@ const noteLabels = (input: string): string[] => noteItems(input).map((item) => i
 const noteLabelDurations = (input: string): Array<[string, number]> =>
   noteItems(input).map((item) => [item.label, item.timeEnd - item.time])
 
+describe('articulation setter', () => {
+  it('shortens note sound time without changing occupied sequence time', () => {
+    const processed = processGrammar(parseSource('(art:50%)0 2'))
+    const notes = processed.score.sequence.filter((item) => item.type === 'NOTE_BEAT_TIME')
+
+    expect(notes).toHaveLength(2)
+    expect(notes[0]!.time).toBe(0)
+    expect(notes[0]!.timeEnd).toBe(0.25)
+    expect(notes[1]!.time).toBe(0.5)
+    expect(notes[1]!.timeEnd).toBe(0.75)
+    expect(processed.score.lengthTime).toBe(1)
+  })
+
+  it('supports named articulations and overlapping legato playback', () => {
+    const notes = noteItems('(staccato)0 (legato)2 (tenuto)4')
+
+    expect(notes.map((note) => [note.time, note.timeEnd])).toEqual([
+      [0, 0.25],
+      [0.5, 1.05],
+      [1, 1.5],
+    ])
+  })
+})
+
 describe('glissando setter', () => {
   it('defaults to a linear legato glissando and holds the target without re-attacking', () => {
     const processed = processGrammar(parseSource('(gliss)0--- 7'))

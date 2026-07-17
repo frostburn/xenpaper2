@@ -419,7 +419,11 @@ const setGroove = (setter: SetGrooveType, context: Context): void => {
   }
 }
 
-const consumeDuration = (units: number, context: Context): { time: number; timeEnd: number } => {
+const consumeDuration = (
+  units: number,
+  context: Context,
+  articulation = 1,
+): { time: number; timeEnd: number } => {
   const time = context.time
   assertFinitePositive('context.subdivision', context.subdivision)
 
@@ -435,7 +439,7 @@ const consumeDuration = (units: number, context: Context): { time: number; timeE
     }
     return {
       time: mapGrooveBeat(time, context.groove),
-      timeEnd: mapGrooveBeat(context.time, context.groove),
+      timeEnd: mapGrooveBeat(time + graceDuration * articulation, context.groove),
     }
   }
 
@@ -448,13 +452,13 @@ const consumeDuration = (units: number, context: Context): { time: number; timeE
   context.stolenTime = 0
   return {
     time: mapGrooveBeat(time, context.groove),
-    timeEnd: mapGrooveBeat(context.time, context.groove),
+    timeEnd: mapGrooveBeat(time + duration * articulation, context.groove),
   }
 }
 
 const tailToTime = (tail: TailType | null, context: Context): { time: number; timeEnd: number } => {
   const duration = tail?.type === 'Hold' ? tail.length + 1 : 1
-  return consumeDuration(duration, context)
+  return consumeDuration(duration, context, context.articulation)
 }
 
 //
@@ -583,6 +587,7 @@ type Context = {
   graceNotesRemaining: number
   stolenTime: number
   groove: Groove | null
+  articulation: number
   glissando: GlissandoState | null
   volumeRamp: VolumeRampState | null
   queuedVolumeRamp: VolumeRampState | null
@@ -1159,6 +1164,13 @@ const setterToMosc = (setter: SetterType | DelimiterType, context: Context): Mos
     return []
   }
 
+  if (type === 'SetArticulation') {
+    const { articulation } = setter
+    limit('SetArticulation.articulation', articulation, 0, 4)
+    context.articulation = articulation
+    return []
+  }
+
   if (type === 'SetGrace') {
     const { subdivision, denominator, count } = setter
     assertFinitePositive('SetGrace.subdivision', subdivision)
@@ -1504,6 +1516,7 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
     graceNotesRemaining: 0,
     stolenTime: 0,
     groove: null,
+    articulation: 1,
     glissando: null,
     volumeRamp: null,
     queuedVolumeRamp: null,

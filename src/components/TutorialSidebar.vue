@@ -143,6 +143,11 @@ const tutorialSections: SidebarSection[] = [
           'Divisions of the beat can be set using the division setter, or shortened to values like (4).',
         tune: '0 2 3 7(3)0 2 3 7(4)0 2 3 7(1/2)0 2 3 7',
       },
+      {
+        description:
+          'Articulation changes how long notes sound compared to the duration they occupy. Use percentages or named setters like staccato, tenuto, and legato.',
+        tune: '(art:50%)0 2 4 7. (tenuto)0 2 4 7. (legato)0 2 4 7.',
+      },
     ],
   },
   {
