@@ -367,7 +367,9 @@ const mapGrooveBeat = (time: number, groove: Groove | null): number => {
     const b = points[i + 1]!
     if (sourceTime >= a.source && sourceTime <= b.source) {
       const proportion = b.source === a.source ? 0 : (sourceTime - a.source) / (b.source - a.source)
-      return groove.targetOrigin + cycle * groove.span + a.target + proportion * (b.target - a.target)
+      return (
+        groove.targetOrigin + cycle * groove.span + a.target + proportion * (b.target - a.target)
+      )
     }
   }
 
