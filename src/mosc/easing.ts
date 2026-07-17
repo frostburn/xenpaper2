@@ -150,3 +150,55 @@ export const easingCurve = (
   }
   return values
 }
+const easingProgress = (easing: EasingName, t: number): number =>
+  easing === 'linear' ? t : easingValue(easing, t)
+
+export const approximateTempoTime = (
+  bpm1: number,
+  bpm2: number,
+  duration: number,
+  totalDuration = duration,
+  interpolation: EasingName = 'linear',
+): number => {
+  const u = bpm1 / 60
+  const v = bpm2 / 60
+  if (u === v || totalDuration === 0) return duration / u
+
+  const progress = duration / totalDuration
+  const steps = Math.max(1, Math.ceil(256 * progress))
+  let area = 0
+  for (let index = 0; index < steps; index += 1) {
+    const start = (progress * index) / steps
+    const end = (progress * (index + 1)) / steps
+    const startRate = u + (v - u) * easingProgress(interpolation, start)
+    const endRate = u + (v - u) * easingProgress(interpolation, end)
+    area += ((1 / startRate + 1 / endRate) * (end - start)) / 2
+  }
+
+  return totalDuration * area
+}
+
+export const integrateLinearTempo = (
+  bpm1: number,
+  bpm2: number,
+  duration: number,
+  totalDuration = duration,
+): number => {
+  const u = bpm1 / 60
+  const v = bpm2 / 60
+  if (u === v || totalDuration === 0) return duration / u
+
+  const rateAtDuration = u + ((v - u) * duration) / totalDuration
+  return (totalDuration / (v - u)) * Math.log(rateAtDuration / u)
+}
+
+export const integrateTempo = (
+  bpm1: number,
+  bpm2: number,
+  duration: number,
+  totalDuration = duration,
+  interpolation: EasingName = 'linear',
+): number =>
+  interpolation === 'linear'
+    ? integrateLinearTempo(bpm1, bpm2, duration, totalDuration)
+    : approximateTempoTime(bpm1, bpm2, duration, totalDuration, interpolation)

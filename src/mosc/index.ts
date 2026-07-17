@@ -1,6 +1,6 @@
-import { easingValue } from './easing'
+import { integrateTempo } from './easing'
 import type { EasingName, TempoInterpolationName } from './easing'
-export { EASING_NAMES, easingCurve, easingValue, isEasingName } from './easing'
+export { EASING_NAMES, easingCurve, easingValue, integrateTempo, isEasingName } from './easing'
 export type { EasingName, TempoInterpolationName } from './easing'
 
 //
@@ -108,35 +108,7 @@ export const sortByTimeValue = (items: Array<MoscNote>): Array<MoscNote> => {
 // beat-time to real-time conversion
 //
 
-const tempoTimeToTime = (
-  bpm1: number,
-  bpm2: number,
-  duration: number,
-  totalDuration = duration,
-  interpolation: EasingName = 'linear',
-): number => {
-  const u = bpm1 / 60
-  const v = bpm2 / 60
-  if (u === v || totalDuration === 0) return duration / u
-
-  if (interpolation === 'linear') {
-    const rateAtDuration = u + ((v - u) * duration) / totalDuration
-    return (totalDuration / (v - u)) * Math.log(rateAtDuration / u)
-  }
-
-  const progress = duration / totalDuration
-  const steps = Math.max(1, Math.ceil(256 * progress))
-  let area = 0
-  for (let index = 0; index < steps; index += 1) {
-    const start = (progress * index) / steps
-    const end = (progress * (index + 1)) / steps
-    const startRate = u + (v - u) * easingValue(interpolation, start)
-    const endRate = u + (v - u) * easingValue(interpolation, end)
-    area += ((1 / startRate + 1 / endRate) * (end - start)) / 2
-  }
-
-  return totalDuration * area
-}
+const tempoTimeToTime = integrateTempo
 
 type TempoChange = {
   bpm: number
