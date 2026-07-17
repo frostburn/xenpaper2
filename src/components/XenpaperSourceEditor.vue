@@ -197,47 +197,48 @@ const isCharacterActive = (charData?: CharData): boolean =>
       :id="activeSourceTab ? `source-code-panel-${activeSourceTab.id}` : undefined"
       role="tabpanel"
     >
-      <div v-if="activeSourceTab && liveSourceTabCount > 1" class="source-editor-tab-controls">
-        <button
-          class="source-editor-tab-control"
-          :class="{ enabled: activeSourceTab.soloed }"
-          type="button"
-          :aria-label="`Solo ${activeSourceTab.title}`"
-          :aria-pressed="activeSourceTab.soloed"
-          :title="`${activeSourceTab.soloed ? 'Unsolo' : 'Solo'} ${activeSourceTab.title}`"
-          @click="
-            emit('toggleSourceCodeTabSolo', activeSourceTab.id, $event.ctrlKey || $event.metaKey)
-          "
-        >
-          Solo
-        </button>
-        <button
-          class="source-editor-tab-control"
-          :class="{ enabled: activeSourceTab.muted }"
-          type="button"
-          :aria-label="`Mute ${activeSourceTab.title}`"
-          :aria-pressed="activeSourceTab.muted"
-          :title="`${activeSourceTab.muted ? 'Unmute' : 'Mute'} ${activeSourceTab.title}`"
-          @click="emit('toggleSourceCodeTabMute', activeSourceTab.id)"
-        >
-          Mute
-        </button>
-      </div>
-      <textarea
-        id="source-code"
-        ref="sourceInput"
-        :value="sourceCode"
-        class="source-input"
-        placeholder="Type your tune here…"
-        autocapitalize="off"
-        autocomplete="off"
-        autocorrect="off"
-        spellcheck="false"
-        @input="handleSourceInput"
-        @keydown="handleSourceKeydown"
-        @scroll="syncHighlightScroll"
-      />
-      <pre ref="sourceHighlights" class="source-highlights"><span
+      <div class="source-editor-content">
+        <div v-if="activeSourceTab && liveSourceTabCount > 1" class="source-editor-tab-controls">
+          <button
+            class="source-editor-tab-control"
+            :class="{ enabled: activeSourceTab.soloed }"
+            type="button"
+            :aria-label="`Solo ${activeSourceTab.title}`"
+            :aria-pressed="activeSourceTab.soloed"
+            :title="`${activeSourceTab.soloed ? 'Unsolo' : 'Solo'} ${activeSourceTab.title}`"
+            @click="
+              emit('toggleSourceCodeTabSolo', activeSourceTab.id, $event.ctrlKey || $event.metaKey)
+            "
+          >
+            Solo
+          </button>
+          <button
+            class="source-editor-tab-control"
+            :class="{ enabled: activeSourceTab.muted }"
+            type="button"
+            :aria-label="`Mute ${activeSourceTab.title}`"
+            :aria-pressed="activeSourceTab.muted"
+            :title="`${activeSourceTab.muted ? 'Unmute' : 'Mute'} ${activeSourceTab.title}`"
+            @click="emit('toggleSourceCodeTabMute', activeSourceTab.id)"
+          >
+            Mute
+          </button>
+        </div>
+        <textarea
+          id="source-code"
+          ref="sourceInput"
+          :value="sourceCode"
+          class="source-input"
+          placeholder="Type your tune here…"
+          autocapitalize="off"
+          autocomplete="off"
+          autocorrect="off"
+          spellcheck="false"
+          @input="handleSourceInput"
+          @keydown="handleSourceKeydown"
+          @scroll="syncHighlightScroll"
+        />
+        <pre ref="sourceHighlights" class="source-highlights"><span
         v-if="sourceCode === ''"
         class="placeholder-text"
         aria-hidden="true"
@@ -263,6 +264,7 @@ const isCharacterActive = (charData?: CharData): boolean =>
           },
         ]"
       >{{ token.character }}</span></template></template><br><br></pre>
+      </div>
     </div>
     <p v-if="lastError" class="playback-error" role="alert">Error: {{ lastError }}</p>
   </main>
@@ -353,7 +355,7 @@ const isCharacterActive = (charData?: CharData): boolean =>
 
 .source-editor-tab-controls {
   position: absolute;
-  z-index: 2;
+  z-index: 3;
   top: 0.75rem;
   right: 1rem;
   display: flex;
