@@ -367,7 +367,7 @@ describe('grammarToChars', () => {
   })
 
   it('highlights articulation setters and shorthands', () => {
-    expect(colors(grammarToChars(parse('(art:50%) (staccato) (.)')))).toEqual([
+    expect(colors(grammarToChars(parse('(art:50%) (staccato) (:)')))).toEqual([
       'setterGroup',
       'setter',
       'setter',

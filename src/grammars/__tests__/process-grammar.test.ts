@@ -102,12 +102,13 @@ describe('articulation setter', () => {
   })
 
   it('supports named articulations and overlapping legato playback', () => {
-    const notes = noteItems('(.)0 (_)2 (-)4')
+    const notes = noteItems('(.)0 (:)2 (_)4 (-)5')
 
     expect(notes.map((note) => [note.time, note.timeEnd])).toEqual([
       [0, 0.25],
-      [0.5, 1.05],
-      [1, 1.5],
+      [0.5, 0.925],
+      [1, 1.55],
+      [1.5, 2],
     ])
   })
 })

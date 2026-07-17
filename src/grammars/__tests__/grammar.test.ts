@@ -2549,7 +2549,7 @@ describe('grammar', () => {
         expect(
           strip(
             parser(
-              "(art:75%; articulation:125%; staccatissimo; staccato; tenuto; legato; '; .; -; _)",
+              "(art:75%; articulation:125%; staccatissimo; staccato; portato; tenuto; legato; '; .; :; -; _)",
             ).sequence.items[0],
           ),
         ).toMatchObject({
@@ -2563,6 +2563,8 @@ describe('grammar', () => {
             { type: 'Semicolon' },
             { type: 'SetArticulation', articulation: 0.5 },
             { type: 'Semicolon' },
+            { type: 'SetArticulation', articulation: 0.85 },
+            { type: 'Semicolon' },
             { type: 'SetArticulation', articulation: 1 },
             { type: 'Semicolon' },
             { type: 'SetArticulation', articulation: 1.1 },
@@ -2570,6 +2572,8 @@ describe('grammar', () => {
             { type: 'SetArticulation', articulation: 0.25 },
             { type: 'Semicolon' },
             { type: 'SetArticulation', articulation: 0.5 },
+            { type: 'Semicolon' },
+            { type: 'SetArticulation', articulation: 0.85 },
             { type: 'Semicolon' },
             { type: 'SetArticulation', articulation: 1 },
             { type: 'Semicolon' },

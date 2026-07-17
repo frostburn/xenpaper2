@@ -145,7 +145,7 @@ const tutorialSections: SidebarSection[] = [
       },
       {
         description:
-          'Articulation changes how long notes sound compared to the duration they occupy. Use percentages, named setters like staccato, tenuto, and legato, or shorthand setters like (.), (-), and (_).',
+          'Articulation changes how long notes sound compared to the duration they occupy. Use percentages, named setters like staccato, tenuto, and legato, or shorthand setters like (.), (:), (-), and (_).',
         tune: '(art:50%)0 2 4 7. (tenuto)0 2 4 7. (legato)0 2 4 7.',
       },
     ],

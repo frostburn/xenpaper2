@@ -188,6 +188,7 @@ SetArticulation
   = ("articulation"i / "art"i) _ ":" _ percent:Number _ "%" { return node('SetArticulation', { articulation: percent / 100 }); }
   / ("staccatissimo"i / "'") { return node('SetArticulation', { articulation: 0.25 }); }
   / ("staccato"i / ".") { return node('SetArticulation', { articulation: 0.5 }); }
+  / ("portato"i / ":") { return node('SetArticulation', { articulation: 0.85 }); }
   / ("tenuto"i / "-") { return node('SetArticulation', { articulation: 1 }); }
   / ("legato"i / "_") { return node('SetArticulation', { articulation: 1.1 }); }
 GlissEasing = $([a-zA-Z0-9-]+)
