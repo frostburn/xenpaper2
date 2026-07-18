@@ -71,6 +71,13 @@ describe('grammarToChars', () => {
     expect(colors(grammarToChars(ast)).filter((color) => color === 'error')).toHaveLength(1)
   })
 
+  it('highlights nested hold-tail barlines that do not match the active time signature', () => {
+    const ast = parse('(time:4/4)(4)1--|--')
+    processGrammar(ast)
+
+    expect(colors(grammarToChars(ast)).filter((color) => color === 'error')).toHaveLength(1)
+  })
+
   it('syntax-highlights tempo ramp setters', () => {
     expect(colors(grammarToChars(parse('(accel;rall;tramp)')))).toEqual([
       'setterGroup',

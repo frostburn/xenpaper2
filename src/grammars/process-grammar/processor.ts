@@ -377,8 +377,11 @@ const mapGrooveBeat = (time: number, groove: Groove | null): number => {
   return groove.targetOrigin + cycle * groove.span + sourceTime
 }
 
+const effectiveSubdivision = (context: Context, subdivision = context.subdivision): number =>
+  subdivision * context.timeSignatureDenominator
+
 const setGroove = (setter: SetGrooveType, context: Context): void => {
-  let subdivision = context.subdivision
+  let subdivision = effectiveSubdivision(context)
   let time = 0
   const targets: number[] = []
 
@@ -386,7 +389,7 @@ const setGroove = (setter: SetGrooveType, context: Context): void => {
     if (item.type === 'SetSubdivision') {
       assertFinitePositive('SetGroove.SetSubdivision.subdivision', item.subdivision)
       assertFinitePositive('SetGroove.SetSubdivision.denominator', item.denominator)
-      subdivision = item.denominator / item.subdivision
+      subdivision = effectiveSubdivision(context, item.denominator / item.subdivision)
       assertFinitePositive('SetGroove.subdivision', subdivision)
       continue
     }
@@ -430,7 +433,7 @@ const consumeDuration = (
 
   if (context.graceSubdivision !== null) {
     assertFinitePositive('context.graceSubdivision', context.graceSubdivision)
-    const graceDuration = units * context.graceSubdivision
+    const graceDuration = units * effectiveSubdivision(context, context.graceSubdivision)
     context.time += graceDuration
     context.stolenTime += graceDuration
     context.graceNotesRemaining -= 1
@@ -444,7 +447,7 @@ const consumeDuration = (
     }
   }
 
-  const duration = units * context.subdivision - context.stolenTime
+  const duration = units * effectiveSubdivision(context) - context.stolenTime
   if (duration < 0) {
     throw new Error('Grace notes stole more time than the following item has')
   }
@@ -457,7 +460,26 @@ const consumeDuration = (
   }
 }
 
+const markHoldTailBarlines = (tail: TailType | null, context: Context): void => {
+  if (tail?.type !== 'Hold' || !Array.isArray(tail.parts)) return
+
+  let position = 1
+  const unitDuration = effectiveSubdivision(
+    context,
+    context.graceSubdivision ?? context.subdivision,
+  )
+  for (const part of tail.parts) {
+    if (part.type === 'HoldDash') {
+      position += 1
+      continue
+    }
+
+    markBarlineSyntax(part, context, context.time + position * unitDuration)
+  }
+}
+
 const tailToTime = (tail: TailType | null, context: Context): { time: number; timeEnd: number } => {
+  markHoldTailBarlines(tail, context)
   const duration = tail?.type === 'Hold' ? tail.length + 1 : 1
   return consumeDuration(duration, context, context.articulation)
 }
@@ -577,8 +599,6 @@ type Context = {
   timeSignatureNumerator: number
   timeSignatureDenominator: number
   timeSignatureOrigin: number
-  bpmBeatDenominator: number
-  currentBpm: number
   scale: number[]
   scaleLabels: string[]
   octaveSize: number
@@ -1006,9 +1026,6 @@ const volumeParam = (time: number, db: number): MoscBeatParam & VolumeRampSource
   },
 })
 
-const effectiveTempoBpm = (bpm: number, context: Context): number =>
-  bpm / context.bpmBeatDenominator
-
 const tempoParam = (time: number, bpm: number): MoscTempo => ({
   type: 'TEMPO',
   time,
@@ -1018,10 +1035,7 @@ const tempoParam = (time: number, bpm: number): MoscTempo => ({
 
 const tempoRampToMosc = (bpm: number, context: Context): MoscTempo[] => {
   const ramp = context.tempoRamp
-  const item = tempoParam(
-    mapGrooveBeat(context.time, context.groove),
-    effectiveTempoBpm(bpm, context),
-  )
+  const item = tempoParam(mapGrooveBeat(context.time, context.groove), bpm)
   if (!ramp) return [item]
 
   if (!ramp.source) {
@@ -1090,15 +1104,13 @@ const setterToMosc = (setter: SetterType | DelimiterType, context: Context): Mos
   if (type === 'SetBpm') {
     const { bpm } = setter
     assertFinitePositive('SetBpm.bpm', bpm)
-    context.currentBpm = bpm
     return tempoRampToMosc(bpm, context)
   }
 
   if (type === 'SetBms') {
     const { bms } = setter
     assertFinitePositive('SetBms.bms', bms)
-    context.currentBpm = 60000 / bms
-    return tempoRampToMosc(context.currentBpm, context)
+    return tempoRampToMosc(60000 / bms, context)
   }
 
   if (type === 'SetTime') {
@@ -1109,13 +1121,7 @@ const setterToMosc = (setter: SetterType | DelimiterType, context: Context): Mos
     context.timeSignatureNumerator = numerator
     context.timeSignatureDenominator = denominator
     context.timeSignatureOrigin = context.time
-    context.bpmBeatDenominator = denominator
-    return [
-      tempoParam(
-        mapGrooveBeat(context.time, context.groove),
-        effectiveTempoBpm(context.currentBpm, context),
-      ),
-    ]
+    return []
   }
 
   if (type === 'SetGroove') {
@@ -1472,16 +1478,20 @@ const isBarlineSyntaxItem = (item: { type: string }): item is DelimiterType | Re
   item.type === 'RepeatEndStart' ||
   item.type === 'RepeatEndingStart'
 
-const markBarlineSyntax = (item: DelimiterType | RepeatType, context: Context): void => {
-  const mappedTime = mapGrooveBeat(context.time, context.groove)
+const markBarlineSyntax = (
+  item: DelimiterType | RepeatType,
+  context: Context,
+  sourceTime = context.time,
+): void => {
+  const mappedTime = mapGrooveBeat(sourceTime, context.groove)
   item.time = [mappedTime, mappedTime]
   times.push(item.time)
 
   if (context.timeSignatureNumerator === 0) return
 
-  const measureLength = context.timeSignatureNumerator / context.timeSignatureDenominator
+  const measureLength = context.timeSignatureNumerator
   assertFinitePositive('time signature measure length', measureLength)
-  const relativeTime = context.time - context.timeSignatureOrigin
+  const relativeTime = sourceTime - context.timeSignatureOrigin
   const measures = relativeTime / measureLength
   const nearestMeasure = Math.round(measures)
   if (Math.abs(measures - nearestMeasure) > BARLINE_EPSILON) {
@@ -1562,8 +1572,6 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
     timeSignatureNumerator: 0,
     timeSignatureDenominator: 1,
     timeSignatureOrigin: 0,
-    bpmBeatDenominator: 1,
-    currentBpm: INITIAL_TEMPO.bpm,
     scale,
     scaleLabels: edoToLabels(12, scale, 2),
     octaveSize: 2,
