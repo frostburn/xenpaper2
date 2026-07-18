@@ -312,6 +312,26 @@ describe('grammarToChars', () => {
     expect(colors(chars)).toEqual(['pitch', undefined, 'pitch', 'pitch'])
   })
 
+  it('syntax-highlights interleaved octave and up/lift prefixes as pitch characters', () => {
+    expect(colors(grammarToChars(parse('^\'0 \'^0 /"A "/A')))).toEqual([
+      'pitch',
+      'pitch',
+      'pitch',
+      undefined,
+      'pitch',
+      'pitch',
+      'pitch',
+      undefined,
+      'pitch',
+      'pitch',
+      'pitch',
+      undefined,
+      'pitch',
+      'pitch',
+      'pitch',
+    ])
+  })
+
   it('syntax-highlights absolute pitches in root setters', () => {
     const chars = grammarToChars(parse('{r as C}'))
 
