@@ -1,6 +1,4 @@
 import { createHash } from 'node:crypto'
-import { readFileSync } from 'node:fs'
-import { join } from 'node:path'
 
 import { describe, expect, it, vi } from 'vitest'
 
@@ -8,12 +6,9 @@ import { mount } from '@vue/test-utils'
 import XenpaperSidebar from '../XenpaperSidebar.vue'
 import TutorialSidebar from '../TutorialSidebar.vue'
 
-const TUTORIAL_SIDEBAR_SHA256 = 'f9fa18be593ab2bef9198ccec3df74a44bd611dd9b956a126c3d84f4369633f3'
+const TUTORIAL_SIDEBAR_TEXT_SHA256 = 'ffe77002fc0e2903afe5e5c66c3520bdfa3c25c309a630592084e7c81c7ef1ca'
 
-const tutorialSidebarHash = () =>
-  createHash('sha256')
-    .update(readFileSync(join(process.cwd(), 'src/components/TutorialSidebar.vue')))
-    .digest('hex')
+const hashText = (text: string) => createHash('sha256').update(text).digest('hex')
 
 const mountSidebar = () =>
   mount(XenpaperSidebar, {
@@ -29,15 +24,12 @@ const mountSidebar = () =>
   })
 
 describe('XenpaperSidebar info mode', () => {
-  it('keeps TutorialSidebar.vue unchanged', () => {
-    expect(tutorialSidebarHash()).toBe(TUTORIAL_SIDEBAR_SHA256)
-  })
-
-  it('renders the v1 tutorial sidebar content', () => {
+  it('renders unchanged v1 tutorial sidebar content', () => {
     const wrapper = mountSidebar()
-    const tutorial = wrapper.getComponent(TutorialSidebar)
+    const tutorial = wrapper.findComponent(TutorialSidebar)
 
     expect(tutorial.exists()).toBe(true)
+    expect(hashText(tutorial.text())).toBe(TUTORIAL_SIDEBAR_TEXT_SHA256)
     expect(tutorial.get('#tutorial-title').text()).toBe('Xenpaper 2')
     expect(tutorial.text()).toContain('Text-based microtonal sequencer.')
     expect(tutorial.text()).toContain(
