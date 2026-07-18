@@ -6,7 +6,8 @@ import { mount } from '@vue/test-utils'
 import XenpaperSidebar from '../XenpaperSidebar.vue'
 import TutorialSidebar from '../TutorialSidebar.vue'
 
-const TUTORIAL_SIDEBAR_TEXT_SHA256 = 'ffe77002fc0e2903afe5e5c66c3520bdfa3c25c309a630592084e7c81c7ef1ca'
+const TUTORIAL_SIDEBAR_TEXT_SHA256 =
+  'ffe77002fc0e2903afe5e5c66c3520bdfa3c25c309a630592084e7c81c7ef1ca'
 
 const hashText = (text: string) => createHash('sha256').update(text).digest('hex')
 
@@ -19,7 +20,9 @@ const mountSidebar = () =>
       embedUrl: 'https://example.com/embed/#0',
       sourceCodes: ['0 4 7'],
       renderCacheKey: 'test-render-cache-key',
-      renderSongToWavBlob: vi.fn(async () => new Blob()),
+      renderSongToWavBlob: vi.fn<(tailSeconds: number) => Promise<Blob>>(
+        async (_: number) => new Blob(),
+      ),
     },
   })
 
