@@ -169,9 +169,10 @@ SetterGroup = "(" _ first:Setter rest:(Semicolon Setter)* _ ")" {
   for (const part of rest) setters.push(part[0], part[1]);
   return node('SetterGroup', { setters });
 }
-Setter = SetBpm / SetBms / SetGrace / SetGliss / SetArticulation / SetTempoRamp / SetVolumeRamp / SetGroove / SetSubdivision / Drone / SetUp / SetLift / SetOsc / SetNoise / SetEnv / SetVolume / SetVelocity / SetKey / SetSignature / SetRulerRange / SetRulerPlot / SetVelocityShorthand
+Setter = SetBpm / SetBms / SetTime / SetGrace / SetGliss / SetArticulation / SetTempoRamp / SetVolumeRamp / SetGroove / SetSubdivision / Drone / SetUp / SetLift / SetOsc / SetNoise / SetEnv / SetVolume / SetVelocity / SetKey / SetSignature / SetRulerRange / SetRulerPlot / SetVelocityShorthand
 SetBpm = "bpm"i _ ":" _ bpm:Number { return node('SetBpm', { bpm }); }
 SetBms = "bms"i _ ":" _ bms:Number { return node('SetBms', { bms }); }
+SetTime = "time"i _ ":" _ numerator:Int _ "/" _ denominator:Int { return node('SetTime', { numerator, denominator }); }
 SetSubdivision = ("div"i _ ":" _)? fraction:Fraction {
   return node('SetSubdivision', {
     subdivision: fraction.numerator,

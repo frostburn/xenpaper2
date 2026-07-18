@@ -41,6 +41,43 @@ describe('grammarToChars', () => {
     ])
   })
 
+  it('syntax-highlights time signature setters', () => {
+    expect(colors(grammarToChars(parse('(time: 5/4)')))).toEqual([
+      'setterGroup',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setterGroup',
+    ])
+  })
+
+  it('highlights barlines that do not match the active time signature in error orange', () => {
+    const ast = parse('(time:5/4)(4)0 1 2 3|4|')
+    processGrammar(ast)
+
+    expect(colors(grammarToChars(ast)).filter((color) => color === 'error')).toHaveLength(1)
+  })
+
+  it('leaves barline syntax highlighting off for zero time', () => {
+    const ast = parse('(time:5/4)(4)0 1 2 3|(time:0/1)4|')
+    processGrammar(ast)
+
+    expect(colors(grammarToChars(ast)).filter((color) => color === 'error')).toHaveLength(1)
+  })
+
+  it('highlights nested hold-tail barlines that do not match the active time signature', () => {
+    const ast = parse('(time:4/4)(4)1--|--')
+    processGrammar(ast)
+
+    expect(colors(grammarToChars(ast)).filter((color) => color === 'error')).toHaveLength(1)
+  })
+
   it('syntax-highlights tempo ramp setters', () => {
     expect(colors(grammarToChars(parse('(accel;rall;tramp)')))).toEqual([
       'setterGroup',

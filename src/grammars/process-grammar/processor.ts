@@ -39,6 +39,7 @@ import type {
   SetterType,
   SetGrooveType,
   DelimiterType,
+  RepeatType,
   KeyTonicType,
   MosKeyTonicType,
   PlotNominalType,
@@ -376,8 +377,11 @@ const mapGrooveBeat = (time: number, groove: Groove | null): number => {
   return groove.targetOrigin + cycle * groove.span + sourceTime
 }
 
+const effectiveSubdivision = (context: Context, subdivision = context.subdivision): number =>
+  subdivision * context.timeSignatureDenominator
+
 const setGroove = (setter: SetGrooveType, context: Context): void => {
-  let subdivision = context.subdivision
+  let subdivision = effectiveSubdivision(context)
   let time = 0
   const targets: number[] = []
 
@@ -385,7 +389,7 @@ const setGroove = (setter: SetGrooveType, context: Context): void => {
     if (item.type === 'SetSubdivision') {
       assertFinitePositive('SetGroove.SetSubdivision.subdivision', item.subdivision)
       assertFinitePositive('SetGroove.SetSubdivision.denominator', item.denominator)
-      subdivision = item.denominator / item.subdivision
+      subdivision = effectiveSubdivision(context, item.denominator / item.subdivision)
       assertFinitePositive('SetGroove.subdivision', subdivision)
       continue
     }
@@ -429,7 +433,7 @@ const consumeDuration = (
 
   if (context.graceSubdivision !== null) {
     assertFinitePositive('context.graceSubdivision', context.graceSubdivision)
-    const graceDuration = units * context.graceSubdivision
+    const graceDuration = units * effectiveSubdivision(context, context.graceSubdivision)
     context.time += graceDuration
     context.stolenTime += graceDuration
     context.graceNotesRemaining -= 1
@@ -443,7 +447,7 @@ const consumeDuration = (
     }
   }
 
-  const duration = units * context.subdivision - context.stolenTime
+  const duration = units * effectiveSubdivision(context) - context.stolenTime
   if (duration < 0) {
     throw new Error('Grace notes stole more time than the following item has')
   }
@@ -456,7 +460,26 @@ const consumeDuration = (
   }
 }
 
+const markHoldTailBarlines = (tail: TailType | null, context: Context): void => {
+  if (tail?.type !== 'Hold' || !Array.isArray(tail.parts)) return
+
+  let position = 1
+  const unitDuration = effectiveSubdivision(
+    context,
+    context.graceSubdivision ?? context.subdivision,
+  )
+  for (const part of tail.parts) {
+    if (part.type === 'HoldDash') {
+      position += 1
+      continue
+    }
+
+    markBarlineSyntax(part, context, context.time + position * unitDuration)
+  }
+}
+
 const tailToTime = (tail: TailType | null, context: Context): { time: number; timeEnd: number } => {
+  markHoldTailBarlines(tail, context)
   const duration = tail?.type === 'Hold' ? tail.length + 1 : 1
   return consumeDuration(duration, context, context.articulation)
 }
@@ -573,6 +596,9 @@ type Context = {
   }
   time: number
   subdivision: number
+  timeSignatureNumerator: number
+  timeSignatureDenominator: number
+  timeSignatureOrigin: number
   scale: number[]
   scaleLabels: string[]
   octaveSize: number
@@ -1087,6 +1113,17 @@ const setterToMosc = (setter: SetterType | DelimiterType, context: Context): Mos
     return tempoRampToMosc(60000 / bms, context)
   }
 
+  if (type === 'SetTime') {
+    const { numerator, denominator } = setter
+    if (numerator < 0 || !Number.isFinite(numerator))
+      throw new Error('SetTime.numerator must be finite and non-negative.')
+    assertFinitePositive('SetTime.denominator', denominator)
+    context.timeSignatureNumerator = numerator
+    context.timeSignatureDenominator = denominator
+    context.timeSignatureOrigin = context.time
+    return []
+  }
+
   if (type === 'SetGroove') {
     setGroove(setter, context)
     return []
@@ -1432,6 +1469,36 @@ const setterToRulerState = (
   return initial
 }
 
+const BARLINE_EPSILON = 1e-9
+
+const isBarlineSyntaxItem = (item: { type: string }): item is DelimiterType | RepeatType =>
+  item.type === 'BarLine' ||
+  item.type === 'RepeatStart' ||
+  item.type === 'RepeatEnd' ||
+  item.type === 'RepeatEndStart' ||
+  item.type === 'RepeatEndingStart'
+
+const markBarlineSyntax = (
+  item: DelimiterType | RepeatType,
+  context: Context,
+  sourceTime = context.time,
+): void => {
+  const mappedTime = mapGrooveBeat(sourceTime, context.groove)
+  item.time = [mappedTime, mappedTime]
+  times.push(item.time)
+
+  if (context.timeSignatureNumerator === 0) return
+
+  const measureLength = context.timeSignatureNumerator
+  assertFinitePositive('time signature measure length', measureLength)
+  const relativeTime = sourceTime - context.timeSignatureOrigin
+  const measures = relativeTime / measureLength
+  const nearestMeasure = Math.round(measures)
+  if (Math.abs(measures - nearestMeasure) > BARLINE_EPSILON) {
+    item.barlineSyntaxError = true
+  }
+}
+
 export type Processed = {
   score: MoscBeatScore
   initialRulerState: InitialRulerState
@@ -1502,6 +1569,9 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
     },
     time: 0,
     subdivision: 0.5,
+    timeSignatureNumerator: 0,
+    timeSignatureDenominator: 1,
+    timeSignatureOrigin: 0,
     scale,
     scaleLabels: edoToLabels(12, scale, 2),
     octaveSize: 2,
@@ -1556,14 +1626,14 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
 
   grammarSequence.items.forEach((item): void => {
     const { type } = item
+    if (isBarlineSyntaxItem(item)) {
+      markBarlineSyntax(item, context)
+      return
+    }
+
     if (
       type === 'Comment' ||
-      type === 'BarLine' ||
       type === 'Whitespace' ||
-      type === 'RepeatStart' ||
-      type === 'RepeatEnd' ||
-      type === 'RepeatEndStart' ||
-      type === 'RepeatEndingStart' ||
       type === 'Segno' ||
       type === 'Coda' ||
       type === 'Fine' ||

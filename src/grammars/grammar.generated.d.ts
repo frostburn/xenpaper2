@@ -4,6 +4,7 @@ export type NodeType<Type extends string = string, Delimiter extends boolean = f
   type: Type
   delimiter: Delimiter
   time?: [number, number]
+  barlineSyntaxError?: boolean
   location: LocationRange
 }
 
@@ -262,6 +263,11 @@ export type SetBmsType = NodeType<'SetBms'> & {
   bms: number
 }
 
+export type SetTimeType = NodeType<'SetTime'> & {
+  numerator: number
+  denominator: number
+}
+
 // subdivision
 
 export type SetSubdivisionType = NodeType<'SetSubdivision'> & {
@@ -411,6 +417,7 @@ export type SetRulerType = SetRulerRangeType | SetRulerPlotType
 export type SetterType =
   | SetBpmType
   | SetBmsType
+  | SetTimeType
   | SetSubdivisionType
   | SetGraceType
   | SetGlissType

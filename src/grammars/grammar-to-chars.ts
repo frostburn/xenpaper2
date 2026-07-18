@@ -32,6 +32,7 @@ type GrammarNode = {
   time?: PlayTime
   value?: { nominalType?: 'latin' | 'greek' | 'mos' }
   outOfIntegerSteps?: boolean
+  barlineSyntaxError?: boolean
   location: LocationRange
   [key: string]: unknown
 }
@@ -99,6 +100,7 @@ const colorMap = new Map<string, HighlightColor>([
   ['SetRoot.PitchAbsolute', 'scale'],
   ['SetBpm', 'setter'],
   ['SetBms', 'setter'],
+  ['SetTime', 'setter'],
   ['SetSubdivision', 'setter'],
   ['SetGrace', 'setter'],
   ['SetGliss', 'setter'],
@@ -133,7 +135,9 @@ const extract = (chars: CharData[], data: unknown, parent: string, withinTime?: 
     const grammarNode = isGrammarNode(node) ? node : undefined
     const type = grammarNode?.type
     let color = type ? colorMap.get(`${parent}.${type}`) || colorMap.get(type) : undefined
-    if (type === 'Pitch' && grammarNode?.outOfIntegerSteps) {
+    if (grammarNode?.barlineSyntaxError) {
+      color = 'error'
+    } else if (type === 'Pitch' && grammarNode?.outOfIntegerSteps) {
       color = grammarNode?.value?.nominalType === 'greek' ? 'invalidAlternatePitch' : 'invalidPitch'
     } else if (type === 'Pitch' && grammarNode?.value?.nominalType === 'greek') {
       color = 'alternatePitch'
