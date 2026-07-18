@@ -406,6 +406,31 @@ MOS{5L2s}(plot:MOS)`,
       },
     ],
   },
+  {
+    title: 'Time signatures',
+    demos: [
+      {
+        description:
+          'Use an explicit time signature to get visual feedback on where the barlines should go.',
+        tune: `# Time signature denominator indicates
+# the "beat" in "beats per minute".
+(bpm:180;time:5/4;8) {24edo}
+
+# Barlines that align with the time
+# signature are highlighted as usual.
+|: 0-- 0--   5-   10-  |
+   0-- 0--  \`20- \`23- :|
+
+# Barlines that are in the wrong spot
+# are colored in red.
+14- 0 14- 10- 11- | 12
+10- 0 10- 5-  4-   \`23 |
+
+# Multiple aligned barlines are allowed.
+0----     .....        ||`,
+      },
+    ],
+  },
 ]
 </script>
 
