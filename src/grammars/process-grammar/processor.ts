@@ -39,6 +39,7 @@ import type {
   SetterType,
   SetGrooveType,
   DelimiterType,
+  RepeatType,
   KeyTonicType,
   MosKeyTonicType,
   PlotNominalType,
@@ -573,6 +574,11 @@ type Context = {
   }
   time: number
   subdivision: number
+  timeSignatureNumerator: number
+  timeSignatureDenominator: number
+  timeSignatureOrigin: number
+  bpmBeatDenominator: number
+  currentBpm: number
   scale: number[]
   scaleLabels: string[]
   octaveSize: number
@@ -1000,6 +1006,9 @@ const volumeParam = (time: number, db: number): MoscBeatParam & VolumeRampSource
   },
 })
 
+const effectiveTempoBpm = (bpm: number, context: Context): number =>
+  bpm / context.bpmBeatDenominator
+
 const tempoParam = (time: number, bpm: number): MoscTempo => ({
   type: 'TEMPO',
   time,
@@ -1009,7 +1018,10 @@ const tempoParam = (time: number, bpm: number): MoscTempo => ({
 
 const tempoRampToMosc = (bpm: number, context: Context): MoscTempo[] => {
   const ramp = context.tempoRamp
-  const item = tempoParam(mapGrooveBeat(context.time, context.groove), bpm)
+  const item = tempoParam(
+    mapGrooveBeat(context.time, context.groove),
+    effectiveTempoBpm(bpm, context),
+  )
   if (!ramp) return [item]
 
   if (!ramp.source) {
@@ -1078,13 +1090,32 @@ const setterToMosc = (setter: SetterType | DelimiterType, context: Context): Mos
   if (type === 'SetBpm') {
     const { bpm } = setter
     assertFinitePositive('SetBpm.bpm', bpm)
+    context.currentBpm = bpm
     return tempoRampToMosc(bpm, context)
   }
 
   if (type === 'SetBms') {
     const { bms } = setter
     assertFinitePositive('SetBms.bms', bms)
-    return tempoRampToMosc(60000 / bms, context)
+    context.currentBpm = 60000 / bms
+    return tempoRampToMosc(context.currentBpm, context)
+  }
+
+  if (type === 'SetTime') {
+    const { numerator, denominator } = setter
+    if (numerator < 0 || !Number.isFinite(numerator))
+      throw new Error('SetTime.numerator must be finite and non-negative.')
+    assertFinitePositive('SetTime.denominator', denominator)
+    context.timeSignatureNumerator = numerator
+    context.timeSignatureDenominator = denominator
+    context.timeSignatureOrigin = context.time
+    context.bpmBeatDenominator = denominator
+    return [
+      tempoParam(
+        mapGrooveBeat(context.time, context.groove),
+        effectiveTempoBpm(context.currentBpm, context),
+      ),
+    ]
   }
 
   if (type === 'SetGroove') {
@@ -1432,6 +1463,32 @@ const setterToRulerState = (
   return initial
 }
 
+const BARLINE_EPSILON = 1e-9
+
+const isBarlineSyntaxItem = (item: { type: string }): item is DelimiterType | RepeatType =>
+  item.type === 'BarLine' ||
+  item.type === 'RepeatStart' ||
+  item.type === 'RepeatEnd' ||
+  item.type === 'RepeatEndStart' ||
+  item.type === 'RepeatEndingStart'
+
+const markBarlineSyntax = (item: DelimiterType | RepeatType, context: Context): void => {
+  const mappedTime = mapGrooveBeat(context.time, context.groove)
+  item.time = [mappedTime, mappedTime]
+  times.push(item.time)
+
+  if (context.timeSignatureNumerator === 0) return
+
+  const measureLength = context.timeSignatureNumerator / context.timeSignatureDenominator
+  assertFinitePositive('time signature measure length', measureLength)
+  const relativeTime = context.time - context.timeSignatureOrigin
+  const measures = relativeTime / measureLength
+  const nearestMeasure = Math.round(measures)
+  if (Math.abs(measures - nearestMeasure) > BARLINE_EPSILON) {
+    item.barlineSyntaxError = true
+  }
+}
+
 export type Processed = {
   score: MoscBeatScore
   initialRulerState: InitialRulerState
@@ -1502,6 +1559,11 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
     },
     time: 0,
     subdivision: 0.5,
+    timeSignatureNumerator: 0,
+    timeSignatureDenominator: 1,
+    timeSignatureOrigin: 0,
+    bpmBeatDenominator: 1,
+    currentBpm: INITIAL_TEMPO.bpm,
     scale,
     scaleLabels: edoToLabels(12, scale, 2),
     octaveSize: 2,
@@ -1556,14 +1618,14 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
 
   grammarSequence.items.forEach((item): void => {
     const { type } = item
+    if (isBarlineSyntaxItem(item)) {
+      markBarlineSyntax(item, context)
+      return
+    }
+
     if (
       type === 'Comment' ||
-      type === 'BarLine' ||
       type === 'Whitespace' ||
-      type === 'RepeatStart' ||
-      type === 'RepeatEnd' ||
-      type === 'RepeatEndStart' ||
-      type === 'RepeatEndingStart' ||
       type === 'Segno' ||
       type === 'Coda' ||
       type === 'Fine' ||

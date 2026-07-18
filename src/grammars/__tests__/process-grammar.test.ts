@@ -85,6 +85,15 @@ const noteItems = (input: string) =>
 
 const noteLabels = (input: string): string[] => noteItems(input).map((item) => item.label)
 
+it('uses the time signature denominator as the bpm beat subdivision', () => {
+  const sequence = processGrammar(parseSource('(time:5/4)(bpm:120)(4)0 1')).score.sequence
+  const tempo = sequence.find(
+    (item): item is MoscTempo => item.type === 'TEMPO' && item.time === 0 && item.bpm === 30,
+  )
+
+  expect(tempo?.bpm).toBe(30)
+})
+
 const noteLabelDurations = (input: string): Array<[string, number]> =>
   noteItems(input).map((item) => [item.label, item.timeEnd - item.time])
 
