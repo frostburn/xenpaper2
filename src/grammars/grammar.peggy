@@ -16,11 +16,11 @@ SampleRateNote = "!" tail:Tail? {
 }
 SampleRatePitch = "!" { return node('SampleRateNote', { tail: null }); }
 Pitch
- = prefix:PitchPrefix value:(PitchAbsolute / PitchDegree) {
-  return node('Pitch', { octave: prefix.octave, value: { ...value, ups: value.ups + prefix.ups, lifts: value.lifts + prefix.lifts } });
-}
- / octave:OctaveModifier? value:(PitchCents / PitchHz / PitchOctaveDivision / TemperedPitchRatio / PitchRatio) {
+ = octave:OctaveModifier? value:(PitchCents / PitchHz / PitchOctaveDivision / TemperedPitchRatio / PitchRatio) {
   return node('Pitch', { octave, value });
+}
+ / prefix:PitchPrefix value:(PitchAbsolute / PitchDegree) {
+  return node('Pitch', { octave: prefix.octave, value: { ...value, ups: value.ups + prefix.ups, lifts: value.lifts + prefix.lifts } });
 }
  / value:(PitchAbsolute / PitchDegree) {
   return node('Pitch', { octave: null, value });

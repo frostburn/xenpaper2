@@ -828,6 +828,14 @@ describe('grammar', () => {
         ])
       })
 
+      it('should preserve octave-shifted numeric pitch forms', () => {
+        expect(strip(parser("'3/2 '700c '440Hz").sequence.items)).toMatchObject([
+          { type: 'Note', pitch: { octave: { octave: 1 }, value: { type: 'PitchRatio' } } },
+          { type: 'Note', pitch: { octave: { octave: 1 }, value: { type: 'PitchCents' } } },
+          { type: 'Note', pitch: { octave: { octave: 1 }, value: { type: 'PitchHz' } } },
+        ])
+      })
+
       it('should parse sequence with fraction notes', () => {
         expect(strip(parser('2/3,3/4')).sequence.items).toEqual([
           {
