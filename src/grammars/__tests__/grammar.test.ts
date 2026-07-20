@@ -120,6 +120,15 @@ describe('grammar', () => {
         ])
       })
 
+      it('should parse octave modifiers interleaved with up/down and lift/drop prefixes', () => {
+        expect(strip(parser('^\'0 \'^0 /"A "/A').sequence.items)).toMatchObject([
+          { type: 'Note', pitch: { octave: { octave: 1 }, value: { degree: 0, ups: 1 } } },
+          { type: 'Note', pitch: { octave: { octave: 1 }, value: { degree: 0, ups: 1 } } },
+          { type: 'Note', pitch: { octave: { octave: 2 }, value: { nominal: 'A', lifts: 1 } } },
+          { type: 'Note', pitch: { octave: { octave: 2 }, value: { nominal: 'A', lifts: 1 } } },
+        ])
+      })
+
       it('should require compact ratio and octave-division pitch syntax', () => {
         expect(strip(parser('3/2').sequence.items)).toMatchObject([
           { type: 'Note', pitch: { value: { type: 'PitchRatio', numerator: 3, denominator: 2 } } },
@@ -651,7 +660,7 @@ describe('grammar', () => {
       it('should error if hold is attempted after a rest', () => {
         expectParserFormattedErrorMessage(
           '2-.-',
-          `Error: Expected "!", "#", "(", ".", ":|", ":|:", "MOS", "[", "{", "|", "|:", "~", Greek nominal, [a-g], [j-z], apostrophe, end of input, grave, integer, number, quote, or whitespace but "-" found.
+          `Error: Expected "!", "#", "(", ".", "/", ":|", ":|:", "MOS", "[", "\\\\", "^", "v", "{", "|", "|:", "~", Greek nominal, [a-g], [j-z], apostrophe, end of input, grave, integer, number, quote, or whitespace but "-" found.
  --> test-input:1:4
   |
 1 | 2-.-
@@ -816,6 +825,14 @@ describe('grammar', () => {
             },
             tail: null,
           },
+        ])
+      })
+
+      it('should preserve octave-shifted numeric pitch forms', () => {
+        expect(strip(parser("'3/2 '700c '440Hz").sequence.items)).toMatchObject([
+          { type: 'Note', pitch: { octave: { octave: 1 }, value: { type: 'PitchRatio' } } },
+          { type: 'Note', pitch: { octave: { octave: 1 }, value: { type: 'PitchCents' } } },
+          { type: 'Note', pitch: { octave: { octave: 1 }, value: { type: 'PitchHz' } } },
         ])
       })
 
@@ -1167,7 +1184,7 @@ describe('grammar', () => {
       it('should error if chord is empty or not delimited properly', () => {
         expectParserErrorMessage(
           '[]',
-          'Expected "!", "~", Greek nominal, [a-g], [j-z], apostrophe, grave, integer, number, or quote but "]" found.',
+          'Expected "!", "/", "\\\\", "^", "v", "~", Greek nominal, [a-g], [j-z], apostrophe, grave, integer, number, or quote but "]" found.',
         )
       })
 

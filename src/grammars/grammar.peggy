@@ -15,9 +15,31 @@ SampleRateNote = "!" tail:Tail? {
   return node('SampleRateNote', { tail });
 }
 SampleRatePitch = "!" { return node('SampleRateNote', { tail: null }); }
-Pitch = octave:OctaveModifier? value:(PitchAbsolute / PitchCents / PitchHz / PitchOctaveDivision / TemperedPitchRatio / PitchRatio / PitchDegree) {
+Pitch
+ = octave:OctaveModifier? value:(PitchCents / PitchHz / PitchOctaveDivision / TemperedPitchRatio / PitchRatio) {
   return node('Pitch', { octave, value });
 }
+ / prefix:PitchPrefix value:(PitchAbsolute / PitchDegree) {
+  return node('Pitch', { octave: prefix.octave, value: { ...value, ups: value.ups + prefix.ups, lifts: value.lifts + prefix.lifts } });
+}
+ / value:(PitchAbsolute / PitchDegree) {
+  return node('Pitch', { octave: null, value });
+}
+PitchPrefix = parts:PitchPrefixPart+ {
+  const { octave, ups, lifts } = parts.reduce((sum, part) => ({
+    octave: sum.octave + part.octave,
+    ups: sum.ups + part.ups,
+    lifts: sum.lifts + part.lifts,
+  }), { octave: 0, ups: 0, lifts: 0 });
+  return {
+    octave: octave === 0 ? null : node('OctaveModifier', { octave }),
+    ups,
+    lifts,
+  };
+}
+PitchPrefixPart
+ = shift:(Apostrophe / Quote / Grave) { return { octave: shift, ups: 0, lifts: 0 }; }
+ / updown:UpDown { return { octave: 0, ...updown }; }
 OctaveModifier = shifts:(Apostrophe / Quote / Grave)+ {
   const octave = shifts.reduce((sum, shift) => sum + shift, 0);
   return node('OctaveModifier', { octave });
@@ -25,6 +47,7 @@ OctaveModifier = shifts:(Apostrophe / Quote / Grave)+ {
 Apostrophe "apostrophe" = "'" { return 1; }
 Quote "quote" = '"' { return 2; }
 Grave "grave" = "`" { return -1; }
+UpDown = '^' { return { ups: 1, lifts: 0 }; } / 'v' { return { ups: -1, lifts: 0 }; } / '/' { return { ups: 0, lifts: 1 }; } / '\\' { return { ups: 0, lifts: -1 }; }
 LatinNominal = nominal:[a-g]i { return { nominal, nominalType: 'latin' } }
 MosNominal = nominal:$([j-z]i+) { return { nominal, nominalType: 'mos' } }
 GreekNominal "Greek nominal" = ([α-ω]i / "alp"i / "bet"i / "gam"i / "del"i / "eps"i / "zet"i / "eta"i / "the"i / "iot"i / "kap"i / "muu"i / "nuu"i / "xii"i / "omi"i / "pii"i / "rho"i / "fsi"i / "sig"i / "tau"i / "ups"i / "phi"i / "chi"i / "psi"i / "ome"i) {
@@ -34,18 +57,11 @@ Accidental "accidental" = ReservedAccidental / '𝄪' / '𝄫' / '𝄲' / '𝄳'
 ReservedAccidental = accidental:[acefg] {
   error(`Accidental '${accidental}' is reserved for future use.`);
 }
-UpsAndDowns "Ups and Downs" = ('^' / 'v' / '/' / '\\')* {
-  let ups = 0;
-  let lifts = 0;
-  for (const c of text()) {
-    switch (c) {
-      case '^': ++ups; break;
-      case 'v': --ups; break;
-      case '/': ++lifts; break;
-      case '\\': --lifts; break;
-    }
-  }
-  return { ups, lifts }
+UpsAndDowns "Ups and Downs" = updowns:UpDown* {
+  return updowns.reduce((sum, updown) => ({
+    ups: sum.ups + updown.ups,
+    lifts: sum.lifts + updown.lifts,
+  }), { ups: 0, lifts: 0 });
 }
 InflectionFlavor = 'n' / 'l' / 'h' / 'm' / 's' / 'f' / 'c' / 'q' / 't' / ''
 Inflection "inflection" = type: ('^' / 'v') value: Int flavor: InflectionFlavor {
