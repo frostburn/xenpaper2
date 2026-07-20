@@ -82,6 +82,8 @@ export type PitchOctaveDivisionType = NodeType<'PitchOctaveDivision'> & {
 export type PitchRatioType = NodeType<'PitchRatio'> & {
   numerator: number
   denominator: number
+  ups?: number
+  lifts?: number
   tempered?: boolean
   temperedPrefix?: DelimiterType
 }

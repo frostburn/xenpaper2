@@ -38,10 +38,11 @@ type ExpandedChordPitch =
   | { type: 'SampleRateNote'; pitch: SampleRateNoteType }
   | { type: 'RatioChordPitch'; ratio: number; fraction: RatioFraction | null; tempered: boolean }
 
-const pitchRatioFraction = (pitch: PitchType): RatioFraction | null =>
-  pitch.value.type === 'PitchRatio'
-    ? { numerator: pitch.value.numerator, denominator: pitch.value.denominator }
-    : null
+const pitchRatioFraction = (pitch: PitchType): RatioFraction | null => {
+  if (pitch.value.type !== 'PitchRatio') return null
+  if ((pitch.value.ups ?? 0) !== 0 || (pitch.value.lifts ?? 0) !== 0) return null
+  return { numerator: pitch.value.numerator, denominator: pitch.value.denominator }
+}
 
 export const expandChordPitchGroup = (
   chordPitches: ChordPitchType[],
