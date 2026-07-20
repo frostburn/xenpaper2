@@ -228,6 +228,12 @@ describe('groove setter', () => {
     expect(notes[1]!.timeEnd).toBe(1)
   })
 
+  it('multiplies groove accents into note velocity', () => {
+    const notes = noteItems('(groove:(ff)!(mf)!!! (fff)!(p)!!!)(2)0 1 2 3 4 5 6 7')
+
+    expect(notes.map((note) => note.velocityMultiplier ?? 1)).toEqual([1.6, 1, 1, 1, 2, 0.6, 1, 1])
+  })
+
   it('starts replacement grooves at the current mapped time', () => {
     const notes = noteItems('(groove:(5)!-- !-)(4)0 1 (groove:(5)!-- !-)2 3')
 

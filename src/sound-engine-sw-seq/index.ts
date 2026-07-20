@@ -203,7 +203,10 @@ export class SoundEngineSwSeq extends SoundEngine {
           ...point,
           time: point.time - note.time,
         }))
-        const noteHandle = this.synth.trigger(patch)
+        const noteHandle = this.synth.trigger({
+          ...patch,
+          velocity: patch.velocity * (note.velocityMultiplier ?? 1),
+        })
         const noteEventId = this.transport.scheduleParametricNote({
           noteOn: (time) => {
             noteHandle.noteOn(time)

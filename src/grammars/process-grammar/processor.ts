@@ -356,6 +356,11 @@ const setRoot = (item: SetRootType, context: Context): void => {
   context.rootNominal = rootNominal
 }
 
+const GROOVE_NEUTRAL_VELOCITY = 0.5
+
+const velocityMultiplierProp = (velocityMultiplier: number): { velocityMultiplier?: number } =>
+  velocityMultiplier === 1 ? {} : { velocityMultiplier }
+
 const mapGrooveBeat = (time: number, groove: Groove | null): number => {
   if (groove === null) return time
   const relativeTime = time - groove.sourceOrigin
@@ -380,10 +385,21 @@ const mapGrooveBeat = (time: number, groove: Groove | null): number => {
 const effectiveSubdivision = (context: Context, subdivision = context.subdivision): number =>
   subdivision * context.timeSignatureDenominator
 
+const mapGrooveAccent = (time: number, groove: Groove | null): number => {
+  if (groove === null || groove.accents.length === 0) return 1
+  const relativeTime = time - groove.sourceOrigin
+  const sourceTime = mmod(relativeTime, groove.span)
+  const sourceStep = groove.span / groove.accents.length
+  const index = Math.min(Math.floor(sourceTime / sourceStep), groove.accents.length - 1)
+  return groove.accents[index] ?? 1
+}
+
 const setGroove = (setter: SetGrooveType, context: Context): void => {
   let subdivision = effectiveSubdivision(context)
   let time = 0
+  let accent = 1
   const targets: number[] = []
+  const accents: number[] = []
 
   for (const item of setter.items) {
     if (item.type === 'SetSubdivision') {
@@ -394,9 +410,17 @@ const setGroove = (setter: SetGrooveType, context: Context): void => {
       continue
     }
 
+    if (item.type === 'SetVelocity') {
+      limit('SetGroove.SetVelocity.velocity', item.velocity, 0, 4)
+      accent = item.velocity / GROOVE_NEUTRAL_VELOCITY
+      continue
+    }
+
     if (item.type === 'SampleRateNote') {
       targets.push(time)
+      accents.push(accent)
       time += (item.tail?.type === 'Hold' ? item.tail.length + 1 : 1) * subdivision
+      accent = 1
       continue
     }
 
@@ -416,6 +440,7 @@ const setGroove = (setter: SetGrooveType, context: Context): void => {
     sourceOrigin: context.time,
     targetOrigin,
     span: time,
+    accents,
     points: [
       ...targets.map((target, index) => ({ source: index * sourceStep, target })),
       { source: time, target: time },
@@ -654,6 +679,7 @@ type Groove = {
   sourceOrigin: number
   targetOrigin: number
   span: number
+  accents: number[]
   points: Array<{ source: number; target: number }>
 }
 
@@ -746,6 +772,7 @@ const tieLegatoGlissandi = (groups: GlissandoGroup[]): void => {
 }
 
 const noteToMosc = (note: NoteType, context: Context): MoscBeatNote[] => {
+  const velocityMultiplier = mapGrooveAccent(context.time, context.groove)
   const timeProps = tailToTime(note.tail, context)
 
   // mutate ast node to add time
@@ -761,6 +788,7 @@ const noteToMosc = (note: NoteType, context: Context): MoscBeatNote[] => {
       type: 'NOTE_BEAT_TIME',
       hz,
       label,
+      ...velocityMultiplierProp(velocityMultiplier),
       ...timeProps,
     },
   ]
@@ -770,6 +798,7 @@ const sampleRateNoteToMosc = (
   note: SampleRateNoteType,
   context: Context,
 ): MoscBeatSampleRateNote[] => {
+  const velocityMultiplier = mapGrooveAccent(context.time, context.groove)
   const timeProps = tailToTime(note.tail, context)
 
   // mutate ast node to add time
@@ -781,6 +810,7 @@ const sampleRateNoteToMosc = (
     {
       type: 'SAMPLE_RATE_NOTE_BEAT_TIME',
       label: 'sample rate',
+      ...velocityMultiplierProp(velocityMultiplier),
       ...timeProps,
     },
   ]
@@ -792,6 +822,7 @@ const chordToMosc = (
 ): MoscBeatPlayableNote[] => {
   const { tail, pitches } = chord
   const chordPitches: ChordPitchType[] = pitches
+  const velocityMultiplier = mapGrooveAccent(context.time, context.groove)
   const timeProps = tailToTime(tail, context)
 
   // mutate ast node to add time
@@ -809,6 +840,7 @@ const chordToMosc = (
       return {
         type: 'SAMPLE_RATE_NOTE_BEAT_TIME',
         label: 'sample rate',
+        ...velocityMultiplierProp(velocityMultiplier),
         ...timeProps,
       }
     }
@@ -818,6 +850,7 @@ const chordToMosc = (
         type: 'NOTE_BEAT_TIME',
         hz: pitch.ratio * context.rootHz,
         label: pitchToLabel(pitch.pitch, context),
+        ...velocityMultiplierProp(velocityMultiplier),
         ...timeProps,
       }
     }
@@ -830,6 +863,7 @@ const chordToMosc = (
       type: 'NOTE_BEAT_TIME',
       hz: pitch.ratio * context.rootHz,
       label,
+      ...velocityMultiplierProp(velocityMultiplier),
       ...timeProps,
     }
   })

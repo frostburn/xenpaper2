@@ -391,6 +391,32 @@ describe('grammarToChars', () => {
     ])
   })
 
+  it('highlights groove accent setters while preserving nested rhythm colors', () => {
+    expect(colors(grammarToChars(parse('(groove:(ff)!(mf)!!!)')))).toEqual([
+      'setterGroup',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'pitch',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'pitch',
+      'pitch',
+      'pitch',
+      'setterGroup',
+    ])
+  })
+
   it('highlights glissando setters', () => {
     expect(colors(grammarToChars(parse('(gliss) (gliss ease-in-out)')))).toEqual([
       'setterGroup',
