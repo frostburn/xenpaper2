@@ -475,6 +475,12 @@ describe('ratio chord syntax inside chords', () => {
     expect(noteLabels('{12edo} [4/3 ~3/2]')).toEqual(['4/3  498.0c', '~3/2  700.0c'])
     expect(noteLabels('{12edo} [4:5 ~6:7]')).toEqual(['4/4  0.0c', '5/4  386.3c', '686.3c'])
     expect(noteLabels('{12edo} ~101/1')).toEqual(['~101/1  800.0c'])
+    expect(noteLabels('{12edo} ^~3/2 /~3/2 v~3/2 \\~3/2')).toEqual([
+      '^~3/2  800.0c',
+      '/~3/2  1200.0c',
+      'v~3/2  600.0c',
+      '\\~3/2  200.0c',
+    ])
     expect(noteLabels('{11edo} ~3/2 ~7:8:11')).toEqual([
       '~3/2  654.5c',
       '~7/7  0.0c',

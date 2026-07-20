@@ -200,13 +200,13 @@ export const pitchToRatio = (pitch: PitchType, context: Context): number => {
   }
 
   if (type === 'PitchRatio') {
-    const { numerator, denominator } = pitch.value
+    const { numerator, denominator, ups = 0, lifts = 0 } = pitch.value
     assertFinitePositive('PitchRatio.denominator', denominator)
     const fraction = { numerator, denominator }
     const ratio = pitch.value.tempered
       ? temperedRatioFractionToRatio(fraction, context)
       : ratioFractionToRatio(fraction)
-    return ratio * octaveMulti
+    return ratio * Math.pow(up, ups) * Math.pow(lift, lifts) * octaveMulti
   }
 
   if (type === 'PitchCents') {
@@ -517,8 +517,10 @@ export const pitchToLabel = (pitch: PitchType, context: Context): string => {
   const centsLabel = ratioToCentsLabel(pitchToRatio(pitch, context), context.octaveSize)
 
   if (type === 'PitchRatio') {
-    const { numerator, denominator } = pitch.value
-    return `${pitch.value.tempered ? '~' : ''}${numerator}/${denominator}  ${centsLabel}`
+    const { numerator, denominator, ups = 0, lifts = 0 } = pitch.value
+    const upDownPrefix = `${'^'.repeat(Math.max(0, ups))}${'v'.repeat(Math.max(0, -ups))}`
+    const liftDropPrefix = `${'/'.repeat(Math.max(0, lifts))}${'\\'.repeat(Math.max(0, -lifts))}`
+    return `${upDownPrefix}${liftDropPrefix}${pitch.value.tempered ? '~' : ''}${numerator}/${denominator}  ${centsLabel}`
   }
 
   if (type === 'PitchOctaveDivision') {

@@ -19,6 +19,9 @@ Pitch
  = octave:OctaveModifier? value:(PitchCents / PitchHz / PitchOctaveDivision / TemperedPitchRatio / PitchRatio) {
   return node('Pitch', { octave, value });
 }
+ / prefix:PitchPrefix value:(TemperedPitchRatio / PitchRatio) {
+  return node('Pitch', { octave: prefix.octave, value: { ...value, ups: prefix.ups, lifts: prefix.lifts } });
+}
  / prefix:PitchPrefix value:(PitchAbsolute / PitchDegree) {
   return node('Pitch', { octave: prefix.octave, value: { ...value, ups: value.ups + prefix.ups, lifts: value.lifts + prefix.lifts } });
 }
