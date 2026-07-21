@@ -33,7 +33,6 @@ type SoundEngineVolumeParam = {
   db: number
   volumeAutomation?: SoundEngineVolumeAutomationPoint[]
 }
-type SoundEngineVelocityParam = { type: 'velocity'; velocity: number }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null
@@ -74,9 +73,6 @@ const isVolumeParam = (value: unknown): value is SoundEngineVolumeParam =>
   (value.volumeAutomation === undefined ||
     (Array.isArray(value.volumeAutomation) &&
       value.volumeAutomation.every(isVolumeAutomationPoint)))
-
-const isVelocityParam = (value: unknown): value is SoundEngineVelocityParam =>
-  isRecord(value) && value.type === 'velocity' && typeof value.velocity === 'number'
 
 const dbToGain = (db: number): number => Math.pow(10, db / 20)
 
@@ -205,7 +201,7 @@ export class SoundEngineSwSeq extends SoundEngine {
         }))
         const noteHandle = this.synth.trigger({
           ...patch,
-          velocity: patch.velocity * (note.velocityMultiplier ?? 1),
+          velocity: OSC_VOLUME * note.velocity,
         })
         const noteEventId = this.transport.scheduleParametricNote({
           noteOn: (time) => {
@@ -286,9 +282,6 @@ export class SoundEngineSwSeq extends SoundEngine {
             })
           }, item.time)
           this.transportEventIds.set(volumeEventId, true)
-        }
-        if (isVelocityParam(item.value)) {
-          patch.velocity = OSC_VOLUME * item.value.velocity
         }
       } else if (item.type === 'END_TIME') {
         this.endTime = item.time

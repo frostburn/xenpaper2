@@ -356,10 +356,8 @@ const setRoot = (item: SetRootType, context: Context): void => {
   context.rootNominal = rootNominal
 }
 
-const GROOVE_NEUTRAL_VELOCITY = 0.5
-
-const velocityMultiplierProp = (velocityMultiplier: number): { velocityMultiplier?: number } =>
-  velocityMultiplier === 1 ? {} : { velocityMultiplier }
+const DEFAULT_VELOCITY = 0.5
+const GROOVE_NEUTRAL_VELOCITY = DEFAULT_VELOCITY
 
 const mapGrooveBeat = (time: number, groove: Groove | null): number => {
   if (groove === null) return time
@@ -420,7 +418,6 @@ const setGroove = (setter: SetGrooveType, context: Context): void => {
       targets.push(time)
       accents.push(accent)
       time += (item.tail?.type === 'Hold' ? item.tail.length + 1 : 1) * subdivision
-      accent = 1
       continue
     }
 
@@ -646,6 +643,7 @@ type Context = {
   queuedVolumeRamp: VolumeRampState | null
   tempoRamp: TempoRampState | null
   queuedTempoRamp: TempoRampState | null
+  velocity: number
 }
 
 type GlissandoState = {
@@ -772,7 +770,7 @@ const tieLegatoGlissandi = (groups: GlissandoGroup[]): void => {
 }
 
 const noteToMosc = (note: NoteType, context: Context): MoscBeatNote[] => {
-  const velocityMultiplier = mapGrooveAccent(context.time, context.groove)
+  const velocity = context.velocity * mapGrooveAccent(context.time, context.groove)
   const timeProps = tailToTime(note.tail, context)
 
   // mutate ast node to add time
@@ -788,7 +786,7 @@ const noteToMosc = (note: NoteType, context: Context): MoscBeatNote[] => {
       type: 'NOTE_BEAT_TIME',
       hz,
       label,
-      ...velocityMultiplierProp(velocityMultiplier),
+      velocity,
       ...timeProps,
     },
   ]
@@ -798,7 +796,7 @@ const sampleRateNoteToMosc = (
   note: SampleRateNoteType,
   context: Context,
 ): MoscBeatSampleRateNote[] => {
-  const velocityMultiplier = mapGrooveAccent(context.time, context.groove)
+  const velocity = context.velocity * mapGrooveAccent(context.time, context.groove)
   const timeProps = tailToTime(note.tail, context)
 
   // mutate ast node to add time
@@ -810,7 +808,7 @@ const sampleRateNoteToMosc = (
     {
       type: 'SAMPLE_RATE_NOTE_BEAT_TIME',
       label: 'sample rate',
-      ...velocityMultiplierProp(velocityMultiplier),
+      velocity,
       ...timeProps,
     },
   ]
@@ -822,7 +820,7 @@ const chordToMosc = (
 ): MoscBeatPlayableNote[] => {
   const { tail, pitches } = chord
   const chordPitches: ChordPitchType[] = pitches
-  const velocityMultiplier = mapGrooveAccent(context.time, context.groove)
+  const velocity = context.velocity * mapGrooveAccent(context.time, context.groove)
   const timeProps = tailToTime(tail, context)
 
   // mutate ast node to add time
@@ -840,7 +838,7 @@ const chordToMosc = (
       return {
         type: 'SAMPLE_RATE_NOTE_BEAT_TIME',
         label: 'sample rate',
-        ...velocityMultiplierProp(velocityMultiplier),
+        velocity,
         ...timeProps,
       }
     }
@@ -850,7 +848,7 @@ const chordToMosc = (
         type: 'NOTE_BEAT_TIME',
         hz: pitch.ratio * context.rootHz,
         label: pitchToLabel(pitch.pitch, context),
-        ...velocityMultiplierProp(velocityMultiplier),
+        velocity,
         ...timeProps,
       }
     }
@@ -863,7 +861,7 @@ const chordToMosc = (
       type: 'NOTE_BEAT_TIME',
       hz: pitch.ratio * context.rootHz,
       label,
-      ...velocityMultiplierProp(velocityMultiplier),
+      velocity,
       ...timeProps,
     }
   })
@@ -1320,16 +1318,8 @@ const setterToMosc = (setter: SetterType | DelimiterType, context: Context): Mos
   if (type === 'SetVelocity') {
     const { velocity } = setter
     limit('SetVelocity.velocity', velocity, 0, 4)
-    return [
-      {
-        type: 'PARAM_BEAT_TIME',
-        time: mapGrooveBeat(context.time, context.groove),
-        value: {
-          type: 'velocity',
-          velocity,
-        },
-      },
-    ]
+    context.velocity = velocity
+    return []
   }
 
   if (type === 'SetKey') {
@@ -1455,6 +1445,7 @@ const nominalPlotToMosc = (nominalType: PlotNominalType, context: Context): Mosc
       timeEnd: mapGrooveBeat(context.time, context.groove),
       hz: ratio * context.rootHz,
       label: replaceCentsLabel(pitchToLabel(pitch, context), cents),
+      velocity: context.velocity,
     }
   })
 
@@ -1480,6 +1471,7 @@ const setterToRulerState = (
             timeEnd: mapGrooveBeat(context.time, context.groove),
             hz: ratio * context.rootHz,
             label: context.scaleLabels[i]!,
+            velocity: context.velocity,
           }),
         )
 
@@ -1585,15 +1577,6 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
     },
   }
 
-  const INITIAL_VELOCITY: MoscBeatParam = {
-    type: 'PARAM_BEAT_TIME',
-    time: 0,
-    value: {
-      type: 'velocity',
-      velocity: 0.5,
-    },
-  }
-
   const scale = edoToRatios(12, 2)
 
   const context: Context = {
@@ -1628,6 +1611,7 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
     queuedVolumeRamp: null,
     tempoRamp: null,
     queuedTempoRamp: null,
+    velocity: DEFAULT_VELOCITY,
   }
 
   const moscItems: MoscBeatItem[] = []
@@ -1801,7 +1785,6 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
     INITIAL_OSC,
     INITIAL_ENV,
     INITIAL_VOLUME,
-    INITIAL_VELOCITY,
     ...moscItems,
     {
       type: 'END_BEAT_TIME',
