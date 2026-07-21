@@ -415,6 +415,28 @@ describe('grammarToChars', () => {
       'pitch',
       'setterGroup',
     ])
+
+    expect(colors(grammarToChars(parse('(groove:(vel:80%)!)')))).toEqual([
+      'setterGroup',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'setter',
+      'pitch',
+      'setterGroup',
+    ])
   })
 
   it('highlights glissando setters', () => {

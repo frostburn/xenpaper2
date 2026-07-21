@@ -200,7 +200,7 @@ SetSubdivision = ("div"i _ ":" _)? fraction:Fraction {
 }
 SetGroove = "groove"i _ ":" _ items:GrooveItem* { return node('SetGroove', { items }); }
 GrooveItem = GrooveSubdivision / SetVelocityGroup / SetSubdivision / SampleRateNote / Whitespace
-SetVelocityGroup = "(" _ setter:SetVelocityShorthand _ ")" { return setter; }
+SetVelocityGroup = "(" _ setter:(SetVelocity / SetVelocityShorthand) _ ")" { return setter; }
 GrooveSubdivision = "(" _ setter:SetSubdivision _ ")" { return setter; }
 SetGliss = "gliss"i easing:(_ @GlissEasing)? {
   return node('SetGliss', { easing: (easing ?? 'linear').toLowerCase() });

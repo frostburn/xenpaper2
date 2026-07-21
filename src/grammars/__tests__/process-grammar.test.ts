@@ -249,6 +249,12 @@ describe('groove setter', () => {
     ])
   })
 
+  it('supports explicit velocity setters in groove accents', () => {
+    const notes = noteItems('(groove:(vel:80%)!(vel:25%)!)(2)0 1 2 3')
+
+    expect(notes.map((note) => note.velocity)).toEqual([0.8, 0.25, 0.8, 0.25])
+  })
+
   it('multiplies groove accents without floating-point issues', () => {
     const notes = noteItems('(groove:(3)(ff)!(mp)!!)(3)0 1 2 3 4 5 6 7 8 9--')
 

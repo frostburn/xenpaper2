@@ -2063,7 +2063,7 @@ describe('grammar', () => {
       })
 
       it('should parse groove accents as velocity setters', () => {
-        expect(strip(parser('(groove:(ff)!(mf)!!!)')).sequence.items).toEqual([
+        expect(strip(parser('(groove:(vel:80%)!(mf)!!!)')).sequence.items).toEqual([
           {
             type: 'SetterGroup',
             setters: [
