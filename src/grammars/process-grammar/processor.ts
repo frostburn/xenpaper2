@@ -360,14 +360,11 @@ const DEFAULT_VELOCITY = 0.5
 const GROOVE_NEUTRAL_VELOCITY = DEFAULT_VELOCITY
 const GROOVE_ACCENT_EPSILON = 1e-9
 
-const mapGrooveBeat = (time: number, groove: Groove | null, delayCycleBoundary = true): number => {
+const mapGrooveBeat = (time: number, groove: Groove | null): number => {
   if (groove === null) return time
   const relativeTime = time - groove.sourceOrigin
   const cycle = Math.floor(relativeTime / groove.span)
   const sourceTime = mmod(relativeTime, groove.span)
-  if (!delayCycleBoundary && relativeTime > 0 && sourceTime < GROOVE_ACCENT_EPSILON) {
-    return groove.targetOrigin + cycle * groove.span
-  }
   const points = groove.points
 
   for (let i = 0; i < points.length - 1; i++) {
@@ -422,6 +419,7 @@ const setGroove = (setter: SetGrooveType, context: Context): void => {
   const accents: number[] = []
   const articulations: number[] = []
   const restCutoffs: Array<number | undefined> = []
+  let sawNote = false
 
   for (const item of setter.items) {
     if (item.type === 'SetSubdivision') {
@@ -445,6 +443,7 @@ const setGroove = (setter: SetGrooveType, context: Context): void => {
     }
 
     if (item.type === 'SampleRateNote') {
+      sawNote = true
       const target = time
       targets.push(target)
       accents.push(accent)
@@ -455,8 +454,12 @@ const setGroove = (setter: SetGrooveType, context: Context): void => {
     }
 
     if (item.type === 'Rest') {
+      if (!sawNote) throw new Error('Groove cannot start with a rest')
       const lastTarget = targets[targets.length - 1]
-      if (lastTarget !== undefined) restCutoffs[targets.length - 1] = time - lastTarget
+      const lastRestCutoff = restCutoffs[targets.length - 1]
+      if (lastTarget !== undefined && lastRestCutoff === undefined) {
+        restCutoffs[targets.length - 1] = time - lastTarget
+      }
       time += item.length * subdivision
       continue
     }
@@ -511,7 +514,7 @@ const consumeDuration = (
     }
     return {
       time: mapGrooveBeat(time, context.groove),
-      timeEnd: mapGrooveBeat(time + graceDuration * articulation, context.groove, false),
+      timeEnd: mapGrooveBeat(time + graceDuration * articulation, context.groove),
     }
   }
 
@@ -524,7 +527,7 @@ const consumeDuration = (
   context.stolenTime = 0
   return {
     time: mapGrooveBeat(time, context.groove),
-    timeEnd: mapGrooveBeat(time + duration * articulation, context.groove, false),
+    timeEnd: mapGrooveBeat(time + duration * articulation, context.groove),
   }
 }
 
