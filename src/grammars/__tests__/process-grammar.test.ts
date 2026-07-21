@@ -239,6 +239,34 @@ describe('groove setter', () => {
     expect(notes[1]!.timeEnd).toBe(1)
   })
 
+  it('bakes groove rests into articulation', () => {
+    const notes = noteItems('(groove:(4)!.)(2)0 1')
+
+    expect(notes.map((note) => [note.time, note.timeEnd])).toEqual([
+      [0, 0.25],
+      [0.5, 0.75],
+    ])
+  })
+
+  it('supports groove articulation setters', () => {
+    const notes = noteItems('(groove:(4)(art:69%)!)(4)0 1')
+
+    expect(notes[0]!.time).toBe(0)
+    expect(notes[0]!.timeEnd).toBeCloseTo(0.1725)
+    expect(notes[1]!.time).toBe(0.25)
+    expect(notes[1]!.timeEnd).toBeCloseTo(0.4225)
+  })
+
+  it('delays groove beats with rests while baking target lengths into articulation', () => {
+    const notes = noteItems('(groove:(4).!!-!-)0 1 2')
+
+    expect(notes.map((note) => [note.time, note.timeEnd])).toEqual([
+      [0.25, 0.5],
+      [0.5, 1],
+      [1, 1.5],
+    ])
+  })
+
   it('multiplies groove accents into note velocity', () => {
     const notes = noteItems(
       '(groove:(ff)!(mf)!!! (fff)!(p)!!!)(2)0 1 2 3 (4)4 5 6 7 8 9 10 11 (2)0 1 2 3 4 5 6 7',

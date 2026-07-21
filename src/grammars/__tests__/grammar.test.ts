@@ -2062,6 +2062,23 @@ describe('grammar', () => {
         ])
       })
 
+      it('should parse groove rests and articulation', () => {
+        expect(strip(parser('(groove:(4)(art:69%)!.)')).sequence.items[0]).toMatchObject({
+          type: 'SetterGroup',
+          setters: [
+            {
+              type: 'SetGroove',
+              items: [
+                { type: 'SetSubdivision', subdivision: 4, denominator: 1 },
+                { type: 'SetArticulation', articulation: 0.69 },
+                { type: 'SampleRateNote', tail: null },
+                { type: 'Rest', length: 1 },
+              ],
+            },
+          ],
+        })
+      })
+
       it('should parse groove accents as velocity setters', () => {
         expect(strip(parser('(groove:(vel:80%)!(mf)!!!)')).sequence.items).toEqual([
           {

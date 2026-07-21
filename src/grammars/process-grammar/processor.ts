@@ -360,11 +360,14 @@ const DEFAULT_VELOCITY = 0.5
 const GROOVE_NEUTRAL_VELOCITY = DEFAULT_VELOCITY
 const GROOVE_ACCENT_EPSILON = 1e-9
 
-const mapGrooveBeat = (time: number, groove: Groove | null): number => {
+const mapGrooveBeat = (time: number, groove: Groove | null, delayCycleBoundary = true): number => {
   if (groove === null) return time
   const relativeTime = time - groove.sourceOrigin
   const cycle = Math.floor(relativeTime / groove.span)
   const sourceTime = mmod(relativeTime, groove.span)
+  if (!delayCycleBoundary && relativeTime > 0 && sourceTime < GROOVE_ACCENT_EPSILON) {
+    return groove.targetOrigin + cycle * groove.span
+  }
   const points = groove.points
 
   for (let i = 0; i < points.length - 1; i++) {
@@ -384,6 +387,19 @@ const mapGrooveBeat = (time: number, groove: Groove | null): number => {
 const effectiveSubdivision = (context: Context, subdivision = context.subdivision): number =>
   subdivision * context.timeSignatureDenominator
 
+const mapGrooveArticulation = (time: number, groove: Groove | null): number => {
+  if (groove === null || groove.articulations.length === 0) return 1
+  const relativeTime = time - groove.sourceOrigin
+  const sourceTime = mmod(relativeTime, groove.span)
+  const normalizedSourceTime = sourceTime >= groove.span - GROOVE_ACCENT_EPSILON ? 0 : sourceTime
+  const sourceStep = groove.span / groove.articulations.length
+  const index = Math.min(
+    Math.floor((normalizedSourceTime + GROOVE_ACCENT_EPSILON) / sourceStep),
+    groove.articulations.length - 1,
+  )
+  return groove.articulations[index] ?? 1
+}
+
 const mapGrooveAccent = (time: number, groove: Groove | null): number => {
   if (groove === null || groove.accents.length === 0) return 1
   const relativeTime = time - groove.sourceOrigin
@@ -401,8 +417,11 @@ const setGroove = (setter: SetGrooveType, context: Context): void => {
   let subdivision = effectiveSubdivision(context)
   let time = 0
   let accent = 1
+  let articulation = 1
   const targets: number[] = []
   const accents: number[] = []
+  const articulations: number[] = []
+  const restCutoffs: Array<number | undefined> = []
 
   for (const item of setter.items) {
     if (item.type === 'SetSubdivision') {
@@ -419,10 +438,26 @@ const setGroove = (setter: SetGrooveType, context: Context): void => {
       continue
     }
 
+    if (item.type === 'SetArticulation') {
+      limit('SetGroove.SetArticulation.articulation', item.articulation, 0, 4)
+      articulation = item.articulation
+      continue
+    }
+
     if (item.type === 'SampleRateNote') {
-      targets.push(time)
+      const target = time
+      targets.push(target)
       accents.push(accent)
       time += (item.tail?.type === 'Hold' ? item.tail.length + 1 : 1) * subdivision
+      articulations.push(articulation)
+      restCutoffs.push(undefined)
+      continue
+    }
+
+    if (item.type === 'Rest') {
+      const lastTarget = targets[targets.length - 1]
+      if (lastTarget !== undefined) restCutoffs[targets.length - 1] = time - lastTarget
+      time += item.length * subdivision
       continue
     }
 
@@ -431,18 +466,24 @@ const setGroove = (setter: SetGrooveType, context: Context): void => {
     throw new Error(`Unsupported groove item "${item.type}"`)
   }
 
-  if (targets.length < 2) {
-    throw new Error('Groove must contain at least two notes')
+  if (targets.length < 1) {
+    throw new Error('Groove must contain at least one note')
   }
   assertFinitePositive('SetGroove.span', time)
 
   const sourceStep = time / targets.length
+  const grooveArticulations = articulations.map((itemArticulation, index) => {
+    const targetDuration = restCutoffs[index]
+    if (targetDuration === undefined) return itemArticulation
+    return Math.min(1, targetDuration / sourceStep) * itemArticulation
+  })
   const targetOrigin = mapGrooveBeat(context.time, context.groove)
   context.groove = {
     sourceOrigin: context.time,
     targetOrigin,
     span: time,
     accents,
+    articulations: grooveArticulations,
     points: [
       ...targets.map((target, index) => ({ source: index * sourceStep, target })),
       { source: time, target: time },
@@ -470,7 +511,7 @@ const consumeDuration = (
     }
     return {
       time: mapGrooveBeat(time, context.groove),
-      timeEnd: mapGrooveBeat(time + graceDuration * articulation, context.groove),
+      timeEnd: mapGrooveBeat(time + graceDuration * articulation, context.groove, false),
     }
   }
 
@@ -483,7 +524,7 @@ const consumeDuration = (
   context.stolenTime = 0
   return {
     time: mapGrooveBeat(time, context.groove),
-    timeEnd: mapGrooveBeat(time + duration * articulation, context.groove),
+    timeEnd: mapGrooveBeat(time + duration * articulation, context.groove, false),
   }
 }
 
@@ -508,7 +549,11 @@ const markHoldTailBarlines = (tail: TailType | null, context: Context): void => 
 const tailToTime = (tail: TailType | null, context: Context): { time: number; timeEnd: number } => {
   markHoldTailBarlines(tail, context)
   const duration = tail?.type === 'Hold' ? tail.length + 1 : 1
-  return consumeDuration(duration, context, context.articulation)
+  return consumeDuration(
+    duration,
+    context,
+    context.articulation * mapGrooveArticulation(context.time, context.groove),
+  )
 }
 
 //
@@ -683,6 +728,7 @@ type Groove = {
   targetOrigin: number
   span: number
   accents: number[]
+  articulations: number[]
   points: Array<{ source: number; target: number }>
 }
 

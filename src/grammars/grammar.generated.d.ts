@@ -306,7 +306,9 @@ export type SetTempoRampType = NodeType<'SetTempoRamp'> & {
 export type GrooveItemType =
   | SetSubdivisionType
   | SetVelocityType
+  | SetArticulationType
   | SampleRateNoteType
+  | RestType
   | DelimiterType
 
 export type SetGrooveType = NodeType<'SetGroove'> & {
