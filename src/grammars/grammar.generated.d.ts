@@ -303,7 +303,11 @@ export type SetTempoRampType = NodeType<'SetTempoRamp'> & {
   easing: GlissEasingType
 }
 
-export type GrooveItemType = SetSubdivisionType | SampleRateNoteType | DelimiterType
+export type GrooveItemType =
+  | SetSubdivisionType
+  | SetVelocityType
+  | SampleRateNoteType
+  | DelimiterType
 
 export type SetGrooveType = NodeType<'SetGroove'> & {
   items: GrooveItemType[]

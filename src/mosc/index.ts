@@ -18,6 +18,7 @@ export type MoscBeatNote = {
   timeEnd: number
   hz: number
   pitchAutomation?: MoscPitchAutomationPoint[]
+  velocity: number
   label: string
 }
 
@@ -25,6 +26,7 @@ export type MoscBeatSampleRateNote = {
   type: 'SAMPLE_RATE_NOTE_BEAT_TIME'
   time: number
   timeEnd: number
+  velocity: number
   label: string
 }
 
@@ -34,6 +36,7 @@ export type MoscNote = {
   timeEnd: number
   hz: number
   pitchAutomation?: MoscPitchAutomationPoint[]
+  velocity: number
   label: string
 }
 
@@ -41,6 +44,7 @@ export type MoscSampleRateNote = {
   type: 'SAMPLE_RATE_NOTE_TIME'
   time: number
   timeEnd: number
+  velocity: number
   label: string
 }
 
@@ -229,6 +233,7 @@ export const scoreToTime = (score: MoscBeatScore): MoscScore => {
             time: thisBeatToTime(point.time),
           })),
           label: item.label,
+          velocity: item.velocity,
           time: thisBeatToTime(item.time),
           timeEnd: thisBeatToTime(item.timeEnd),
         }
@@ -237,6 +242,7 @@ export const scoreToTime = (score: MoscBeatScore): MoscScore => {
         return {
           type: 'SAMPLE_RATE_NOTE_TIME',
           label: item.label,
+          velocity: item.velocity,
           time: thisBeatToTime(item.time),
           timeEnd: thisBeatToTime(item.timeEnd),
         }

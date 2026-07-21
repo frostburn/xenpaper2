@@ -404,6 +404,15 @@ MOS{5L2s}(plot:MOS)`,
    \`9 \`8-- \`7-|
 0----- ...... ||`,
       },
+      {
+        description:
+          'Groove patterns can include accent dynamics. Accent values stay in effect until the next accent and multiply each note velocity.',
+        tune: `(4;groove:(ff)!!(pp)!(ff)!!(pp)!(ff)!(pp)!)
+0  2  3 5   7  9 10 12
+0  2  3 5   7  9 10 12
+12 10 9 7   10 9 7  5
+9  7  5 3   7  5 3  2`,
+      },
     ],
   },
   {

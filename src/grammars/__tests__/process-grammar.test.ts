@@ -67,16 +67,27 @@ const INITIAL_VOLUME = {
   },
 }
 
-const INITIAL_VELOCITY = {
-  type: 'PARAM_BEAT_TIME',
-  time: 0,
-  value: {
-    type: 'velocity',
-    velocity: 0.5,
-  },
-}
+const INITIAL = [INITIAL_TEMPO, INITIAL_OSC, INITIAL_ENV, INITIAL_VOLUME]
 
-const INITIAL = [INITIAL_TEMPO, INITIAL_OSC, INITIAL_ENV, INITIAL_VOLUME, INITIAL_VELOCITY]
+const withDefaultVelocity = <T>(value: T): T => {
+  if (Array.isArray(value)) return value.map((item) => withDefaultVelocity(item)) as T
+  if (!value || typeof value !== 'object') return value
+
+  const record = value as Record<string, unknown>
+  if (
+    (record.type === 'NOTE_BEAT_TIME' ||
+      record.type === 'NOTE_TIME' ||
+      record.type === 'SAMPLE_RATE_NOTE_BEAT_TIME' ||
+      record.type === 'SAMPLE_RATE_NOTE_TIME') &&
+    record.velocity === undefined
+  ) {
+    return { ...record, velocity: 0.5 } as T
+  }
+
+  return Object.fromEntries(
+    Object.entries(record).map(([key, childValue]) => [key, withDefaultVelocity(childValue)]),
+  ) as T
+}
 
 const parseSource = (input: string) => parse(input, { grammarSource: 'test-input' })
 
@@ -226,6 +237,30 @@ describe('groove setter', () => {
     expect(notes[0]!.timeEnd).toBeAround(0.6)
     expect(notes[1]!.time).toBeAround(0.6)
     expect(notes[1]!.timeEnd).toBe(1)
+  })
+
+  it('multiplies groove accents into note velocity', () => {
+    const notes = noteItems(
+      '(groove:(ff)!(mf)!!! (fff)!(p)!!!)(2)0 1 2 3 (4)4 5 6 7 8 9 10 11 (2)0 1 2 3 4 5 6 7',
+    )
+
+    expect(notes.map((note) => note.velocity)).toEqual([
+      0.8, 0.5, 0.5, 0.5, 1, 1, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.8, 0.5, 0.5, 0.5, 1, 0.3, 0.3, 0.3,
+    ])
+  })
+
+  it('supports explicit velocity setters in groove accents', () => {
+    const notes = noteItems('(groove:(vel:80%)!(vel:25%)!)(2)0 1 2 3')
+
+    expect(notes.map((note) => note.velocity)).toEqual([0.8, 0.25, 0.8, 0.25])
+  })
+
+  it('multiplies groove accents without floating-point issues', () => {
+    const notes = noteItems('(groove:(3)(ff)!(mp)!!)(3)0 1 2 3 4 5 6 7 8 9--')
+
+    expect(notes.map((note) => note.velocity)).toEqual([
+      0.8, 0.4, 0.4, 0.8, 0.4, 0.4, 0.8, 0.4, 0.4, 0.8,
+    ])
   })
 
   it('starts replacement grooves at the current mapped time', () => {
@@ -500,17 +535,16 @@ describe('ratio chord syntax inside chords', () => {
 })
 
 describe('grammar to mosc score', () => {
-  it('emits volume and velocity parameters from setters', () => {
-    expect(processGrammar(parseSource('(vol:-2dB; vel:50%; ff)')).score.sequence).toMatchObject([
+  it('applies volume parameters and stores velocity directly on notes', () => {
+    expect(processGrammar(parseSource('(vol:-2dB; vel:50%; ff)0')).score.sequence).toMatchObject([
       ...INITIAL,
       {
         type: 'PARAM_BEAT_TIME',
         time: 0,
         value: { type: 'volume', db: -2 },
       },
-      { type: 'PARAM_BEAT_TIME', time: 0, value: { type: 'velocity', velocity: 0.5 } },
-      { type: 'PARAM_BEAT_TIME', time: 0, value: { type: 'velocity', velocity: 0.8 } },
-      { type: 'END_BEAT_TIME', time: 0 },
+      { type: 'NOTE_BEAT_TIME', time: 0, timeEnd: 0.5, velocity: 0.8 },
+      { type: 'END_BEAT_TIME', time: 0.5 },
     ])
   })
 
@@ -1183,6 +1217,7 @@ describe('grammar to mosc score', () => {
       time: 0,
       timeEnd: 0.5,
       label: 'sample rate',
+      velocity: 0.5,
     })
   })
 
@@ -1197,6 +1232,7 @@ describe('grammar to mosc score', () => {
       time: 0,
       timeEnd: 0.25,
       label: 'sample rate',
+      velocity: 0.5,
     })
     expect(source.score.sequence).toContainEqual({
       type: 'NOTE_TIME',
@@ -1204,6 +1240,7 @@ describe('grammar to mosc score', () => {
       timeEnd: 0.25,
       hz: 220,
       label: '0\\12  0.0c',
+      velocity: 0.5,
     })
   })
 
@@ -1237,132 +1274,134 @@ describe('grammar to mosc score', () => {
   )
 
   it('should translate pitch types', () => {
-    expect(processGrammar(PITCH_TEST).score).toEqual({
-      sequence: [
-        ...INITIAL,
-        // pitch ratios
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 0,
-          timeEnd: 0.5,
-          hz: 220,
-          label: '1/1  0.0c',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 0.5,
-          timeEnd: 1,
-          hz: 275,
-          label: '5/4  386.3c',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 1,
-          timeEnd: 1.5,
-          hz: 330,
-          label: '3/2  702.0c',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 1.5,
-          timeEnd: 2,
-          hz: 440,
-          label: '2/1  1200.0c',
-        },
-        // pitch cents
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 2,
-          timeEnd: 2.5,
-          hz: 220,
-          label: '0c',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 2.5,
-          timeEnd: 3,
-          hz: 277.1826309768721,
-          label: '400c',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 3,
-          timeEnd: 3.5,
-          hz: 329.6275569128699,
-          label: '700c',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 3.5,
-          timeEnd: 4,
-          hz: 440,
-          label: '1200c',
-        },
-        // pitch hz
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 4,
-          timeEnd: 4.5,
-          hz: 220,
-          label: '220Hz',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 4.5,
-          timeEnd: 5,
-          hz: 440,
-          label: '440Hz',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 5,
-          timeEnd: 5.5,
-          hz: 880,
-          label: '880Hz',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 5.5,
-          timeEnd: 6,
-          hz: 1760,
-          label: '1760Hz',
-        },
-        // pitch octave divisions
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 6,
-          timeEnd: 6.5,
-          hz: 220,
-          label: '0\\4  0.0c',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 6.5,
-          timeEnd: 7,
-          hz: expect.toBeAround(261.6255653005986),
-          label: '1\\4  300.0c',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 7,
-          timeEnd: 7.5,
-          hz: expect.toBeAround(311.1269837220809),
-          label: '2\\4  600.0c',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 7.5,
-          timeEnd: 8,
-          hz: expect.toBeAround(369.99442271163446),
-          label: '3\\4  900.0c',
-        },
-        {
-          type: 'END_BEAT_TIME',
-          time: 8,
-        },
-      ],
-      lengthTime: 8,
-    })
+    expect(processGrammar(PITCH_TEST).score).toEqual(
+      withDefaultVelocity({
+        sequence: [
+          ...INITIAL,
+          // pitch ratios
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 0,
+            timeEnd: 0.5,
+            hz: 220,
+            label: '1/1  0.0c',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 0.5,
+            timeEnd: 1,
+            hz: 275,
+            label: '5/4  386.3c',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 1,
+            timeEnd: 1.5,
+            hz: 330,
+            label: '3/2  702.0c',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 1.5,
+            timeEnd: 2,
+            hz: 440,
+            label: '2/1  1200.0c',
+          },
+          // pitch cents
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 2,
+            timeEnd: 2.5,
+            hz: 220,
+            label: '0c',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 2.5,
+            timeEnd: 3,
+            hz: 277.1826309768721,
+            label: '400c',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 3,
+            timeEnd: 3.5,
+            hz: 329.6275569128699,
+            label: '700c',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 3.5,
+            timeEnd: 4,
+            hz: 440,
+            label: '1200c',
+          },
+          // pitch hz
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 4,
+            timeEnd: 4.5,
+            hz: 220,
+            label: '220Hz',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 4.5,
+            timeEnd: 5,
+            hz: 440,
+            label: '440Hz',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 5,
+            timeEnd: 5.5,
+            hz: 880,
+            label: '880Hz',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 5.5,
+            timeEnd: 6,
+            hz: 1760,
+            label: '1760Hz',
+          },
+          // pitch octave divisions
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 6,
+            timeEnd: 6.5,
+            hz: 220,
+            label: '0\\4  0.0c',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 6.5,
+            timeEnd: 7,
+            hz: expect.toBeAround(261.6255653005986),
+            label: '1\\4  300.0c',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 7,
+            timeEnd: 7.5,
+            hz: expect.toBeAround(311.1269837220809),
+            label: '2\\4  600.0c',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 7.5,
+            timeEnd: 8,
+            hz: expect.toBeAround(369.99442271163446),
+            label: '3\\4  900.0c',
+          },
+          {
+            type: 'END_BEAT_TIME',
+            time: 8,
+          },
+        ],
+        lengthTime: 8,
+      }),
+    )
   })
 
   //
@@ -1389,132 +1428,134 @@ describe('grammar to mosc score', () => {
 0,1,2,4`)
 
   it('should translate scale degrees', () => {
-    expect(processGrammar(SCALE_TEST).score).toEqual({
-      sequence: [
-        ...INITIAL,
-        // default scale (12edo)
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 0,
-          timeEnd: 0.5,
-          hz: 220,
-          label: '0\\12  0.0c',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 0.5,
-          timeEnd: 1,
-          hz: 277.1826309768721,
-          label: '4\\12  400.0c',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 1,
-          timeEnd: 1.5,
-          hz: 329.6275569128699,
-          label: '7\\12  700.0c',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 1.5,
-          timeEnd: 2,
-          hz: 440,
-          label: '0\\12  0.0c',
-        },
-        // ratios scale
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 2,
-          timeEnd: 2.5,
-          hz: 220,
-          label: '1/1  0.0c',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 2.5,
-          timeEnd: 3,
-          hz: 275,
-          label: '5/4  386.3c',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 3,
-          timeEnd: 3.5,
-          hz: 330,
-          label: '3/2  702.0c',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 3.5,
-          timeEnd: 4,
-          hz: 440,
-          label: '2/1  1200.0c',
-        },
-        // 19edo scale
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 4,
-          timeEnd: 4.5,
-          hz: 220,
-          label: '0\\19  0.0c',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 4.5,
-          timeEnd: 5,
-          hz: 273.83236968208513,
-          label: '6\\19  378.9c',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 5,
-          timeEnd: 5.5,
-          hz: 328.62697156398684,
-          label: '11\\19  694.7c',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 5.5,
-          timeEnd: 6,
-          hz: 440,
-          label: '0\\19  0.0c',
-        },
-        // multi ratio scale
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 6,
-          timeEnd: 6.5,
-          hz: 220,
-          label: '4/4  0.0c',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 6.5,
-          timeEnd: 7,
-          hz: 275,
-          label: '5/4  386.3c',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 7,
-          timeEnd: 7.5,
-          hz: 330,
-          label: '6/4  702.0c',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 7.5,
-          timeEnd: 8,
-          hz: 440,
-          label: '8/4  1200.0c',
-        },
-        {
-          type: 'END_BEAT_TIME',
-          time: 8,
-        },
-      ],
-      lengthTime: 8,
-    })
+    expect(processGrammar(SCALE_TEST).score).toEqual(
+      withDefaultVelocity({
+        sequence: [
+          ...INITIAL,
+          // default scale (12edo)
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 0,
+            timeEnd: 0.5,
+            hz: 220,
+            label: '0\\12  0.0c',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 0.5,
+            timeEnd: 1,
+            hz: 277.1826309768721,
+            label: '4\\12  400.0c',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 1,
+            timeEnd: 1.5,
+            hz: 329.6275569128699,
+            label: '7\\12  700.0c',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 1.5,
+            timeEnd: 2,
+            hz: 440,
+            label: '0\\12  0.0c',
+          },
+          // ratios scale
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 2,
+            timeEnd: 2.5,
+            hz: 220,
+            label: '1/1  0.0c',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 2.5,
+            timeEnd: 3,
+            hz: 275,
+            label: '5/4  386.3c',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 3,
+            timeEnd: 3.5,
+            hz: 330,
+            label: '3/2  702.0c',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 3.5,
+            timeEnd: 4,
+            hz: 440,
+            label: '2/1  1200.0c',
+          },
+          // 19edo scale
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 4,
+            timeEnd: 4.5,
+            hz: 220,
+            label: '0\\19  0.0c',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 4.5,
+            timeEnd: 5,
+            hz: 273.83236968208513,
+            label: '6\\19  378.9c',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 5,
+            timeEnd: 5.5,
+            hz: 328.62697156398684,
+            label: '11\\19  694.7c',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 5.5,
+            timeEnd: 6,
+            hz: 440,
+            label: '0\\19  0.0c',
+          },
+          // multi ratio scale
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 6,
+            timeEnd: 6.5,
+            hz: 220,
+            label: '4/4  0.0c',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 6.5,
+            timeEnd: 7,
+            hz: 275,
+            label: '5/4  386.3c',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 7,
+            timeEnd: 7.5,
+            hz: 330,
+            label: '6/4  702.0c',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 7.5,
+            timeEnd: 8,
+            hz: 440,
+            label: '8/4  1200.0c',
+          },
+          {
+            type: 'END_BEAT_TIME',
+            time: 8,
+          },
+        ],
+        lengthTime: 8,
+      }),
+    )
   })
 
   //
@@ -1527,65 +1568,67 @@ describe('grammar to mosc score', () => {
   )
 
   it('should translate timing', () => {
-    expect(processGrammar(TIMING_TEST).score).toEqual({
-      sequence: [
-        ...INITIAL,
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 0,
-          timeEnd: 0.5,
-          hz: 220,
-          label: '0\\12  0.0c',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 0.5,
-          timeEnd: 1,
-          hz: 220,
-          label: '0\\12  0.0c',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 1,
-          timeEnd: 2,
-          hz: 220,
-          label: '0\\12  0.0c',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 2,
-          timeEnd: 3,
-          hz: 220,
-          label: '0\\12  0.0c',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 3,
-          timeEnd: 3.5,
-          hz: 220,
-          label: '0\\12  0.0c',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 4,
-          timeEnd: 5.5,
-          hz: 220,
-          label: '0\\12  0.0c',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 6,
-          timeEnd: 6.5,
-          hz: 220,
-          label: '0\\12  0.0c',
-        },
-        {
-          type: 'END_BEAT_TIME',
-          time: 7,
-        },
-      ],
-      lengthTime: 7,
-    })
+    expect(processGrammar(TIMING_TEST).score).toEqual(
+      withDefaultVelocity({
+        sequence: [
+          ...INITIAL,
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 0,
+            timeEnd: 0.5,
+            hz: 220,
+            label: '0\\12  0.0c',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 0.5,
+            timeEnd: 1,
+            hz: 220,
+            label: '0\\12  0.0c',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 1,
+            timeEnd: 2,
+            hz: 220,
+            label: '0\\12  0.0c',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 2,
+            timeEnd: 3,
+            hz: 220,
+            label: '0\\12  0.0c',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 3,
+            timeEnd: 3.5,
+            hz: 220,
+            label: '0\\12  0.0c',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 4,
+            timeEnd: 5.5,
+            hz: 220,
+            label: '0\\12  0.0c',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 6,
+            timeEnd: 6.5,
+            hz: 220,
+            label: '0\\12  0.0c',
+          },
+          {
+            type: 'END_BEAT_TIME',
+            time: 7,
+          },
+        ],
+        lengthTime: 7,
+      }),
+    )
   })
 
   //
@@ -1604,79 +1647,81 @@ describe('grammar to mosc score', () => {
   )
 
   it('should translate subdivisions', () => {
-    expect(processGrammar(SUBDIVISION_TEST).score).toEqual({
-      sequence: [
-        ...INITIAL,
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 0,
-          timeEnd: 0.5,
-          hz: 220,
-          label: '0\\12  0.0c',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 0.5,
-          timeEnd: 1,
-          hz: 220,
-          label: '0\\12  0.0c',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 1,
-          timeEnd: 1.5,
-          hz: 220,
-          label: '0\\12  0.0c',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 1.5,
-          timeEnd: 2.5,
-          hz: 220,
-          label: '0\\12  0.0c',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 2.5,
-          timeEnd: 3.5,
-          hz: 220,
-          label: '0\\12  0.0c',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 3.5,
-          timeEnd: 4.5,
-          hz: 220,
-          label: '0\\12  0.0c',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 4.5,
-          timeEnd: 4.75,
-          hz: 220,
-          label: '0\\12  0.0c',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 4.75,
-          timeEnd: 5,
-          hz: 220,
-          label: '0\\12  0.0c',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 5,
-          timeEnd: 5.25,
-          hz: 220,
-          label: '0\\12  0.0c',
-        },
-        {
-          type: 'END_BEAT_TIME',
-          time: 5.25,
-        },
-      ],
-      lengthTime: 5.25,
-    })
+    expect(processGrammar(SUBDIVISION_TEST).score).toEqual(
+      withDefaultVelocity({
+        sequence: [
+          ...INITIAL,
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 0,
+            timeEnd: 0.5,
+            hz: 220,
+            label: '0\\12  0.0c',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 0.5,
+            timeEnd: 1,
+            hz: 220,
+            label: '0\\12  0.0c',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 1,
+            timeEnd: 1.5,
+            hz: 220,
+            label: '0\\12  0.0c',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 1.5,
+            timeEnd: 2.5,
+            hz: 220,
+            label: '0\\12  0.0c',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 2.5,
+            timeEnd: 3.5,
+            hz: 220,
+            label: '0\\12  0.0c',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 3.5,
+            timeEnd: 4.5,
+            hz: 220,
+            label: '0\\12  0.0c',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 4.5,
+            timeEnd: 4.75,
+            hz: 220,
+            label: '0\\12  0.0c',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 4.75,
+            timeEnd: 5,
+            hz: 220,
+            label: '0\\12  0.0c',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 5,
+            timeEnd: 5.25,
+            hz: 220,
+            label: '0\\12  0.0c',
+          },
+          {
+            type: 'END_BEAT_TIME',
+            time: 5.25,
+          },
+        ],
+        lengthTime: 5.25,
+      }),
+    )
   })
 
   //
@@ -1692,50 +1737,52 @@ describe('grammar to mosc score', () => {
   )
 
   it('should translate tempo', () => {
-    expect(processGrammar(TEMPO_TEST).score).toEqual({
-      sequence: [
-        ...INITIAL,
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 0,
-          timeEnd: 0.5,
-          hz: 220,
-          label: '0\\12  0.0c',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 0.5,
-          timeEnd: 1,
-          hz: 220,
-          label: '0\\12  0.0c',
-        },
-        {
-          type: 'TEMPO',
-          time: 1,
-          bpm: 200,
-          tempoInterpolation: 'constant',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 1,
-          timeEnd: 1.5,
-          hz: 220,
-          label: '0\\12  0.0c',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 1.5,
-          timeEnd: 2,
-          hz: 220,
-          label: '0\\12  0.0c',
-        },
-        {
-          type: 'END_BEAT_TIME',
-          time: 2,
-        },
-      ],
-      lengthTime: 2,
-    })
+    expect(processGrammar(TEMPO_TEST).score).toEqual(
+      withDefaultVelocity({
+        sequence: [
+          ...INITIAL,
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 0,
+            timeEnd: 0.5,
+            hz: 220,
+            label: '0\\12  0.0c',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 0.5,
+            timeEnd: 1,
+            hz: 220,
+            label: '0\\12  0.0c',
+          },
+          {
+            type: 'TEMPO',
+            time: 1,
+            bpm: 200,
+            tempoInterpolation: 'constant',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 1,
+            timeEnd: 1.5,
+            hz: 220,
+            label: '0\\12  0.0c',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 1.5,
+            timeEnd: 2,
+            hz: 220,
+            label: '0\\12  0.0c',
+          },
+          {
+            type: 'END_BEAT_TIME',
+            time: 2,
+          },
+        ],
+        lengthTime: 2,
+      }),
+    )
   })
 
   //
@@ -1751,50 +1798,52 @@ describe('grammar to mosc score', () => {
   )
 
   it('should translate tempo with bms', () => {
-    expect(processGrammar(TEMPO_TEST_BMS).score).toEqual({
-      sequence: [
-        ...INITIAL,
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 0,
-          timeEnd: 0.5,
-          hz: 220,
-          label: '0\\12  0.0c',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 0.5,
-          timeEnd: 1,
-          hz: 220,
-          label: '0\\12  0.0c',
-        },
-        {
-          type: 'TEMPO',
-          time: 1,
-          bpm: 200,
-          tempoInterpolation: 'constant',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 1,
-          timeEnd: 1.5,
-          hz: 220,
-          label: '0\\12  0.0c',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 1.5,
-          timeEnd: 2,
-          hz: 220,
-          label: '0\\12  0.0c',
-        },
-        {
-          type: 'END_BEAT_TIME',
-          time: 2,
-        },
-      ],
-      lengthTime: 2,
-    })
+    expect(processGrammar(TEMPO_TEST_BMS).score).toEqual(
+      withDefaultVelocity({
+        sequence: [
+          ...INITIAL,
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 0,
+            timeEnd: 0.5,
+            hz: 220,
+            label: '0\\12  0.0c',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 0.5,
+            timeEnd: 1,
+            hz: 220,
+            label: '0\\12  0.0c',
+          },
+          {
+            type: 'TEMPO',
+            time: 1,
+            bpm: 200,
+            tempoInterpolation: 'constant',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 1,
+            timeEnd: 1.5,
+            hz: 220,
+            label: '0\\12  0.0c',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 1.5,
+            timeEnd: 2,
+            hz: 220,
+            label: '0\\12  0.0c',
+          },
+          {
+            type: 'END_BEAT_TIME',
+            time: 2,
+          },
+        ],
+        lengthTime: 2,
+      }),
+    )
   })
 
   //
@@ -1807,65 +1856,67 @@ describe('grammar to mosc score', () => {
   )
 
   it('should translate chords', () => {
-    expect(processGrammar(CHORDS_TEST).score).toEqual({
-      sequence: [
-        ...INITIAL,
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 0,
-          timeEnd: 1,
-          hz: 220,
-          label: '0\\12  0.0c',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 0,
-          timeEnd: 1,
-          hz: 277.1826309768721,
-          label: '4\\12  400.0c',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 0,
-          timeEnd: 1,
-          hz: 329.6275569128699,
-          label: '7\\12  700.0c',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 1,
-          timeEnd: 2,
-          hz: 246.94165062806206,
-          label: '2\\12  200.0c',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 1,
-          timeEnd: 2,
-          hz: 349.2282314330039,
-          label: '8\\12  800.0c',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 1,
-          timeEnd: 2,
-          hz: 415.3046975799451,
-          label: '11\\12  1100.0c',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 1,
-          timeEnd: 2,
-          hz: 466.1637615180899,
-          label: '1\\12  100.0c',
-        },
-        {
-          type: 'END_BEAT_TIME',
-          time: 2,
-        },
-      ],
-      lengthTime: 2,
-    })
+    expect(processGrammar(CHORDS_TEST).score).toEqual(
+      withDefaultVelocity({
+        sequence: [
+          ...INITIAL,
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 0,
+            timeEnd: 1,
+            hz: 220,
+            label: '0\\12  0.0c',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 0,
+            timeEnd: 1,
+            hz: 277.1826309768721,
+            label: '4\\12  400.0c',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 0,
+            timeEnd: 1,
+            hz: 329.6275569128699,
+            label: '7\\12  700.0c',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 1,
+            timeEnd: 2,
+            hz: 246.94165062806206,
+            label: '2\\12  200.0c',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 1,
+            timeEnd: 2,
+            hz: 349.2282314330039,
+            label: '8\\12  800.0c',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 1,
+            timeEnd: 2,
+            hz: 415.3046975799451,
+            label: '11\\12  1100.0c',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 1,
+            timeEnd: 2,
+            hz: 466.1637615180899,
+            label: '1\\12  100.0c',
+          },
+          {
+            type: 'END_BEAT_TIME',
+            time: 2,
+          },
+        ],
+        lengthTime: 2,
+      }),
+    )
   })
 
   //
@@ -1878,44 +1929,46 @@ describe('grammar to mosc score', () => {
   )
 
   it('should translate ratio chords', () => {
-    expect(processGrammar(RATIOCHORDS_TEST).score).toEqual({
-      sequence: [
-        ...INITIAL,
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 0,
-          timeEnd: 1,
-          hz: 220,
-          label: '4/4  0.0c',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 0,
-          timeEnd: 1,
-          hz: 275,
-          label: '5/4  386.3c',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 1,
-          timeEnd: 2,
-          hz: 220,
-          label: '4/4  0.0c',
-        },
-        {
-          type: 'NOTE_BEAT_TIME',
-          time: 1,
-          timeEnd: 2,
-          hz: 275,
-          label: '5/4  386.3c',
-        },
-        {
-          type: 'END_BEAT_TIME',
-          time: 2,
-        },
-      ],
-      lengthTime: 2,
-    })
+    expect(processGrammar(RATIOCHORDS_TEST).score).toEqual(
+      withDefaultVelocity({
+        sequence: [
+          ...INITIAL,
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 0,
+            timeEnd: 1,
+            hz: 220,
+            label: '4/4  0.0c',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 0,
+            timeEnd: 1,
+            hz: 275,
+            label: '5/4  386.3c',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 1,
+            timeEnd: 2,
+            hz: 220,
+            label: '4/4  0.0c',
+          },
+          {
+            type: 'NOTE_BEAT_TIME',
+            time: 1,
+            timeEnd: 2,
+            hz: 275,
+            label: '5/4  386.3c',
+          },
+          {
+            type: 'END_BEAT_TIME',
+            time: 2,
+          },
+        ],
+        lengthTime: 2,
+      }),
+    )
   })
 
   it('translates spiral-of-fifths nominals in default Pythagorean tuning', () => {

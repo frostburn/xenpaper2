@@ -2062,6 +2062,27 @@ describe('grammar', () => {
         ])
       })
 
+      it('should parse groove accents as velocity setters', () => {
+        expect(strip(parser('(groove:(vel:80%)!(mf)!!!)')).sequence.items).toEqual([
+          {
+            type: 'SetterGroup',
+            setters: [
+              {
+                type: 'SetGroove',
+                items: [
+                  { type: 'SetVelocity', velocity: 0.8 },
+                  { type: 'SampleRateNote', tail: null },
+                  { type: 'SetVelocity', velocity: 0.5 },
+                  { type: 'SampleRateNote', tail: null },
+                  { type: 'SampleRateNote', tail: null },
+                  { type: 'SampleRateNote', tail: null },
+                ],
+              },
+            ],
+          },
+        ])
+      })
+
       it('should parse sequence with subdivision setter', () => {
         expect(strip(parser('(div:4; div:1/4)')).sequence.items).toEqual([
           {

@@ -11,6 +11,7 @@ describe('sortByTime', () => {
           timeEnd: 2,
           hz: 440,
           label: '440',
+          velocity: 0.5,
         },
         {
           type: 'NOTE_TIME',
@@ -18,6 +19,7 @@ describe('sortByTime', () => {
           timeEnd: 2,
           hz: 550,
           label: '550',
+          velocity: 0.5,
         },
         {
           type: 'TEMPO',
@@ -33,6 +35,7 @@ describe('sortByTime', () => {
         timeEnd: 2,
         hz: 550,
         label: '550',
+        velocity: 0.5,
       },
       {
         type: 'TEMPO',
@@ -46,6 +49,7 @@ describe('sortByTime', () => {
         timeEnd: 2,
         hz: 440,
         label: '440',
+        velocity: 0.5,
       },
     ])
   })
@@ -68,6 +72,7 @@ describe('scoreToTime', () => {
             timeEnd: 1,
             hz: 440,
             label: '440',
+            velocity: 0.5,
           },
           {
             type: 'NOTE_BEAT_TIME',
@@ -75,6 +80,7 @@ describe('scoreToTime', () => {
             timeEnd: 2,
             hz: 550,
             label: '550',
+            velocity: 0.5,
           },
           {
             type: 'TEMPO',
@@ -88,6 +94,7 @@ describe('scoreToTime', () => {
             timeEnd: 3,
             hz: 660,
             label: '660',
+            velocity: 0.5,
           },
           {
             type: 'PARAM_BEAT_TIME',
@@ -111,6 +118,7 @@ describe('scoreToTime', () => {
           timeEnd: 0.5,
           hz: 440,
           label: '440',
+          velocity: 0.5,
         },
         {
           type: 'NOTE_TIME',
@@ -118,6 +126,7 @@ describe('scoreToTime', () => {
           timeEnd: 1,
           hz: 550,
           label: '550',
+          velocity: 0.5,
         },
         {
           type: 'NOTE_TIME',
@@ -125,6 +134,7 @@ describe('scoreToTime', () => {
           timeEnd: 1.6666666666666665,
           hz: 660,
           label: '660',
+          velocity: 0.5,
         },
         {
           type: 'PARAM_TIME',
@@ -143,10 +153,10 @@ describe('scoreToTime', () => {
           { type: 'TEMPO', tempoInterpolation: 'constant', time: 0, bpm: 120 },
           { type: 'TEMPO', tempoInterpolation: 'constant', time: 1, bpm: 120 },
           { type: 'TEMPO', tempoInterpolation: 'ease-in', time: 4, bpm: 60 },
-          { type: 'NOTE_BEAT_TIME', time: 2, timeEnd: 2, hz: 550, label: '550' },
-          { type: 'NOTE_BEAT_TIME', time: 3, timeEnd: 3, hz: 660, label: '660' },
-          { type: 'NOTE_BEAT_TIME', time: 4, timeEnd: 4, hz: 770, label: '770' },
-          { type: 'NOTE_BEAT_TIME', time: 5, timeEnd: 5, hz: 880, label: '880' },
+          { type: 'NOTE_BEAT_TIME', time: 2, timeEnd: 2, hz: 550, label: '550', velocity: 0.5 },
+          { type: 'NOTE_BEAT_TIME', time: 3, timeEnd: 3, hz: 660, label: '660', velocity: 0.5 },
+          { type: 'NOTE_BEAT_TIME', time: 4, timeEnd: 4, hz: 770, label: '770', velocity: 0.5 },
+          { type: 'NOTE_BEAT_TIME', time: 5, timeEnd: 5, hz: 880, label: '880', velocity: 0.5 },
         ],
         lengthTime: 5,
       }),
@@ -158,6 +168,7 @@ describe('scoreToTime', () => {
           timeEnd: expect.closeTo(1.0095814051686116),
           hz: 550,
           label: '550',
+          velocity: 0.5,
         },
         {
           type: 'NOTE_TIME',
@@ -165,6 +176,7 @@ describe('scoreToTime', () => {
           timeEnd: expect.closeTo(1.5858521281327351),
           hz: 660,
           label: '660',
+          velocity: 0.5,
         },
         {
           type: 'NOTE_TIME',
@@ -172,6 +184,7 @@ describe('scoreToTime', () => {
           timeEnd: expect.closeTo(2.3696833497453778),
           hz: 770,
           label: '770',
+          velocity: 0.5,
         },
         {
           type: 'NOTE_TIME',
@@ -179,6 +192,7 @@ describe('scoreToTime', () => {
           timeEnd: expect.closeTo(3.3696833497453778),
           hz: 880,
           label: '880',
+          velocity: 0.5,
         },
       ],
       lengthTime: expect.closeTo(3.3696833497453778),
@@ -213,6 +227,7 @@ describe('scoreToTime', () => {
             timeEnd: 1,
             hz: 440,
             label: '440',
+            velocity: 0.5,
           },
           {
             type: 'NOTE_BEAT_TIME',
@@ -220,6 +235,7 @@ describe('scoreToTime', () => {
             timeEnd: 2,
             hz: 550,
             label: '550',
+            velocity: 0.5,
           },
           {
             type: 'NOTE_BEAT_TIME',
@@ -227,6 +243,7 @@ describe('scoreToTime', () => {
             timeEnd: 3,
             hz: 660,
             label: '660',
+            velocity: 0.5,
           },
           {
             type: 'NOTE_BEAT_TIME',
@@ -234,6 +251,7 @@ describe('scoreToTime', () => {
             timeEnd: 4,
             hz: 770,
             label: '770',
+            velocity: 0.5,
           },
           {
             type: 'NOTE_BEAT_TIME',
@@ -241,6 +259,7 @@ describe('scoreToTime', () => {
             timeEnd: 5,
             hz: 880,
             label: '880',
+            velocity: 0.5,
           },
         ],
         lengthTime: 5,
@@ -253,6 +272,7 @@ describe('scoreToTime', () => {
           timeEnd: 0.5,
           hz: 440,
           label: '440',
+          velocity: 0.5,
         },
         {
           type: 'NOTE_TIME',
@@ -260,6 +280,7 @@ describe('scoreToTime', () => {
           timeEnd: expect.closeTo(1.0469646703818638),
           hz: 550,
           label: '550',
+          velocity: 0.5,
         },
         {
           type: 'NOTE_TIME',
@@ -267,6 +288,7 @@ describe('scoreToTime', () => {
           timeEnd: expect.closeTo(1.716395324324493),
           hz: 660,
           label: '660',
+          velocity: 0.5,
         },
         {
           type: 'NOTE_TIME',
@@ -274,6 +296,7 @@ describe('scoreToTime', () => {
           timeEnd: expect.closeTo(2.5794415416798357),
           hz: 770,
           label: '770',
+          velocity: 0.5,
         },
         {
           type: 'NOTE_TIME',
@@ -281,6 +304,7 @@ describe('scoreToTime', () => {
           timeEnd: expect.closeTo(3.5794415416798357),
           hz: 880,
           label: '880',
+          velocity: 0.5,
         },
       ],
       lengthTime: expect.closeTo(3.5794415416798357),
