@@ -308,7 +308,6 @@ export type GrooveItemType =
   | SetVelocityType
   | SetArticulationType
   | SampleRateNoteType
-  | RestType
   | DelimiterType
 
 export type SetGrooveType = NodeType<'SetGroove'> & {

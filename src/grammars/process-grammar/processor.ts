@@ -418,8 +418,6 @@ const setGroove = (setter: SetGrooveType, context: Context): void => {
   const targets: number[] = []
   const accents: number[] = []
   const articulations: number[] = []
-  const restCutoffs: Array<number | undefined> = []
-  let sawNote = false
 
   for (const item of setter.items) {
     if (item.type === 'SetSubdivision') {
@@ -443,24 +441,10 @@ const setGroove = (setter: SetGrooveType, context: Context): void => {
     }
 
     if (item.type === 'SampleRateNote') {
-      sawNote = true
-      const target = time
-      targets.push(target)
+      targets.push(time)
       accents.push(accent)
       time += (item.tail?.type === 'Hold' ? item.tail.length + 1 : 1) * subdivision
       articulations.push(articulation)
-      restCutoffs.push(undefined)
-      continue
-    }
-
-    if (item.type === 'Rest') {
-      if (!sawNote) throw new Error('Groove cannot start with a rest')
-      const lastTarget = targets[targets.length - 1]
-      const lastRestCutoff = restCutoffs[targets.length - 1]
-      if (lastTarget !== undefined && lastRestCutoff === undefined) {
-        restCutoffs[targets.length - 1] = time - lastTarget
-      }
-      time += item.length * subdivision
       continue
     }
 
@@ -475,18 +459,13 @@ const setGroove = (setter: SetGrooveType, context: Context): void => {
   assertFinitePositive('SetGroove.span', time)
 
   const sourceStep = time / targets.length
-  const grooveArticulations = articulations.map((itemArticulation, index) => {
-    const targetDuration = restCutoffs[index]
-    if (targetDuration === undefined) return itemArticulation
-    return Math.min(1, targetDuration / sourceStep) * itemArticulation
-  })
   const targetOrigin = mapGrooveBeat(context.time, context.groove)
   context.groove = {
     sourceOrigin: context.time,
     targetOrigin,
     span: time,
     accents,
-    articulations: grooveArticulations,
+    articulations,
     points: [
       ...targets.map((target, index) => ({ source: index * sourceStep, target })),
       { source: time, target: time },

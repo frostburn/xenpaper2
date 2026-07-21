@@ -2062,8 +2062,8 @@ describe('grammar', () => {
         ])
       })
 
-      it('should parse groove rests and articulation', () => {
-        expect(strip(parser('(groove:(4)(art:69%)!.)')).sequence.items[0]).toMatchObject({
+      it('should parse groove articulation setters and shorthands', () => {
+        expect(strip(parser('(groove:(4)(art:69%)!(.)!)')).sequence.items[0]).toMatchObject({
           type: 'SetterGroup',
           setters: [
             {
@@ -2072,7 +2072,8 @@ describe('grammar', () => {
                 { type: 'SetSubdivision', subdivision: 4, denominator: 1 },
                 { type: 'SetArticulation', articulation: 0.69 },
                 { type: 'SampleRateNote', tail: null },
-                { type: 'Rest', length: 1 },
+                { type: 'SetArticulation', articulation: 0.5 },
+                { type: 'SampleRateNote', tail: null },
               ],
             },
           ],

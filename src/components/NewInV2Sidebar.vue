@@ -413,6 +413,13 @@ MOS{5L2s}(plot:MOS)`,
 12 10 9 7   10 9 7  5
 9  7  5 3   7  5 3  2`,
       },
+      {
+        description:
+          'Groove patterns can also include articulation. Articulation values latch until the next articulation and shorten or lengthen each grooved note.',
+        tune: `(groove:(5)(:)!--(')!-)
+0  6 8 2  3 9 10 4 |
+12 6 5 11 8 3 0-   ||`,
+      },
     ],
   },
   {
