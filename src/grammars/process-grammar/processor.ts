@@ -358,6 +358,7 @@ const setRoot = (item: SetRootType, context: Context): void => {
 
 const DEFAULT_VELOCITY = 0.5
 const GROOVE_NEUTRAL_VELOCITY = DEFAULT_VELOCITY
+const GROOVE_ACCENT_EPSILON = 1e-9
 
 const mapGrooveBeat = (time: number, groove: Groove | null): number => {
   if (groove === null) return time
@@ -387,8 +388,12 @@ const mapGrooveAccent = (time: number, groove: Groove | null): number => {
   if (groove === null || groove.accents.length === 0) return 1
   const relativeTime = time - groove.sourceOrigin
   const sourceTime = mmod(relativeTime, groove.span)
+  const normalizedSourceTime = sourceTime >= groove.span - GROOVE_ACCENT_EPSILON ? 0 : sourceTime
   const sourceStep = groove.span / groove.accents.length
-  const index = Math.min(Math.floor(sourceTime / sourceStep), groove.accents.length - 1)
+  const index = Math.min(
+    Math.floor((normalizedSourceTime + GROOVE_ACCENT_EPSILON) / sourceStep),
+    groove.accents.length - 1,
+  )
   return groove.accents[index] ?? 1
 }
 

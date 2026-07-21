@@ -240,9 +240,21 @@ describe('groove setter', () => {
   })
 
   it('multiplies groove accents into note velocity', () => {
-    const notes = noteItems('(groove:(ff)!(mf)!!! (fff)!(p)!!!)(2)0 1 2 3 4 5 6 7')
+    const notes = noteItems(
+      '(groove:(ff)!(mf)!!! (fff)!(p)!!!)(2)0 1 2 3 (4)4 5 6 7 8 9 10 11 (2)0 1 2 3 4 5 6 7',
+    )
 
-    expect(notes.map((note) => note.velocity)).toEqual([0.8, 0.5, 0.5, 0.5, 1, 0.3, 0.3, 0.3])
+    expect(notes.map((note) => note.velocity)).toEqual([
+      0.8, 0.5, 0.5, 0.5, 1, 1, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.8, 0.5, 0.5, 0.5, 1, 0.3, 0.3, 0.3,
+    ])
+  })
+
+  it('multiplies groove accents without floating-point issues', () => {
+    const notes = noteItems('(groove:(3)(ff)!(mp)!!)(3)0 1 2 3 4 5 6 7 8 9--')
+
+    expect(notes.map((note) => note.velocity)).toEqual([
+      0.8, 0.4, 0.4, 0.8, 0.4, 0.4, 0.8, 0.4, 0.4, 0.8,
+    ])
   })
 
   it('starts replacement grooves at the current mapped time', () => {
