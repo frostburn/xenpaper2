@@ -386,7 +386,12 @@ const effectiveSubdivision = (context: Context, subdivision = context.subdivisio
 
 const mapGrooveArticulation = (time: number, groove: Groove | null): number => {
   if (groove === null) return 1
-  const index = cyclicEventIndex(time, groove.sourceOrigin, groove.span, groove.articulations.length)
+  const index = cyclicEventIndex(
+    time,
+    groove.sourceOrigin,
+    groove.span,
+    groove.articulations.length,
+  )
   return index === null ? 1 : (groove.articulations[index] ?? 1)
 }
 
