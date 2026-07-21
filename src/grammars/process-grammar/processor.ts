@@ -13,6 +13,7 @@ import {
   NUM_COMPONENTS,
 } from './constants'
 import { assertFinitePositive, limit } from './validation'
+import { cyclicEventIndex } from './utils'
 import { expandMusicalControlFlowItems, expandRepeatedSequenceItems } from './sequence-expansion'
 import {
   expandChordPitchGroup,
@@ -358,7 +359,6 @@ const setRoot = (item: SetRootType, context: Context): void => {
 
 const DEFAULT_VELOCITY = 0.5
 const GROOVE_NEUTRAL_VELOCITY = DEFAULT_VELOCITY
-const GROOVE_ACCENT_EPSILON = 1e-9
 
 const mapGrooveBeat = (time: number, groove: Groove | null): number => {
   if (groove === null) return time
@@ -385,29 +385,15 @@ const effectiveSubdivision = (context: Context, subdivision = context.subdivisio
   subdivision * context.timeSignatureDenominator
 
 const mapGrooveArticulation = (time: number, groove: Groove | null): number => {
-  if (groove === null || groove.articulations.length === 0) return 1
-  const relativeTime = time - groove.sourceOrigin
-  const sourceTime = mmod(relativeTime, groove.span)
-  const normalizedSourceTime = sourceTime >= groove.span - GROOVE_ACCENT_EPSILON ? 0 : sourceTime
-  const sourceStep = groove.span / groove.articulations.length
-  const index = Math.min(
-    Math.floor((normalizedSourceTime + GROOVE_ACCENT_EPSILON) / sourceStep),
-    groove.articulations.length - 1,
-  )
-  return groove.articulations[index] ?? 1
+  if (groove === null) return 1
+  const index = cyclicEventIndex(time, groove.sourceOrigin, groove.span, groove.articulations.length)
+  return index === null ? 1 : (groove.articulations[index] ?? 1)
 }
 
 const mapGrooveAccent = (time: number, groove: Groove | null): number => {
-  if (groove === null || groove.accents.length === 0) return 1
-  const relativeTime = time - groove.sourceOrigin
-  const sourceTime = mmod(relativeTime, groove.span)
-  const normalizedSourceTime = sourceTime >= groove.span - GROOVE_ACCENT_EPSILON ? 0 : sourceTime
-  const sourceStep = groove.span / groove.accents.length
-  const index = Math.min(
-    Math.floor((normalizedSourceTime + GROOVE_ACCENT_EPSILON) / sourceStep),
-    groove.accents.length - 1,
-  )
-  return groove.accents[index] ?? 1
+  if (groove === null) return 1
+  const index = cyclicEventIndex(time, groove.sourceOrigin, groove.span, groove.accents.length)
+  return index === null ? 1 : (groove.accents[index] ?? 1)
 }
 
 const setGroove = (setter: SetGrooveType, context: Context): void => {
