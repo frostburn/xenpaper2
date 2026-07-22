@@ -239,6 +239,15 @@ describe('groove setter', () => {
     expect(notes[1]!.timeEnd).toBe(1)
   })
 
+  it('treats semicolon-separated groove sub-setters like adjacent groove setter groups', () => {
+    const compact = noteItems("(groove:(5;:;ff)!--(pp;')!-)(5)0 1 2 3")
+    const expanded = noteItems("(groove:(5)(:)(ff)!--(pp)(')!-)(5)0 1 2 3")
+
+    expect(compact.map((note) => [note.time, note.timeEnd, note.velocity])).toEqual(
+      expanded.map((note) => [note.time, note.timeEnd, note.velocity]),
+    )
+  })
+
   it('supports groove articulation setters', () => {
     const notes = noteItems('(groove:(4)(art:69%)!)(4)0 1')
 

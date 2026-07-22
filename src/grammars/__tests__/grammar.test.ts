@@ -2080,6 +2080,31 @@ describe('grammar', () => {
         })
       })
 
+      it('should parse semicolon-separated groove sub-setters', () => {
+        expect(strip(parser("(groove:(5;:;ff)!--(pp;')!-)")).sequence.items).toEqual([
+          {
+            type: 'SetterGroup',
+            setters: [
+              {
+                type: 'SetGroove',
+                items: [
+                  { type: 'SetSubdivision', subdivision: 5, denominator: 1 },
+                  { type: 'Semicolon' },
+                  { type: 'SetArticulation', articulation: 0.85 },
+                  { type: 'Semicolon' },
+                  { type: 'SetVelocity', velocity: 0.8 },
+                  { type: 'SampleRateNote', tail: { type: 'Hold', length: 2 } },
+                  { type: 'SetVelocity', velocity: 0.2 },
+                  { type: 'Semicolon' },
+                  { type: 'SetArticulation', articulation: 0.25 },
+                  { type: 'SampleRateNote', tail: { type: 'Hold', length: 1 } },
+                ],
+              },
+            ],
+          },
+        ])
+      })
+
       it('should parse groove accents as velocity setters', () => {
         expect(strip(parser('(groove:(vel:80%)!(mf)!!!)')).sequence.items).toEqual([
           {
