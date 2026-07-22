@@ -228,7 +228,6 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     ...liveScoreEngines.value.map((engine, index) => ({
       id: engine.id,
       title: getSourceTabTitle(engine.sourceCode.value, index),
-      sourceCode: engine.sourceCode.value,
       active: index === activeScoreEngineIndex.value,
       alive: true,
       muted: engine.muted.value,
@@ -237,7 +236,6 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     ...deadScoreEngines.value.map((engine, index) => ({
       id: engine.id,
       title: getSourceTabTitle(engine.sourceCode.value, index),
-      sourceCode: engine.sourceCode.value,
       active: false,
       alive: false,
       muted: engine.muted.value,
