@@ -341,6 +341,8 @@ describe('App source editor keyboard shortcuts', () => {
 
     await wrapper.findAll('[role="tab"]')[1]!.trigger('click')
     await flushPromises()
+    firstInput.scrollTop = 0
+    firstInput.scrollLeft = 0
     await firstTab.trigger('click')
     await flushPromises()
 

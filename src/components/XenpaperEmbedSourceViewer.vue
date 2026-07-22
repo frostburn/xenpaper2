@@ -32,12 +32,19 @@ watch(
     if (tabId === undefined) return
 
     await nextTick()
+    restoreSourceScroll(tabId)
     syncHighlightScroll(tabId)
   },
 )
 
+type ScrollPosition = {
+  top: number
+  left: number
+}
+
 const sourceInputs = new Map<number, HTMLTextAreaElement>()
 const sourceHighlights = new Map<number, HTMLPreElement>()
+const sourceScrollPositions = new Map<number, ScrollPosition>()
 
 const setSourceInputRef = (tabId: number, element: unknown): void => {
   if (element instanceof HTMLTextAreaElement) {
@@ -57,11 +64,24 @@ const setSourceHighlightsRef = (tabId: number, element: unknown): void => {
   sourceHighlights.delete(tabId)
 }
 
+const restoreSourceScroll = (tabId: number): void => {
+  const sourceInput = sourceInputs.get(tabId)
+  const savedScroll = sourceScrollPositions.get(tabId)
+  if (!sourceInput || !savedScroll) return
+
+  sourceInput.scrollTop = savedScroll.top
+  sourceInput.scrollLeft = savedScroll.left
+}
+
 const syncHighlightScroll = (tabId: number): void => {
   const sourceInput = sourceInputs.get(tabId)
   const highlights = sourceHighlights.get(tabId)
   if (!sourceInput || !highlights) return
 
+  sourceScrollPositions.set(tabId, {
+    top: sourceInput.scrollTop,
+    left: sourceInput.scrollLeft,
+  })
   highlights.scrollTop = sourceInput.scrollTop
   highlights.scrollLeft = sourceInput.scrollLeft
 }
