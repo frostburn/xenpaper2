@@ -73,8 +73,4 @@ const liveSourceTabs = computed(() => props.sourceTabs.filter((tab) => tab.alive
 .xenpaper-app-embed {
   padding-top: 3rem;
 }
-
-.source-editor-embed .source-input {
-  cursor: default;
-}
 </style>

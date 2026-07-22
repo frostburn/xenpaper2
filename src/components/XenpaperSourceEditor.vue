@@ -310,34 +310,6 @@ onUnmounted(() => {
   color: var(--xenpaper-text);
 }
 
-.play-start-marker {
-  position: absolute;
-  left: 0.8rem;
-  border: 0;
-  display: block;
-  padding: 0;
-  cursor: pointer;
-  background: transparent;
-  color: var(--xenpaper-placeholder);
-  font: inherit;
-  line-height: inherit;
-  outline: none;
-  opacity: 0.2;
-  pointer-events: auto;
-  transition: opacity 0.2s ease-out;
-}
-
-.play-start-marker.selected,
-.play-start-marker:hover,
-.play-start-marker:focus,
-.play-start-marker:active {
-  opacity: 1;
-}
-
-.play-start-marker:focus-visible {
-  color: var(--xenpaper-focus);
-}
-
 @media (max-width: 900px) {
   .source-tab-restore-menu {
     display: none;
