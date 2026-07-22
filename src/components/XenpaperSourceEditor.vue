@@ -33,7 +33,7 @@ const emit = defineEmits<{
 
 const restoreMenu = useTemplateRef('restoreMenu')
 
-const activeSourceTab = computed(() => props.sourceTabs[props.activeSourceCodeTabIndex])
+const activeSourceTab = computed(() => props.sourceTabs[props.activeSourceCodeTabIndex]!)
 const liveSourceTabs = computed(() => props.sourceTabs.filter((tab) => tab.alive))
 const deadSourceTabs = computed(() => props.sourceTabs.filter((tab) => !tab.alive))
 const liveSourceTabCount = computed(() => liveSourceTabs.value.length)
@@ -136,8 +136,8 @@ onUnmounted(() => {
     </div>
     <label class="source-label" for="source-code">Source code</label>
     <KeepAlive>
-      <SourceCodePanel
-        v-if="activeSourceTab"
+      <component
+        :is="SourceCodePanel"
         :id="`source-code-panel-${activeSourceTab.id}`"
         :key="activeSourceTab.id"
         :source-code="sourceCode"
@@ -185,7 +185,7 @@ onUnmounted(() => {
             </button>
           </div>
         </template>
-      </SourceCodePanel>
+      </component>
     </KeepAlive>
     <p v-if="lastError" class="playback-error" role="alert">Error: {{ lastError }}</p>
   </main>

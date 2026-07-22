@@ -19,7 +19,7 @@ const emit = defineEmits<{
   selectSourceCodeTab: [id: number]
 }>()
 
-const activeSourceTab = computed(() => props.sourceTabs.find((tab) => tab.active))
+const activeSourceTab = computed(() => props.sourceTabs.find((tab) => tab.active)!)
 const liveSourceTabs = computed(() => props.sourceTabs.filter((tab) => tab.alive))
 </script>
 
@@ -51,8 +51,8 @@ const liveSourceTabs = computed(() => props.sourceTabs.filter((tab) => tab.alive
     </div>
     <label class="source-label" for="source-code">Source code</label>
     <KeepAlive>
-      <SourceCodePanel
-        v-if="activeSourceTab"
+      <component
+        :is="SourceCodePanel"
         :id="`source-code-panel-${activeSourceTab.id}`"
         :key="activeSourceTab.id"
         :source-code="sourceCode"
