@@ -51,8 +51,7 @@ const liveSourceTabs = computed(() => props.sourceTabs.filter((tab) => tab.alive
     </div>
     <label class="source-label" for="source-code">Source code</label>
     <KeepAlive>
-      <component
-        :is="SourceCodePanel"
+      <SourceCodePanel
         :id="`source-code-panel-${activeSourceTab.id}`"
         :key="activeSourceTab.id"
         :source-code="sourceCode"

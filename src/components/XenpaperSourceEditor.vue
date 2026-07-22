@@ -136,8 +136,7 @@ onUnmounted(() => {
     </div>
     <label class="source-label" for="source-code">Source code</label>
     <KeepAlive>
-      <component
-        :is="SourceCodePanel"
+      <SourceCodePanel
         :id="`source-code-panel-${activeSourceTab.id}`"
         :key="activeSourceTab.id"
         :source-code="sourceCode"
@@ -185,7 +184,7 @@ onUnmounted(() => {
             </button>
           </div>
         </template>
-      </component>
+      </SourceCodePanel>
     </KeepAlive>
     <p v-if="lastError" class="playback-error" role="alert">Error: {{ lastError }}</p>
   </main>

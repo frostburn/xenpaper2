@@ -516,6 +516,7 @@ export const useXenpaperStore = defineStore('xenpaper', () => {
     const aliveIndex = liveScoreEngines.value.findIndex((engine) => engine.id === id)
     if (aliveIndex >= 0) {
       activeScoreEngineIndex.value = aliveIndex
+      liveScoreEngines.value[aliveIndex]!.updateParsedSourceCode()
       return
     }
 

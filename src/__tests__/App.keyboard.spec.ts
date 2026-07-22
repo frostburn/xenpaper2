@@ -319,6 +319,15 @@ describe('App source editor keyboard shortcuts', () => {
     expect(wrapper.get<HTMLTextAreaElement>('textarea').element.value).toBe('0_2')
   })
 
+  it('syntax highlights an initially inactive restored source tab before editing', async () => {
+    const { wrapper } = await mountApp('#0_2%0A4_5~(osc:sawtooth3)')
+
+    await wrapper.findAll('[role="tab"]')[1]!.trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('.highlight-setter').exists()).toBe(true)
+  })
+
   it('keeps source tab editors alive so scroll position is restored on return', async () => {
     const { wrapper } = await mountApp('#0_2%0A4_5')
 
