@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, useTemplateRef } from 'vue'
 
+import SourceCodePanel from './SourceCodePanel.vue'
 import type { CharData } from '../grammars/grammar-to-chars'
-import { getSourceLineAtOffset } from '../source-display'
-import { isCharacterActiveAtTime } from '../utils'
 import type { SourceDisplayToken, SourceTab } from '../types'
 
 const props = defineProps<{
@@ -32,63 +31,9 @@ const emit = defineEmits<{
   closeSourceCodeTab: [id: number]
 }>()
 
-const handleSourceInput = (event: Event): void => {
-  emit('update:sourceCode', (event.target as HTMLTextAreaElement).value)
-}
-
-const sourceInput = useTemplateRef('sourceInput')
-const sourceHighlights = useTemplateRef('sourceHighlights')
-
-const syncHighlightScroll = (): void => {
-  if (!sourceInput.value || !sourceHighlights.value) return
-
-  sourceHighlights.value.scrollTop = sourceInput.value.scrollTop
-  sourceHighlights.value.scrollLeft = sourceInput.value.scrollLeft
-}
-
-const handleSourceKeydown = (event: KeyboardEvent): void => {
-  if (!(event.ctrlKey || event.metaKey)) return
-
-  if (event.key === 'Enter') {
-    event.preventDefault()
-    emit('restartPlaybackFromStart')
-    return
-  }
-
-  if (event.key === ' ' || event.code === 'Space') {
-    event.preventDefault()
-    const target = event.target
-    const line =
-      target instanceof HTMLTextAreaElement
-        ? getSourceLineAtOffset(props.sourceCode, target.selectionStart)
-        : props.selectedLine
-    emit('restartPlaybackFromLine', line)
-    return
-  }
-
-  const key = event.key.toLowerCase()
-
-  if (key === 'z' && event.shiftKey) {
-    event.preventDefault()
-    emit('redoSourceCode')
-    return
-  }
-
-  if (key === 'z') {
-    event.preventDefault()
-    emit('undoSourceCode')
-    return
-  }
-
-  if (key === 'y') {
-    event.preventDefault()
-    emit('redoSourceCode')
-  }
-}
-
 const restoreMenu = useTemplateRef('restoreMenu')
 
-const activeSourceTab = computed(() => props.sourceTabs[props.activeSourceCodeTabIndex])
+const activeSourceTab = computed(() => props.sourceTabs[props.activeSourceCodeTabIndex]!)
 const liveSourceTabs = computed(() => props.sourceTabs.filter((tab) => tab.alive))
 const deadSourceTabs = computed(() => props.sourceTabs.filter((tab) => !tab.alive))
 const liveSourceTabCount = computed(() => liveSourceTabs.value.length)
@@ -134,8 +79,6 @@ onMounted(() => {
 onUnmounted(() => {
   document.removeEventListener('pointerdown', handleDocumentPointerdown)
 })
-const isCharacterActive = (charData?: CharData): boolean =>
-  isCharacterActiveAtTime(charData, props.isPlaying, props.playbackPositionTime)
 </script>
 
 <template>
@@ -192,80 +135,57 @@ const isCharacterActive = (charData?: CharData): boolean =>
       </details>
     </div>
     <label class="source-label" for="source-code">Source code</label>
-    <div
-      class="source-editor"
-      :id="activeSourceTab ? `source-code-panel-${activeSourceTab.id}` : undefined"
-      role="tabpanel"
-    >
-      <div class="source-editor-content">
-        <div v-if="activeSourceTab && liveSourceTabCount > 1" class="source-editor-tab-controls">
-          <button
-            class="source-editor-tab-control"
-            :class="{ enabled: activeSourceTab.soloed }"
-            type="button"
-            :aria-label="`Solo ${activeSourceTab.title}`"
-            :aria-pressed="activeSourceTab.soloed"
-            :title="`${activeSourceTab.soloed ? 'Unsolo' : 'Solo'} ${activeSourceTab.title}`"
-            @click="
-              emit('toggleSourceCodeTabSolo', activeSourceTab.id, $event.ctrlKey || $event.metaKey)
-            "
-          >
-            Solo
-          </button>
-          <button
-            class="source-editor-tab-control"
-            :class="{ enabled: activeSourceTab.muted }"
-            type="button"
-            :aria-label="`Mute ${activeSourceTab.title}`"
-            :aria-pressed="activeSourceTab.muted"
-            :title="`${activeSourceTab.muted ? 'Unmute' : 'Mute'} ${activeSourceTab.title}`"
-            @click="emit('toggleSourceCodeTabMute', activeSourceTab.id)"
-          >
-            Mute
-          </button>
-        </div>
-        <textarea
-          id="source-code"
-          ref="sourceInput"
-          :value="sourceCode"
-          class="source-input"
-          placeholder="Type your tune here…"
-          autocapitalize="off"
-          autocomplete="off"
-          autocorrect="off"
-          spellcheck="false"
-          @input="handleSourceInput"
-          @keydown="handleSourceKeydown"
-          @scroll="syncHighlightScroll"
-        />
-        <pre ref="sourceHighlights" class="source-highlights"><span
-        v-if="sourceCode === ''"
-        class="placeholder-text"
-        aria-hidden="true"
-      >Type your tune here…</span><template v-else><template v-for="token in sourceDisplayTokens" :key="token.key"><button
-        v-if="token.type === 'playStart'"
-        class="play-start-marker"
-        :class="{ selected: selectedLine === token.line }"
-        type="button"
-        :aria-label="`Start playback at line ${token.line + 1}`"
-        :aria-pressed="selectedLine === token.line"
-        @click="emit('setSelectedLine', token.line)"
-      >&gt;</button><span
-        v-else
-        class="source-character"
-        aria-hidden="true"
-        :class="[
-          token.charDataIndex !== undefined && chars[token.charDataIndex]?.color
-            ? `highlight-${chars[token.charDataIndex]?.color}`
-            : 'highlight-unknown',
-          {
-            active:
-              token.charDataIndex !== undefined && isCharacterActive(chars[token.charDataIndex]),
-          },
-        ]"
-      >{{ token.character }}</span></template></template><br><br></pre>
-      </div>
-    </div>
+    <KeepAlive>
+      <SourceCodePanel
+        :id="`source-code-panel-${activeSourceTab.id}`"
+        :key="activeSourceTab.id"
+        :source-code="sourceCode"
+        :source-display-tokens="sourceDisplayTokens"
+        :chars="chars"
+        :selected-line="selectedLine"
+        :is-playing="isPlaying"
+        :playback-position-time="playbackPositionTime"
+        @update:source-code="emit('update:sourceCode', $event)"
+        @restart-playback-from-start="emit('restartPlaybackFromStart')"
+        @restart-playback-from-line="emit('restartPlaybackFromLine', $event)"
+        @undo-source-code="emit('undoSourceCode')"
+        @redo-source-code="emit('redoSourceCode')"
+        @set-selected-line="emit('setSelectedLine', $event)"
+      >
+        <template #controls>
+          <div v-if="liveSourceTabCount > 1" class="source-editor-tab-controls">
+            <button
+              class="source-editor-tab-control"
+              :class="{ enabled: activeSourceTab.soloed }"
+              type="button"
+              :aria-label="`Solo ${activeSourceTab.title}`"
+              :aria-pressed="activeSourceTab.soloed"
+              :title="`${activeSourceTab.soloed ? 'Unsolo' : 'Solo'} ${activeSourceTab.title}`"
+              @click="
+                emit(
+                  'toggleSourceCodeTabSolo',
+                  activeSourceTab.id,
+                  $event.ctrlKey || $event.metaKey,
+                )
+              "
+            >
+              Solo
+            </button>
+            <button
+              class="source-editor-tab-control"
+              :class="{ enabled: activeSourceTab.muted }"
+              type="button"
+              :aria-label="`Mute ${activeSourceTab.title}`"
+              :aria-pressed="activeSourceTab.muted"
+              :title="`${activeSourceTab.muted ? 'Unmute' : 'Mute'} ${activeSourceTab.title}`"
+              @click="emit('toggleSourceCodeTabMute', activeSourceTab.id)"
+            >
+              Mute
+            </button>
+          </div>
+        </template>
+      </SourceCodePanel>
+    </KeepAlive>
     <p v-if="lastError" class="playback-error" role="alert">Error: {{ lastError }}</p>
   </main>
 </template>
@@ -387,34 +307,6 @@ const isCharacterActive = (charData?: CharData): boolean =>
 .source-editor-tab-control:focus-visible {
   background: var(--xenpaper-focus);
   color: var(--xenpaper-text);
-}
-
-.play-start-marker {
-  position: absolute;
-  left: 0.8rem;
-  border: 0;
-  display: block;
-  padding: 0;
-  cursor: pointer;
-  background: transparent;
-  color: var(--xenpaper-placeholder);
-  font: inherit;
-  line-height: inherit;
-  outline: none;
-  opacity: 0.2;
-  pointer-events: auto;
-  transition: opacity 0.2s ease-out;
-}
-
-.play-start-marker.selected,
-.play-start-marker:hover,
-.play-start-marker:focus,
-.play-start-marker:active {
-  opacity: 1;
-}
-
-.play-start-marker:focus-visible {
-  color: var(--xenpaper-focus);
 }
 
 @media (max-width: 900px) {

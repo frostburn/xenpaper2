@@ -319,6 +319,47 @@ describe('App source editor keyboard shortcuts', () => {
     expect(wrapper.get<HTMLTextAreaElement>('textarea').element.value).toBe('0_2')
   })
 
+  it('syntax highlights an initially inactive restored source tab before editing', async () => {
+    const { wrapper } = await mountApp('#0_2%0A4_5~(osc:sawtooth3)')
+
+    await wrapper.findAll('[role="tab"]')[1]!.trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('.highlight-setter').exists()).toBe(true)
+  })
+
+  it('keeps source tab editors alive so scroll position is restored on return', async () => {
+    const { wrapper } = await mountApp('#0_2%0A4_5')
+
+    const firstTab = wrapper.findAll('[role="tab"]')[0]!
+    await wrapper.get('button[aria-label="Add source code"]').trigger('click')
+    await wrapper.get<HTMLTextAreaElement>('textarea').setValue('second tab')
+    await flushPromises()
+
+    await firstTab.trigger('click')
+    await flushPromises()
+
+    const firstInput = wrapper.get<HTMLTextAreaElement>('textarea').element
+    const firstHighlights = wrapper.get<HTMLPreElement>('pre.source-highlights').element
+    firstInput.scrollTop = 42
+    firstInput.scrollLeft = 7
+    await wrapper.get('textarea').trigger('scroll')
+
+    expect(firstHighlights.scrollTop).toBe(42)
+    expect(firstHighlights.scrollLeft).toBe(7)
+
+    await wrapper.findAll('[role="tab"]')[1]!.trigger('click')
+    await flushPromises()
+    firstInput.scrollTop = 0
+    firstInput.scrollLeft = 0
+    await firstTab.trigger('click')
+    await flushPromises()
+
+    expect(wrapper.get<HTMLTextAreaElement>('textarea').element).toBe(firstInput)
+    expect(wrapper.get<HTMLTextAreaElement>('textarea').element.scrollTop).toBe(42)
+    expect(wrapper.get<HTMLPreElement>('pre.source-highlights').element.scrollTop).toBe(42)
+  })
+
   it('encodes all source tabs in the route hash and restores them in order', async () => {
     const { router, store, wrapper } = await mountApp('#first')
 
