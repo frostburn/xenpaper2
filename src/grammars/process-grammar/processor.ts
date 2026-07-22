@@ -439,7 +439,7 @@ const setGroove = (setter: SetGrooveType, context: Context): void => {
       continue
     }
 
-    if (item.type === 'Whitespace') continue
+    if (item.type === 'Whitespace' || item.type === 'Semicolon') continue
 
     throw new Error(`Unsupported groove item "${item.type}"`)
   }

@@ -198,11 +198,14 @@ SetSubdivision = ("div"i _ ":" _)? fraction:Fraction {
     denominator: fraction.denominator,
   });
 }
-SetGroove = "groove"i _ ":" _ items:GrooveItem* { return node('SetGroove', { items }); }
-GrooveItem = GrooveSubdivision / SetVelocityGroup / SetArticulationGroup / SetArticulation / SetSubdivision / SampleRateNote / Whitespace
-SetVelocityGroup = "(" _ setter:(SetVelocity / SetVelocityShorthand) _ ")" { return setter; }
-SetArticulationGroup = "(" _ setter:SetArticulation _ ")" { return setter; }
-GrooveSubdivision = "(" _ setter:SetSubdivision _ ")" { return setter; }
+SetGroove = "groove"i _ ":" _ items:GrooveItem* { return node('SetGroove', { items: items.flat() }); }
+GrooveItem = GrooveSetterGroup / SetArticulation / SetSubdivision / SampleRateNote / Whitespace
+GrooveSetterGroup = "(" _ first:GrooveGroupedSetter rest:(Semicolon GrooveGroupedSetter)* _ ")" {
+  const items = [first];
+  for (const part of rest) items.push(part[0], part[1]);
+  return items;
+}
+GrooveGroupedSetter = SetArticulation / SetVelocity / SetVelocityShorthand / SetSubdivision
 SetGliss = "gliss"i easing:(_ @GlissEasing)? {
   return node('SetGliss', { easing: (easing ?? 'linear').toLowerCase() });
 }

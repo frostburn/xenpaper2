@@ -391,6 +391,18 @@ describe('grammarToChars', () => {
     ])
   })
 
+  it('highlights semicolon-separated groove sub-setters', () => {
+    const source = "(groove:(5;:;ff)!--(pp;')!-)"
+    const highlighted = colors(grammarToChars(parse(source)))
+
+    expect([...source].map((char, index) => (char === ';' ? highlighted[index] : undefined))).toEqual(
+      [...source].map((char) => (char === ';' ? 'delimiter' : undefined)),
+    )
+    expect(highlighted[11]).toBe('setter')
+    expect(highlighted[13]).toBe('setter')
+    expect(highlighted[15]).toBe('setter')
+  })
+
   it('highlights groove accent setters while preserving nested rhythm colors', () => {
     expect(colors(grammarToChars(parse('(groove:(ff)!(mf)!!!)')))).toEqual([
       'setterGroup',
