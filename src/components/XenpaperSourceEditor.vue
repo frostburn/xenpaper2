@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, useTemplateRef } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, useTemplateRef, watch } from 'vue'
 
 import type { CharData } from '../grammars/grammar-to-chars'
 import { getSourceLineAtOffset } from '../source-display'
@@ -36,14 +36,34 @@ const handleSourceInput = (event: Event): void => {
   emit('update:sourceCode', (event.target as HTMLTextAreaElement).value)
 }
 
-const sourceInput = useTemplateRef('sourceInput')
-const sourceHighlights = useTemplateRef('sourceHighlights')
+const sourceInputs = new Map<number, HTMLTextAreaElement>()
+const sourceHighlights = new Map<number, HTMLPreElement>()
 
-const syncHighlightScroll = (): void => {
-  if (!sourceInput.value || !sourceHighlights.value) return
+const setSourceInputRef = (tabId: number, element: unknown): void => {
+  if (element instanceof HTMLTextAreaElement) {
+    sourceInputs.set(tabId, element)
+    return
+  }
 
-  sourceHighlights.value.scrollTop = sourceInput.value.scrollTop
-  sourceHighlights.value.scrollLeft = sourceInput.value.scrollLeft
+  sourceInputs.delete(tabId)
+}
+
+const setSourceHighlightsRef = (tabId: number, element: unknown): void => {
+  if (element instanceof HTMLPreElement) {
+    sourceHighlights.set(tabId, element)
+    return
+  }
+
+  sourceHighlights.delete(tabId)
+}
+
+const syncHighlightScroll = (tabId: number): void => {
+  const sourceInput = sourceInputs.get(tabId)
+  const highlights = sourceHighlights.get(tabId)
+  if (!sourceInput || !highlights) return
+
+  highlights.scrollTop = sourceInput.scrollTop
+  highlights.scrollLeft = sourceInput.scrollLeft
 }
 
 const handleSourceKeydown = (event: KeyboardEvent): void => {
@@ -90,8 +110,22 @@ const restoreMenu = useTemplateRef('restoreMenu')
 
 const activeSourceTab = computed(() => props.sourceTabs[props.activeSourceCodeTabIndex])
 const liveSourceTabs = computed(() => props.sourceTabs.filter((tab) => tab.alive))
+const editorSourceTabs = computed(() => [
+  ...liveSourceTabs.value.filter((tab) => tab.active),
+  ...liveSourceTabs.value.filter((tab) => !tab.active),
+])
 const deadSourceTabs = computed(() => props.sourceTabs.filter((tab) => !tab.alive))
 const liveSourceTabCount = computed(() => liveSourceTabs.value.length)
+
+watch(
+  () => activeSourceTab.value?.id,
+  async (tabId) => {
+    if (tabId === undefined) return
+
+    await nextTick()
+    syncHighlightScroll(tabId)
+  },
+)
 
 const closeRestoreMenu = (): void => {
   if (!restoreMenu.value) return
@@ -193,56 +227,60 @@ const isCharacterActive = (charData?: CharData): boolean =>
     </div>
     <label class="source-label" for="source-code">Source code</label>
     <div
+      v-for="tab in editorSourceTabs"
+      v-show="tab.active"
+      :key="tab.id"
       class="source-editor"
-      :id="activeSourceTab ? `source-code-panel-${activeSourceTab.id}` : undefined"
+      :id="`source-code-panel-${tab.id}`"
       role="tabpanel"
     >
       <div class="source-editor-content">
-        <div v-if="activeSourceTab && liveSourceTabCount > 1" class="source-editor-tab-controls">
+        <div v-if="tab.active && liveSourceTabCount > 1" class="source-editor-tab-controls">
           <button
             class="source-editor-tab-control"
-            :class="{ enabled: activeSourceTab.soloed }"
+            :class="{ enabled: tab.soloed }"
             type="button"
-            :aria-label="`Solo ${activeSourceTab.title}`"
-            :aria-pressed="activeSourceTab.soloed"
-            :title="`${activeSourceTab.soloed ? 'Unsolo' : 'Solo'} ${activeSourceTab.title}`"
-            @click="
-              emit('toggleSourceCodeTabSolo', activeSourceTab.id, $event.ctrlKey || $event.metaKey)
-            "
+            :aria-label="`Solo ${tab.title}`"
+            :aria-pressed="tab.soloed"
+            :title="`${tab.soloed ? 'Unsolo' : 'Solo'} ${tab.title}`"
+            @click="emit('toggleSourceCodeTabSolo', tab.id, $event.ctrlKey || $event.metaKey)"
           >
             Solo
           </button>
           <button
             class="source-editor-tab-control"
-            :class="{ enabled: activeSourceTab.muted }"
+            :class="{ enabled: tab.muted }"
             type="button"
-            :aria-label="`Mute ${activeSourceTab.title}`"
-            :aria-pressed="activeSourceTab.muted"
-            :title="`${activeSourceTab.muted ? 'Unmute' : 'Mute'} ${activeSourceTab.title}`"
-            @click="emit('toggleSourceCodeTabMute', activeSourceTab.id)"
+            :aria-label="`Mute ${tab.title}`"
+            :aria-pressed="tab.muted"
+            :title="`${tab.muted ? 'Unmute' : 'Mute'} ${tab.title}`"
+            @click="emit('toggleSourceCodeTabMute', tab.id)"
           >
             Mute
           </button>
         </div>
         <textarea
-          id="source-code"
-          ref="sourceInput"
-          :value="sourceCode"
+          :id="tab.active ? 'source-code' : undefined"
+          :ref="(element) => setSourceInputRef(tab.id, element)"
+          :value="tab.active ? sourceCode : tab.sourceCode"
           class="source-input"
           placeholder="Type your tune here…"
           autocapitalize="off"
           autocomplete="off"
           autocorrect="off"
           spellcheck="false"
-          @input="handleSourceInput"
-          @keydown="handleSourceKeydown"
-          @scroll="syncHighlightScroll"
+          @input="tab.active && handleSourceInput($event)"
+          @keydown="tab.active && handleSourceKeydown($event)"
+          @scroll="syncHighlightScroll(tab.id)"
         />
-        <pre ref="sourceHighlights" class="source-highlights"><span
-        v-if="sourceCode === ''"
+        <pre
+          :ref="(element) => setSourceHighlightsRef(tab.id, element)"
+          class="source-highlights"
+        ><span
+        v-if="(tab.active ? sourceCode : tab.sourceCode) === ''"
         class="placeholder-text"
         aria-hidden="true"
-      >Type your tune here…</span><template v-else><template v-for="token in sourceDisplayTokens" :key="token.key"><button
+      >Type your tune here…</span><template v-else><template v-for="token in tab.active ? sourceDisplayTokens : []" :key="token.key"><button
         v-if="token.type === 'playStart'"
         class="play-start-marker"
         :class="{ selected: selectedLine === token.line }"

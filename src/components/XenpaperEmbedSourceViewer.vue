@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, useTemplateRef } from 'vue'
+import { computed, nextTick, watch } from 'vue'
 
 import type { CharData } from '../grammars/grammar-to-chars'
 import type { SourceDisplayToken, SourceTab } from '../types'
@@ -21,15 +21,49 @@ const emit = defineEmits<{
 
 const activeSourceTab = computed(() => props.sourceTabs.find((tab) => tab.active))
 const liveSourceTabs = computed(() => props.sourceTabs.filter((tab) => tab.alive))
+const editorSourceTabs = computed(() => [
+  ...liveSourceTabs.value.filter((tab) => tab.active),
+  ...liveSourceTabs.value.filter((tab) => !tab.active),
+])
 
-const sourceInput = useTemplateRef('sourceInput')
-const sourceHighlights = useTemplateRef('sourceHighlights')
+watch(
+  () => activeSourceTab.value?.id,
+  async (tabId) => {
+    if (tabId === undefined) return
 
-const syncHighlightScroll = (): void => {
-  if (!sourceInput.value || !sourceHighlights.value) return
+    await nextTick()
+    syncHighlightScroll(tabId)
+  },
+)
 
-  sourceHighlights.value.scrollTop = sourceInput.value.scrollTop
-  sourceHighlights.value.scrollLeft = sourceInput.value.scrollLeft
+const sourceInputs = new Map<number, HTMLTextAreaElement>()
+const sourceHighlights = new Map<number, HTMLPreElement>()
+
+const setSourceInputRef = (tabId: number, element: unknown): void => {
+  if (element instanceof HTMLTextAreaElement) {
+    sourceInputs.set(tabId, element)
+    return
+  }
+
+  sourceInputs.delete(tabId)
+}
+
+const setSourceHighlightsRef = (tabId: number, element: unknown): void => {
+  if (element instanceof HTMLPreElement) {
+    sourceHighlights.set(tabId, element)
+    return
+  }
+
+  sourceHighlights.delete(tabId)
+}
+
+const syncHighlightScroll = (tabId: number): void => {
+  const sourceInput = sourceInputs.get(tabId)
+  const highlights = sourceHighlights.get(tabId)
+  if (!sourceInput || !highlights) return
+
+  highlights.scrollTop = sourceInput.scrollTop
+  highlights.scrollLeft = sourceInput.scrollLeft
 }
 
 const isCharacterActive = (charData?: CharData): boolean =>
@@ -64,14 +98,17 @@ const isCharacterActive = (charData?: CharData): boolean =>
     </div>
     <label class="source-label" for="source-code">Source code</label>
     <div
+      v-for="tab in editorSourceTabs"
+      v-show="tab.active"
+      :key="tab.id"
       class="source-editor source-editor-embed"
-      :id="activeSourceTab ? `source-code-panel-${activeSourceTab.id}` : undefined"
+      :id="`source-code-panel-${tab.id}`"
       role="tabpanel"
     >
       <textarea
-        id="source-code"
-        ref="sourceInput"
-        :value="sourceCode"
+        :id="tab.active ? 'source-code' : undefined"
+        :ref="(element) => setSourceInputRef(tab.id, element)"
+        :value="tab.active ? sourceCode : tab.sourceCode"
         class="source-input"
         placeholder="Type your tune here…"
         readonly
@@ -79,13 +116,16 @@ const isCharacterActive = (charData?: CharData): boolean =>
         autocomplete="off"
         autocorrect="off"
         spellcheck="false"
-        @scroll="syncHighlightScroll"
+        @scroll="syncHighlightScroll(tab.id)"
       />
-      <pre ref="sourceHighlights" class="source-highlights"><span
-        v-if="sourceCode === ''"
+      <pre
+        :ref="(element) => setSourceHighlightsRef(tab.id, element)"
+        class="source-highlights"
+      ><span
+        v-if="(tab.active ? sourceCode : tab.sourceCode) === ''"
         class="placeholder-text"
         aria-hidden="true"
-      >Type your tune here…</span><template v-else><template v-for="token in sourceDisplayTokens" :key="token.key"><span
+      >Type your tune here…</span><template v-else><template v-for="token in tab.active ? sourceDisplayTokens : []" :key="token.key"><span
         v-if="token.type === 'character'"
         class="source-character"
         aria-hidden="true"

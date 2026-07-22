@@ -20,6 +20,7 @@ export type SourceDisplayToken =
 export type SourceTab = {
   id: number
   title: string
+  sourceCode: string
   active: boolean
   alive: boolean
   muted: boolean
