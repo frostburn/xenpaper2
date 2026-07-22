@@ -320,8 +320,11 @@ MOS{5L2s}(plot:MOS)`,
  '0---
  "0---
 '"0---
-(ff)(noise: white impulse)
- '0---`,
+....
+(fff)(noise: white impulse)
+ '0---
+ "0---
+'"0---`,
       },
     ],
   },
