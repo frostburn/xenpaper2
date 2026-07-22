@@ -1,10 +1,10 @@
 const NOISE_GENERATOR_PROCESSOR_NAME = 'sw-seq-noise-generator'
 
 export type NoiseGeneratorType = 'white' | 'pink' | 'brown' | 'blue' | 'violet'
-export type NoiseInterpolationType = 'constant' | 'linear'
+export type NoiseInterpolationType = 'constant' | 'linear' | 'impulse'
 
 const NOISE_GENERATOR_TYPES = new Set<string>(['white', 'pink', 'brown', 'blue', 'violet'])
-const NOISE_INTERPOLATION_TYPES = new Set<string>(['constant', 'linear'])
+const NOISE_INTERPOLATION_TYPES = new Set<string>(['constant', 'linear', 'impulse'])
 
 export function isNoiseGeneratorType(noise: string): noise is NoiseGeneratorType {
   return NOISE_GENERATOR_TYPES.has(noise)
@@ -49,7 +49,8 @@ class SWSeqNoiseGenerator extends AudioWorkletProcessor {
       } else if (event.data?.type === 'interpolation') {
         if (
           event.data.interpolation !== 'constant' &&
-          event.data.interpolation !== 'linear'
+          event.data.interpolation !== 'linear' &&
+          event.data.interpolation !== 'impulse'
         ) {
           return
         }
@@ -144,16 +145,21 @@ class SWSeqNoiseGenerator extends AudioWorkletProcessor {
         this.phase += effectiveFrequency / sampleRate
       }
 
+      let emittedSample = false
       if (this.phase >= 1) {
         this.previousSample = this.currentSample
         this.currentSample = this.nextSample()
         this.phase -= Math.floor(this.phase)
+        emittedSample = true
       }
 
       const gain = gains.length === 1 ? gains[0] : gains[sampleIndex]
-      const value = (
-        this.interpolation === 'constant' ? this.currentSample : this.previousSample + (this.currentSample - this.previousSample) * this.phase
-      ) * gain
+      const sample = this.interpolation === 'impulse'
+        ? (emittedSample ? this.currentSample : 0)
+        : this.interpolation === 'constant'
+          ? this.currentSample
+          : this.previousSample + (this.currentSample - this.previousSample) * this.phase
+      const value = sample * gain
       for (let channelIndex = 0; channelIndex < output.length; channelIndex++) {
         output[channelIndex][sampleIndex] = value
       }
