@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { isNoiseGeneratorType, type NoiseGeneratorType } from '../noise-worklet'
+import {
+  isNoiseGeneratorType,
+  isNoiseInterpolationType,
+  type NoiseGeneratorType,
+  type NoiseInterpolationType,
+} from '../noise-worklet'
 
 const NOISE_GENERATOR_TYPES = [
   'white',
@@ -10,6 +15,12 @@ const NOISE_GENERATOR_TYPES = [
   'violet',
 ] as const satisfies readonly NoiseGeneratorType[]
 
+const NOISE_INTERPOLATION_TYPES = [
+  'constant',
+  'linear',
+  'impulse',
+] as const satisfies readonly NoiseInterpolationType[]
+
 describe('noise worklet', () => {
   it('recognizes all supported noise colors', () => {
     expect(NOISE_GENERATOR_TYPES.every((noise) => isNoiseGeneratorType(noise))).toBe(true)
@@ -17,5 +28,15 @@ describe('noise worklet', () => {
 
   it('rejects unsupported noise colors', () => {
     expect(isNoiseGeneratorType('green')).toBe(false)
+  })
+
+  it('recognizes all supported interpolation modes', () => {
+    expect(
+      NOISE_INTERPOLATION_TYPES.every((interpolation) => isNoiseInterpolationType(interpolation)),
+    ).toBe(true)
+  })
+
+  it('rejects unsupported interpolation modes', () => {
+    expect(isNoiseInterpolationType('cubic')).toBe(false)
   })
 })

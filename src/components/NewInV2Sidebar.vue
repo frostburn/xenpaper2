@@ -309,13 +309,19 @@ MOS{5L2s}(plot:MOS)`,
 [0!] ! ["0!] [0!] !    [0!] [0"0!] . ||`,
       },
       {
-        description: 'For softer noise, specify the interpolation type.',
+        description:
+          'For softer noise, specify linear interpolation; for clicks, use impulse interpolation to emit one sample per noise-clock tick.',
         tune: `(mp)(noise: white constant)
  '0---
  "0---
 '"0---
 ....
 (f)(noise: white linear)
+ '0---
+ "0---
+'"0---
+....
+(fff)(noise: white impulse)
  '0---
  "0---
 '"0---`,
