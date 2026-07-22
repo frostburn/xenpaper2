@@ -2080,6 +2080,21 @@ describe('grammar', () => {
         })
       })
 
+      it('should parse portato articulation before velocity shorthand in groove sub-setters', () => {
+        expect(strip(parser('(groove:(portato)!)')).sequence.items[0]).toMatchObject({
+          type: 'SetterGroup',
+          setters: [
+            {
+              type: 'SetGroove',
+              items: [
+                { type: 'SetArticulation', articulation: 0.85 },
+                { type: 'SampleRateNote', tail: null },
+              ],
+            },
+          ],
+        })
+      })
+
       it('should parse semicolon-separated groove sub-setters', () => {
         expect(strip(parser("(groove:(5;:;ff)!--(pp;')!-)")).sequence.items).toEqual([
           {

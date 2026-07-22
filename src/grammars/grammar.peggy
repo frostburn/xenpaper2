@@ -205,7 +205,7 @@ GrooveSetterGroup = "(" _ first:GrooveGroupedSetter rest:(Semicolon GrooveGroupe
   for (const part of rest) items.push(part[0], part[1]);
   return items;
 }
-GrooveGroupedSetter = SetVelocity / SetVelocityShorthand / SetArticulation / SetSubdivision
+GrooveGroupedSetter = SetArticulation / SetVelocity / SetVelocityShorthand / SetSubdivision
 SetGliss = "gliss"i easing:(_ @GlissEasing)? {
   return node('SetGliss', { easing: (easing ?? 'linear').toLowerCase() });
 }
