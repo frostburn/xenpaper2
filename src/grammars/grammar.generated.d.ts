@@ -77,6 +77,7 @@ export type PitchOctaveDivisionType = NodeType<'PitchOctaveDivision'> & {
   numerator: number
   denominator: number
   octaveSize: number
+  octaveSizeLabel: string | null
 }
 
 export type PitchRatioType = NodeType<'PitchRatio'> & {

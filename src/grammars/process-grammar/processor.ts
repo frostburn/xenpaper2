@@ -549,7 +549,8 @@ const ratioToCentsLabel = (ratio: number, octaveSize: number): string => {
   return `${valueToCents(ratioWrap(ratio, octaveSize)).toFixed(1)}c`
 }
 
-const equaveSizeLabel = (octaveSize: number): string => (octaveSize === 2 ? '' : `<${octaveSize}>`)
+const equaveSizeLabel = (octaveSize: number, explicitLabel: string | null = null): string =>
+  explicitLabel ?? (octaveSize === 2 ? '' : `<${octaveSize}>`)
 
 export const pitchToLabel = (pitch: PitchType, context: Context): string => {
   const { type } = pitch.value
@@ -574,8 +575,8 @@ export const pitchToLabel = (pitch: PitchType, context: Context): string => {
   }
 
   if (type === 'PitchOctaveDivision') {
-    const { numerator, denominator, octaveSize } = pitch.value
-    return `${numerator}\\${denominator}${equaveSizeLabel(octaveSize)}  ${centsLabel}`
+    const { numerator, denominator, octaveSize, octaveSizeLabel } = pitch.value
+    return `${numerator}\\${denominator}${equaveSizeLabel(octaveSize, octaveSizeLabel)}  ${centsLabel}`
   }
 
   if (type === 'PitchDegree') {

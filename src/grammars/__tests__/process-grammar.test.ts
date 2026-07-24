@@ -1101,7 +1101,10 @@ describe('grammar to mosc score', () => {
   })
 
   it('labels octave divisions with explicit equaves', () => {
-    expect(noteLabels(String.raw`1\3<3>`)).toEqual([String.raw`1\3<3>  634.0c`])
+    expect(noteLabels(String.raw`1\3<3> 2\9<4/3>`)).toEqual([
+      String.raw`1\3<3>  634.0c`,
+      String.raw`2\9<4/3>  110.7c`,
+    ])
   })
 
   it('keeps MOS up and lift steps separate from Latin and Greek absolute pitch config', () => {
