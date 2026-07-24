@@ -217,13 +217,13 @@ MOS{2L1s<4/3>}
 
 # Numbered degrees follow plain MOS nominals,
 # including graves, primes, ups and lifts.
-0 1 2 '0 ^0 /0
+0 1 2 '0 ^0 /0 \`0-
 
 # Later numbered scale setters do not
 # affect nominals from J onwards.
 {5ed3}
 0 1 2 3 4 '0-
-J K L j
+J K L j 'j-
 
 # Diatonic notation is still Ptolemaic
 {Pythagorean}
