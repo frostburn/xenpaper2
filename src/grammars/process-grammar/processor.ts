@@ -185,7 +185,8 @@ const temperedRatioFractionToRatio = (fraction: RatioFraction, context: Context)
   centsToValue(ratioToMappedCents(fraction, context))
 
 export const pitchToRatio = (pitch: PitchType, context: Context): number => {
-  const { scale, octaveSize, mapping, stepSize, up, lift, rootNominal } = context
+  const { scale, octaveSize, mapping, stepSize, up, lift, scaleUp, scaleLift, rootNominal } =
+    context
   assertFinitePositive('context.octaveSize', octaveSize)
   limit('Equave size', octaveSize, -20, 20)
 
@@ -226,7 +227,7 @@ export const pitchToRatio = (pitch: PitchType, context: Context): number => {
   if (type === 'PitchDegree') {
     const { degree, ups, lifts } = pitch.value
     const degreeRatio = pitchDegreeToRatio(degree, scale, octaveSize)
-    return degreeRatio * Math.pow(up, ups) * Math.pow(lift, lifts) * octaveMulti
+    return degreeRatio * Math.pow(scaleUp, ups) * Math.pow(scaleLift, lifts) * octaveMulti
   }
 
   if (type === 'PitchAbsolute') {
@@ -295,6 +296,8 @@ const customMappingToContext = (scale: CustomMappingScaleType, context: Context)
   context.stepSize = PRIME_CENTS[anchorIndex]! / anchor.value
   context.up = centsToValue(context.stepSize)
   context.lift = centsToValue(5 * context.stepSize)
+  context.scaleUp = context.up
+  context.scaleLift = context.lift
   context.mapping = PRIME_CENTS.slice(0, NUM_COMPONENTS).map((c) =>
     Math.round(c / context.stepSize),
   )
@@ -649,6 +652,8 @@ type Context = {
   scale: number[]
   scaleLabels: string[]
   octaveSize: number
+  scaleUp: number
+  scaleLift: number
   up: number
   lift: number
   mapping: number[]
@@ -943,6 +948,15 @@ const droneToMosc = (drone: DroneType, context: Context): MoscBeatPlayableNote[]
 const setMos = (setMos: SetMosType, context: Context): void => {
   const mos = createMosConfig(setMos.expressions.map((expression) => expression.value))
   context.mos = mos
+  context.scale = mos.nominalOrder.map((nominal) =>
+    centsToValue(mos.nominalSteps.get(nominal)! * mos.stepSize),
+  )
+  context.scaleLabels = mos.nominalOrder.map(
+    (nominal, index) => `${nominal}♮  ${ratioToCentsLabel(context.scale[index]!, mos.equaveSize)}`,
+  )
+  context.octaveSize = mos.equaveSize
+  context.scaleUp = centsToValue(mos.up * mos.stepSize)
+  context.scaleLift = centsToValue(mos.lift * mos.stepSize)
 }
 
 const setScale = (setScale: SetScaleType, context: Context): void => {
@@ -1051,6 +1065,8 @@ const setScale = (setScale: SetScaleType, context: Context): void => {
     context.stepSize = valueToCents(octaveSize) / divisions
     context.up = centsToValue(context.stepSize)
     context.lift = centsToValue(5 * context.stepSize)
+    context.scaleUp = context.up
+    context.scaleLift = context.lift
     context.mapping = PRIME_CENTS.slice(0, NUM_COMPONENTS).map((c) =>
       Math.round(c / context.stepSize),
     )
@@ -1066,6 +1082,8 @@ const setScale = (setScale: SetScaleType, context: Context): void => {
   if (type === 'PythagoreanScale') {
     context.up = DEFAULT_UP
     context.lift = DEFAULT_LIFT
+    context.scaleUp = context.up
+    context.scaleLift = context.lift
     context.mapping = PRIME_CENTS
     context.stepSize = 1
     context.mappingIsIntegerSteps = false
@@ -1279,11 +1297,13 @@ const setterToMosc = (setter: SetterType | DelimiterType, context: Context): Mos
 
   if (type === 'SetUp') {
     context.up = pitchToRatio(setter.value, context)
+    context.scaleUp = context.up
     return []
   }
 
   if (type === 'SetLift') {
     context.lift = pitchToRatio(setter.value, context)
+    context.scaleLift = context.lift
     return []
   }
 
@@ -1618,6 +1638,8 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
     scale,
     scaleLabels: edoToLabels(12, scale, 2),
     octaveSize: 2,
+    scaleUp: DEFAULT_UP,
+    scaleLift: DEFAULT_LIFT,
     up: DEFAULT_UP,
     lift: DEFAULT_LIFT,
     mapping: PRIME_CENTS,
