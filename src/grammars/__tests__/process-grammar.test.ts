@@ -1100,6 +1100,13 @@ describe('grammar to mosc score', () => {
     expect(j?.label).toBe('J♮  0.0c')
   })
 
+  it('labels octave divisions with explicit equaves', () => {
+    expect(noteLabels(String.raw`1\3<3> 2\9<4/3>`)).toEqual([
+      String.raw`1\3<3>  634.0c`,
+      String.raw`2\9<4/3>  110.7c`,
+    ])
+  })
+
   it('keeps MOS up and lift steps separate from Latin and Greek absolute pitch config', () => {
     const [before, after] = noteItems('^C MOS{5L2s} ^C')
 
@@ -1110,11 +1117,11 @@ describe('grammar to mosc score', () => {
     const [zero, one, two, zeroPrime, K, L, j] = noteItems("MOS{3L 2s <3>} 0 1 2 '0 K L j")
 
     expect(zero?.hz).toBeAround(220, 6)
-    expect(zero?.label).toBe('J♮  0.0c')
+    expect(zero?.label).toBe('0\\8<3>  0.0c')
     expect(one?.hz).toBeAround(220 * Math.pow(3, 2 / 8), 6)
-    expect(one?.label).toBe('K♮  475.5c')
+    expect(one?.label).toBe('2\\8<3>  475.5c')
     expect(two?.hz).toBeAround(220 * Math.pow(3, 4 / 8), 6)
-    expect(two?.label).toBe('L♮  951.0c')
+    expect(two?.label).toBe('4\\8<3>  951.0c')
     expect(zeroPrime?.hz).toBeAround(660, 6)
     expect(K?.hz).toBeAround(one!.hz, 6)
     expect(L?.hz).toBeAround(two!.hz, 6)
@@ -1142,13 +1149,13 @@ describe('grammar to mosc score', () => {
     ] = noteItems('MOS{5L2s} ^0 ^J /0 /J MOS{7L1s 43:10 3|4 ^4 /12} ^0 ^J /0 /J')
 
     expect(upDegree?.hz).toBeAround(upJ!.hz, 6)
-    expect(upDegree?.label).toBe('^J♮  100.0c')
+    expect(upDegree?.label).toBe('^0\\12  100.0c')
     expect(liftDegree?.hz).toBeAround(liftJ!.hz, 6)
-    expect(liftDegree?.label).toBe('/J♮  500.0c')
+    expect(liftDegree?.label).toBe('/0\\12  500.0c')
     expect(customUpDegree?.hz).toBeAround(customUpJ!.hz, 6)
-    expect(customUpDegree?.label).toBe('^J♮  15.4c')
+    expect(customUpDegree?.label).toBe('^0\\311  15.4c')
     expect(customLiftDegree?.hz).toBeAround(customLiftJ!.hz, 6)
-    expect(customLiftDegree?.label).toBe('/J♮  46.3c')
+    expect(customLiftDegree?.label).toBe('/0\\311  46.3c')
   })
 
   it('applies major key signatures to Latin and matching Greek nominals', () => {

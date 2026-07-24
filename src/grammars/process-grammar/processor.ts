@@ -549,6 +549,9 @@ const ratioToCentsLabel = (ratio: number, octaveSize: number): string => {
   return `${valueToCents(ratioWrap(ratio, octaveSize)).toFixed(1)}c`
 }
 
+const equaveSizeLabel = (octaveSize: number, explicitLabel: string | null = null): string =>
+  explicitLabel ?? (octaveSize === 2 ? '' : `<${octaveSize}>`)
+
 export const pitchToLabel = (pitch: PitchType, context: Context): string => {
   const { type } = pitch.value
 
@@ -572,8 +575,8 @@ export const pitchToLabel = (pitch: PitchType, context: Context): string => {
   }
 
   if (type === 'PitchOctaveDivision') {
-    const { numerator, denominator } = pitch.value
-    return `${numerator}\\${denominator}  ${centsLabel}`
+    const { numerator, denominator, octaveSize, octaveSizeLabel } = pitch.value
+    return `${numerator}\\${denominator}${equaveSizeLabel(octaveSize, octaveSizeLabel)}  ${centsLabel}`
   }
 
   if (type === 'PitchDegree') {
@@ -628,9 +631,26 @@ const edoToLabels = (edoSize: number, ratios: number[], octaveSize: number): str
   const labels: string[] = []
   for (let i = 0; i < edoSize; i++) {
     const centsLabel = ratioToCentsLabel(ratios[i]!, octaveSize)
-    labels.push(`${i}\\${edoSize}  ${centsLabel}`)
+    labels.push(`${i}\\${edoSize}${equaveSizeLabel(octaveSize)}  ${centsLabel}`)
   }
   return labels
+}
+
+const mosEquaveLabel = (mos: MosConfig): string => {
+  const equaveExpression = mos.expressions.find(({ type }) => type === 'MosRationalEquave')
+  if (!equaveExpression || equaveExpression.type !== 'MosRationalEquave') return ''
+  const denominator = equaveExpression.denominator
+  return denominator === 1
+    ? `<${equaveExpression.numerator}>`
+    : `<${equaveExpression.numerator}/${denominator}>`
+}
+
+const mosToDegreeLabels = (mos: MosConfig, ratios: number[]): string[] => {
+  const equaveLabel = mosEquaveLabel(mos)
+  return mos.nominalOrder.map((nominal, index) => {
+    const steps = mos.nominalSteps.get(nominal)!
+    return `${steps}\\${mos.equaveSteps}${equaveLabel}  ${ratioToCentsLabel(ratios[index]!, mos.equaveSize)}`
+  })
 }
 
 //
@@ -951,9 +971,7 @@ const setMos = (setMos: SetMosType, context: Context): void => {
   context.scale = mos.nominalOrder.map((nominal) =>
     centsToValue(mos.nominalSteps.get(nominal)! * mos.stepSize),
   )
-  context.scaleLabels = mos.nominalOrder.map(
-    (nominal, index) => `${nominal}♮  ${ratioToCentsLabel(context.scale[index]!, mos.equaveSize)}`,
-  )
+  context.scaleLabels = mosToDegreeLabels(mos, context.scale)
   context.octaveSize = mos.equaveSize
   context.scaleUp = centsToValue(mos.up * mos.stepSize)
   context.scaleLift = centsToValue(mos.lift * mos.stepSize)

@@ -84,12 +84,17 @@ PitchAbsoluteMos
 MosAccidental = [\&@ea♮_]
 PitchCents = cents:Number "c"i { return node('PitchCents',{cents}); }
 PitchHz = hz:Number _ "hz"i { return node('PitchHz',{hz}); }
-PitchOctaveDivision = numerator:Int [\\/] denominator:Int octaveSize:PitchOctaveDivisionSuffix {
-  return node('PitchOctaveDivision',{numerator,denominator,octaveSize});
-} / numerator:Int "\\" denominator:Int { return node('PitchOctaveDivision',{numerator,denominator,octaveSize:2}); }
-PitchOctaveDivisionSuffix = _ "ed"i _ os:OctaveSize? { return os ?? 2; } / _ "<" _ os:OctaveSize _ ">" { return os; }
-OctaveSize = fraction:Fraction {
-  return fraction.numerator / fraction.denominator;
+PitchOctaveDivision = numerator:Int [\\/] denominator:Int suffix:PitchOctaveDivisionSuffix {
+  return node('PitchOctaveDivision',{numerator,denominator,octaveSize:suffix.octaveSize,octaveSizeLabel:suffix.octaveSizeLabel});
+} / numerator:Int "\\" denominator:Int { return node('PitchOctaveDivision',{numerator,denominator,octaveSize:2,octaveSizeLabel:null}); }
+PitchOctaveDivisionSuffix = _ "ed"i _ os:OctaveSizeWithLabel? { return { octaveSize: os?.octaveSize ?? 2, octaveSizeLabel: os ? `<${os.label}>` : null }; }
+  / _ "<" _ os:OctaveSizeWithLabel _ ">" { return { octaveSize: os.octaveSize, octaveSizeLabel: `<${os.label}>` }; }
+OctaveSize = os:OctaveSizeWithLabel { return os.octaveSize; }
+OctaveSizeWithLabel = fraction:Fraction {
+  return {
+    octaveSize: fraction.numerator / fraction.denominator,
+    label: fraction.denominator === 1 ? `${fraction.numerator}` : `${fraction.numerator}/${fraction.denominator}`,
+  };
 }
 TemperedPrefix = '~' { return node('TemperedPrefix', { delimiter: true }); }
 PitchRatio = fraction:SlashFraction { return node('PitchRatio', fraction); }
