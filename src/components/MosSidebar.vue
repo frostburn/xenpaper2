@@ -208,22 +208,26 @@ U V W X Y Z JJ JK j----`,
     title: 'MOS config is independent',
     demos: [
       {
-        description: 'MOS configuration only affects the nominals from J onwards.',
-        tune: `# Set numbered scale
-{5ed3}
-# Undo damage to diatonic notation
-{Pythagorean}
-(^:81/80)
-
-# Diamond-mos has its own graves,
-# primes, ups and downs.
+        description:
+          'MOS configuration seeds numbered degrees, but later numbered scale setters do not affect the nominals from J onwards.',
+        tune: `# Set diamond-mos first: it has its own
+# graves, primes, ups and downs.
 MOS{2L1s<4/3>}
 \`J J K L j 'j "j "^j "j--
 
-# The numbered scale is untouched
+# Numbered degrees follow plain MOS nominals,
+# including graves and primes.
+0 1 2 '0
+
+# Later numbered scale setters do not
+# affect nominals from J onwards.
+{5ed3}
 0 1 2 3 4 '0-
+J K L j
 
 # Diatonic notation is still Ptolemaic
+{Pythagorean}
+(^:81/80)
 c d ve f g- 'c`,
       },
     ],

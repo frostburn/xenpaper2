@@ -943,6 +943,13 @@ const droneToMosc = (drone: DroneType, context: Context): MoscBeatPlayableNote[]
 const setMos = (setMos: SetMosType, context: Context): void => {
   const mos = createMosConfig(setMos.expressions.map((expression) => expression.value))
   context.mos = mos
+  context.scale = mos.nominalOrder.map((nominal) =>
+    centsToValue(mos.nominalSteps.get(nominal)! * mos.stepSize),
+  )
+  context.scaleLabels = mos.nominalOrder.map(
+    (nominal, index) => `${nominal}♮  ${ratioToCentsLabel(context.scale[index]!, mos.equaveSize)}`,
+  )
+  context.octaveSize = mos.equaveSize
 }
 
 const setScale = (setScale: SetScaleType, context: Context): void => {
