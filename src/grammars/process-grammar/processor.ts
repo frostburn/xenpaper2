@@ -549,6 +549,8 @@ const ratioToCentsLabel = (ratio: number, octaveSize: number): string => {
   return `${valueToCents(ratioWrap(ratio, octaveSize)).toFixed(1)}c`
 }
 
+const equaveSizeLabel = (octaveSize: number): string => (octaveSize === 2 ? '' : `<${octaveSize}>`)
+
 export const pitchToLabel = (pitch: PitchType, context: Context): string => {
   const { type } = pitch.value
 
@@ -572,8 +574,8 @@ export const pitchToLabel = (pitch: PitchType, context: Context): string => {
   }
 
   if (type === 'PitchOctaveDivision') {
-    const { numerator, denominator } = pitch.value
-    return `${numerator}\\${denominator}  ${centsLabel}`
+    const { numerator, denominator, octaveSize } = pitch.value
+    return `${numerator}\\${denominator}${equaveSizeLabel(octaveSize)}  ${centsLabel}`
   }
 
   if (type === 'PitchDegree') {
@@ -628,7 +630,7 @@ const edoToLabels = (edoSize: number, ratios: number[], octaveSize: number): str
   const labels: string[] = []
   for (let i = 0; i < edoSize; i++) {
     const centsLabel = ratioToCentsLabel(ratios[i]!, octaveSize)
-    labels.push(`${i}\\${edoSize}  ${centsLabel}`)
+    labels.push(`${i}\\${edoSize}${equaveSizeLabel(octaveSize)}  ${centsLabel}`)
   }
   return labels
 }
