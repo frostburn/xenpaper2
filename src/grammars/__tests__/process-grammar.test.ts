@@ -1129,6 +1129,28 @@ describe('grammar to mosc score', () => {
     expect(j?.hz).toBeAround(660, 6)
   })
 
+  it('sets numbered-degree inflections from MOS config', () => {
+    const [
+      upDegree,
+      upJ,
+      liftDegree,
+      liftJ,
+      customUpDegree,
+      customUpJ,
+      customLiftDegree,
+      customLiftJ,
+    ] = noteItems('MOS{5L2s} ^0 ^J /0 /J MOS{7L1s 43:10 3|4 ^4 /12} ^0 ^J /0 /J')
+
+    expect(upDegree?.hz).toBeAround(upJ!.hz, 6)
+    expect(upDegree?.label).toBe('^J♮  100.0c')
+    expect(liftDegree?.hz).toBeAround(liftJ!.hz, 6)
+    expect(liftDegree?.label).toBe('/J♮  500.0c')
+    expect(customUpDegree?.hz).toBeAround(customUpJ!.hz, 6)
+    expect(customUpDegree?.label).toBe('^J♮  15.4c')
+    expect(customLiftDegree?.hz).toBeAround(customLiftJ!.hz, 6)
+    expect(customLiftDegree?.label).toBe('/J♮  46.3c')
+  })
+
   it('applies major key signatures to Latin and matching Greek nominals', () => {
     expect(noteLabels('(key:G Major) F Zet F_ Zet_')).toEqual([
       'F♯  905.9c',
