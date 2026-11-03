@@ -564,6 +564,15 @@ describe('grammarToChars', () => {
     ])
   })
 
+  it('highlights the ADSR keyword, values, and mandatory units as a setter', () => {
+    const source = '(adsr:10.5ms 100ms 50% 200ms)'
+    expect(colors(grammarToChars(parse(source)))).toEqual([
+      'setterGroup',
+      ...Array(source.length - 2).fill('setter'),
+      'setterGroup',
+    ])
+  })
+
   it('highlights noise setters like osc setters', () => {
     expect(colors(grammarToChars(parse('(noise:white)')))).toEqual(
       colors(grammarToChars(parse('(osc:slender)'))),

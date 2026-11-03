@@ -1426,7 +1426,14 @@ const setterToMosc = (setter: SetterType | DelimiterType, context: Context): Mos
     ]
   }
 
-  if (type === 'SetEnv') {
+  if (type === 'SetAdsr') {
+    limit('SetAdsr.a', setter.a, 0, Number.MAX_VALUE)
+    limit('SetAdsr.d', setter.d, 0, Number.MAX_VALUE)
+    limit('SetAdsr.s', setter.s, 0, 1)
+    limit('SetAdsr.r', setter.r, 0, Number.MAX_VALUE)
+  }
+
+  if (type === 'SetEnv' || type === 'SetAdsr') {
     const { a, d, s, r } = setter
     return [
       {
@@ -1434,10 +1441,10 @@ const setterToMosc = (setter: SetterType | DelimiterType, context: Context): Mos
         time: mapGrooveBeat(context.time, context.groove),
         value: {
           type: 'env',
-          a: ENV_VALUES[a] || 0,
-          d: ENV_VALUES[d] || 0,
-          s: s / 9,
-          r: ENV_VALUES[r] || 0,
+          a: type === 'SetEnv' ? ENV_VALUES[a] || 0 : a,
+          d: type === 'SetEnv' ? ENV_VALUES[d] || 0 : d,
+          s: type === 'SetEnv' ? s / 9 : s,
+          r: type === 'SetEnv' ? ENV_VALUES[r] || 0 : r,
         },
       },
     ]

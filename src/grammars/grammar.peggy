@@ -209,7 +209,7 @@ SetterGroup = "(" _ first:Setter rest:(Semicolon Setter)* _ ")" {
   for (const part of rest) setters.push(part[0], part[1]);
   return node('SetterGroup', { setters });
 }
-Setter = SetBpm / SetBms / SetTime / SetGrace / SetGliss / SetArticulation / SetTempoRamp / SetVolumeRamp / SetGroove / SetSubdivision / Drone / SetUp / SetLift / SetOsc / SetNoise / SetEnv / SetVolume / SetVelocity / SetKey / SetSignature / SetRulerRange / SetRulerPlot / SetVelocityShorthand
+Setter = SetBpm / SetBms / SetTime / SetGrace / SetGliss / SetArticulation / SetTempoRamp / SetVolumeRamp / SetGroove / SetSubdivision / Drone / SetUp / SetLift / SetOsc / SetNoise / SetEnv / SetAdsr / SetVolume / SetVelocity / SetKey / SetSignature / SetRulerRange / SetRulerPlot / SetVelocityShorthand
 SetBpm = "bpm"i _ ":" _ bpm:Number { return node('SetBpm', { bpm }); }
 SetBms = "bms"i _ ":" _ bms:Number { return node('SetBms', { bms }); }
 SetTime = "time"i _ ":" _ numerator:Int _ "/" _ denominator:Int { return node('SetTime', { numerator, denominator }); }
@@ -262,6 +262,9 @@ NoiseName "noise generator name" = [a-zA-Z0-9\-]+ { return text().toLowerCase();
 InterpolationName "noise interpolation type" = [a-zA-Z0-9\-]+ { return text().toLowerCase(); }
 SetEnv = "env"i _ ":" _ vals:EnvValues {
   return node('SetEnv', vals);
+}
+SetAdsr = "adsr"i _ ":" _ a:Number _ "ms"i _ d:Number _ "ms"i _ s:Number _ "%" _ r:Number _ "ms"i {
+  return node('SetAdsr', { a: a / 1000, d: d / 1000, s: s / 100, r: r / 1000 });
 }
 SetVolume = "vol"i _ ":" _ db:SignedNumber _ "db"i { return node('SetVolume', { db }); }
 SetVelocity = "vel"i _ ":" _ percent:Number _ "%" { return node('SetVelocity', { velocity: percent / 100 }); }

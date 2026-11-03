@@ -358,6 +358,15 @@ export type SetEnvType = NodeType<'SetEnv'> & {
   r: number
 }
 
+// ADSR times are in seconds and sustain is a fraction.
+
+export type SetAdsrType = NodeType<'SetAdsr'> & {
+  a: number
+  d: number
+  s: number
+  r: number
+}
+
 // volume and velocity
 
 export type SetVolumeType = NodeType<'SetVolume'> & {
@@ -448,6 +457,7 @@ export type SetterType =
   | SetOscType
   | SetNoiseType
   | SetEnvType
+  | SetAdsrType
   | SetVolumeType
   | SetVelocityType
   | SetKeyType

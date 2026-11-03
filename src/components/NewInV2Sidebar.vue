@@ -10,6 +10,16 @@ const modifierKey = getKeyboardModifierKeyLabel()
 
 const newInV2Sections: SidebarSection[] = [
   {
+    title: 'ADSR envelope',
+    demos: [
+      {
+        description:
+          'The ADSR setter specifies attack, decay and release in milliseconds and sustain from 0% to 100%. All four units (ms, ms, %, ms) are required.',
+        tune: '(adsr:10ms 100ms 50% 200ms)0 4 7.',
+      },
+    ],
+  },
+  {
     title: 'Source tabs',
     demos: [
       {
