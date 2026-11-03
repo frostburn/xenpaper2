@@ -24,7 +24,7 @@
     "moment-of-symmetry": "^0.10.0",
     "peggy": "^5.1.0",
     "pinia": "^3.0.4",
-    "vue": "^3.5.32",
+    "vue": "^3.5.44",
     "vue-router": "^5.1.0",
     "xen-dev-utils": "^0.15.0"
   },
@@ -86,5 +86,14 @@
   "funding": {
     "type": "github",
     "url": "https://github.com/sponsors/frostburn"
+  },
+  "overrides": {
+    "minimatch": "^11.0.4",
+    "js-beautify": {
+      "glob": "^14.0.3"
+    },
+    "oxfmt": {
+      "tinypool": "^2.1.2"
+    }
   }
 }
