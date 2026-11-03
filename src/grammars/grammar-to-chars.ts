@@ -115,6 +115,7 @@ const colorMap = new Map<string, HighlightColor>([
   ['SetOsc', 'setter'],
   ['SetNoise', 'setter'],
   ['SetEnv', 'setter'],
+  ['SetAdsr', 'setter'],
   ['SetVolume', 'setter'],
   ['SetVelocity', 'setter'],
   ['SetRulerPlot', 'setter'],
