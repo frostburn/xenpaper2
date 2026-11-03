@@ -32,14 +32,17 @@ describe('binary note ties', () => {
     })
     expect(timing('C- => C-- => C D')).toEqual({
       duration: 3.5,
-      notes: [[0, 3], [3, 3.5]],
+      notes: [
+        [0, 3],
+        [3, 3.5],
+      ],
     })
   })
 
   it.each(['C=>', '=>C', '.=>C', 'C=>.', 'C -> C', 'C |: => C', 'C |¹ => C'])(
     'rejects missing or non-note operands and repeat boundaries: %s',
     (source) => {
-      expect(() => parsed(source)).toThrow()
+      expect(() => parsed(source)).toThrow(/Expected/)
     },
   )
 
@@ -64,16 +67,38 @@ describe('binary note ties', () => {
   it('ties matching chord tones and leaves unmatched attacks in their slots', () => {
     expect(timing('[C E G] => [C F A]')).toEqual({
       duration: 1,
-      notes: [[0, 1], [0, 0.5], [0, 0.5], [0.5, 1], [0.5, 1]],
+      notes: [
+        [0, 1],
+        [0, 0.5],
+        [0, 0.5],
+        [0.5, 1],
+        [0.5, 1],
+      ],
     })
-    expect(timing('C => D')).toEqual({ duration: 1, notes: [[0, 0.5], [0.5, 1]] })
+    expect(timing('C => D')).toEqual({
+      duration: 1,
+      notes: [
+        [0, 0.5],
+        [0.5, 1],
+      ],
+    })
   })
 
   it('matches every duplicate on both sides and keeps all surviving voices in chains', () => {
-    expect(timing('[C C] => [C C]')).toEqual({ duration: 1, notes: [[0, 1], [0, 1]] })
+    expect(timing('[C C] => [C C]')).toEqual({
+      duration: 1,
+      notes: [
+        [0, 1],
+        [0, 1],
+      ],
+    })
     expect(timing('[C E] => [C F] => [C E]')).toEqual({
       duration: 1.5,
-      notes: [[0, 1.5], [0, 1.5], [0.5, 1]],
+      notes: [
+        [0, 1.5],
+        [0, 1.5],
+        [0.5, 1],
+      ],
     })
   })
 
@@ -96,10 +121,29 @@ describe('binary note ties', () => {
   })
 
   it.each([
-    ['(gliss)0 7=>9', [[0, 1], [1, 1.5]]],
+    [
+      '(gliss)0 7=>9',
+      [
+        [0, 1],
+        [1, 1.5],
+      ],
+    ],
     ['(gliss)0 7=>7', [[0, 1.5]]],
-    ['(gliss)0 7=>9=>7', [[0, 2], [1, 1.5]]],
-    ['(gliss)[0 4] [7 11]=>[7 12]', [[0, 1.5], [0, 1.5], [1, 1.5]]],
+    [
+      '(gliss)0 7=>9=>7',
+      [
+        [0, 2],
+        [1, 1.5],
+      ],
+    ],
+    [
+      '(gliss)[0 4] [7 11]=>[7 12]',
+      [
+        [0, 1.5],
+        [0, 1.5],
+        [1, 1.5],
+      ],
+    ],
   ])('preserves glissando target operand boundaries: %s', (source, expected) => {
     const result = score(source as string)
     const notes = result.sequence.filter((item) => item.type === 'NOTE_BEAT_TIME')
@@ -116,7 +160,9 @@ describe('binary note ties', () => {
 
   it('ties sample-rate notes without mixing them with ordinary pitches', () => {
     const result = score('!=>! 0=>!')
-    expect(result.sequence.filter((item) => item.type === 'SAMPLE_RATE_NOTE_BEAT_TIME')).toMatchObject([
+    expect(
+      result.sequence.filter((item) => item.type === 'SAMPLE_RATE_NOTE_BEAT_TIME'),
+    ).toMatchObject([
       { time: 0, timeEnd: 1 },
       { time: 1.5, timeEnd: 2 },
     ])
@@ -126,11 +172,17 @@ describe('binary note ties', () => {
   it('keeps ties inside repeats and attaches repeat-end holds to the right operand', () => {
     expect(timing('|: C=>C :|')).toEqual({
       duration: 2,
-      notes: [[0, 1], [1, 2]],
+      notes: [
+        [0, 1],
+        [1, 2],
+      ],
     })
     expect(timing('|: C=>C :|--')).toEqual({
       duration: 3,
-      notes: [[0, 1], [1, 3]],
+      notes: [
+        [0, 1],
+        [1, 3],
+      ],
     })
     expect(timing('|: C=>C |¹ D :|² E').notes).toHaveLength(4)
   })
@@ -138,19 +190,34 @@ describe('binary note ties', () => {
   it('preserves musical control flow and active drones', () => {
     expect(timing('C=>C (fine) D (dc al fine)')).toEqual({
       duration: 2.5,
-      notes: [[0, 1], [1, 1.5], [1.5, 2.5]],
+      notes: [
+        [0, 1],
+        [1, 1.5],
+        [1.5, 2.5],
+      ],
     })
-    const notes = score('(drone:0)0=>0 2').sequence.filter(
-      (item) => item.type === 'NOTE_BEAT_TIME',
-    )
-    expect(notes.map((note) => [note.time, note.timeEnd])).toEqual([[0, 1.5], [0, 1], [1, 1.5]])
+    const notes = score('(drone:0)0=>0 2').sequence.filter((item) => item.type === 'NOTE_BEAT_TIME')
+    expect(notes.map((note) => [note.time, note.timeEnd])).toEqual([
+      [0, 1.5],
+      [0, 1],
+      [1, 1.5],
+    ])
   })
 
   it('colors operators while preserving all operand and separator colors', () => {
     // Tie itself is structural and intentionally uncolored; children cover its text.
     expect(grammarToChars(parsed('C=>C=>[C E]')).map((char) => char?.color)).toEqual([
-      'pitch', 'delimiter', 'delimiter', 'pitch', 'delimiter', 'delimiter',
-      'chord', 'pitch', 'pitch', 'pitch', 'chord',
+      'pitch',
+      'delimiter',
+      'delimiter',
+      'pitch',
+      'delimiter',
+      'delimiter',
+      'chord',
+      'pitch',
+      'pitch',
+      'pitch',
+      'chord',
     ])
     const source = 'C | # tie\n => C'
     const ast = parsed(source)
