@@ -7,7 +7,23 @@ Start = seq:Sequence _ {
 }
 Sequence = items:ItemList { return node('Sequence', { items }); }
 ItemList = head:Item tail:(_ Item)* { return [head, ...tail.map(([,i]) => i)]; } / '' { return []; }
-Item = Comment / MusicalControlFlow / SetterGroup / SetRoot / SetScale / SetMos / RatioChordItem / SampleRateNote / Note / Rest / Chord / RepeatEndStart / RepeatStart / RepeatEnd / RepeatEndingStart / BarLine / Whitespace
+Item = Comment / MusicalControlFlow / SetterGroup / SetRoot / SetScale / SetMos / Tie / Playable / Rest / RepeatEndStart / RepeatStart / RepeatEnd / RepeatEndingStart / BarLine / Whitespace
+Playable = RatioChordItem / SampleRateNote / Note / Chord
+Tie = left:Playable rest:(before:TieSeparator* operator:TieOperator after:TieSeparator* right:Playable {
+  return { parts: [...before, operator, ...after], right };
+})+ {
+  return rest.reduce((left, { parts, right }) => ({
+    type: 'Tie',
+    delimiter: false,
+    left,
+    parts,
+    right,
+    location: { ...left.location, end: right.location.end },
+  }), left);
+}
+TieOperator = "=>" { return node('TieOperator', { delimiter: true }); }
+TieSeparator = Comment / TieWhitespace / bar:BarLine !(":" / RepeatEndingNumber) { return bar; }
+TieWhitespace = [ \t\n\r]+ { return node('Whitespace', { delimiter: true }); }
 Note = pitch:Pitch tail:PlayableTail? {
   return node('Note', { pitch, tail });
 }

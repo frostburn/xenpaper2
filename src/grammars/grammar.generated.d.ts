@@ -9,6 +9,7 @@ export type NodeType<Type extends string = string, Delimiter extends boolean = f
 }
 
 export type DelimiterType =
+  | NodeType<'TieOperator', true>
   | NodeType<'Colon', true>
   | NodeType<'InversionPrefix', true>
   | NodeType<'TemperedPrefix', true>
@@ -164,6 +165,14 @@ export type RatioChordType = NodeType<'RatioChord'> & {
   inversionPrefix?: DelimiterType
   pitches: Array<RatioChordPitchType | DelimiterType>
   tail: TailType | null
+}
+
+export type PlayableType = NoteType | SampleRateNoteType | ChordType | RatioChordType
+
+export type TieType = NodeType<'Tie'> & {
+  left: PlayableType | TieType
+  parts: Array<DelimiterType | CommentType>
+  right: PlayableType
 }
 
 export type DroneType = NodeType<'Drone'> & {
@@ -518,6 +527,7 @@ export type CommentType = NodeType<'Comment'> & {
 //
 
 export type SequenceItemsType =
+  | TieType
   | RatioChordType
   | NoteType
   | SampleRateNoteType
