@@ -55,6 +55,8 @@ const appendPlayTime = (existing: CharData | undefined, time: PlayTime | undefin
 }
 
 const colorMap = new Map<string, HighlightColor>([
+  // Tie is structural: its operands, separators, and operator supply all colors.
+  ['TieOperator', 'delimiter'],
   ['Semicolon', 'delimiter'],
   ['Colon', 'delimiter'],
   // ['PitchCents', 'pitch'],

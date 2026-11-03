@@ -107,6 +107,21 @@ MOS{5L2s}(plot:MOS)`,
     ],
   },
   {
+    title: 'Note ties',
+    demos: [
+      {
+        description:
+          'Use => between notes or chords to sustain matching sounding pitches without another attack. Both operands keep their rhythmic slots, and unmatched pitches still play normally. Ties can be chained and cross barlines.',
+        tune: `# One sustained note over the bar
+(time:4/4)(4)C--- | => C--- |
+# Only C continues; the other chord tones change
+[C E G]--- => [C F A]--- |
+# Chain matching voices
+0- => [0 4]- => [0 7]--- ||`,
+      },
+    ],
+  },
+  {
     title: 'Glissando',
     demos: [
       {

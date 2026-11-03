@@ -32,6 +32,8 @@ import type {
   ChordType,
   RatioChordType,
   DroneType,
+  PlayableType,
+  TieType,
   TailType,
   PitchType,
   PitchAbsoluteType,
@@ -916,6 +918,76 @@ const chordToMosc = (
   })
 }
 
+// A tie occupies both operands' slots, but matching right attacks become
+// continuations of every matching left note. Compare frequencies so equivalent
+// pitch spellings and ratio chords can share a sustained voice.
+const tieToMosc = (
+  tie: TieType,
+  context: Context,
+  registerGroup: (notes: MoscBeatPlayableNote[]) => void,
+): MoscBeatPlayableNote[] => {
+  const groups: MoscBeatPlayableNote[][] = []
+  const sourceTimes = new Map<MoscBeatPlayableNote, [number, number]>()
+  const samePitch = (left: MoscBeatPlayableNote, right: MoscBeatPlayableNote): boolean => {
+    if (left.type !== right.type) return false
+    if (left.type === 'SAMPLE_RATE_NOTE_BEAT_TIME') return true
+    return (
+      right.type === 'NOTE_BEAT_TIME' &&
+      Math.abs(left.hz - right.hz) <= Math.max(left.hz, right.hz) * 1e-10
+    )
+  }
+
+  const render = (item: PlayableType | TieType): MoscBeatPlayableNote[] => {
+    if (item.type !== 'Tie') {
+      const notes =
+        item.type === 'Note'
+          ? noteToMosc(item, context)
+          : item.type === 'SampleRateNote'
+            ? sampleRateNoteToMosc(item, context)
+            : chordToMosc(item, context)
+      groups.push(notes)
+      notes.forEach((note) => sourceTimes.set(note, item.time!))
+      return notes
+    }
+
+    const left = render(item.left)
+    const boundary = mapGrooveBeat(context.time, context.groove)
+    for (const part of item.parts) {
+      if (part.type === 'BarLine') markBarlineSyntax(part, context)
+    }
+    const right = render(item.right)
+    const matched = new Set<MoscBeatPlayableNote>()
+    for (const source of left) {
+      const targets = right.filter((target) => samePitch(source, target))
+      if (!targets.length) continue
+      source.timeEnd = Math.max(...targets.map((target) => target.timeEnd))
+      targets.forEach((target) => matched.add(target))
+    }
+    for (const part of item.parts) {
+      if (part.type !== 'TieOperator') continue
+      const time: [number, number] = [boundary, mapGrooveBeat(context.time, context.groove)]
+      part.time = time
+      times.push(time)
+    }
+    return [...left, ...right.filter((target) => !matched.has(target))]
+  }
+
+  const result = render(tie)
+  const endpoints = new Map<[number, number], number>()
+  for (const note of result) {
+    const time = sourceTimes.get(note)!
+    endpoints.set(time, Math.max(endpoints.get(time) ?? -Infinity, note.timeEnd))
+  }
+  endpoints.forEach((end, time) => {
+    time[1] = end
+  })
+  // Preserve rhythmic operand boundaries for glissandi, excluding attacks
+  // already absorbed into an earlier sustained voice by the tie.
+  const surviving = new Set(result)
+  groups.forEach((group) => registerGroup(group.filter((note) => surviving.has(note))))
+  return result
+}
+
 const pointTime = (
   item: NoteType | SampleRateNoteType | ChordType | RatioChordType,
   context: Context,
@@ -1741,6 +1813,13 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
 
     if (type === 'SetRoot') {
       setRoot(item, context)
+      return
+    }
+
+    if (type === 'Tie') {
+      const items = tieToMosc(item, context, registerGlissandoGroup)
+      moscItems.push(...items)
+      initialRulerState = rulerStateCaptureRootHz(initialRulerState, context)
       return
     }
 

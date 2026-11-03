@@ -59,6 +59,11 @@ const addTailToLastPlayableItem = (items: SequenceItemsType[], tail: TailType | 
       throw new Error('Cannot attach a hold to a rest')
     }
 
+    if (item.type === 'Tie') {
+      addTail(item.right, tail)
+      return
+    }
+
     if (isSequenceItemWithTail(item)) {
       addTail(item, tail)
       return
