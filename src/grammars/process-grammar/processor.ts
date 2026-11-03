@@ -921,7 +921,12 @@ const chordToMosc = (
 // A tie occupies both operands' slots, but matching right attacks become
 // continuations of every matching left note. Compare frequencies so equivalent
 // pitch spellings and ratio chords can share a sustained voice.
-const tieToMosc = (tie: TieType, context: Context): MoscBeatPlayableNote[] => {
+const tieToMosc = (
+  tie: TieType,
+  context: Context,
+  registerGroup: (notes: MoscBeatPlayableNote[]) => void,
+): MoscBeatPlayableNote[] => {
+  const groups: MoscBeatPlayableNote[][] = []
   const sourceTimes = new Map<MoscBeatPlayableNote, [number, number]>()
   const samePitch = (left: MoscBeatPlayableNote, right: MoscBeatPlayableNote): boolean => {
     if (left.type !== right.type) return false
@@ -940,6 +945,7 @@ const tieToMosc = (tie: TieType, context: Context): MoscBeatPlayableNote[] => {
           : item.type === 'SampleRateNote'
             ? sampleRateNoteToMosc(item, context)
             : chordToMosc(item, context)
+      groups.push(notes)
       notes.forEach((note) => sourceTimes.set(note, item.time!))
       return notes
     }
@@ -975,6 +981,10 @@ const tieToMosc = (tie: TieType, context: Context): MoscBeatPlayableNote[] => {
   endpoints.forEach((end, time) => {
     time[1] = end
   })
+  // Preserve rhythmic operand boundaries for glissandi, excluding attacks
+  // already absorbed into an earlier sustained voice by the tie.
+  const surviving = new Set(result)
+  groups.forEach((group) => registerGroup(group.filter((note) => surviving.has(note))))
   return result
 }
 
@@ -1807,8 +1817,7 @@ export const processGrammar = (grammar: XenpaperAST): Processed => {
     }
 
     if (type === 'Tie') {
-      const items = tieToMosc(item, context)
-      registerGlissandoGroup(items)
+      const items = tieToMosc(item, context, registerGlissandoGroup)
       moscItems.push(...items)
       initialRulerState = rulerStateCaptureRootHz(initialRulerState, context)
       return

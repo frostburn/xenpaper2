@@ -95,6 +95,18 @@ describe('binary note ties', () => {
     expect(notes).toHaveLength(1)
   })
 
+  it.each([
+    ['(gliss)0 7=>9', [[0, 1], [1, 1.5]]],
+    ['(gliss)0 7=>7', [[0, 1.5]]],
+    ['(gliss)0 7=>9=>7', [[0, 2], [1, 1.5]]],
+    ['(gliss)[0 4] [7 11]=>[7 12]', [[0, 1.5], [0, 1.5], [1, 1.5]]],
+  ])('preserves glissando target operand boundaries: %s', (source, expected) => {
+    const result = score(source as string)
+    const notes = result.sequence.filter((item) => item.type === 'NOTE_BEAT_TIME')
+    expect(notes.map((note) => [note.time, note.timeEnd])).toEqual(expected)
+    expect(notes[0]!.pitchAutomation).toHaveLength(1)
+  })
+
   it('preserves grace-note timing and groove slots', () => {
     expect(timing('(8?)C => C')).toEqual({ duration: 0.5, notes: [[0, 0.5]] })
     expect(score('(groove:(5)!-- !-)0 => 0 2').lengthTime).toBe(
