@@ -348,7 +348,7 @@ C D F G A c`,
         description:
           '7-limit intervals use the jubilismic √(50/49) lift slash / and the drop backslash \\ to turn interordinals back into just intonation.',
         tune: `# 5:6:7 on C
-[C E𝄬 /Gam]--`,
+[C E𝄬 \\Gam]--`,
       },
       {
         description:
